@@ -389,6 +389,19 @@ class TestDivisions(unittest.TestCase):
         self.assertIsNone(chi["latest"]["zhvi"])
         self.assertIsNone(chi["zillow_scope"])
 
+    # rent can be inherited on its own when zillow's value file misses the
+    # parent metro but its rent file carries it. the inheritance still has to
+    # be disclosed, or the reader takes the parent's rent for the division's
+    def test_division_discloses_parent_scope_when_only_rent_is_inherited(self):
+        merged, centroids, zhvi = self.frames()
+        zhvi = zhvi.drop(index="Chicago, IL")
+        zori = pd.DataFrame({"2024-06-30": [2252.6]}, index=pd.Index(["Chicago, IL"], name="RegionName"))
+        metros, _, _ = bm.build_metros(merged, centroids, zhvi=zhvi, zori=zori)
+        chi = next(m for m in metros if m["cbsa"] == "16984")
+        self.assertIsNone(chi["latest"]["zhvi"])
+        self.assertEqual(chi["latest"]["zori"], 2252.6)
+        self.assertEqual(chi["zillow_scope"], "parent metro")
+
     def test_display_name_strips_only_the_suffix(self):
         self.assertEqual(bm.display_name("Boston, MA (MSAD)"), "Boston, MA")
         self.assertEqual(bm.display_name("Abilene, TX"), "Abilene, TX")
@@ -583,3 +596,33 @@ class TestNationalIndicators(BuildCase):
         self.assertEqual(payload["sources"]["fred"], "through 2026-09-10")
         self.assertEqual(len(payload["metros"]), 3)
         self.assertEqual(self.metro(payload, "10180")["latest"]["zhvi"], 170000.0)
+
+
+# a growth rate compares a place to itself. when omb redraws a cbsa between two
+# vintages the two rows are different places wearing the same code, and the only
+# honest answer is null. salisbury 41540 is the real case in the shipped merged
+# file: 2014 and 2019 are the md-de footprint, 2024 is md only
+class TestFootprintChange(unittest.TestCase):
+    def salisbury(self):
+        merged = bm.load_merged(bm.DEFAULT_PATHS["merged"])
+        return merged[merged["cbsa_code"] == "41540"]
+
+    def test_growth_is_null_when_the_footprint_changed_between_vintages(self):
+        merged = self.salisbury()
+        names = {int(row["year"]): row["NAME"] for _, row in merged.iterrows()}
+        # precondition: the footprint really did change between 2014 and 2024
+        self.assertEqual(names[2014], "Salisbury, MD-DE Metro Area")
+        self.assertEqual(names[2024], "Salisbury, MD Metro Area")
+
+        centroids = bm.load_centroids(bm.DEFAULT_PATHS["centroids"])
+        metros, _, _ = bm.build_metros(merged, centroids)
+        self.assertEqual(len(metros), 1)
+        self.assertIsNone(metros[0]["growth"]["pop_14_24"])
+
+    # the same-footprint pair keeps its number, so the guard cannot simply blank
+    # every rate on a metro that changed once
+    def test_growth_survives_when_the_footprint_held(self):
+        merged = self.salisbury()
+        centroids = bm.load_centroids(bm.DEFAULT_PATHS["centroids"])
+        metros, _, _ = bm.build_metros(merged, centroids)
+        self.assertEqual(metros[0]["growth"]["hpi_14_19"], 0.1469)

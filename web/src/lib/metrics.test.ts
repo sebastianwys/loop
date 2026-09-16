@@ -1,9 +1,10 @@
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   DEFS, GROUPS, METRICS, PERIODS, availablePeriods, defById, defaultPeriod, labelFor, metricById, metricCaption,
   nearestPeriod, num, resolveMetric, visibleDefs,
 } from "./metrics";
-import type { Metro, Period } from "../types";
+import type { MapData, Metro, Period } from "../types";
 import { SAMPLE } from "./data";
 
 const abilene = SAMPLE.metros[0];
@@ -115,7 +116,8 @@ describe("derived metrics", () => {
   it("return null when an input is missing or the population is zero", () => {
     const zero = { ...abilene, years: { ...abilene.years, "2024": { ...abilene.years["2024"], pop_estimate: 0 } } } as Metro;
     expect(def("permits_per_1000").valueAt(zero, "2024")).toBeNull();
-    expect(def("permits_per_1000").valueAt(sparse, "2014")).toBeCloseTo((250 / 80000) * 1000, 4);
+    // the sparse division inherits permits_units, so its own population cannot rate it
+    expect(def("permits_per_1000").valueAt(sparse, "2014")).toBeNull();
     expect(def("rent_to_income").valueAt(sparse, "2014")).toBeNull();
     expect(def("rent_to_income").valueAt(abilene, "latest")).toBeNull();
   });
@@ -175,5 +177,46 @@ describe("forecasts", () => {
     expect(metricCaption(resolveMetric(def("hpi_forecast_4q"), "latest"), SAMPLE.metros)).toBe("Source: Loop model, latest 2026-06");
     expect(metricCaption(resolveMetric(def("hpi_surprise_4q"), "latest"), [sparse])).toBe("Source: Loop model, latest");
     expect(resolveMetric(def("hpi_forecast_4q"), "latest").dateOf(abilene)).toBe("2026-06");
+  });
+});
+
+// added to web/src/lib/metrics.test.ts (plus two import-line edits:
+//   `import { existsSync, readFileSync } from "node:fs";` at the top and
+//   `import type { MapData, Metro, Period } from "../types";`)
+
+// a ratio has to read its numerator and its denominator off the same geography.
+// a division that takes permits_units from its parent metro but keeps its own
+// pop_estimate has no honest rate to report
+describe("permits per 1,000 residents", () => {
+  const inherits = (m: Metro, key: string) => (m.parent_metrics ?? []).includes(key);
+  const mixed = (m: Metro) => inherits(m, "permits_units") && !inherits(m, "pop_estimate");
+  const rate = (m: Metro, p: Period) => def("permits_per_1000").valueAt(m, p);
+
+  it("is null for a division whose permits are inherited but whose population is its own", () => {
+    // the sample division carries the parent's permits with its own 80,000 residents
+    expect(mixed(sparse)).toBe(true);
+    for (const p of PERIODS) expect(rate(sparse, p), `sample division at ${p}`).toBeNull();
+  });
+
+  it("never mixes geographies in the built metros.json", () => {
+    const path = new URL("../../public/data/metros.json", import.meta.url).pathname;
+    if (!existsSync(path)) return;
+    const data = JSON.parse(readFileSync(path, "utf8")) as MapData;
+
+    // san rafael divides the san francisco msa's 7,750 permits by its own
+    // 253,694 residents and reports 30.5 per 1k against a parent rate near 1.7
+    const sanRafael = data.metros.find((m) => m.cbsa === "42034")!;
+    expect(mixed(sanRafael)).toBe(true);
+    expect(rate(sanRafael, "latest")).toBeNull();
+
+    // marietta does the same and lands 4th of 410 on the ranking
+    const marietta = data.metros.find((m) => m.cbsa === "31924")!;
+    expect(mixed(marietta)).toBe(true);
+    expect(rate(marietta, "latest")).toBeNull();
+
+    const offenders = data.metros
+      .filter((m) => mixed(m) && PERIODS.some((p) => rate(m, p) !== null))
+      .map((m) => `${m.cbsa} ${m.name} ${rate(m, "latest")}`);
+    expect(offenders).toEqual([]);
   });
 });

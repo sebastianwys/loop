@@ -1,12 +1,16 @@
 import os
 import sys
+import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
+from unittest import mock
 
 # scripts/ is not a package, so put it on the path before importing
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 import download_census as dc
+import download_fhfa as dfhfa
 
 
 class TestWindow(unittest.TestCase):
@@ -101,6 +105,60 @@ class TestApiKey(unittest.TestCase):
     def test_redact_removes_the_key(self):
         self.assertEqual(dc.redact("url?key=abc123", "abc123"), "url?key=***")
         self.assertEqual(dc.redact("nothing", ""), "nothing")
+
+
+# a slice of the real hpi_master.csv. the newest observation is 2026 period 2
+# for the quarterly rows and 2026 period 6 (june) for the monthly rows, so the
+# newest quarter covered by this file is 2026 Q2 either way
+FHFA_MASTER_SLICE = (
+    "hpi_type,hpi_flavor,frequency,level,place_name,place_id,yr,period,"
+    "index_nsa,index_sa,rstderr,note\n"
+    "traditional,purchase-only,monthly,USA or Census Division,"
+    "East North Central Division,DV_ENC,1991,1,100.00,100.00,,\n"
+    "traditional,purchase-only,monthly,USA or Census Division,"
+    "East North Central Division,DV_ENC,2026,6,300.00,300.00,,\n"
+    "developmental,purchase-only,quarterly,Puerto Rico,Puerto Rico,PR,"
+    "2026,1,272.77,272.95,,\n"
+    "developmental,purchase-only,quarterly,Puerto Rico,Puerto Rico,PR,"
+    "2026,2,264.64,265.92,,\n"
+)
+
+
+def _frozen_clock(moment):
+    # stands in for the datetime class the script imported, so now() is fixed
+    stub = mock.Mock()
+    stub.now.return_value = moment
+    return stub
+
+
+class TestFhfaManifestVersion(unittest.TestCase):
+    # run download_file against a fixed payload and a fixed wall clock
+    def entry(self, moment, payload=FHFA_MASTER_SLICE):
+        response = mock.Mock()
+        response.content = payload.encode()
+        response.raise_for_status.return_value = None
+        with tempfile.TemporaryDirectory() as tmp:
+            with mock.patch.object(dfhfa, "RAW_DIR", Path(tmp)), \
+                 mock.patch.object(dfhfa, "requests") as requests_stub, \
+                 mock.patch.object(dfhfa, "datetime", _frozen_clock(moment)):
+                requests_stub.get.return_value = response
+                return dfhfa.download_file(
+                    "hpi_master.csv", dfhfa.FILES["hpi_master.csv"]
+                )
+
+    # the label describes the data, so it is the newest quarter in the file
+    def test_version_is_the_newest_quarter_present_in_the_file(self):
+        entry = self.entry(datetime(2026, 9, 30, 12, 0, tzinfo=timezone.utc))
+        self.assertEqual(entry["version"], "2026-Q2")
+
+    # same bytes downloaded on either side of a quarter boundary, same label
+    def test_version_is_stable_across_download_dates(self):
+        september = self.entry(datetime(2026, 9, 30, 23, 59, tzinfo=timezone.utc))
+        october = self.entry(datetime(2026, 10, 1, 0, 1, tzinfo=timezone.utc))
+        self.assertEqual(september["integrity"]["sha256"],
+                         october["integrity"]["sha256"])
+        self.assertEqual(september["version"], october["version"])
+        self.assertEqual(september["version"], "2026-Q2")
 
 
 if __name__ == "__main__":

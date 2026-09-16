@@ -1,7 +1,8 @@
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { buildHistory, forecastLevels, forecastOf, hoverables, nearestPoint, niceTicks, yearTicks, type ForecastInput } from "./history";
 import { SAMPLE } from "./data";
-import type { AnnualSeries, Metro } from "../types";
+import type { AnnualSeries, MapData, Metro } from "../types";
 
 const abilene = SAMPLE.metros[0];
 const dallas = SAMPLE.metros[1];
@@ -144,5 +145,54 @@ describe("hover", () => {
   it("lists every point in year order for keyboard stepping", () => {
     expect(hoverables(h).map((v) => v.point.year)).toEqual([2024, 2025, 2026, 2027, 2028]);
     expect(hoverables(h).map((v) => v.kind)).toEqual(["history", "history", "history", "forecast", "forecast"]);
+  });
+});
+
+// the shipped map file and the fhfa quarterly master the bot builds it from.
+// both are optional in ci, so this block skips when either is absent
+const MAP_PATH = new URL("../../public/data/metros.json", import.meta.url).pathname;
+const FHFA_PATH = new URL("../../../data/raw/fhfa/hpi_master.csv", import.meta.url).pathname;
+const REAL = existsSync(MAP_PATH) && existsSync(FHFA_PATH);
+
+// the index level one quarter carries in the source fhfa file, the same
+// series bot/build_map_data.py averages into the annual history
+function fhfaQuarterLevel(cbsa: string, year: number, quarter: number): number {
+  const tail = `,${cbsa},${year},${quarter},`;
+  const row = readFileSync(FHFA_PATH, "utf8")
+    .split("\n")
+    .find((r) => r.startsWith("traditional,all-transactions,quarterly,MSA,") && r.includes(tail));
+  if (!row) throw new Error(`no fhfa row for ${cbsa} ${year}Q${quarter}`);
+  return Number(row.slice(row.indexOf(tail) + tail.length).split(",")[0]);
+}
+
+describe.skipIf(!REAL)("expected levels on the built data", () => {
+  it("compounds the model growth onto the origin quarter level, not the partial year mean", () => {
+    const map = JSON.parse(readFileSync(MAP_PATH, "utf8")) as MapData;
+    const metro = map.metros.find((m) => m.cbsa === "10180");
+    const series = metro?.series?.hpi;
+    if (!metro || !series) throw new Error("abilene has no hpi series in the built map");
+
+    // the model wrote its percents at the origin quarter, 2026q2
+    expect(series.as_of).toBe("2026Q2");
+    expect(metro.latest.hpi_forecast_4q_date).toBe("2026-06");
+
+    // 2026 is a partial year: its annual value is the mean of q1 and q2, well
+    // below the q2 level the growth was measured from
+    expect(series.values[series.values.length - 1]).toBe(370);
+    const origin = fhfaQuarterLevel("10180", 2026, 2);
+    expect(origin).toBe(381.69);
+
+    const f = forecastOf(metro);
+    if (!f || f.mid4 === null || f.lo4 === null || f.hi4 === null) throw new Error("abilene has no four quarter forecast");
+    expect(f.mid4).toBe(5.698);
+
+    const one = buildHistory(series, f).forecast[0];
+    expect(one.year).toBe(2027);
+    // 381.69 grown by 5.698, -3.3277 and 16.1856 percent
+    expect(one.value).toBeCloseTo(origin * (1 + f.mid4 / 100), 4);
+    expect(one.lo).toBeCloseTo(origin * (1 + f.lo4 / 100), 4);
+    expect(one.hi).toBeCloseTo(origin * (1 + f.hi4 / 100), 4);
+    // what the detail panel prints, to one decimal
+    expect(Math.round(one.value * 10) / 10).toBe(403.4);
   });
 });

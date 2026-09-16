@@ -102,6 +102,15 @@ function divide(numerator: number | null, denominator: number | null): number | 
   return numerator / denominator;
 }
 
+// a ratio may only combine fields that describe the same geography. a division
+// that inherits one side from its parent metro and keeps its own other side
+// has no rate to report, so the caller returns null
+function sameGeography(metro: Metro, fields: Field[]): boolean {
+  const inherited = metro?.parent_metrics ?? [];
+  const from = fields.map((f) => inherited.includes(f));
+  return from.every((v) => v === from[0]);
+}
+
 export const DEFS: MetricDef[] = [
   // house prices
   change("hpi_19_24", "HPI growth, 2019 to 2024", "House prices", "fhfa"),
@@ -156,7 +165,7 @@ export const DEFS: MetricDef[] = [
   // supply
   field("permits_units", "Housing units permitted", "int", "sequential", "Supply", "bps", ALL),
   { id: "permits_per_1000", label: "Units permitted per 1,000 residents", format: "per_1000", kind: "sequential", group: "Supply", source: "bps", periods: ALL, dateId: "permits_units",
-    valueAt: (m, p) => { const units = fieldAt(m, p, "permits_units"); return divide(units === null ? null : units * 1000, fieldAt(m, p, "pop_estimate")); } },
+    valueAt: (m, p) => { if (!sameGeography(m, ["permits_units", "pop_estimate"])) return null; const units = fieldAt(m, p, "permits_units"); return divide(units === null ? null : units * 1000, fieldAt(m, p, "pop_estimate")); } },
   field("permits_single_family", "Single family units permitted", "int", "sequential", "Supply", "bps", ALL),
   field("permits_multifamily", "Units in 5+ unit buildings permitted", "int", "sequential", "Supply", "bps", ALL),
   field("vacancy_rate", "Vacant housing units", "pct", "sequential", "Supply", "acs", YEARS),

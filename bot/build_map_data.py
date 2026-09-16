@@ -99,7 +99,8 @@ def load_bls(path):
 # the fhfa master file holds every quarter since 1975 for every metro and
 # division. keep the one series the pipeline uses, average it by year from
 # SERIES_START and remember the last quarter, so the panel can label the
-# partial year
+# partial year. anchor is that quarter's own level, the base the model
+# measured its forecast growth from
 def load_fhfa_series(path):
     df = pd.read_csv(path, dtype={"place_id": str, "yr": str, "period": str}, usecols=[
         "hpi_type", "hpi_flavor", "frequency", "level", "place_id", "yr", "period", "index_nsa"])
@@ -116,7 +117,7 @@ def load_fhfa_series(path):
         last_year = int(annual.index.max())
         values = [rnd(annual.get(year), 1) if year in annual.index else None for year in range(SERIES_START, last_year + 1)]
         newest = group.sort_values(["yr", "period"]).iloc[-1]
-        series[str(code)] = {"start": SERIES_START, "values": values, "as_of": f"{int(newest['yr'])}Q{int(newest['period'])}"}
+        series[str(code)] = {"start": SERIES_START, "values": values, "as_of": f"{int(newest['yr'])}Q{int(newest['period'])}", "anchor": rnd(newest["index_nsa"], 2)}
     return series
 
 
@@ -467,13 +468,26 @@ def build_metros(merged, centroids, zhvi=None, zori=None, bls_frame=None, enrich
         zillow_name = parent["name"] if parent else (name if level == "msa" else None)
         zhvi_row = match_zillow(zillow_name, zhvi)
         zori_row = match_zillow(zillow_name, zori)
-        zillow_scope = None if zhvi_row is None else ("parent metro" if parent else "metro")
+        # scope covers every zillow series, so one matched series is enough to
+        # label the row. keying it on zhvi alone hid an inherited rent
+        matched_zillow = zhvi_row is not None or zori_row is not None
+        zillow_scope = ("parent metro" if parent else "metro") if matched_zillow else None
         if zhvi is not None and zhvi_row is None:
             unmatched += 1
 
         def value(year, col):
             row = rows.get(year)
             return None if row is None else row.get(col)
+
+        # an acs vintage's NAME carries its county set, so two vintages joined
+        # on cbsa_code are the same place only while the names agree. when omb
+        # redraws a cbsa the pair is not a rate and reports null. hpi is left
+        # alone, fhfa restates its whole series on one delineation
+        def acs_growth(later_year, earlier_year, col):
+            later_name, earlier_name = value(later_year, "NAME"), value(earlier_year, "NAME")
+            if not missing(later_name) and not missing(earlier_name) and later_name != earlier_name:
+                return None
+            return growth(value(later_year, col), value(earlier_year, col))
 
         zhvi_latest, zhvi_date = zillow_latest(zhvi_row)
         zori_latest, zori_date = zillow_latest(zori_row)
@@ -496,9 +510,9 @@ def build_metros(merged, centroids, zhvi=None, zori=None, bls_frame=None, enrich
             "growth": {
                 f"hpi_{y0 % 100}_{y1 % 100}": rnd(growth(value(y1, "avg_index_nsa"), value(y0, "avg_index_nsa")), 4),
                 f"hpi_{y1 % 100}_{y2 % 100}": rnd(growth(value(y2, "avg_index_nsa"), value(y1, "avg_index_nsa")), 4),
-                f"income_{y0 % 100}_{y2 % 100}": rnd(growth(value(y2, "median_income"), value(y0, "median_income")), 4),
-                f"pop_{y0 % 100}_{y2 % 100}": rnd(growth(value(y2, "total_pop"), value(y0, "total_pop")), 4),
-                f"home_value_{y0 % 100}_{y2 % 100}": rnd(growth(value(y2, "median_home_value"), value(y0, "median_home_value")), 4),
+                f"income_{y0 % 100}_{y2 % 100}": rnd(acs_growth(y2, y0, "median_income"), 4),
+                f"pop_{y0 % 100}_{y2 % 100}": rnd(acs_growth(y2, y0, "total_pop"), 4),
+                f"home_value_{y0 % 100}_{y2 % 100}": rnd(acs_growth(y2, y0, "median_home_value"), 4),
             },
             "ptir": {str(y): rnd(ratio(value(y, "median_home_value"), value(y, "median_income")), 4) for y in STUDY_YEARS},
         }

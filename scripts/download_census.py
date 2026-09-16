@@ -210,13 +210,19 @@ def query_acs(year, api_key, geography, within=None):
     response = requests.get(url, params=params, timeout=60)
 
     # a parent with no divisions in that vintage answers 204 with an empty body
-    if response.status_code == 204 or not response.content.strip():
+    if response.status_code == 204:
         return pd.DataFrame(columns=VARIABLES + [MSA_COL, DIV_COL])
 
+    # check the status before the body, so a 5xx with an empty body is an error
+    # and not a silent "no divisions here"
     try:
         response.raise_for_status()
     except requests.HTTPError as e:
         raise requests.HTTPError(redact(str(e), api_key)) from None
+
+    # some vintages answer 200 with an empty body instead of 204
+    if not response.content.strip():
+        return pd.DataFrame(columns=VARIABLES + [MSA_COL, DIV_COL])
 
     # a missing, unactivated or invalid key redirects to an html page that still
     # returns 200, so the status code alone does not prove this is data

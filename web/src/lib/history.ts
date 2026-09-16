@@ -133,7 +133,10 @@ export function buildHistory(series: AnnualSeries, forecast: ForecastInput | nul
   if (present.length === 0) return empty;
 
   const lastPresent = present[present.length - 1];
-  const levels = forecastLevels(lastPresent, forecast);
+  // the model measured its percents from the as_of quarter's level, which for
+  // a partial last year is not that year's mean, so grow from the anchor
+  const base = typeof series.anchor === "number" && Number.isFinite(series.anchor) ? series.anchor : lastPresent.value;
+  const levels = forecastLevels({ year: lastPresent.year, value: base }, forecast);
   const lastYear = series.start + series.values.length - 1;
   const years: [number, number] = [series.start, Math.max(lastYear, ...levels.map((l) => l.year))];
 

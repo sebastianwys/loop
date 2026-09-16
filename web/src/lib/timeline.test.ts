@@ -227,6 +227,7 @@ describe("latestColumn", () => {
   it("stays hidden when no row has a latest value for the metro", () => {
     expect(latestColumn(abilene, [def("hpi"), def("income")])).toEqual({ show: false, header: null, dates: {} });
     expect(latestColumn(sparse, [def("zhvi")]).show).toBe(false);
-    expect(latestColumn(sparse, [def("permits_per_1000")])).toMatchObject({ show: true, header: "2025" });
+    // the division inherits its permits, so the derived rate has no latest value
+    expect(latestColumn(sparse, [def("permits_per_1000")])).toEqual({ show: false, header: null, dates: {} });
   });
 });

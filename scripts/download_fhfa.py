@@ -36,11 +36,25 @@ def _row_count(filepath, filename):
         return sum(1 for _ in f) - 1
 
 
-# quarter tag like 2026-Q2
-def _version_tag():
-    now = datetime.now(timezone.utc)
-    quarter = (now.month - 1) // 3 + 1
-    return f"{now.year}-Q{quarter}"
+# quarter tag like 2026-Q2, read from the newest observation in the file
+def _version_tag(filepath, filename):
+    try:
+        if filename.endswith(".csv"):
+            frame = pd.read_csv(filepath)
+            # monthly rows carry a month, quarterly rows already carry a quarter
+            quarter = frame["period"].where(
+                frame["frequency"] == "quarterly",
+                (frame["period"] - 1) // 3 + 1,
+            )
+        else:
+            frame = pd.read_csv(filepath, sep="\t")
+            quarter = frame["qtr"]
+        year, quarter = max(zip(frame["yr"], quarter))
+        return f"{int(year)}-Q{int(quarter)}"
+    except Exception:
+        # fall back to the download date when the file will not parse
+        now = datetime.now(timezone.utc)
+        return f"{now.year}-Q{(now.month - 1) // 3 + 1}"
 
 
 # download one file, hash it, build the manifest entry
@@ -73,7 +87,7 @@ def download_file(filename, url):
             "size_kb": round(size_kb, 1),
             "row_count": row_count
         },
-        "version": _version_tag(),
+        "version": _version_tag(filepath, filename),
         "downloaded_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     }
 

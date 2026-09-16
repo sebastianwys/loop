@@ -417,8 +417,9 @@ def summary_line(model_name, summary, block):
     return f"{model_name} {block}: n {n}  mae_pct {err}  coverage {cov}"
 
 
-def test_mae_pct(summary, horizon):
-    rows = summary[(summary["block"] == "test") & (summary["horizon"] == horizon)]
+# selection reads the cal block. the test block is scored once, to report
+def cal_mae_pct(summary, horizon):
+    rows = summary[(summary["block"] == "cal") & (summary["horizon"] == horizon)]
     return float(rows["mae_pct"].iloc[0]) if len(rows) else float("inf")
 
 
@@ -583,7 +584,7 @@ def run(panel=None, device=None, max_epochs=MAX_EPOCHS, patience=PATIENCE, verbo
             print(f"{name}: stopped at epoch {fitted['epochs']}, {fitted['seconds']:.0f} s", flush=True)
         results[name] = fitted
 
-    shipped = min(MODELS, key=lambda n: test_mae_pct(results[n]["summary"], 4))
+    shipped = min(MODELS, key=lambda n: cal_mae_pct(results[n]["summary"], 4))
     forecasts = {}
     for name in MODELS:
         started = time.time()
@@ -594,7 +595,7 @@ def run(panel=None, device=None, max_epochs=MAX_EPOCHS, patience=PATIENCE, verbo
         results[name]["forecast_seconds"] = time.time() - started
     forecasts[shipped].to_csv(spec.FORECAST_DIR / "forecasts.csv", index=False)
     if verbose:
-        print(f"shipped {shipped} on test mae_pct at four quarters", flush=True)
+        print(f"shipped {shipped} on cal mae_pct at four quarters", flush=True)
 
     plot_training_curves({n: results[n]["history"] for n in MODELS}, {n: results[n]["epochs"] for n in MODELS}, when)
     plot_calibration(results[shipped]["predictions"], shipped, when)

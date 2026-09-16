@@ -7,6 +7,9 @@ BASE_DIR = Path(__file__).parent.parent
 DATA_DIR = BASE_DIR / "data"
 RESULTS_DIR = BASE_DIR / "results"
 
+# census marks a missing estimate with a jam code, the smallest being -666666
+ACS_SENTINEL = -666666
+
 
 # load both, merge on cbsa+year, write csv and 5 charts
 def main():
@@ -88,6 +91,9 @@ def main():
 
     for col in numeric_cols:
         census[col] = pd.to_numeric(census[col], errors="coerce")  # bad values become NaN
+
+    # jam codes like -666666666 are well formed integers, so coerce keeps them. drop them here
+    census[numeric_cols] = census[numeric_cols].mask(census[numeric_cols] <= ACS_SENTINEL)
 
     print("Census nulls after numeric conversion:")
     for col in numeric_cols:

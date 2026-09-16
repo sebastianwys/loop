@@ -138,5 +138,59 @@ class TestRun(unittest.TestCase):
                 self.assertGreater(os.path.getsize(root / "figures" / f"{name}.png"), 1000)
 
 
+class TestShippedSelectionIgnoresTheTestBlock(unittest.TestCase):
+    # the cal block always picks windowmlp. the test block picks whichever model
+    # the fixture hands the low test error to. selection may read cal rows only
+    CAL_MAE_PCT = {"windowmlp": 3.965160196951248, "seqgru": 8.773784637313579}
+    GOOD_TEST_MAE_PCT = 3.2250869830566873
+    BAD_TEST_MAE_PCT = 6.95688158091336
+
+    def run_with(self, test_favourite):
+        panel = tiny_panel()
+        real_evaluate = train.shared.evaluate
+
+        def evaluate(predictions, *args, **kwargs):
+            summary = real_evaluate(predictions, *args, **kwargs)
+            name = str(predictions["model"].iloc[0])
+            at_four = summary["horizon"] == 4
+            summary.loc[at_four & (summary["block"] == "cal"), "mae_pct"] = self.CAL_MAE_PCT[name]
+            test_value = self.GOOD_TEST_MAE_PCT if name == test_favourite else self.BAD_TEST_MAE_PCT
+            summary.loc[at_four & (summary["block"] == "test"), "mae_pct"] = test_value
+            return summary
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            patches = [
+                mock.patch.object(spec, "ML_ROOT", root),
+                mock.patch.object(spec, "BACKTEST_DIR", root / "backtest"),
+                mock.patch.object(spec, "FORECAST_DIR", root / "forecast"),
+                mock.patch.object(spec, "MODELS_DIR", root / "models"),
+                mock.patch.object(charts, "FIGURES_DIR", root / "figures"),
+                mock.patch.object(train.shared, "evaluate", evaluate),
+            ]
+            for p in patches:
+                p.start()
+            try:
+                out = train.run(panel=panel, device="cpu", max_epochs=2, verbose=False)
+            finally:
+                for p in patches:
+                    p.stop()
+        return out
+
+    def test_shipped_model_is_the_calibration_winner_whatever_the_test_block_says(self):
+        favours_seqgru = self.run_with("seqgru")
+        favours_windowmlp = self.run_with("windowmlp")
+        # the fixture really does put the two blocks in disagreement
+        for out, favourite in ((favours_seqgru, "seqgru"), (favours_windowmlp, "windowmlp")):
+            summaries = {n: out["results"][n]["summary"] for n in train.MODELS}
+            cal = {n: float(s[(s.block == "cal") & (s.horizon == 4)].mae_pct.iloc[0]) for n, s in summaries.items()}
+            test = {n: float(s[(s.block == "test") & (s.horizon == 4)].mae_pct.iloc[0]) for n, s in summaries.items()}
+            self.assertEqual(cal, self.CAL_MAE_PCT)
+            self.assertEqual(min(test, key=test.get), favourite)
+        # same cal rows, so the same shipped model, whatever the test rows say
+        self.assertEqual(favours_seqgru["shipped"], favours_windowmlp["shipped"])
+        self.assertEqual(favours_seqgru["shipped"], "windowmlp")
+
+
 if __name__ == "__main__":
     unittest.main()

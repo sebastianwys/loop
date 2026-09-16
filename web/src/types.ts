@@ -69,11 +69,14 @@ export interface ParentMetro {
 }
 
 // an annual history from the bot: one value per calendar year from start,
-// the last a partial year through as_of, null where a year is missing
+// the last a partial year through as_of, null where a year is missing.
+// anchor is the index level at as_of itself, the base the model's forecast
+// percents were measured from. absent from builds older than the field
 export interface AnnualSeries {
   start: number;
   values: (number | null)[];
   as_of: string;
+  anchor?: number | null;
 }
 
 export interface MetroSeries {
