@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SAMPLE } from "./data";
 import {
-  CHART_H, DETAIL_ID, INDICATOR_GROUPS, MORTGAGE_ID, buildIndicatorChart, changeChip, chartTitle, displayFormat,
+  CHART_H, CHART_PAD, CHART_W, DETAIL_ID, INDICATOR_GROUPS, MORTGAGE_ID, buildIndicatorChart, changeChip, chartTitle, displayFormat,
   groupIndicators, groupId, indicatorSpark, indicatorValue, monthLabel, nationalIndicators, nearestChartPoint,
   pointReadout, rangeLabel, readIndicator, showMortgageStat, sourceLine, tileId, tileReadout,
 } from "./indicators";
@@ -9,6 +9,19 @@ import type { Indicator, IndicatorPoint, MapData, MortgageRate } from "../types"
 
 const points = (values: number[], from = 1): IndicatorPoint[] =>
   values.map((value, i) => ({ date: `2026-${String(from + i).padStart(2, "0")}`, value }));
+
+// a run of calendar months from a start, leaving out any month the source
+// never published, the way a real series carries a hole
+const monthly = (start: string, months: number, absent: string[] = []): IndicatorPoint[] => {
+  const [year, month] = start.split("-").map(Number);
+  const out: IndicatorPoint[] = [];
+  for (let k = 0; k < months; k += 1) {
+    const slot = year * 12 + month - 1 + k;
+    const date = `${Math.floor(slot / 12)}-${String((slot % 12) + 1).padStart(2, "0")}`;
+    if (!absent.includes(date)) out.push({ date, value: 2 + k / 10 });
+  }
+  return out;
+};
 
 // a build with only a national block, for the shapes the reader must survive
 const built = (national: unknown): MapData => ({ national } as unknown as MapData);
@@ -216,6 +229,58 @@ describe("the expanded chart", () => {
   it("reads a point out as a month and a value", () => {
     expect(pointReadout(chart.points[1], "pct")).toBe("Feb 2026: 2.7%");
     expect(pointReadout(chart.points[1], "index")).toBe("Feb 2026: 2.7");
+  });
+});
+
+describe("a month the source never published", () => {
+  // the shipped national cpi shape: every month from aug 2021 to aug 2026
+  // except oct 2025, which the shutdown cost, so 61 slots carry 60 points
+  const shipped = () => monthly("2021-08", 61, ["2025-10"]);
+
+  it("gives every calendar month a slot, present or not", () => {
+    const history = shipped();
+    expect(history).toHaveLength(60);
+    const chart = buildIndicatorChart(history)!;
+    // 61 slots means 60 steps across the drawable width
+    const step = (CHART_W - 2 * CHART_PAD) / 60;
+    expect(step).toBe(11.6);
+    expect(chart.points).toHaveLength(60);
+    expect(chart.points[1].x - chart.points[0].x).toBeCloseTo(step, 6);
+    expect(chart.last.x - chart.points[0].x).toBeCloseTo(CHART_W - 2 * CHART_PAD, 6);
+  });
+
+  it("draws the two month move at two months of width", () => {
+    const chart = buildIndicatorChart(shipped())!;
+    const step = (CHART_W - 2 * CHART_PAD) / 60;
+    const before = chart.points.findIndex((p) => p.date === "2025-09");
+    expect(before).toBe(49);
+    expect(chart.points[before + 1].date).toBe("2025-11");
+    expect(chart.points[before + 1].x - chart.points[before].x).toBeCloseTo(2 * step, 6);
+    expect(chart.last.date).toBe("2026-08");
+  });
+
+  it("breaks the path at the hole instead of drawing one unbroken run", () => {
+    const chart = buildIndicatorChart(shipped())!;
+    // 50 months, then a break, then 10 more
+    expect(chart.d.match(/M /g)).toHaveLength(2);
+    expect(chart.d.match(/L /g)).toHaveLength(58);
+  });
+
+  it("keeps the months in step on both sides of a short gap", () => {
+    const history = monthly("2026-01", 5, ["2026-03"]);
+    expect(history.map((p) => p.date)).toEqual(["2026-01", "2026-02", "2026-04", "2026-05"]);
+    const spark = indicatorSpark(history)!;
+    expect(spark.points.map((p) => p.index)).toEqual([0, 1, 3, 4]);
+    const chart = buildIndicatorChart(history, 400)!;
+    expect(chart.points.map((p) => p.date)).toEqual(["2026-01", "2026-02", "2026-04", "2026-05"]);
+    // 5 slots means 4 steps of 94px across the drawable width
+    const step = (400 - 2 * CHART_PAD) / 4;
+    expect(step).toBe(94);
+    expect(chart.points[1].x - chart.points[0].x).toBeCloseTo(step, 6);
+    expect(chart.points[2].x - chart.points[1].x).toBeCloseTo(2 * step, 6);
+    expect(chart.points[3].x - chart.points[2].x).toBeCloseTo(step, 6);
+    expect(chart.d.match(/M /g)).toHaveLength(2);
+    expect(chart.d.match(/L /g)).toHaveLength(2);
   });
 });
 

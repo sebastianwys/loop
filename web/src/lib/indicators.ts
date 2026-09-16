@@ -154,11 +154,55 @@ export function rangeLabel(history: IndicatorPoint[]): string {
   return first === last ? first : `${first} to ${last}`;
 }
 
+// "2026-08" as a count of months, so two months can be compared and
+// counted apart
+function monthSlot(date: string): number | null {
+  const m = /^(\d{4})-(\d{2})/.exec(date);
+  if (!m) return null;
+  const month = Number(m[2]);
+  if (month < 1 || month > 12) return null;
+  return Number(m[1]) * 12 + month - 1;
+}
+
+function slotDate(slot: number): string {
+  return `${String(Math.floor(slot / 12)).padStart(4, "0")}-${String((slot % 12) + 1).padStart(2, "0")}`;
+}
+
+export interface HistoryGrid {
+  dates: string[];
+  values: (number | null)[];
+}
+
+// the history laid on a calendar, one slot a month, with null in any month
+// the source never published. without this the x axis is an array place, so
+// a two month move would be drawn at one month of width
+export function historyGrid(history: IndicatorPoint[]): HistoryGrid {
+  const slots = new Map<number, number>();
+  for (const p of history) {
+    const slot = monthSlot(p.date);
+    // a point without a readable month cannot be placed, so the whole
+    // history falls back to its own order
+    if (slot === null) return { dates: history.map((h) => h.date), values: history.map((h) => h.value) };
+    slots.set(slot, p.value);
+  }
+  if (slots.size === 0) return { dates: [], values: [] };
+  const keys = [...slots.keys()];
+  const first = Math.min(...keys);
+  const last = Math.max(...keys);
+  const dates: string[] = [];
+  const values: (number | null)[] = [];
+  for (let slot = first; slot <= last; slot += 1) {
+    dates.push(slotDate(slot));
+    values.push(slots.has(slot) ? (slots.get(slot) as number) : null);
+  }
+  return { dates, values };
+}
+
 // one line cannot be drawn through a single point, so the tile shows no
 // sparkline at all rather than a broken path
 export function indicatorSpark(history: IndicatorPoint[], width = SPARK_W, height = SPARK_H, pad = SPARK_PAD): Spark | null {
   if (history.length < 2) return null;
-  const spark = buildSparkline(history.map((p) => p.value), width, height, pad);
+  const spark = buildSparkline(historyGrid(history).values, width, height, pad);
   return spark.points.length < 2 ? null : spark;
 }
 
@@ -184,7 +228,9 @@ export interface IndicatorChartModel {
 export function buildIndicatorChart(history: IndicatorPoint[], width = CHART_W, height = CHART_H, pad = CHART_PAD): IndicatorChartModel | null {
   const spark = indicatorSpark(history, width, height, pad);
   if (!spark) return null;
-  const points = spark.points.map((p) => ({ date: history[p.index].date, value: p.value, x: p.x, y: p.y }));
+  // a spark index is a calendar slot, so the month comes from the grid
+  const dates = historyGrid(history).dates;
+  const points = spark.points.map((p) => ({ date: dates[p.index], value: p.value, x: p.x, y: p.y }));
   const values = history.map((p) => p.value);
   return {
     width,
