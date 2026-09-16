@@ -16,6 +16,7 @@ SUMMARY_COLUMNS = [
     "model", "horizon", "block", "n", "mae", "rmse", "relative_mae",
     "pinball_10", "pinball_50", "pinball_90", "coverage_raw", "coverage", "width", "mae_pct",
 ]
+MARGIN_COLUMNS = ["model", "horizon", "n_cal", "margin", "crossed"]
 BLOCKS = ("train", "cal", "test")
 
 
@@ -136,18 +137,33 @@ def _with_model(predictions, model):
 # years and the test years are different regimes, so the coverage on the test
 # block is the honest number to report, not the guarantee
 def calibrate(predictions, model=None, alpha=spec.ALPHA):
-    frame = _with_model(predictions, model)
+    # a frame concatenated from several models carries repeated index labels,
+    # and .loc on a repeated label writes more rows than the group has
+    frame = _with_model(predictions, model).reset_index(drop=True)
     frame["lo"] = frame["q10"]
     frame["hi"] = frame["q90"]
     rows = []
     for (name, horizon), group in frame.groupby(["model", "horizon"], sort=False):
         cal = group[group["block"] == "cal"]
-        margin = spec.conformal_margin(cal["y"], cal["q10"], cal["q90"], alpha) if len(cal) else float("nan")
-        applied = margin if np.isfinite(margin) else 0.0
-        frame.loc[group.index, "lo"] = group["q10"] - applied
-        frame.loc[group.index, "hi"] = group["q90"] + applied
-        rows.append({"model": name, "horizon": horizon, "n_cal": int(cal["y"].notna().sum()), "margin": applied})
-    return frame[PREDICTION_COLUMNS], pd.DataFrame(rows, columns=["model", "horizon", "n_cal", "margin"])
+        margin = spec.conformal_margin(cal["y"], cal["q10"], cal["q90"], alpha)
+        # a margin of 0.0 standing in for a margin that could not be computed
+        # reads exactly like a model that needed no widening, so refuse it
+        if not np.isfinite(margin):
+            raise ValueError(
+                f"{name} at horizon {horizon} has no realized outcome on the cal "
+                "block, so its band has nothing to calibrate on"
+            )
+        lo, hi, crossed = spec.apply_margin(group["q10"], group["q90"], margin)
+        frame.loc[group.index, "lo"] = lo
+        frame.loc[group.index, "hi"] = hi
+        rows.append({
+            "model": name,
+            "horizon": horizon,
+            "n_cal": int(cal["y"].notna().sum()),
+            "margin": margin,
+            "crossed": int(crossed.sum()),
+        })
+    return frame[PREDICTION_COLUMNS], pd.DataFrame(rows, columns=MARGIN_COLUMNS)
 
 
 # one row per model, horizon and block. every error is in log growth units

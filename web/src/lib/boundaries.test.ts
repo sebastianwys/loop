@@ -1,5 +1,5 @@
 import type { Topology } from "topojson-specification";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   NULL_FILL_OPACITY,
   SHAPE_FILL_OPACITY,
@@ -163,5 +163,64 @@ describe("shapeStyle", () => {
 
   it("stays gray when the whole scale is empty", () => {
     expect(shapeStyle(3, buildScale([null], "sequential")).fillColor).toBe(NULL_GRAY);
+  });
+});
+
+// the module caches the fetched index. a fetch that failed is not an index,
+// and caching it means the shapes view is dead for the life of the page
+describe("loadBoundaries", () => {
+  const ok = () => Promise.resolve({ ok: true, json: async () => topology } as unknown as Response);
+
+  async function fresh() {
+    vi.resetModules();
+    return await import("./boundaries");
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("fetches once and reuses the index", async () => {
+    const fetchMock = vi.fn(ok);
+    vi.stubGlobal("fetch", fetchMock);
+    const mod = await fresh();
+    const first = await mod.loadBoundaries();
+    const second = await mod.loadBoundaries();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(first?.cbsa.size).toBe(2);
+    expect(second).toBe(first);
+  });
+
+  it("retries after a network failure instead of answering null forever", async () => {
+    const fetchMock = vi.fn()
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockImplementation(ok);
+    vi.stubGlobal("fetch", fetchMock);
+    const mod = await fresh();
+    expect(await mod.loadBoundaries()).toBeNull();
+    const second = await mod.loadBoundaries();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(second?.cbsa.size).toBe(2);
+  });
+
+  it("retries after a bad response as well", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 503 } as unknown as Response)
+      .mockImplementation(ok);
+    vi.stubGlobal("fetch", fetchMock);
+    const mod = await fresh();
+    expect(await mod.loadBoundaries()).toBeNull();
+    expect(await mod.loadBoundaries()).not.toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  // two callers asking while one fetch is in flight share it
+  it("does not fetch twice for two callers at once", async () => {
+    const fetchMock = vi.fn(ok);
+    vi.stubGlobal("fetch", fetchMock);
+    const mod = await fresh();
+    const [a, b] = await Promise.all([mod.loadBoundaries(), mod.loadBoundaries()]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(a).toBe(b);
   });
 });

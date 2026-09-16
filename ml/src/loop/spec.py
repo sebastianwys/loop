@@ -180,6 +180,19 @@ def conformal_margin(y, lo, hi, alpha=ALPHA):
     return float(np.sort(scores)[rank - 1])
 
 
+# the margin is one scalar for a whole horizon and the rows it lands on carry
+# their own widths, so a negative margin, which is the right answer for a band
+# that was already too wide, can push lo past hi on the narrow rows. an
+# inverted band is not a band: it reports zero coverage and a negative width.
+# collapse those rows onto the raw band's midpoint and say how many there were
+def apply_margin(lo, hi, margin):
+    lo = np.asarray(lo, dtype=float) - margin
+    hi = np.asarray(hi, dtype=float) + margin
+    crossed = lo > hi
+    mid = (lo + hi) / 2.0
+    return np.where(crossed, mid, lo), np.where(crossed, mid, hi), crossed
+
+
 def _pair(y, yhat):
     y = np.asarray(y, dtype=float)
     yhat = np.asarray(yhat, dtype=float)

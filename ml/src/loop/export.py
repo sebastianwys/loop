@@ -36,9 +36,20 @@ METRICS = list(FORECAST_METRICS) + REALIZED_METRICS + [SURPRISE_METRIC]
 
 
 # cbsa codes are five digit strings. one that lost its leading zero on the
-# way through an integer column gets it back
+# way through an integer column gets it back, and one that came through a
+# float column reads 10180.0, which is already five characters, so zfill
+# leaves it alone and the same metro lands in the file twice under two codes.
+# anything that is not five digits after that stops the export, because on the
+# map it is a metro that silently never matches
 def codes(series):
-    return series.astype(str).str.zfill(5)
+    text = series.astype(str).str.strip()
+    numeric = pd.to_numeric(text, errors="coerce")
+    whole = numeric.notna() & (numeric % 1 == 0) & (numeric >= 0)
+    text = text.mask(whole, numeric.where(whole).astype("Int64").astype(str))
+    bad = sorted(set(text[~text.str.fullmatch(r"\d{1,5}")]))
+    if bad:
+        raise ValueError(f"cbsa codes are five digits, these are not: {bad[:5]}")
+    return text.str.zfill(5)
 
 
 # the newest origin in a forecasts frame, "2026Q2" style strings sort right

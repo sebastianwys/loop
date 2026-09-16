@@ -57,6 +57,12 @@ export function App() {
     });
   }, [mode, boundaries, shapesStatus]);
 
+  // a failed load latches, so without this the shapes view is dead until the
+  // page is reloaded. leaving shapes clears it and coming back tries again
+  useEffect(() => {
+    if (mode !== "shapes" && shapesStatus === "failed") setShapesStatus("idle");
+  }, [mode, shapesStatus]);
+
   // escape closes the drawer first, since that is what covers the map
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

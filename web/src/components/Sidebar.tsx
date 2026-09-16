@@ -30,7 +30,7 @@ interface Props {
 
 const SHAPES_NOTE: Partial<Record<ShapesStatus, string>> = {
   loading: "loading shapes",
-  failed: "shapes unavailable, boundaries.json is missing. run npm run boundaries",
+  failed: "shapes did not load. switch to dots and back to try again, or run npm run boundaries if the file is missing",
 };
 
 // the attribution each source asks for, in the footer once per source present

@@ -104,8 +104,10 @@ export function shapeStyle(
 
 let cached: Promise<BoundaryIndex | null> | null = null;
 
-// fetched once, the first time shapes are asked for. null when the file is
-// missing, which the sidebar reports
+// fetched once, the first time shapes are asked for. null when the file will
+// not load, which the sidebar reports. only an index is kept: a dropped
+// connection is not an answer, and caching it leaves the shapes view dead for
+// the life of the page, so the cache is cleared and the next ask fetches again
 export function loadBoundaries(): Promise<BoundaryIndex | null> {
   if (!cached) {
     cached = fetch(`${import.meta.env.BASE_URL}data/boundaries.json`)
@@ -113,7 +115,10 @@ export function loadBoundaries(): Promise<BoundaryIndex | null> {
         if (!response.ok) throw new Error(String(response.status));
         return decodeBoundaries((await response.json()) as Topology);
       })
-      .catch(() => null);
+      .catch(() => {
+        cached = null;
+        return null;
+      });
   }
   return cached;
 }

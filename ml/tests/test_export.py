@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+import numpy as np
 import pandas as pd
 
 from loop import export, spec
@@ -154,6 +155,28 @@ class TestBuildMetrics(ExportCase):
         metrics = export.build_metrics(forecasts, self.panel, self.predictions)
         self.assertEqual(sorted(metrics["cbsa_code"].unique()), ["00420", "10180", "99999"])
         pd.testing.assert_frame_equal(metrics, self.metrics)
+
+    # a code that passed through a column pandas read as float arrives as
+    # 10180.0, which is already five characters, so zfill leaves it alone and
+    # the map never matches the metro
+    def test_float_codes_get_their_leading_zero_back(self):
+        forecasts = self.forecasts.assign(cbsa_code=self.forecasts["cbsa_code"].astype(float))
+        metrics = export.build_metrics(forecasts, self.panel, self.predictions)
+        self.assertEqual(sorted(metrics["cbsa_code"].unique()), ["00420", "10180", "99999"])
+        pd.testing.assert_frame_equal(metrics, self.metrics)
+
+    def test_codes_normalises_every_way_a_code_arrives(self):
+        for values in ([420.0, 10180.0], ["420", "10180"], [420, 10180], ["00420", "10180"]):
+            with self.subTest(values=values):
+                self.assertEqual(list(export.codes(pd.Series(values))), ["00420", "10180"])
+
+    # a code that is not five digits would leave the map silently short a
+    # metro, so it stops the export instead
+    def test_a_code_that_is_not_five_digits_raises(self):
+        for bad in ([np.nan, 10180.0], ["", "10180"], ["1018099", "10180"], ["10180.5", "10180"]):
+            with self.subTest(bad=bad):
+                with self.assertRaises(ValueError):
+                    export.codes(pd.Series(bad))
 
 
 class TestFiles(unittest.TestCase):

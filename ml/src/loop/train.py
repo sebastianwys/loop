@@ -215,8 +215,7 @@ def calibrate(predictions):
     margin = margins(predictions, "cal")
     out = predictions.copy()
     m = out["horizon"].map(lambda h: margin.get(int(h), np.nan)).to_numpy(dtype=float)
-    out["lo"] = out["q10"] - m
-    out["hi"] = out["q90"] + m
+    out["lo"], out["hi"], _ = spec.apply_margin(out["q10"], out["q90"], m)
     return out
 
 
@@ -320,8 +319,17 @@ def forecast_models(panel, model_name, epochs=None, device=None, verbose=True):
         part = pd.DataFrame({"cbsa_code": windows.codes[latest], "origin": windows.origins[latest], "horizon": h})
         for k, q in enumerate(spec.QUANTILES):
             part[qname(q)] = pred[:, j, k].astype(float)
-        part["lo"] = part["q10"] - margin.get(h, np.nan)
-        part["hi"] = part["q90"] + margin.get(h, np.nan)
+        lo, hi, crossed = spec.apply_margin(part["q10"], part["q90"], margin[h])
+        # the backtest collapses a crossed band and counts it, because an
+        # over-wide baseline still has to be scored. the shipped forecast is
+        # the published artifact, and a band the calibration inverted is not
+        # one a reader can act on, so it stops here instead
+        if crossed.any():
+            raise ValueError(
+                f"the margin at horizon {h} inverts the band on {int(crossed.sum())} "
+                "metros, so the calibration is not usable for a shipped forecast"
+            )
+        part["lo"], part["hi"] = lo, hi
         parts.append(part)
     frame = pd.concat(parts, ignore_index=True).sort_values(["cbsa_code", "horizon"], ignore_index=True)
     for col in ("q50", "lo", "hi"):

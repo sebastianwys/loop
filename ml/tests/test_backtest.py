@@ -207,6 +207,21 @@ def _no_change_predictions(panel, half_width=0.001):
     return frame
 
 
+NARROW_METRO = next(iter(spec.SHOWCASE))
+
+
+# every metro carries a wide band except one, so the cal block's margin is a
+# large negative number and the narrow metro's own band cannot absorb it
+def _mixed_width_predictions(panel, wide=1.0, narrow=0.001):
+    frame = _no_change_predictions(panel, half_width=wide)
+    rows = frame["cbsa_code"] == NARROW_METRO
+    frame.loc[rows, "q10"] = -narrow
+    frame.loc[rows, "q90"] = narrow
+    frame.loc[rows, "lo"] = -narrow
+    frame.loc[rows, "hi"] = narrow
+    return frame
+
+
 class TestEvaluate(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -258,7 +273,7 @@ class TestCalibrate(unittest.TestCase):
             cal = summary[(summary["horizon"] == h) & (summary["block"] == "cal")]["coverage"].iloc[0]
             self.assertLess(raw, 0.5)
             self.assertGreaterEqual(cal, 1 - spec.ALPHA)
-        self.assertEqual(list(margins.columns), ["model", "horizon", "n_cal", "margin"])
+        self.assertEqual(list(margins.columns), backtest.MARGIN_COLUMNS)
         self.assertEqual(list(margins["horizon"]), list(spec.HORIZONS))
         self.assertTrue((margins["margin"] > 0).all())
         self.assertEqual(list(after.columns), backtest.PREDICTION_COLUMNS)
@@ -278,6 +293,52 @@ class TestCalibrate(unittest.TestCase):
         after, margins = backtest.calibrate(wide)
         self.assertTrue((margins["margin"] < 0).all())
         self.assertTrue((after["lo"] > after["q10"]).all())
+
+    # a band with nothing to calibrate on is not a calibrated band. reporting
+    # margin 0.0 with n_cal 0 reads exactly like a model that needed no widening
+    def test_an_empty_calibration_block_is_refused(self):
+        frame = _no_change_predictions(self.panel, half_width=0.001)
+        with self.assertRaises(ValueError) as caught:
+            backtest.calibrate(frame[frame["block"] != "cal"])
+        self.assertIn("cal", str(caught.exception))
+
+    # cal rows whose outcome is not realized calibrate nothing either
+    def test_a_calibration_block_of_nulls_is_refused(self):
+        frame = _no_change_predictions(self.panel, half_width=0.001)
+        frame.loc[frame["block"] == "cal", "y"] = np.nan
+        with self.assertRaises(ValueError):
+            backtest.calibrate(frame)
+
+    # the margin is one scalar per horizon and the rows it lands on have their
+    # own widths, so a negative margin can push lo past hi on the narrow ones
+    def test_a_negative_margin_never_inverts_a_band(self):
+        frame = _mixed_width_predictions(self.panel)
+        after, margins = backtest.calibrate(frame)
+        self.assertTrue((margins["margin"] < 0).all())
+        self.assertGreater(margins["crossed"].sum(), 0)
+        self.assertTrue((after["hi"] >= after["lo"]).all())
+        narrow = after[after["cbsa_code"] == NARROW_METRO]
+        mid = (narrow["q10"] + narrow["q90"]) / 2.0
+        self.assertTrue(np.allclose(narrow["lo"], mid))
+        self.assertTrue(np.allclose(narrow["hi"], mid))
+
+    # a frame concatenated from several models carries a repeated index, and
+    # each model has to keep its own margin
+    def test_a_repeated_index_calibrates_each_model_on_its_own(self):
+        narrow = _no_change_predictions(self.panel, half_width=0.001)
+        wider = _no_change_predictions(self.panel, half_width=0.02).assign(model="second")
+        both = pd.concat([narrow, wider])
+        self.assertFalse(both.index.is_unique)
+        after, margins = backtest.calibrate(both)
+        self.assertEqual(len(after), len(both))
+        self.assertEqual(set(margins["model"]), {"flat", "second"})
+        m = margins.set_index(["model", "horizon"])["margin"]
+        for name in ("flat", "second"):
+            for h in spec.HORIZONS:
+                rows = after[(after["model"] == name) & (after["horizon"] == h)]
+                self.assertTrue(np.allclose(rows["lo"], rows["q10"] - m[(name, h)]))
+                self.assertTrue(np.allclose(rows["hi"], rows["q90"] + m[(name, h)]))
+        self.assertGreater(m["flat"].iloc[0], m["second"].iloc[0])
 
 
 class TestHelpers(unittest.TestCase):

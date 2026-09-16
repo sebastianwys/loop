@@ -227,6 +227,20 @@ class TestBandNeedsAConformalSample(unittest.TestCase):
         self.assertTrue(frame.lo.notna().all())
         self.assertTrue(frame.hi.notna().all())
 
+    # a margin wider than the row's own band would ship lo above hi, which
+    # draws backwards on the map and reports a negative width
+    def test_a_margin_that_inverts_the_band_refuses_to_forecast(self):
+        wide = {h: -10.0 for h in spec.HORIZONS}
+        with mock.patch.object(train, "margins", return_value=wide):
+            with self.assertRaises(ValueError) as raised:
+                train.forecast(tiny_panel(), "seqgru", epochs=1, device="cpu", verbose=False)
+        self.assertIn("inverts", str(raised.exception))
+
+    def test_every_shipped_band_has_lo_below_hi(self):
+        frame = train.forecast(tiny_panel(), "seqgru", epochs=1, device="cpu", verbose=False)
+        self.assertTrue((frame.hi > frame.lo).all())
+        self.assertTrue((frame.hi_pct > frame.lo_pct).all())
+
 
 class TestRun(unittest.TestCase):
     def test_run_writes_every_artifact(self):
