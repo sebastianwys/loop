@@ -102,6 +102,19 @@ function divide(numerator: number | null, denominator: number | null): number | 
   return numerator / denominator;
 }
 
+// a division with no rows of its own for a metric takes the parent metro's and
+// lists the metric in parent_metrics. the number is real, it just belongs to a
+// bigger place, so it is shown with its provenance and kept out of rankings
+export function isInherited(metro: Metro, metric: Metric | MetricDef): boolean {
+  const keys = metro?.parent_metrics ?? [];
+  if (keys.length === 0) return false;
+  // a resolved Metric's id carries its period, permits_units_latest, so the
+  // field key comes off the definition. dateId names the field a derived
+  // metric is built from
+  const def = "def" in metric ? metric.def : metric;
+  return keys.includes(def.dateId ?? def.id);
+}
+
 // a ratio may only combine fields that describe the same geography. a division
 // that inherits one side from its parent metro and keeps its own other side
 // has no rate to report, so the caller returns null
