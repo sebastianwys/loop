@@ -62,6 +62,7 @@ Endpoint `https://api.census.gov/data/{year}/acs/acs5`, all metropolitan and mic
 | `B19013_001E` | `median_income` | median household income, USD |
 | `B01003_001E` | `total_pop` | total population |
 | `B01002_001E` | `median_age` | median age |
+| `B15003_001E` | `adults_25_plus` | population 25 and over, the universe B15003 counts within |
 | `B15003_022E` | `bachelors_count` | persons with a bachelor's |
 | `B15003_023E` | `masters_count` | persons with a master's |
 | `B25003_001E` | `total_occupied_units` | occupied housing units |
@@ -88,7 +89,7 @@ Endpoint `https://api.census.gov/data/{year}/acs/acs5`, all metropolitan and mic
                            v
             +-------------------------+
             |    INTEGRATED CSV       |
-            |  1,197 rows x 23 cols   |
+            |  1,197 rows x 24 cols   |
             |  410 metros             |
             |  2014, 2019, 2024       |
             +-------------------------+

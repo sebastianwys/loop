@@ -9,10 +9,10 @@ Headline: a sequence GRU cuts the no-change error 43 percent at four quarters an
 | item | value |
 |---|---|
 | file | `../data/integrated/hpi_census_merged.csv` |
-| rows x cols | 1,197 x 23 |
+| rows x cols | 1,197 x 24 |
 | metros | 410, of which 37 are metropolitan divisions |
 | years | 2014, 2019, 2024 |
-| sha256 | `f0fbb9184aef2e5ca4318b0ccd7aac3431e590701cb6bbc6dc256deac71822e7` |
+| sha256 | `ce2322ba9a7a6c938db3b2616baadf95ecdbd528d64ed0598d5e4d93394e9d4b` |
 
 Read only. This folder never writes to `data/`. If the pipeline re-runs, the hash in the loader is updated in the same commit.
 

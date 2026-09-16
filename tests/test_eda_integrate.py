@@ -24,7 +24,7 @@ NON_MSA_ROW = (
     "East North Central Division,DV_ENC,1991,1,100.00,100.00,,"
 )
 CENSUS_HEADER = (
-    "NAME,B19013_001E,B01003_001E,B01002_001E,B15003_022E,B15003_023E,"
+    "NAME,B19013_001E,B01003_001E,B01002_001E,B15003_001E,B15003_022E,B15003_023E,"
     "B25003_001E,B25003_002E,B25077_001E,"
     "metropolitan statistical area/micropolitan statistical area,"
     "metropolitan division,geo_level,geo_code,parent_cbsa,year"
@@ -48,7 +48,7 @@ def hpi_rows(place_id, place_name, year, index_nsa):
 
 def census_row(code, name, year, income, occupied, owner):
     return (
-        f'"{name}",{income},1000000,38.0,50000,20000,{occupied},{owner},250000,'
+        f'"{name}",{income},1000000,38.0,660000,50000,20000,{occupied},{owner},250000,'
         f"{code},,msa,{code},,{year}"
     )
 

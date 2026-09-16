@@ -173,7 +173,7 @@ export const DEFS: MetricDef[] = [
   field("poverty_rate", "Poverty rate", "pct", "sequential", "People and migration", "acs", YEARS),
   field("commute_minutes", "Mean commute", "minutes", "sequential", "People and migration", "acs", YEARS),
   field("age", "Median age", "index", "sequential", "People and migration", "census", YEARS),
-  field("degree_share", "Bachelors or masters share", "pct", "sequential", "People and migration", "census", YEARS),
+  field("degree_share", "Bachelors or masters, adults 25+", "pct", "sequential", "People and migration", "census", YEARS),
   field("own_rate", "Homeownership rate", "pct", "sequential", "People and migration", "census", YEARS),
   // supply
   field("permits_units", "Housing units permitted", "int", "sequential", "Supply", "bps", ALL),

@@ -68,6 +68,7 @@ def main():
         "B19013_001E": "median_income",
         "B01003_001E": "total_pop",
         "B01002_001E": "median_age",
+        "B15003_001E": "adults_25_plus",
         "B15003_022E": "bachelors_count",
         "B15003_023E": "masters_count",
         "B25003_001E": "total_occupied_units",
@@ -85,9 +86,9 @@ def main():
     print()
 
     # api returns strings. nulls show as "-666666666"
-    numeric_cols = ["median_income", "total_pop", "median_age", "bachelors_count",
-                    "masters_count", "total_occupied_units", "owner_occupied_units",
-                    "median_home_value"]
+    numeric_cols = ["median_income", "total_pop", "median_age", "adults_25_plus",
+                    "bachelors_count", "masters_count", "total_occupied_units",
+                    "owner_occupied_units", "median_home_value"]
 
     for col in numeric_cols:
         census[col] = pd.to_numeric(census[col], errors="coerce")  # bad values become NaN

@@ -445,7 +445,10 @@ def year_record(row, zhvi_row, zori_row, bls_frame, cbsa, year):
     get = (lambda col: None) if row is None else (lambda col: row.get(col))
     pop = get("total_pop")
     bachelors, masters = get("bachelors_count"), get("masters_count")
-    degree = None if missing(bachelors) or missing(masters) else ratio(bachelors + masters, pop)
+    # b15003 counts within adults 25 and over, so that is the denominator. over
+    # total population the share reads about a third low, and by a different
+    # amount per metro, because the share of adults varies from 62 to 71 percent
+    degree = None if missing(bachelors) or missing(masters) else ratio(bachelors + masters, get("adults_25_plus"))
     own_rate = get("homeownership_rate")
     if missing(own_rate):
         own_rate = ratio(get("owner_occupied_units"), get("total_occupied_units"))

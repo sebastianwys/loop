@@ -11,29 +11,29 @@ from bot import indicators
 MERGED_COLS = [
     "place_id", "place_name", "hpi_type", "hpi_flavor", "yr", "avg_index_nsa",
     "quarters_available", "NAME", "median_income", "total_pop", "median_age",
-    "bachelors_count", "masters_count", "total_occupied_units", "owner_occupied_units",
-    "median_home_value", "cbsa_code", "year", "homeownership_rate",
+    "adults_25_plus", "bachelors_count", "masters_count", "total_occupied_units",
+    "owner_occupied_units", "median_home_value", "cbsa_code", "year", "homeownership_rate",
 ]
 
 
-def merged_row(cbsa, name, year, hpi, income, pop, age, bach, mast, occ, own, hv, rate):
+def merged_row(cbsa, name, year, hpi, income, pop, age, adults, bach, mast, occ, own, hv, rate):
     return [cbsa, name, "traditional", "all-transactions", year, hpi, 4, f"{name} Metro Area",
-            income, pop, age, bach, mast, occ, own, hv, cbsa, year, rate]
+            income, pop, age, adults, bach, mast, occ, own, hv, cbsa, year, rate]
 
 
 # abilene is the clean base case. chicago is missing 2014, has zero income in
 # 2019, a census sentinel in 2024 and needs the first-city zillow fallback.
 # springfield has no zillow row. nowhere has no centroid
 MERGED = [
-    merged_row("10180", "Abilene, TX", 2014, 100.0, 40000, 100000, 30.0, 10000, 2000, 50000, 30000, 80000, 0.6),
-    merged_row("10180", "Abilene, TX", 2019, 125.0, 50000, 110000, 31.5, 12000, 3000, 52000, 31200, 110000, 0.6),
-    merged_row("10180", "Abilene, TX", 2024, 150.0, 60000, 120000, 33.0, 15000, 3000, 55000, 34100, 150000, 0.62),
-    merged_row("16980", "Chicago-Naperville-Elgin, IL-IN-WI", 2019, 140.0, 0, 9500000, 36.0, 1500000, 700000, 3500000, 2200000, 250000, ""),
-    merged_row("16980", "Chicago-Naperville-Elgin, IL-IN-WI", 2024, 170.0, 80000, 9400000, -666666666, 1600000, 800000, 3600000, 2300000, 320000, 0.64),
-    merged_row("44100", "Springfield, IL", 2014, 90.0, 50000, 200000, 38.0, 20000, 8000, 90000, 60000, 120000, 0.67),
-    merged_row("44100", "Springfield, IL", 2019, 100.0, 55000, 205000, 39.0, 22000, 9000, 91000, 61000, 130000, 0.67),
-    merged_row("44100", "Springfield, IL", 2024, 120.0, 60000, 208000, 40.0, 24000, 10000, 92000, 62000, 150000, 0.67),
-    merged_row("99999", "Nowhere, ZZ", 2014, 100.0, 1, 1, 1, 1, 1, 1, 1, 1, 0.5),
+    merged_row("10180", "Abilene, TX", 2014, 100.0, 40000, 100000, 30.0, 65000, 10000, 2000, 50000, 30000, 80000, 0.6),
+    merged_row("10180", "Abilene, TX", 2019, 125.0, 50000, 110000, 31.5, 70000, 12000, 3000, 52000, 31200, 110000, 0.6),
+    merged_row("10180", "Abilene, TX", 2024, 150.0, 60000, 120000, 33.0, 78000, 15000, 3000, 55000, 34100, 150000, 0.62),
+    merged_row("16980", "Chicago-Naperville-Elgin, IL-IN-WI", 2019, 140.0, 0, 9500000, 36.0, 6300000, 1500000, 700000, 3500000, 2200000, 250000, ""),
+    merged_row("16980", "Chicago-Naperville-Elgin, IL-IN-WI", 2024, 170.0, 80000, 9400000, -666666666, 6400000, 1600000, 800000, 3600000, 2300000, 320000, 0.64),
+    merged_row("44100", "Springfield, IL", 2014, 90.0, 50000, 200000, 38.0, 130000, 20000, 8000, 90000, 60000, 120000, 0.67),
+    merged_row("44100", "Springfield, IL", 2019, 100.0, 55000, 205000, 39.0, 133000, 22000, 9000, 91000, 61000, 130000, 0.67),
+    merged_row("44100", "Springfield, IL", 2024, 120.0, 60000, 208000, 40.0, 135000, 24000, 10000, 92000, 62000, 150000, 0.67),
+    merged_row("99999", "Nowhere, ZZ", 2014, 100.0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.5),
 ]
 
 CENTROIDS = pd.DataFrame({
@@ -148,10 +148,26 @@ class TestBaseCases(BuildCase):
             "pop_14_24": 0.2, "home_value_14_24": 0.875,
         })
         self.assertEqual(abilene["ptir"], {"2014": 2.0, "2019": 2.2, "2024": 2.5})
-        self.assertEqual([abilene["years"][y]["degree_share"] for y in ("2014", "2019", "2024")], [0.12, 0.1364, 0.15])
+        # b15003 counts adults 25 and over, so the share is over that universe
+        # and not over everyone. abilene 2014 is 12,000 of 65,000, not of 100,000
+        self.assertEqual([abilene["years"][y]["degree_share"] for y in ("2014", "2019", "2024")], [0.1846, 0.2143, 0.2308])
         self.assertEqual(abilene["years"]["2024"]["own_rate"], 0.62)
         self.assertEqual(abilene["years"]["2014"]["pop"], 100000)
         self.assertEqual(abilene["lat"], 32.452022)
+
+    # a suppressed universe leaves the share unknown. falling back on total
+    # population would publish a number a third too low and call it the same
+    def test_degree_share_is_null_without_its_universe(self):
+        rows = [list(row) for row in MERGED]
+        for row in rows:
+            if row[0] == "10180" and row[4] == 2019:
+                row[MERGED_COLS.index("adults_25_plus")] = ""
+        frame = pd.DataFrame(rows, columns=MERGED_COLS)
+        path = Path(self.tmp.name) / "merged_no_universe.csv"
+        frame.to_csv(path, index=False)
+        abilene = self.metro(self.build(merged=path), "10180")
+        self.assertIsNone(abilene["years"]["2019"]["degree_share"])
+        self.assertEqual(abilene["years"]["2014"]["degree_share"], 0.1846)
 
     def test_zillow_exact_match_and_annual_mean(self):
         abilene = self.metro(self.build(), "10180")

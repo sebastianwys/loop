@@ -52,6 +52,7 @@ DIVISION_CROSSWALK = {
 # B19013_001E = median household income
 # B01003_001E = total population
 # B01002_001E = median age
+# B15003_001E = population 25 and over, the universe b15003 counts within
 # B15003_022E = bachelors degree count
 # B15003_023E = masters degree count
 # B25003_001E = total occupied housing units
@@ -62,6 +63,7 @@ VARIABLES = [
     "B19013_001E",
     "B01003_001E",
     "B01002_001E",
+    "B15003_001E",
     "B15003_022E",
     "B15003_023E",
     "B25003_001E",

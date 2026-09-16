@@ -90,7 +90,7 @@ class TestTransportErrorsAreNotEmptyResults(unittest.TestCase):
     # one failed division call must fail the vintage, not silently drop its metros
     def test_failed_division_call_fails_the_vintage(self):
         row = ["Chicago-Naperville-Elgin, IL-IN Metro Area", "85000", "9500000",
-               "38.1", "1200000", "800000", "3400000", "2100000", "350000"]
+               "38.1", "6500000", "1200000", "800000", "3400000", "2100000", "350000"]
 
         def responses(url, params=None, timeout=None):
             within = (params or {}).get("in", "")
