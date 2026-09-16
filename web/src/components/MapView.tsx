@@ -2,12 +2,12 @@ import * as L from "leaflet";
 import { useEffect, useMemo, useRef } from "react";
 import { CircleMarker, MapContainer, TileLayer, Tooltip, useMap } from "react-leaflet";
 import { formatValue } from "../lib/format";
-import type { Metric } from "../lib/metrics";
-import { INK, NULL_GRAY, SURFACE } from "../lib/palette";
+import { isInherited, type Metric } from "../lib/metrics";
+import { INK, INK_2, NULL_GRAY, SURFACE } from "../lib/palette";
 import type { ColorScale } from "../lib/scale";
 import { periodLabel } from "../lib/timeline";
 import type { Metro } from "../types";
-import { studyShapes, type BoundaryIndex, type MapMode } from "../lib/boundaries";
+import { INHERITED_DASH, INHERITED_FILL_OPACITY, studyShapes, type BoundaryIndex, type MapMode } from "../lib/boundaries";
 import { ShapeLayer } from "./ShapeLayer";
 
 const CENTER: [number, number] = [39.5, -98.35];
@@ -122,17 +122,20 @@ export function MapView({ metros, metric, scale, selectedCbsa, onSelect, mode, b
         const value = metric.accessor(m);
         const missing = value === null;
         const isSelected = m.cbsa === selectedCbsa;
+        // a division with no rows of its own carries the parent metro's number.
+        // it keeps the colour of its value, the outline says whose it is
+        const taken = !missing && isInherited(m, metric);
         return (
           <CircleMarker
             key={m.cbsa}
             center={[m.lat, m.lon]}
             radius={markerRadius(m.years?.["2024"]?.pop ?? null)}
             pathOptions={{
-              color: isSelected ? INK : missing ? NULL_GRAY : SURFACE,
+              color: isSelected ? INK : missing ? NULL_GRAY : taken ? INK_2 : SURFACE,
               weight: isSelected ? 3 : 2,
-              dashArray: missing ? "3 3" : undefined,
+              dashArray: isSelected ? undefined : missing ? "3 3" : taken ? INHERITED_DASH : undefined,
               fillColor: scale.color(value),
-              fillOpacity: missing ? 0.35 : 0.85,
+              fillOpacity: missing ? 0.35 : taken ? INHERITED_FILL_OPACITY : 0.85,
             }}
             eventHandlers={{ click: () => onSelect(m.cbsa) }}
           >
@@ -140,6 +143,7 @@ export function MapView({ metros, metric, scale, selectedCbsa, onSelect, mode, b
               <span className="tn">{m.name}</span>{" "}
               <span className="tv">{formatValue(value, metric.format, signed)}</span>{" "}
               <span className="tp">{periodLabel(metric, m)}</span>
+              {taken && m.parent && <span className="tp"> from {m.parent.name}</span>}
             </Tooltip>
           </CircleMarker>
         );

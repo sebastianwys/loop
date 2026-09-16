@@ -8,13 +8,15 @@ interface Props {
   caption: string;
   open?: boolean;
   onToggle?: () => void;
+  // true when at least one metro on the map is showing its parent's number
+  inherited?: boolean;
 }
 
 const BODY_ID = "legend-body";
 
 // the key rolls up to its title line. on a phone it would otherwise cover a
 // third of the map, so it starts rolled up there
-export function Legend({ scale, metric, caption, open = true, onToggle }: Props) {
+export function Legend({ scale, metric, caption, open = true, onToggle, inherited = false }: Props) {
   const signed = scale.kind === "diverging";
   return (
     <div className={`legend${open ? "" : " closed"}`} role="group" aria-label="map legend">
@@ -49,6 +51,12 @@ export function Legend({ scale, metric, caption, open = true, onToggle }: Props)
           <span className="sw null" />
           <span>no data</span>
         </div>
+        {inherited && (
+          <div className="row">
+            <span className="sw taken" style={{ background: scale.color(scale.bins[Math.floor(scale.bins.length / 2)]?.from ?? null) }} />
+            <span>from the parent metro</span>
+          </div>
+        )}
         <div className="caption">{caption}</div>
       </div>
     </div>

@@ -3,6 +3,7 @@ import * as L from "leaflet";
 import { useEffect, useRef } from "react";
 import { useMap } from "react-leaflet";
 import { shapeStyle, type BoundaryProps, type Shape } from "../lib/boundaries";
+import { isInherited } from "../lib/metrics";
 import { formatValue } from "../lib/format";
 import type { Metric } from "../lib/metrics";
 import type { ColorScale } from "../lib/scale";
@@ -53,6 +54,7 @@ export function ShapeLayer({ shapes, metric, scale, selectedCbsa, onSelect }: Pr
       return shapeStyle(metro ? state.metric.accessor(metro) : null, state.scale, {
         selected: cbsa === state.selectedCbsa,
         hover,
+        inherited: !!metro && isInherited(metro, state.metric),
       });
     };
 

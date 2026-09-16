@@ -8,7 +8,7 @@ import { loadBoundaries, type BoundaryIndex, type MapMode } from "./lib/boundari
 import { loadMapData } from "./lib/data";
 import { nationalIndicators } from "./lib/indicators";
 import { closesOnSelect, legendStartsOpen, sidebarIsDrawer, sidebarStartsOpen, useViewport } from "./lib/layout";
-import { DEFS, availablePeriods, defById, metricCaption, nearestPeriod, resolveMetric, visibleDefs } from "./lib/metrics";
+import { DEFS, availablePeriods, defById, isInherited, metricCaption, nearestPeriod, resolveMetric, visibleDefs } from "./lib/metrics";
 import { buildScale } from "./lib/scale";
 import type { MapData, Period } from "./types";
 
@@ -87,6 +87,11 @@ export function App() {
   const metric = useMemo(() => resolveMetric(def, activePeriod), [def, activePeriod]);
   const scale = useMemo(() => buildScale(metros.map(metric.accessor), metric.kind), [metros, metric]);
   const caption = useMemo(() => metricCaption(metric, metros), [metric, metros]);
+  // the legend only explains the parent mark when something on the map wears it
+  const anyInherited = useMemo(
+    () => metros.some((m) => isInherited(m, metric) && metric.accessor(m) !== null),
+    [metros, metric],
+  );
   const selectedMetro = metros.find((m) => m.cbsa === selected) ?? null;
 
   const shell = [
@@ -163,6 +168,7 @@ export function App() {
             caption={caption}
             open={legendOpen}
             onToggle={() => setLegendOpen((open) => !open)}
+            inherited={anyInherited}
           />
           {selectedMetro && <DetailPanel metro={selectedMetro} metros={metros} onClose={() => setSelected(null)} />}
         </div>

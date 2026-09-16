@@ -87,6 +87,46 @@ describe("studyShapes", () => {
   });
 });
 
+describe("shapeStyle, a value taken from the parent metro", () => {
+  const scale = buildScale([0, 10], "sequential");
+
+  // the number is real, it just belongs to a bigger place. the fill keeps the
+  // value so the map still reads, and the outline carries the provenance
+  it("keeps the colour but marks the outline", () => {
+    const own = shapeStyle(10, scale);
+    const taken = shapeStyle(10, scale, { inherited: true });
+    expect(taken.fillColor).toBe(own.fillColor);
+    expect(taken.color).not.toBe(own.color);
+    expect(taken.dashArray).toBeDefined();
+  });
+
+  // no data already owns "3 3" on the null gray. inherited must not collide
+  it("does not wear the no data mark", () => {
+    const none = shapeStyle(null, scale);
+    const taken = shapeStyle(10, scale, { inherited: true });
+    expect(taken.dashArray).not.toBe(none.dashArray);
+    expect(taken.color).not.toBe(none.color);
+    expect(taken.fillColor).not.toBe(none.fillColor);
+  });
+
+  // a 4px dot cannot show a dash, so the fill weight has to carry it too
+  it("sits between measured and missing on fill", () => {
+    const taken = shapeStyle(10, scale, { inherited: true });
+    expect(taken.fillOpacity).toBeLessThan(SHAPE_FILL_OPACITY);
+    expect(taken.fillOpacity).toBeGreaterThan(NULL_FILL_OPACITY);
+  });
+
+  // selection is the stronger signal and still wins
+  it("yields to the selected outline", () => {
+    const taken = shapeStyle(10, scale, { inherited: true, selected: true });
+    expect(taken.dashArray).toBeUndefined();
+  });
+
+  it("is ignored when there is no value to attribute", () => {
+    expect(shapeStyle(null, scale, { inherited: true })).toEqual(shapeStyle(null, scale));
+  });
+});
+
 describe("shapeStyle", () => {
   const scale = buildScale([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], "sequential");
 
