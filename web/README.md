@@ -47,6 +47,22 @@ Panel widths and the root font size are `clamp()` values, so nothing is pinned t
 
 Also handled: `prefers-color-scheme: dark`, `prefers-reduced-motion`, `prefers-contrast: more`, 44px targets and 16px inputs on touch, safe area insets, and `scrollbar-gutter` so the Windows scrollbar does not shift the column.
 
+## The Device Probe
+
+`npm run probe` loads the map at 17 viewport sizes and fails on anything the layout gets wrong: horizontal overflow, an element past the viewport that is not inside a scroller, a tap target under 30px, an input under 16px (iOS zooms the page on focus otherwise), a panel another layer draws over, or a console error. It writes a report and screenshots to `.probe/`, which is gitignored.
+
+Playwright is deliberately not a dependency here. It pulls several hundred MB of browsers that nobody cloning the map needs, so point `PLAYWRIGHT_PATH` at an existing install.
+
+```
+PLAYWRIGHT_PATH=/path/to/node_modules/playwright/index.mjs npm run probe
+PROBE_URL=https://loop.macroviz.workers.dev/ npm run probe
+PROBE_ENGINE=webkit npm run probe      Safari's engine
+PROBE_SCHEME=dark npm run probe
+PROBE_ONLY=iphone-15-pro npm run probe
+```
+
+Run the WebKit pass before shipping a layout change. Chromium and WebKit disagree on form controls: WebKit clamps `min-height` on a default-appearance `select` to its intrinsic 18px and drops the padding, which left the metric picker a 23px target on iOS while Chromium reported a healthy 44. That is why the select carries an explicit `appearance: none` and its own chevron.
+
 ## Deploying
 
 Cloudflare Workers flow: Workers and Pages, Create, import the repository.

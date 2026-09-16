@@ -145,7 +145,24 @@ svg { max-width: 100%; }
 .sidebar label, .sidebar .label { display: block; font-size: 0.78rem; color: var(--muted); margin-bottom: 4px; }
 .sidebar select, .sidebar input {
   width: 100%; padding: 0.4rem 0.5rem; border: 1px solid var(--baseline); border-radius: 4px;
-  background: var(--surface); color: var(--ink);
+  background: var(--surface); color: var(--ink); min-height: 2.2rem;
+}
+/* safari clamps min-height on a menulist select to its intrinsic 18px and
+   drops the padding, so the metric picker was a 23px target on ios while
+   chrome gave it the full 44. the appearance reset is what lets the height
+   through, and the chevron is ours because the native one goes with it */
+.sidebar select {
+  appearance: none; -webkit-appearance: none;
+  padding-right: 1.75rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2352514e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.6rem center;
+  background-size: 10px 6px;
+}
+@media (prefers-color-scheme: dark) {
+  .sidebar select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23b6b4ae' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  }
 }
 .sidebar-head { display: none; }
 
