@@ -9,6 +9,11 @@ on:
     # 21:40 utc on weekdays, after the us close, so the day's rates are in
     - cron: "40 21 * * 1-5"
   workflow_dispatch:
+    inputs:
+      publish:
+        description: "publish even when the data did not change"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -61,14 +66,14 @@ jobs:
       # the worker serves the built assets, so new numbers are only live after a
       # deploy. without the token the run still commits and says what is missing
       - uses: actions/setup-node@v4
-        if: steps.commit.outputs.changes_detected == 'true' && env.CLOUDFLARE_API_TOKEN != ''
+        if: (steps.commit.outputs.changes_detected == 'true' || inputs.publish) && env.CLOUDFLARE_API_TOKEN != ''
         with:
           node-version: "22"
           cache: npm
           cache-dependency-path: web/package-lock.json
 
       - name: build and publish the map
-        if: steps.commit.outputs.changes_detected == 'true' && env.CLOUDFLARE_API_TOKEN != ''
+        if: (steps.commit.outputs.changes_detected == 'true' || inputs.publish) && env.CLOUDFLARE_API_TOKEN != ''
         working-directory: web
         run: |
           npm ci
@@ -81,7 +86,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: say why nothing was published
-        if: steps.commit.outputs.changes_detected == 'true' && env.CLOUDFLARE_API_TOKEN == ''
+        if: (steps.commit.outputs.changes_detected == 'true' || inputs.publish) && env.CLOUDFLARE_API_TOKEN == ''
         run: |
           echo "new data is committed but the map was not published:"
           echo "CLOUDFLARE_API_TOKEN is not set in this repository's secrets."
