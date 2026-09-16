@@ -2,6 +2,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import pandas as pd
 
@@ -610,6 +611,32 @@ class TestPriceHistory(BuildCase):
     def test_no_history_file_means_no_series_key(self):
         abilene = self.metro(self.build(fhfa=Path(self.tmp.name) / "absent.csv"), "10180")
         self.assertNotIn("series", abilene)
+
+
+# the daily national refresh rebuilds this file whether or not fred moved. a
+# rebuild that finds nothing new must produce the same bytes, or every run
+# commits 2.9 MB and republishes the site to change a timestamp
+class TestRebuildIsIdempotent(BuildCase):
+    # the clock is the only thing that moves between these two runs
+    def build_at(self, moment, out):
+        with mock.patch.object(bm, "utc_now", lambda: moment):
+            return bm.build(out_path=out, paths=dict(self.paths))
+
+    def test_two_builds_of_the_same_inputs_are_the_same_bytes(self):
+        out = Path(self.tmp.name) / "metros.json"
+        first = self.build_at("2026-09-15T00:00:00Z", out).read_bytes()
+        second = self.build_at("2026-09-16T06:00:00Z", out).read_bytes()
+        self.assertEqual(first, second)
+        self.assertIn("2026-09-15T00:00:00Z", first.decode())
+
+    def test_a_changed_input_is_written_with_a_new_stamp(self):
+        out = Path(self.tmp.name) / "metros.json"
+        first = json.loads(self.build_at("2026-09-15T00:00:00Z", out).read_text())
+        rows = [r for r in MERGED if r[0] != "44100"]
+        pd.DataFrame(rows, columns=MERGED_COLS).to_csv(self.paths["merged"], index=False)
+        second = json.loads(self.build_at("2026-09-16T06:00:00Z", out).read_text())
+        self.assertNotEqual(len(first["metros"]), len(second["metros"]))
+        self.assertEqual(second["generated_at"], "2026-09-16T06:00:00Z")
 
 
 class TestNationalIndicators(BuildCase):

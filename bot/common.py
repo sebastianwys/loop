@@ -80,7 +80,36 @@ def manifest_entry(path, endpoint, provider, dataset, version, row_count, notes=
     return entry
 
 
+# the fields that move on every run whether or not the data did
+STAMP_KEYS = ("downloaded_at", "generated_at")
+
+
+def _restamp(node, other, keys):
+    if isinstance(node, dict) and isinstance(other, dict):
+        return {k: other[k] if k in keys and k in other else _restamp(v, other.get(k), keys)
+                for k, v in node.items()}
+    if isinstance(node, list) and isinstance(other, list) and len(node) == len(other):
+        return [_restamp(a, b, keys) for a, b in zip(node, other)]
+    return node
+
+
+# a refresh that finds nothing new must leave the file alone. a timestamp is the
+# one field that always moves, so a payload matching the one on disk apart from
+# its stamps is not a change, and rewriting it would commit the whole file and
+# republish the site for nothing
+def unchanged_but_for_stamps(path, payload, keys=STAMP_KEYS):
+    if not Path(path).exists():
+        return False
+    try:
+        previous = json.loads(Path(path).read_text())
+    except ValueError:
+        return False
+    return _restamp(payload, previous, keys) == previous
+
+
 def write_manifest(folder, entries):
     path = folder / "download_manifest.json"
+    if unchanged_but_for_stamps(path, entries):
+        return path
     path.write_text(json.dumps(entries, indent=2) + "\n")
     return path

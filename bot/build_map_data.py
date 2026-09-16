@@ -6,7 +6,7 @@ import pandas as pd
 
 from bot import indicators
 from bot.collectors.gazetteer import YEAR as GAZETTEER_YEAR
-from bot.common import BASE_DIR, INTEGRATED, RAW_DIR, STUDY_YEARS, WEB_DATA_DIR, utc_now
+from bot.common import BASE_DIR, INTEGRATED, RAW_DIR, STUDY_YEARS, WEB_DATA_DIR, unchanged_but_for_stamps, utc_now
 
 DEFAULT_PATHS = {
     "enrichment_dir": RAW_DIR,
@@ -643,7 +643,10 @@ def build(out_path=None, paths=None):
 
     out_path = Path(out_path) if out_path else WEB_DATA_DIR / "metros.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(payload, ensure_ascii=True, allow_nan=False) + "\n")
+    # the daily national refresh rebuilds this whether or not fred moved, so a
+    # rebuild that lands on the same numbers leaves the file exactly as it was
+    if not unchanged_but_for_stamps(out_path, payload):
+        out_path.write_text(json.dumps(payload, ensure_ascii=True, allow_nan=False) + "\n")
 
     print(f"[build] {len(metros)} metros, {dropped} without a centroid dropped, "
           f"{unmatched} without a zillow match, {len(enrichments)} enrichment sources "

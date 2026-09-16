@@ -8,14 +8,14 @@ https://loop.macroviz.workers.dev
 
 It is public. No login, nothing to install.
 
-Dots or Census boundaries, colored by any of 48 metrics, for 2014, 2019, 2024 or the latest reading. A detail panel per metro, a calendar timeline, and thirteen national indicators across the top.
+Dots or Census boundaries, colored by any of 48 metrics, for 2014, 2019, 2024 or the latest reading. A detail panel per metro, a calendar timeline, and thirteen national indicators across the top, refreshed from FRED every weekday after the close.
 
 ## The Layout
 
 | Folder | What it does |
 | --- | --- |
 | root | The FHFA and Census ACS pipeline. Snakemake, SHA-256 manifests, tagged `final-project` |
-| `bot/` | Thirteen collectors on a monthly GitHub Actions schedule |
+| `bot/` | Thirteen collectors on GitHub Actions: the FRED series behind the national strip every weekday, the rest monthly |
 | `ml/` | The PyTorch GRU, its baselines and its evaluation |
 | `web/` | React and Leaflet map, deploys to Cloudflare |
 | `docs/` | The long report |

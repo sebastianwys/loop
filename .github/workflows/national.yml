@@ -1,18 +1,25 @@
-# monthly data bot. pulls the enrichment sources, rebuilds the map json and
-# commits the result. a failed collector leaves the repo untouched and the run red
-name: data bot
+# the national strip, on its own schedule. the thirteen indicators come from
+# fred, where the rate series publish every business day and the survey series
+# monthly, so waiting for the 25th left the top of the dashboard weeks stale.
+# this runs the national collector only, rebuilds the map json, and publishes.
+name: national strip
 
 on:
   schedule:
-    # the 25th, after zillow's mid-month release and bls's monthly metro data
-    - cron: "17 9 25 * *"
+    # 21:40 utc on weekdays, after the us close, so the day's rates are in
+    - cron: "40 21 * * 1-5"
   workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  # a slow run must never race the next day's
+  group: national-strip
+  cancel-in-progress: false
+
 jobs:
-  collect:
+  refresh:
     runs-on: ubuntu-latest
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -26,35 +33,30 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      - name: run the collectors and rebuild the map data
+      # national is the thirteen strip indicators, fred is the 30 year mortgage
+      # rate the strip also shows. fifteen series, both keyed on FRED_API_KEY
+      - name: pull the fred series and rebuild the map data
         env:
-          CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
-          BLS_API_KEY: ${{ secrets.BLS_API_KEY }}
-          BEA_API_KEY: ${{ secrets.BEA_API_KEY }}
-          HUD_API_TOKEN: ${{ secrets.HUD_API_TOKEN }}
-        run: python -m bot.run_bot
+        run: python -m bot.run_bot --only national fred
 
       - name: run the tests
         run: python run_tests.py
 
-      # main may have moved during the hour the collectors take. rebase the new
-      # data onto it so the commit below lands as a fast forward instead of a
-      # rejected push that throws the run away
+      # main may have moved since checkout. rebase so the commit lands as a fast
+      # forward instead of a rejected push that throws the run away
       - name: catch up with main
         run: git pull --rebase --autostash origin main
 
-      # commits only if the previous steps passed, with the actions bot identity
       - name: commit the refresh
         id: commit
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "bot: monthly data refresh"
-          # .gitignore keeps the fetched-not-redistributed files out of this
-          file_pattern: "data/raw web/public/data"
+          commit_message: "bot: national strip refresh"
+          file_pattern: "data/raw/national data/raw/fred web/public/data"
 
-      # same publish as the national strip workflow: the worker serves built
-      # assets, so committed numbers are not live until a deploy runs
+      # the worker serves the built assets, so new numbers are only live after a
+      # deploy. without the token the run still commits and says what is missing
       - uses: actions/setup-node@v4
         if: steps.commit.outputs.changes_detected == 'true' && env.CLOUDFLARE_API_TOKEN != ''
         with:

@@ -29,8 +29,20 @@ def discover():
     return found, broken
 
 
-def main():
+# only=[names] runs just those collectors and still rebuilds the map, so a
+# source that publishes daily, like the fred series behind the national strip,
+# can refresh on its own schedule instead of waiting for the monthly run
+def main(only=None):
     collectors, failures = discover()
+    if only:
+        wanted = list(dict.fromkeys(only))
+        known = {name for name, _ in collectors} | set(failures)
+        unknown = [name for name in wanted if name not in known]
+        if unknown:
+            sys.exit(f"no collector named {unknown}. known: {sorted(known)}")
+        collectors = [(name, collect) for name, collect in collectors if name in wanted]
+        failures = [name for name in failures if name in wanted]
+
     for name, collect in collectors:
         try:
             collect()
@@ -46,5 +58,13 @@ def main():
     print("bot run complete")
 
 
+def parse_args(argv):
+    if not argv:
+        return None
+    if argv[0] != "--only" or len(argv) < 2:
+        raise SystemExit("usage: python -m bot.run_bot [--only NAME [NAME ...]]")
+    return argv[1:]
+
+
 if __name__ == "__main__":
-    main()
+    main(parse_args(sys.argv[1:]))

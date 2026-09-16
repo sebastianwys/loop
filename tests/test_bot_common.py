@@ -145,5 +145,36 @@ class TestFetch(unittest.TestCase):
         self.assertEqual(get.call_count, 1)
 
 
+# a scheduled refresh that finds nothing new must leave the repo alone. with a
+# fresh timestamp on every write, a daily run commits the whole file to move a
+# clock, and the map is rebuilt and republished for no reason
+class TestWritesAreIdempotent(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.folder = Path(self.tmp.name)
+
+    def entry(self, when, rows=10):
+        return {"filename": "metrics.csv", "integrity": {"row_count": rows},
+                "downloaded_at": when}
+
+    def test_the_same_manifest_twice_is_the_same_bytes(self):
+        first = common.write_manifest(self.folder, [self.entry("2026-09-15T00:00:00Z")])
+        before = first.read_bytes()
+        common.write_manifest(self.folder, [self.entry("2026-09-16T06:00:00Z")])
+        self.assertEqual(first.read_bytes(), before)
+
+    def test_a_real_change_carries_the_new_timestamp(self):
+        path = common.write_manifest(self.folder, [self.entry("2026-09-15T00:00:00Z")])
+        common.write_manifest(self.folder, [self.entry("2026-09-16T06:00:00Z", rows=11)])
+        written = json.loads(path.read_text())
+        self.assertEqual(written[0]["integrity"]["row_count"], 11)
+        self.assertEqual(written[0]["downloaded_at"], "2026-09-16T06:00:00Z")
+
+    def test_a_first_write_keeps_its_own_timestamp(self):
+        path = common.write_manifest(self.folder, [self.entry("2026-09-15T00:00:00Z")])
+        self.assertEqual(json.loads(path.read_text())[0]["downloaded_at"], "2026-09-15T00:00:00Z")
+
+
 if __name__ == "__main__":
     unittest.main()
