@@ -7,7 +7,7 @@ from unittest import mock
 import numpy as np
 import pandas as pd
 
-from loop import charts, spec, train
+from loop import charts, nets, spec, train
 
 
 def tiny_panel():
@@ -115,6 +115,78 @@ class TestForecast(unittest.TestCase):
 # the shipped band comes from the second model's margin on the test block. a
 # horizon with nothing realized there has no margin, and the map contract wants
 # a band around every point it draws
+# the whole evaluation rests on the models never seeing a calibration or test
+# outcome while they fit. nothing failed when they did, so this reads the arrays
+# the fitting function is actually handed
+class TestNoOutcomeLeaksIntoFitting(unittest.TestCase):
+    def spy(self):
+        calls = []
+        real = train.train_one
+
+        def recorder(model_name, windows, y_fit, y_val=None, *args, **kwargs):
+            calls.append({
+                "y_fit": np.array(y_fit, dtype=float),
+                "y_val": None if y_val is None else np.array(y_val, dtype=float),
+            })
+            return real(model_name, windows, y_fit, y_val, *args, **kwargs)
+
+        return calls, recorder
+
+    def test_the_backtest_is_handed_fit_and_val_outcomes_only(self):
+        panel = tiny_panel()
+        calls, recorder = self.spy()
+        with mock.patch.object(train, "train_one", recorder):
+            train.fit_and_score(panel, "windowmlp", device="cpu", max_epochs=1, verbose=False)
+        self.assertEqual(len(calls), 1)
+        table = train.splits(nets.build_windows(panel).origins)
+        y_fit, y_val = calls[0]["y_fit"], calls[0]["y_val"]
+        self.assertTrue((table[~np.isnan(y_fit)] == "fit").all())
+        self.assertTrue((table[~np.isnan(y_val)] == "val").all())
+        later = np.isin(table, ["cal", "test"])
+        self.assertTrue(np.isnan(y_fit[later]).all())
+        self.assertTrue(np.isnan(y_val[later]).all())
+        self.assertTrue((~np.isnan(y_fit)).any())
+        self.assertTrue((~np.isnan(y_val)).any())
+
+    # the second model sets the band width, so it must stop at the calibration
+    # end or the margin is measured on outcomes it was fitted on
+    def test_the_band_model_is_handed_nothing_past_the_calibration_end(self):
+        panel = tiny_panel()
+        calls, recorder = self.spy()
+        with mock.patch.object(train, "train_one", recorder):
+            train.forecast_models(panel, "windowmlp", epochs=1, device="cpu", verbose=False)
+        self.assertEqual(len(calls), 2)
+        windows = nets.build_windows(panel)
+        outcome = windows.t[:, None] + np.asarray(spec.HORIZONS)[None, :]
+        cal_end = windows.index_of(spec.CAL_END)
+        band_y = calls[1]["y_fit"]
+        self.assertTrue((outcome[~np.isnan(band_y)] <= cal_end).all())
+        self.assertTrue(np.isnan(band_y[outcome > cal_end]).all())
+        self.assertTrue((~np.isnan(band_y)).any())
+
+    def test_the_shipped_margin_is_the_band_model_on_the_test_block(self):
+        panel = tiny_panel()
+        frame, final, second, _ = train.forecast_models(panel, "windowmlp", epochs=1, device="cpu", verbose=False)
+        windows = nets.build_windows(panel)
+        table = train.splits(windows.origins)
+        scored = (table == "test") & ~np.isnan(windows.y)
+        idx = np.nonzero(scored.any(axis=1))[0]
+
+        def margin_of(fitted):
+            pred = train.predict(fitted["model"], fitted["inputs"], idx, fitted["device"])
+            return train.margins(train.predictions_frame(windows, table, pred, idx), "test")
+
+        held_out = margin_of(second)
+        for horizon, group in frame.groupby("horizon"):
+            width = (group.q10 - group.lo).to_numpy()
+            np.testing.assert_allclose(width, held_out[int(horizon)], rtol=0, atol=1e-9)
+            np.testing.assert_allclose((group.hi - group.q90).to_numpy(), held_out[int(horizon)], rtol=0, atol=1e-9)
+        # the final model has fitted those same outcomes, so its margin on them
+        # is a different, narrower number. the band must not come from there
+        in_sample = margin_of(final)
+        self.assertNotAlmostEqual(held_out[1], in_sample[1], places=6)
+
+
 class TestBandNeedsAConformalSample(unittest.TestCase):
     def test_a_panel_with_no_test_outcome_refuses_to_forecast(self):
         panel = train.synthetic_panel(n_metros=6, start="2000Q1", end="2021Q4")
