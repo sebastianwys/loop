@@ -296,6 +296,15 @@ def forecast_models(panel, model_name, epochs=None, device=None, verbose=True):
     held_out = predictions_frame(windows, sample_splits, predict(second["model"], second["inputs"], idx, second["device"]), idx)
     margin = margins(held_out, "test")
 
+    # a horizon with nothing realized on the test block has no conformal sample,
+    # and a nan margin would ship a point forecast with no band at all
+    bare = [h for h in spec.HORIZONS if not np.isfinite(margin.get(h, np.nan))]
+    if bare:
+        raise ValueError(
+            f"no realized test outcome at horizon {bare}, so the band has "
+            "nothing to calibrate on"
+        )
+
     latest = latest_origins(windows)
     pred = predict(final["model"], final["inputs"], latest, final["device"])
     parts = []

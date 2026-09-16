@@ -206,5 +206,20 @@ class TestFiles(unittest.TestCase):
             self.assertEqual(len(back), manifest[0]["integrity"]["row_count"])
 
 
+# a point forecast with no band is a contract break, not a metro with less data
+class TestBandTravelsWithThePoint(unittest.TestCase):
+    def test_a_null_band_edge_is_refused(self):
+        forecasts = forecast_frame()
+        forecasts.loc[forecasts["horizon"] == 4, "lo_pct"] = float("nan")
+        with self.assertRaises(ValueError) as raised:
+            export.build_metrics(forecasts, panel_frame())
+        self.assertIn("hpi_forecast_4q_lo", str(raised.exception))
+
+    def test_a_complete_band_passes(self):
+        metrics = export.build_metrics(forecast_frame(), panel_frame())
+        for metric in ("hpi_forecast_4q", "hpi_forecast_4q_lo", "hpi_forecast_4q_hi"):
+            self.assertEqual(len(metrics[metrics["metric"] == metric]), len(FORECAST_METROS))
+
+
 if __name__ == "__main__":
     unittest.main()

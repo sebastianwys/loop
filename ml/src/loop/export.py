@@ -73,6 +73,16 @@ def forecast_values(forecasts, origin):
         if sub["cbsa_code"].duplicated().any():
             raise ValueError(f"more than one forecast per metro at horizon {horizon}")
         out[metric] = sub.set_index("cbsa_code")[column].astype(float)
+
+    # the map draws a band around every point it shows, so an edge that went
+    # missing is a broken contract, not a metro with less data
+    for horizon in sorted({h for h, _ in FORECAST_METRICS.values()}):
+        point = out[f"hpi_forecast_{horizon}q"]
+        for edge in ("lo", "hi"):
+            name = f"hpi_forecast_{horizon}q_{edge}"
+            bare = point.notna() & out[name].reindex(point.index).isna()
+            if bare.any():
+                raise ValueError(f"{int(bare.sum())} forecasts with no {name}")
     return out
 
 

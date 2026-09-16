@@ -112,6 +112,22 @@ class TestForecast(unittest.TestCase):
         np.testing.assert_allclose(frame.q50_pct, spec.pct(frame.q50))
 
 
+# the shipped band comes from the second model's margin on the test block. a
+# horizon with nothing realized there has no margin, and the map contract wants
+# a band around every point it draws
+class TestBandNeedsAConformalSample(unittest.TestCase):
+    def test_a_panel_with_no_test_outcome_refuses_to_forecast(self):
+        panel = train.synthetic_panel(n_metros=6, start="2000Q1", end="2021Q4")
+        with self.assertRaises(ValueError) as raised:
+            train.forecast(panel, "seqgru", epochs=1, device="cpu", verbose=False)
+        self.assertIn("horizon", str(raised.exception))
+
+    def test_a_full_panel_still_bands_every_horizon(self):
+        frame = train.forecast(tiny_panel(), "seqgru", epochs=1, device="cpu", verbose=False)
+        self.assertTrue(frame.lo.notna().all())
+        self.assertTrue(frame.hi.notna().all())
+
+
 class TestRun(unittest.TestCase):
     def test_run_writes_every_artifact(self):
         panel = tiny_panel()
