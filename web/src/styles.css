@@ -1,6 +1,8 @@
-/* light surface only. the tokens follow the project chart palette */
+/* tokens follow the project chart palette. the light values are the
+   documented ones; the dark block below re-points the same names */
 :root {
-  color-scheme: light;
+  color-scheme: light dark;
+
   --surface: #fcfcfb;
   --plane: #f9f9f7;
   --ink: #0b0b0b;
@@ -14,95 +16,206 @@
   --trend: #5598e7;
   --rise: #9e3432;
   --fall: #1c5cab;
-  --sidebar-w: 340px;
-  --header-h: 56px;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  font-size: 14px;
+  --scrim: rgba(11, 11, 11, 0.34);
+  --shadow: 0 2px 8px rgba(11, 11, 11, 0.08);
+  --shadow-float: 0 6px 28px rgba(11, 11, 11, 0.20);
+  --tile-filter: none;
+
+  /* every width below is fluid. a windows laptop at 150% scaling reports a
+     1280px viewport, so fixed panel widths there left the map a sliver */
+  --sidebar-w: clamp(15rem, 22vw, 23.5rem);
+  --detail-w: clamp(19rem, 27vw, 27.5rem);
+  --tile-w: clamp(9.5rem, 12vw, 11.5rem);
+  --spark-w: 80px;
+  --header-pad: clamp(0.625rem, 1.2vw, 1rem);
+  --radius: 6px;
+  --tap: 44px;
+
+  font-family: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto, sans-serif;
+  /* one fluid step instead of a hard 14px. 14px on a phone, about 15px on a
+     1280 window, 16.5px on a studio display, and it still honours a browser
+     font size the reader raised */
+  font-size: clamp(14px, 12.6px + 0.18vw, 16.5px);
   color: var(--ink);
   background: var(--plane);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scrollbar-color: var(--baseline) transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: #1c1e22;
+    --plane: #141619;
+    --ink: #f2f1ee;
+    --ink-2: #b6b4ae;
+    --muted: #8b8984;
+    --hairline: #2b2e33;
+    --baseline: #474b53;
+    --accent: #6aa9f0;
+    --band: rgba(106, 169, 240, 0.20);
+    --trend: #6aa9f0;
+    --rise: #e2837a;
+    --fall: #7fb0ea;
+    --scrim: rgba(0, 0, 0, 0.52);
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+    --shadow-float: 0 6px 28px rgba(0, 0, 0, 0.6);
+    /* the osm raster tiles are light. only the tile pane is filtered, so the
+       markers keep the validated ramp on top of a dimmed basemap */
+    --tile-filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.92) saturate(0.72);
+  }
 }
 
 * { box-sizing: border-box; }
-html, body, #root { height: 100%; margin: 0; }
+html { height: 100%; }
+body { height: 100%; margin: 0; }
+#root {
+  height: 100vh;
+  height: 100dvh;
+}
 button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 a { color: var(--ink-2); }
+svg { max-width: 100%; }
 
-.app { display: grid; grid-template-rows: auto 1fr; height: 100%; }
+/* grid items default to min-width: auto, so the widest row of tiles used to
+   set the width of the whole page and every device narrower than the strip
+   got a horizontal scrollbar with the map pushed off the side */
+.app {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  height: 100%;
+  overflow: hidden;
+}
+.app > * { min-width: 0; }
 
 .header {
-  display: flex; flex-direction: column; justify-content: center; min-height: var(--header-h); padding: 0 16px;
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 0 var(--header-pad);
+  padding-top: env(safe-area-inset-top);
   background: var(--surface); border-bottom: 1px solid var(--hairline);
+  min-width: 0;
 }
-.title-row { display: flex; align-items: center; gap: 24px; min-height: 40px; }
-.header h1 { font-size: 16px; margin: 0; font-weight: 600; }
-.header .sub { color: var(--ink-2); font-weight: 400; margin-left: 8px; }
+.title-row { display: flex; align-items: center; gap: clamp(0.5rem, 1.5vw, 1.5rem); flex-wrap: wrap; min-height: 2.5rem; padding: 0.25rem 0; }
+.header h1 { font-size: 1.15rem; margin: 0; font-weight: 600; }
+.header .sub { color: var(--ink-2); font-weight: 400; margin-left: 0.5rem; font-size: 0.95rem; }
 .stat { display: flex; flex-direction: column; line-height: 1.15; }
-.stat .label { color: var(--muted); font-size: 11px; }
-.stat .value { font-size: 18px; font-weight: 600; }
-.stat .note { color: var(--muted); font-size: 11px; }
+.stat .label { color: var(--muted); font-size: 0.78rem; }
+.stat .value { font-size: 1.28rem; font-weight: 600; }
+.stat .note { color: var(--muted); font-size: 0.78rem; }
 .badge {
-  margin-left: auto; font-size: 11px; padding: 2px 8px; border-radius: 10px;
+  font-size: 0.78rem; padding: 2px 8px; border-radius: 10px;
   border: 1px solid var(--baseline); color: var(--ink-2); background: var(--plane);
 }
 
-.main { display: grid; grid-template-columns: var(--sidebar-w) 1fr; min-height: 0; position: relative; }
+/* the control that shows and hides the sidebar. it is a drawer handle below
+   900px and a collapse toggle above it, so the map can have the full width */
+.panel-toggle {
+  display: inline-flex; align-items: center; gap: 0.4rem; flex: none;
+  padding: 0.3rem 0.6rem; border: 1px solid var(--baseline); border-radius: var(--radius);
+  background: var(--surface); color: var(--ink-2); font-size: 0.85rem; line-height: 1;
+}
+.panel-toggle:hover { background: var(--plane); color: var(--ink); }
+.panel-toggle .bars { display: block; width: 14px; height: 10px; position: relative; flex: none; }
+.panel-toggle .bars::before, .panel-toggle .bars::after, .panel-toggle .bars span {
+  content: ""; position: absolute; left: 0; right: 0; height: 1.5px; background: currentColor; border-radius: 1px;
+}
+.panel-toggle .bars::before { top: 0; }
+.panel-toggle .bars span { top: 4.25px; }
+.panel-toggle .bars::after { bottom: 0; }
+
+.main {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+  min-height: 0; position: relative;
+}
+.main > * { min-width: 0; }
 
 .sidebar {
-  display: flex; flex-direction: column; gap: 12px; padding: 12px 14px; overflow: auto;
+  display: flex; flex-direction: column; gap: 0.75rem; padding: 0.75rem 0.875rem; overflow: auto;
   background: var(--surface); border-right: 1px solid var(--hairline);
+  scrollbar-width: thin;
+  /* windows draws a classic scrollbar inside the box, so reserve the gutter
+     and the list stops shifting when it gets long enough to scroll */
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
 }
-.sidebar label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+.sidebar label, .sidebar .label { display: block; font-size: 0.78rem; color: var(--muted); margin-bottom: 4px; }
 .sidebar select, .sidebar input {
-  width: 100%; padding: 6px 8px; border: 1px solid var(--baseline); border-radius: 4px; background: var(--surface);
+  width: 100%; padding: 0.4rem 0.5rem; border: 1px solid var(--baseline); border-radius: 4px;
+  background: var(--surface); color: var(--ink);
 }
+.sidebar-head { display: none; }
+
 .results { list-style: none; margin: 4px 0 0; padding: 0; border: 1px solid var(--hairline); border-radius: 4px; }
-.results li button {
-  width: 100%; text-align: left; padding: 6px 8px; border: 0; background: transparent;
-}
+.results li button { width: 100%; text-align: left; padding: 0.4rem 0.5rem; border: 0; background: transparent; }
 .results li button.active, .results li button:hover { background: var(--plane); }
 
-.rank h2 { font-size: 12px; color: var(--muted); font-weight: 500; margin: 0 0 6px; }
+.rank h2 { font-size: 0.86rem; color: var(--muted); font-weight: 500; margin: 0 0 6px; }
 .rank ol { list-style: none; margin: 0; padding: 0; }
 .rank li button {
-  display: grid; grid-template-columns: 24px 1fr auto; gap: 8px; width: 100%;
-  padding: 5px 6px; border: 0; background: transparent; text-align: left; border-radius: 4px;
+  display: grid; grid-template-columns: 1.6rem 1fr auto; gap: 0.5rem; width: 100%;
+  padding: 0.32rem 0.4rem; border: 0; background: transparent; text-align: left; border-radius: 4px;
 }
 .rank li button:hover, .rank li button.selected { background: var(--plane); }
 .rank .n { color: var(--muted); }
 .rank .v { font-variant-numeric: tabular-nums; }
 .rank .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
-.linkish { border: 0; background: transparent; color: var(--ink-2); text-decoration: underline; padding: 0; font-size: 12px; }
+.linkish { border: 0; background: transparent; color: var(--ink-2); text-decoration: underline; padding: 0; font-size: 0.86rem; }
 
-.footer { margin-top: auto; font-size: 11px; color: var(--muted); line-height: 1.5; }
+.footer { margin-top: auto; font-size: 0.78rem; color: var(--muted); line-height: 1.5; }
 .footer p { margin: 0 0 6px; }
 
-.map { position: relative; min-height: 0; }
-.map .leaflet-container { height: 100%; width: 100%; background: var(--plane); }
-.leaflet-tooltip.bs-tip { font-family: inherit; font-size: 12px; }
+.map { position: relative; min-height: 0; min-width: 0; }
+/* leaflet stacks its own controls at z-index 1000, which put the zoom buttons
+   over the drawer and the attribution over the detail sheet. the z-index here
+   makes the map its own stacking context so those numbers stay inside it */
+.map .leaflet-container {
+  height: 100%; width: 100%; background: var(--plane); font-family: inherit;
+  position: relative; z-index: 0;
+}
+.leaflet-tile-pane { filter: var(--tile-filter); }
+.leaflet-tooltip.bs-tip { font-family: inherit; font-size: 0.86rem; }
 .bs-tip .tv { font-weight: 600; }
 .bs-tip .tn { color: var(--ink-2); }
+.bs-tip .tp { color: var(--muted); }
 
 .legend {
-  position: absolute; left: 12px; bottom: 12px; z-index: 500;
-  background: var(--surface); border: 1px solid var(--hairline); border-radius: 6px; padding: 8px 10px; font-size: 11px;
+  position: absolute; left: 12px; bottom: 12px; z-index: 500; max-width: min(17rem, calc(100% - 24px));
+  background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius);
+  padding: 0.5rem 0.625rem; font-size: 0.78rem; box-shadow: var(--shadow);
 }
-.legend .title { color: var(--ink-2); margin-bottom: 4px; }
+.legend-head { display: flex; align-items: center; gap: 0.5rem; }
+.legend .title { color: var(--ink-2); }
+.legend .roll {
+  margin-left: auto; flex: none; width: 1.4rem; height: 1.4rem; line-height: 1; padding: 0;
+  border: 1px solid var(--baseline); border-radius: 4px; background: var(--surface); color: var(--ink-2);
+}
+.legend .body { margin-top: 4px; }
+.legend.closed .body { display: none; }
 .legend .row { display: flex; align-items: center; gap: 6px; line-height: 1.6; }
 .legend .sw { width: 12px; height: 12px; border-radius: 3px; flex: none; }
 .legend .sw.null { border: 1px dashed var(--baseline); background: transparent; }
+.legend .caption { color: var(--muted); margin-top: 4px; }
 
 .detail {
-  position: absolute; right: 12px; top: 12px; z-index: 600; width: 400px; max-height: calc(100% - 24px); overflow: auto;
-  background: var(--surface); border: 1px solid var(--hairline); border-radius: 8px; padding: 12px 14px;
-  box-shadow: 0 2px 8px rgba(11, 11, 11, 0.08);
+  position: absolute; right: 12px; top: 12px; z-index: 600; width: var(--detail-w);
+  max-height: calc(100% - 24px); overflow: auto; overscroll-behavior: contain; scrollbar-width: thin;
+  background: var(--surface); border: 1px solid var(--hairline); border-radius: 8px; padding: 0.75rem 0.875rem;
+  box-shadow: var(--shadow);
 }
-.detail header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
-.detail h2 { font-size: 15px; margin: 0; }
-.detail .close { border: 1px solid var(--baseline); background: var(--surface); border-radius: 4px; width: 28px; height: 28px; }
-.detail h3 { font-size: 11px; color: var(--muted); font-weight: 500; margin: 12px 0 4px; }
-.detail table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.detail header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.detail h2 { font-size: 1.07rem; margin: 0; }
+.detail .close {
+  flex: none; order: 2; margin-left: auto;
+  border: 1px solid var(--baseline); background: var(--surface); border-radius: 4px; width: 2rem; height: 2rem;
+}
+.detail header h2 { order: 1; }
+.detail header .geo-note { order: 3; flex-basis: 100%; }
+.detail h3 { font-size: 0.78rem; color: var(--muted); font-weight: 500; margin: 12px 0 4px; }
+.detail table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
 .detail th { text-align: right; color: var(--muted); font-weight: 500; padding: 2px 4px; border-bottom: 1px solid var(--hairline); }
 .detail th:first-child, .detail td:first-child { text-align: left; }
 .detail td { padding: 3px 4px; text-align: right; font-variant-numeric: tabular-nums; border-bottom: 1px solid var(--hairline); }
@@ -113,47 +226,32 @@ a { color: var(--ink-2); }
 .spark .lbl { fill: var(--ink-2); font-size: 10px; }
 .spark .base { stroke: var(--hairline); stroke-width: 1; }
 
-.table-all { max-height: 320px; overflow: auto; border: 1px solid var(--hairline); border-radius: 4px; }
-.table-all table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.table-all { max-height: 20rem; overflow: auto; border: 1px solid var(--hairline); border-radius: 4px; scrollbar-width: thin; }
+.table-all table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
 .table-all th, .table-all td { padding: 3px 6px; text-align: left; border-bottom: 1px solid var(--hairline); }
 .table-all td.v, .table-all th.v { text-align: right; font-variant-numeric: tabular-nums; }
-.table-all button { border: 0; background: transparent; padding: 0; text-align: left; }
-
-@media (max-width: 720px) {
-  .main { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
-  .sidebar { order: 2; max-height: 45vh; border-right: 0; border-top: 1px solid var(--hairline); }
-  .map { order: 1; }
-  .detail { left: 8px; right: 8px; top: auto; bottom: 8px; width: auto; max-height: 60%; }
-  .title-row { gap: 12px; }
-  .header .sub { display: none; }
-}
+.table-all button { border: 0; background: transparent; padding: 0; text-align: left; color: inherit; }
 
 /* one line of geography context under a metro name */
-.geo-note {
-  margin: 0 0 8px;
-  font-size: 12px;
-  color: #5b6470;
-}
+.geo-note { margin: 0 0 8px; font-size: 0.86rem; color: var(--ink-2); }
 
 /* dots or shapes, a two button segmented control */
-.sidebar .label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
 .segmented { display: inline-flex; border: 1px solid var(--baseline); border-radius: 4px; overflow: hidden; }
 .segmented button {
-  padding: 5px 12px; border: 0; background: var(--surface); color: var(--ink-2); font-size: 12px; cursor: pointer;
+  padding: 0.35rem 0.85rem; border: 0; background: var(--surface); color: var(--ink-2); font-size: 0.86rem; cursor: pointer;
 }
 .segmented button + button { border-left: 1px solid var(--baseline); }
 .segmented button[aria-pressed="true"] { background: var(--plane); color: var(--ink); font-weight: 600; }
-.segmented button:focus-visible { outline: 2px solid #2a78d6; outline-offset: -2px; }
-.mode-note { margin: 4px 0 0; font-size: 11px; color: var(--muted); }
+.segmented button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.segmented button:disabled { color: var(--baseline); cursor: default; }
+.mode-note { margin: 4px 0 0; font-size: 0.78rem; color: var(--muted); }
 
 /* metric source under the select, the period control, legend caption */
-.metric-source { margin: 4px 0 0; font-size: 11px; color: var(--muted); }
-.segmented button:disabled { color: var(--baseline); cursor: default; }
-.legend .caption { color: var(--muted); font-size: 11px; margin-top: 4px; }
+.metric-source { margin: 4px 0 0; font-size: 0.78rem; color: var(--muted); }
 
 /* collapsible groups in the detail panel */
 .detail details { margin-top: 10px; }
-.detail summary { font-size: 11px; color: var(--muted); font-weight: 500; cursor: pointer; margin: 0 0 4px; }
+.detail summary { font-size: 0.78rem; color: var(--muted); font-weight: 500; cursor: pointer; margin: 0 0 4px; }
 .detail summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* the as of timeline: a calendar axis with one tick per period, and play */
@@ -161,20 +259,20 @@ a { color: var(--ink-2); }
 .timeline-head { display: flex; align-items: center; justify-content: space-between; }
 .timeline-head .label { margin-bottom: 0; }
 .play {
-  display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; font-size: 11px;
+  display: inline-flex; align-items: center; gap: 5px; padding: 0.15rem 0.55rem; font-size: 0.78rem;
   border: 1px solid var(--baseline); border-radius: 4px; background: var(--surface); color: var(--ink-2);
 }
 .play svg { fill: currentColor; }
 .play[aria-pressed="true"] { background: var(--plane); color: var(--ink); font-weight: 600; }
 .play:disabled { color: var(--baseline); cursor: default; }
-.timeline { position: relative; height: 88px; margin: 8px 30px 0; }
+.timeline { position: relative; height: 5.6rem; margin: 8px clamp(1rem, 7%, 1.9rem) 0; }
 .timeline .axis { position: absolute; left: 0; right: 0; top: 8.5px; height: 1px; background: var(--baseline); }
 .timeline .mark { position: absolute; top: -2px; width: 1px; height: 5px; background: var(--baseline); }
 .timeline .span { position: absolute; top: 3px; height: 12px; background: var(--band); border-radius: 2px; }
-.timeline .span-year { position: absolute; top: 20px; transform: translateX(-50%); font-size: 11px; color: var(--ink-2); }
+.timeline .span-year { position: absolute; top: 20px; transform: translateX(-50%); font-size: 0.78rem; color: var(--ink-2); }
 .tick {
   position: absolute; top: 0; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center;
-  padding: 0; border: 0; background: transparent; white-space: nowrap; border-radius: 4px;
+  padding: 0; border: 0; background: transparent; white-space: nowrap; border-radius: 4px; color: inherit;
 }
 .tick .dot {
   display: block; width: 10px; height: 10px; margin-top: 4px; border-radius: 50%;
@@ -184,15 +282,15 @@ a { color: var(--ink-2); }
 .tick.hollow .dot { border-color: var(--baseline); background: var(--surface); }
 .tick.current .dot { width: 14px; height: 14px; margin-top: 2px; border-color: var(--ink); }
 .tick .lbl { display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
-.tick .when { font-size: 11px; color: var(--ink-2); }
-.tick .date { font-size: 10px; color: var(--ink-2); }
-.tick .n { font-size: 10px; color: var(--muted); }
+.tick .when { font-size: 0.78rem; color: var(--ink-2); }
+.tick .date { font-size: 0.72rem; color: var(--ink-2); }
+.tick .n { font-size: 0.72rem; color: var(--muted); }
 .tick.current .when { color: var(--ink); font-weight: 600; }
 .tick.hollow .when { color: var(--muted); }
 .tick.filled:hover .when { color: var(--ink); }
 
 /* the house price history with the model's expected path and band */
-.history { display: block; margin-top: 4px; max-width: 100%; border-radius: 4px; }
+.history { display: block; margin-top: 4px; max-width: 100%; height: auto; border-radius: 4px; }
 .history .grid { stroke: var(--hairline); stroke-width: 1; }
 .history .lbl { fill: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
 .history .lbl.end { fill: var(--ink-2); font-weight: 600; }
@@ -205,45 +303,68 @@ a { color: var(--ink-2); }
 .history .ring { fill: none; stroke: var(--ink); stroke-width: 1.5; }
 .history .tip { fill: var(--surface); stroke: var(--hairline); }
 .history .tip-text { fill: var(--ink); font-size: 10px; }
-.muted { margin: 4px 0; font-size: 12px; color: var(--muted); }
+.muted { margin: 4px 0; font-size: 0.86rem; color: var(--muted); }
 
 /* the vintage tables: a trend hint per row, dates under latest, hollow cells */
-.detail table.vintage { font-size: 11px; }
+.detail table.vintage { font-size: 0.78rem; }
 .spark-inline { display: block; margin-left: auto; }
 .spark-inline .line { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
 .spark-inline .dot { fill: var(--accent); }
 .detail td.trend, .detail th.trend { width: 48px; padding-left: 2px; padding-right: 2px; }
-.detail th .date, .detail td .date { display: block; font-size: 10px; font-weight: 400; color: var(--muted); }
+.detail th .date, .detail td .date { display: block; font-size: 0.72rem; font-weight: 400; color: var(--muted); }
 .detail td.np { color: var(--muted); }
-.table-note { margin: 4px 0 0; font-size: 11px; color: var(--muted); }
+.table-note { margin: 4px 0 0; font-size: 0.78rem; color: var(--muted); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.bs-tip .tp { color: var(--muted); }
 
 /* the national figures under the title line. the row scrolls sideways so
    the strip stays one tile tall however narrow the window is */
-.stamp { margin-left: auto; font-size: 11px; color: var(--muted); }
-.strip { display: flex; flex-direction: column; margin: 0 -16px; }
+.stamp { margin-left: auto; font-size: 0.78rem; color: var(--muted); }
+.strip { display: flex; flex-direction: column; margin: 0 calc(-1 * var(--header-pad)); min-width: 0; }
+
+/* the scroller, its two edge fades and the two step buttons. without the
+   fades a narrow window gives no sign that the row continues */
+.strip-scroll { position: relative; min-width: 0; }
 .strip-row {
   display: flex; align-items: stretch; overflow-x: auto; overflow-y: hidden;
-  padding: 3px 16px 6px; scrollbar-width: thin;
+  padding: 3px var(--header-pad) 6px; scrollbar-width: thin;
+  scroll-behavior: smooth; scroll-snap-type: x proximity; overscroll-behavior-x: contain;
+  /* without this the snap aligns the first tile to the scrollport edge and
+     parks the row 15px in, clipping the first label on load */
+  scroll-padding-left: var(--header-pad);
 }
-.ind-group { display: flex; flex-direction: column; gap: 2px; flex: none; padding: 0 10px; }
+.strip-fade { position: absolute; top: 0; bottom: 6px; width: 2rem; pointer-events: none; z-index: 2; opacity: 0; transition: opacity 0.15s ease; }
+.strip-fade.on { opacity: 1; }
+.strip-fade.left { left: 0; background: linear-gradient(90deg, var(--surface), transparent); }
+.strip-fade.right { right: 0; background: linear-gradient(270deg, var(--surface), transparent); }
+.strip-nav {
+  position: absolute; top: 50%; transform: translateY(-50%); z-index: 3;
+  width: 1.7rem; height: 1.7rem; padding: 0; border-radius: 50%;
+  border: 1px solid var(--hairline); background: var(--surface); color: var(--ink-2);
+  box-shadow: var(--shadow); display: none; align-items: center; justify-content: center;
+}
+.strip-nav.shown { display: inline-flex; }
+.strip-nav:hover { color: var(--ink); border-color: var(--baseline); }
+.strip-nav svg { fill: currentColor; }
+.strip-nav.prev { left: 1px; }
+.strip-nav.next { right: 1px; }
+
+.ind-group { display: flex; flex-direction: column; gap: 2px; flex: none; padding: 0 0.625rem; }
 .ind-group:first-child { padding-left: 0; }
 .ind-group + .ind-group { border-left: 1px solid var(--hairline); }
-.ind-group .group-label { font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.ind-group .group-label { font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
 .ind-group .tiles { display: flex; gap: 6px; }
 
 .ind-tile {
-  display: flex; flex-direction: column; gap: 1px; flex: none; width: 172px;
-  padding: 4px 6px; border: 1px solid transparent; border-radius: 5px;
-  background: transparent; color: var(--ink); text-align: left;
+  display: flex; flex-direction: column; gap: 1px; flex: none; width: var(--tile-w);
+  padding: 0.25rem 0.4rem; border: 1px solid transparent; border-radius: 5px;
+  background: transparent; color: var(--ink); text-align: left; scroll-snap-align: start;
 }
 .ind-tile:hover { background: var(--plane); border-color: var(--hairline); }
 .ind-tile.open { background: var(--plane); border-color: var(--baseline); }
-.ind-tile .name { font-size: 11px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ind-tile .read { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-.ind-tile .value { font-size: 17px; font-weight: 600; line-height: 1.2; }
-.ind-tile .foot { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; font-size: 10px; }
+.ind-tile .name { font-size: 0.78rem; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ind-tile .read { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-width: 0; }
+.ind-tile .value { font-size: 1.2rem; font-weight: 600; line-height: 1.2; }
+.ind-tile .foot { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; font-size: 0.72rem; }
 .ind-tile .when { color: var(--muted); white-space: nowrap; }
 
 /* the sign and the word carry the direction; the color only repeats them */
@@ -251,21 +372,21 @@ a { color: var(--ink-2); }
 .ind-tile .chip.up { color: var(--rise); }
 .ind-tile .chip.down { color: var(--fall); }
 
-.ind-spark { display: block; flex: none; }
+.ind-spark { display: block; flex: none; width: var(--spark-w); height: auto; }
 .ind-spark .line { fill: none; stroke: var(--trend); stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
 .ind-spark .dot { fill: var(--accent); }
 
 /* the one detail row, replaced in place when another tile is opened */
-.strip-detail { padding: 0 16px; }
+.strip-detail { padding: 0 var(--header-pad); min-width: 0; }
 .ind-detail { border-top: 1px solid var(--hairline); padding: 6px 0 8px; }
-.ind-detail-head { display: flex; align-items: baseline; gap: 10px; }
+.ind-detail-head { display: flex; align-items: baseline; gap: 0.625rem; flex-wrap: wrap; }
 .ind-detail-head .name { font-weight: 600; }
 .ind-detail-head .when { color: var(--muted); }
 .ind-detail-head .close {
-  margin-left: auto; width: 22px; height: 22px; line-height: 1;
+  margin-left: auto; width: 1.6rem; height: 1.6rem; line-height: 1;
   border: 1px solid var(--baseline); border-radius: 4px; background: var(--surface); color: var(--ink-2);
 }
-.ind-chart { display: block; margin-top: 2px; max-width: 100%; }
+.ind-chart { display: block; margin-top: 2px; max-width: 100%; height: auto; }
 .ind-chart .now { stroke: var(--baseline); stroke-width: 1; stroke-dasharray: 3 3; }
 .ind-chart .line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .ind-chart .dot { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
@@ -275,5 +396,135 @@ a { color: var(--ink-2); }
 .ind-chart .ring { fill: none; stroke: var(--ink); stroke-width: 1.5; }
 .ind-chart .tip { fill: var(--surface); stroke: var(--hairline); }
 .ind-chart .tip-text { fill: var(--ink); font-size: 10px; }
-.ind-note { margin: 4px 0 0; font-size: 12px; color: var(--ink-2); }
-.ind-source { margin: 2px 0 0; font-size: 11px; color: var(--muted); }
+.ind-note { margin: 4px 0 0; font-size: 0.86rem; color: var(--ink-2); }
+.ind-source { margin: 2px 0 0; font-size: 0.78rem; color: var(--muted); }
+
+/* ---- the docked sidebar, collapsed ---- */
+.layout-docked.sidebar-closed .main { grid-template-columns: minmax(0, 1fr); }
+.layout-docked.sidebar-closed .sidebar { display: none; }
+
+/* ---- the drawer, below 900px ---- */
+.backdrop {
+  position: absolute; inset: 0; z-index: 850; border: 0; padding: 0;
+  background: var(--scrim); cursor: pointer;
+}
+.layout-drawer .main { grid-template-columns: minmax(0, 1fr); }
+.layout-drawer .sidebar {
+  position: absolute; top: 0; bottom: 0; left: 0; z-index: 900;
+  width: min(88vw, 23rem); border-right: 1px solid var(--hairline);
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  padding-left: max(0.875rem, env(safe-area-inset-left));
+  box-shadow: var(--shadow-float);
+  transform: translateX(-100%);
+  visibility: hidden;
+  transition: transform 0.22s ease, visibility 0s linear 0.22s;
+}
+.layout-drawer.sidebar-open .sidebar {
+  transform: translateX(0);
+  visibility: visible;
+  transition: transform 0.22s ease, visibility 0s;
+}
+.layout-drawer .sidebar-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+  margin: -0.25rem 0 0.25rem;
+}
+.layout-drawer .sidebar-head h2 { font-size: 0.95rem; margin: 0; font-weight: 600; }
+.sidebar-head .close {
+  flex: none; width: 2rem; height: 2rem; line-height: 1; padding: 0;
+  border: 1px solid var(--baseline); border-radius: 4px; background: var(--surface); color: var(--ink-2);
+}
+
+/* ---- 1400 and under: laptops, and windows at 125% or 150% scaling ---- */
+@media (max-width: 1399px) {
+  .header .sub { font-size: 0.9rem; }
+  .ind-group { padding: 0 0.5rem; }
+  .ind-group .tiles { gap: 4px; }
+}
+
+/* ---- 1100 and under: the subtitle and the standalone stat give up room ---- */
+@media (max-width: 1099px) {
+  :root { --spark-w: 60px; }
+  .header .sub { display: none; }
+  .stat { display: none; }
+}
+
+/* ---- under 900: the sidebar leaves the grid, the detail becomes a sheet ---- */
+@media (max-width: 899px) {
+  :root { --tile-w: 9.75rem; --spark-w: 52px; }
+  .detail {
+    left: 0; right: 0; bottom: 0; top: auto; width: auto;
+    max-height: min(72%, 34rem);
+    border-radius: 12px 12px 0 0; border-bottom: 0;
+    box-shadow: var(--shadow-float);
+    padding-bottom: calc(0.875rem + env(safe-area-inset-bottom));
+    padding-left: max(0.875rem, env(safe-area-inset-left));
+    padding-right: max(0.875rem, env(safe-area-inset-right));
+  }
+  /* the sheet rises from the bottom, so the legend moves out from under it */
+  .legend { bottom: auto; top: 12px; left: auto; right: 12px; }
+}
+
+/* ---- phones ---- */
+@media (max-width: 639px) {
+  :root { --header-pad: 0.625rem; }
+  .header h1 { font-size: 1.05rem; }
+  .title-row { gap: 0.5rem; min-height: 2.25rem; }
+  .stamp { display: none; }
+  .ind-group .group-label { display: none; }
+  .ind-group { padding: 0 0.4rem; }
+  .strip-nav { display: none !important; }
+  .legend { right: 8px; top: 8px; font-size: 0.75rem; }
+  .detail { max-height: 76%; }
+  .timeline { margin-left: 1.25rem; margin-right: 1.25rem; }
+}
+
+/* a phone on its side has almost no height, so the strip stands down */
+@media (max-height: 480px) and (orientation: landscape) {
+  .strip-row { padding-top: 0; padding-bottom: 2px; }
+  .ind-tile .value { font-size: 1rem; }
+  .ind-group .group-label { display: none; }
+  .ind-spark { display: none; }
+  .detail { max-height: 88%; }
+}
+
+/* ---- touch: the 44px target, and the 16px that stops ios zooming ----
+   the sizes are px on purpose. a rem here would shrink with the fluid root
+   font on exactly the small screens that need the bigger target */
+@media (pointer: coarse) {
+  .sidebar select, .sidebar input { font-size: max(16px, 1rem); min-height: var(--tap); }
+  .segmented button { min-height: var(--tap); padding: 0.55rem 1rem; }
+  .rank li button, .results li button, .table-all button { min-height: 40px; }
+  .play { min-height: 36px; padding: 0.4rem 0.8rem; }
+  .panel-toggle { min-height: 40px; padding: 0.5rem 0.7rem; }
+  .linkish { display: inline-block; min-height: 40px; line-height: 40px; }
+  .detail .close, .sidebar-head .close { width: var(--tap); height: var(--tap); }
+  .ind-detail-head .close { width: 36px; height: 36px; }
+  .legend .roll { width: 36px; height: 36px; }
+  /* the tick label is the target, so the whole column takes the tap */
+  .tick { padding: 0 6px; }
+  .leaflet-touch .leaflet-bar a { width: 38px; height: 38px; line-height: 38px; }
+}
+
+/* hover tooltips never fire on a touch screen, so the tap opens the panel
+   and the tooltip is suppressed rather than left half drawn. the strip step
+   buttons go too, since a swipe already moves the row */
+@media (hover: none) {
+  .leaflet-tooltip.bs-tip { display: none; }
+  .strip-nav { display: none !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .strip-row { scroll-behavior: auto; }
+}
+
+/* a high contrast reader gets real borders instead of hairlines */
+@media (prefers-contrast: more) {
+  :root { --hairline: var(--baseline); --muted: var(--ink-2); }
+  .ind-tile { border-color: var(--hairline); }
+}

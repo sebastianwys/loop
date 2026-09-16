@@ -24,6 +24,8 @@ interface Props {
   mode: MapMode;
   shapesStatus: ShapesStatus;
   onModeChange: (mode: MapMode) => void;
+  drawer?: boolean;
+  onClose?: () => void;
 }
 
 const SHAPES_NOTE: Partial<Record<ShapesStatus, string>> = {
@@ -51,6 +53,7 @@ const CREDITS: [string, string][] = [
 export function Sidebar({
   metros, defs, metric, period, available, scale, selectedCbsa, sources, generatedAt,
   onMetricChange, onPeriodChange, onSelect, mode, shapesStatus, onModeChange,
+  drawer = false, onClose,
 }: Props) {
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
@@ -85,7 +88,13 @@ export function Sidebar({
   };
 
   return (
-    <aside className="sidebar">
+    <aside className="sidebar" id="controls" aria-label="map controls">
+      {drawer && onClose && (
+        <div className="sidebar-head">
+          <h2>Controls</h2>
+          <button type="button" className="close" aria-label="close the controls" onClick={onClose}>x</button>
+        </div>
+      )}
       <div>
         <span className="label" id="mode-label">draw metros as</span>
         <div className="segmented" role="group" aria-labelledby="mode-label">

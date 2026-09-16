@@ -1,5 +1,5 @@
 import * as L from "leaflet";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { CircleMarker, MapContainer, TileLayer, Tooltip, useMap } from "react-leaflet";
 import { formatValue } from "../lib/format";
 import type { Metric } from "../lib/metrics";
@@ -14,6 +14,14 @@ const CENTER: [number, number] = [39.5, -98.35];
 const OSM = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 const OSM_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
+// the lower 48 with a little margin. a fixed zoom drew the same span into
+// every container, so a narrow window opened on the pacific with the
+// country off the right edge
+export const US_BOUNDS: L.LatLngBoundsExpression = [
+  [24.0, -125.5],
+  [49.6, -66.5],
+];
+
 // area proportional to population, clamped so small metros stay clickable
 export function markerRadius(pop: number | null): number {
   if (pop === null || !Number.isFinite(pop) || pop <= 0) return 5;
@@ -21,28 +29,60 @@ export function markerRadius(pop: number | null): number {
 }
 
 // pan only when the selection is off screen, so clicking a marker does not move the map
-function FlyTo({ metro }: { metro: Metro | null }) {
+function FlyTo({ metro, reducedMotion }: { metro: Metro | null; reducedMotion: boolean }) {
   const map = useMap();
   useEffect(() => {
     if (!metro) return;
     const target = L.latLng(metro.lat, metro.lon);
-    if (!map.getBounds().contains(target)) {
-      map.flyTo(target, Math.max(map.getZoom(), 6), { duration: 0.6 });
-    }
-  }, [map, metro]);
+    if (map.getBounds().contains(target)) return;
+    const zoom = Math.max(map.getZoom(), 6);
+    if (reducedMotion) map.setView(target, zoom, { animate: false });
+    else map.flyTo(target, zoom, { duration: 0.6 });
+  }, [map, metro, reducedMotion]);
   return null;
 }
 
-// the header grows when a national tile is opened, so the map remeasures
-// rather than drawing at the height it started with
-function Resizes() {
+// the header grows when a national tile is opened and the drawer changes the
+// width, so the map remeasures rather than drawing at the size it started
+// with. it also refits the country until the reader moves the map themselves
+function Fits() {
   const map = useMap();
+  const moved = useRef(false);
+  const fitting = useRef(false);
+
   useEffect(() => {
+    const onMove = () => {
+      if (!fitting.current) moved.current = true;
+    };
+    map.on("dragstart", onMove);
+    map.on("zoomstart", onMove);
+    return () => {
+      map.off("dragstart", onMove);
+      map.off("zoomstart", onMove);
+    };
+  }, [map]);
+
+  useEffect(() => {
+    const settle = () => {
+      map.invalidateSize({ animate: false });
+      if (moved.current) return;
+      fitting.current = true;
+      // the padding shrinks with the container so a phone does not spend
+      // half its map on margin
+      const box = map.getSize();
+      const pad = Math.round(Math.min(24, Math.max(6, box.x * 0.02)));
+      map.fitBounds(US_BOUNDS, { padding: [pad, pad], animate: false });
+      window.setTimeout(() => {
+        fitting.current = false;
+      }, 0);
+    };
+    settle();
     if (typeof ResizeObserver === "undefined") return;
-    const watch = new ResizeObserver(() => map.invalidateSize());
+    const watch = new ResizeObserver(() => settle());
     watch.observe(map.getContainer());
     return () => watch.disconnect();
   }, [map]);
+
   return null;
 }
 
@@ -54,9 +94,10 @@ interface Props {
   onSelect: (cbsa: string) => void;
   mode: MapMode;
   boundaries: BoundaryIndex | null;
+  reducedMotion?: boolean;
 }
 
-export function MapView({ metros, metric, scale, selectedCbsa, onSelect, mode, boundaries }: Props) {
+export function MapView({ metros, metric, scale, selectedCbsa, onSelect, mode, boundaries, reducedMotion = false }: Props) {
   // canvas with a hit tolerance so a 4px dot has a 24px target
   const renderer = useMemo(() => L.canvas({ tolerance: 8 }), []);
   // big metros first so small ones draw on top
@@ -73,7 +114,7 @@ export function MapView({ metros, metric, scale, selectedCbsa, onSelect, mode, b
   return (
     <MapContainer center={CENTER} zoom={4} minZoom={3} renderer={renderer} preferCanvas scrollWheelZoom>
       <TileLayer attribution={OSM_ATTRIBUTION} url={OSM} />
-      <Resizes />
+      <Fits />
       {drawShapes && (
         <ShapeLayer shapes={shapes} metric={metric} scale={scale} selectedCbsa={selectedCbsa} onSelect={onSelect} />
       )}
@@ -103,7 +144,7 @@ export function MapView({ metros, metric, scale, selectedCbsa, onSelect, mode, b
           </CircleMarker>
         );
       })}
-      <FlyTo metro={selected} />
+      <FlyTo metro={selected} reducedMotion={reducedMotion} />
     </MapContainer>
   );
 }

@@ -8,17 +8,38 @@ interface Props {
   count?: number;
   indicators?: Indicator[];
   updated?: string | null;
+  sidebarOpen?: boolean;
+  drawer?: boolean;
+  onToggleSidebar?: () => void;
 }
 
 // the subtitle names what the menu holds. the metro count comes from the
 // loaded data so it never goes stale. the national figures sit under the
 // title line, and the standalone rate stat stands in for them while a
 // build carries no indicators
-export function Header({ rate, sample, count = 0, indicators = [], updated = null }: Props) {
+export function Header({
+  rate, sample, count = 0, indicators = [], updated = null,
+  sidebarOpen = true, drawer = false, onToggleSidebar,
+}: Props) {
   const where = count > 0 ? `${count} U.S. metros` : "U.S. metros";
+  const label = sidebarOpen ? "hide the controls" : "show the controls";
   return (
     <header className="header">
       <div className="title-row">
+        {onToggleSidebar && (
+          <button
+            type="button"
+            className="panel-toggle"
+            aria-expanded={sidebarOpen}
+            aria-controls="controls"
+            aria-label={label}
+            title={label}
+            onClick={onToggleSidebar}
+          >
+            <span className="bars" aria-hidden="true"><span /></span>
+            {!drawer && <span className="word">{sidebarOpen ? "hide" : "show"}</span>}
+          </button>
+        )}
         <h1>
           Loop
           <span className="sub">housing, income, jobs and migration across {where}</span>

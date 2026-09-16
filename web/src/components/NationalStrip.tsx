@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CHART_W, DETAIL_ID, SPARK_H, SPARK_W, changeChip, chartTitle, groupIndicators, indicatorSpark, indicatorValue,
   monthLabel, sourceLine, tileId, tileReadout,
 } from "../lib/indicators";
+import { scrollEdges, type ScrollEdges } from "../lib/layout";
 import type { Indicator } from "../types";
 import { IndicatorChart } from "./IndicatorChart";
 
@@ -101,8 +102,34 @@ export function NationalStrip({ indicators }: Props) {
   const blocks = useMemo(() => groupIndicators(indicators), [indicators]);
   const [open, setOpen] = useState<string | null>(null);
   const [width, setWidth] = useState(CHART_W);
+  const [edges, setEdges] = useState<ScrollEdges>({ left: false, right: false });
   const row = useRef<HTMLDivElement>(null);
   const detail = useRef<HTMLDivElement>(null);
+
+  // a narrow window hides most of the row, so the fades and the two step
+  // buttons say which way it still runs
+  const readEdges = useCallback(() => {
+    const el = row.current;
+    if (el) setEdges(scrollEdges(el.scrollLeft, el.scrollWidth, el.clientWidth));
+  }, []);
+
+  useEffect(() => {
+    const el = row.current;
+    if (!el) return;
+    readEdges();
+    el.addEventListener("scroll", readEdges, { passive: true });
+    const watch = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(readEdges);
+    watch?.observe(el);
+    return () => {
+      el.removeEventListener("scroll", readEdges);
+      watch?.disconnect();
+    };
+  }, [readEdges, blocks.length]);
+
+  const step = (direction: 1 | -1) => {
+    const el = row.current;
+    el?.scrollBy({ left: direction * Math.max(180, el.clientWidth * 0.8), behavior: "smooth" });
+  };
 
   // the expanded chart runs the width of the strip, so it is measured
   // rather than fixed, and follows the window
@@ -145,22 +172,44 @@ export function NationalStrip({ indicators }: Props) {
 
   return (
     <div className="strip" onKeyDown={onKeyDown}>
-      <div className="strip-row" ref={row} onKeyDown={onRowKeyDown}>
-        {blocks.map((block) => (
-          <div className="ind-group" key={block.group}>
-            <span className="group-label" id={block.id}>{block.group}</span>
-            <div className="tiles" role="group" aria-labelledby={block.id}>
-              {block.indicators.map((indicator) => (
-                <Tile
-                  key={indicator.id}
-                  indicator={indicator}
-                  expanded={indicator.id === open}
-                  onToggle={() => setOpen(indicator.id === open ? null : indicator.id)}
-                />
-              ))}
+      <div className="strip-scroll">
+        <span className={`strip-fade left${edges.left ? " on" : ""}`} aria-hidden="true" />
+        <span className={`strip-fade right${edges.right ? " on" : ""}`} aria-hidden="true" />
+        <button
+          type="button"
+          className={`strip-nav prev${edges.left ? " shown" : ""}`}
+          aria-label="scroll the national figures left"
+          tabIndex={-1}
+          onClick={() => step(-1)}
+        >
+          <svg width="8" height="10" viewBox="0 0 8 10" aria-hidden="true"><polygon points="6.5,0.5 6.5,9.5 1,5" /></svg>
+        </button>
+        <button
+          type="button"
+          className={`strip-nav next${edges.right ? " shown" : ""}`}
+          aria-label="scroll the national figures right"
+          tabIndex={-1}
+          onClick={() => step(1)}
+        >
+          <svg width="8" height="10" viewBox="0 0 8 10" aria-hidden="true"><polygon points="1.5,0.5 1.5,9.5 7,5" /></svg>
+        </button>
+        <div className="strip-row" ref={row} onKeyDown={onRowKeyDown}>
+          {blocks.map((block) => (
+            <div className="ind-group" key={block.group}>
+              <span className="group-label" id={block.id}>{block.group}</span>
+              <div className="tiles" role="group" aria-labelledby={block.id}>
+                {block.indicators.map((indicator) => (
+                  <Tile
+                    key={indicator.id}
+                    indicator={indicator}
+                    expanded={indicator.id === open}
+                    onToggle={() => setOpen(indicator.id === open ? null : indicator.id)}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
       <div className="strip-detail" id={DETAIL_ID} ref={detail}>
         {current && <IndicatorDetail key={current.id} indicator={current} width={width} onClose={close} />}

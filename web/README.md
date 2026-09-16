@@ -32,6 +32,21 @@ A monthly bot run carries the last exported forecast until the model is rerun. S
 
 Draws each metro as its boundary instead of a dot, from `public/data/boundaries.json`. `npm run boundaries` downloads the Census cartographic boundary files and simplifies them with mapshaper, installed one-off with `npm install --no-save mapshaper@0.7` rather than kept as a dependency. The zips stay in `data/raw/boundaries/` with a manifest. The TopoJSON is committed and fetched only when Shapes is first chosen.
 
+## The Layout
+
+Four bands, set in `src/lib/layout.ts` and matched one for one by the media queries in `src/styles.css`. Windows reports CSS pixels after display scaling, so a 1920x1080 panel at 150% is a 1280 viewport and lands in compact.
+
+| band | width | sidebar | detail panel |
+|---|---|---|---|
+| phone | under 640 | drawer, starts shut | sheet from the bottom |
+| tablet | 640 to 899 | drawer, starts shut | sheet from the bottom |
+| compact | 900 to 1399 | docked, collapsible | floating card |
+| wide | 1400 and up | docked, collapsible | floating card |
+
+Panel widths and the root font size are `clamp()` values, so nothing is pinned to one screen. The map fits the lower 48 to whatever container it gets and refits on resize until you pan or zoom it yourself.
+
+Also handled: `prefers-color-scheme: dark`, `prefers-reduced-motion`, `prefers-contrast: more`, 44px targets and 16px inputs on touch, safe area insets, and `scrollbar-gutter` so the Windows scrollbar does not shift the column.
+
 ## Deploying
 
 Cloudflare Workers flow: Workers and Pages, Create, import the repository.

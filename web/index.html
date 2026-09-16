@@ -2,11 +2,29 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover lets the safe area insets reach the notch and the home bar -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#16171a" media="(prefers-color-scheme: dark)" />
+    <meta name="description" content="Loop: housing, income, jobs and migration across 410 U.S. metros, with thirteen national indicators." />
+    <link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Loop, U.S. metro dashboard" />
+    <meta property="og:description" content="Housing, income, jobs and migration across 410 U.S. metros, with thirteen national indicators." />
+    <meta property="og:url" content="https://loop.macroviz.workers.dev" />
+    <meta name="twitter:card" content="summary" />
     <title>Loop, U.S. metro dashboard</title>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <p style="font: 16px system-ui, sans-serif; padding: 24px; max-width: 42em">
+        Loop draws an interactive map, so it needs JavaScript. The data behind it is plain
+        JSON at <a href="/data/metros.json">/data/metros.json</a>, and the pipeline that
+        builds it is at <a href="https://github.com/sebastianwys/loop">github.com/sebastianwys/loop</a>.
+      </p>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
