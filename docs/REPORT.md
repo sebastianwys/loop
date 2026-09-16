@@ -132,21 +132,25 @@ Post-coerce null rate is below 1 percent per variable. The merge is an inner joi
 
 A regime shift between the 2019 and 2024 vintages.
 
-The top-15 inverted. The earlier list was Western tech metros: Austin, Salt Lake City, Denver, Boise, Phoenix. The 2024 list is led by Bozeman MT at HPI 615, then Charleston SC, Naples FL, San Jose CA and San Diego CA. Salt Lake City, Boise and Portland fell off entirely. Two Montana metros appeared. Mountain towns and Sun Belt coastal markets replaced the urban tech story, which is the visible signature of remote-work migration.
+The top-15 inverted. The 2019 list was led by the Bay Area and Puget Sound: San Francisco-San Mateo-Redwood City at 441.8, San Jose at 418.5, Seattle-Bellevue-Kent at 378.9, Oakland-Fremont-Berkeley at 370.9, then Midland TX at 368.9. The 2024 list is led by the Miami-Miami Beach-Kendall division at 629.0, then Bozeman MT at 610.2, St. Petersburg-Clearwater-Largo at 598.4, Charleston SC at 581.9 and Naples FL at 571.2. Bozeman is the highest ranked whole metro. Salt Lake City, Boise and Portland OR are all outside the top 15, at ranks 32, 27 and 57 of 410. Missoula joined Bozeman, so Montana holds two of the top 15. Mountain towns and Sun Belt coastal markets replaced the Bay Area story, which is the visible signature of remote-work migration.
 
-Population decoupled from price. Correlation with HPI dropped from about 0.40 to 0.23. Metro size predicts less than it did.
+Seven of the 2024 top 15 are metropolitan divisions, so the list changed shape as well as order when the 37 divisions joined in commit c3af214. Bozeman was already eighth in 2019, so it climbed rather than appeared.
 
-The correlation matrix at the 2024 vintage:
+Population did not decouple from price. On the 392 metros carrying all three vintages the correlation with HPI runs 0.28, 0.32, 0.28. It rose and came back. A Fisher z test on the 2019 to 2024 leg gives z = 0.64, p = 0.53, so the move is not distinguishable from sampling noise. Earlier drafts of this report claimed a drop from 0.40 to 0.23 and read a decoupling story into it. Neither endpoint reproduces on the committed data and there is no trend to read.
+
+The correlation matrix at the 2024 vintage, Pearson r over all 410 metros and divisions, pairwise complete:
 
 | pair | r | reading |
 | --- | --- | --- |
-| median income vs HPI | 0.53 | strongest non-trivial predictor |
-| median home value vs HPI | 0.71 | expected, HPI measures value appreciation |
-| income vs median home value | 0.81 | wealthy metros have expensive housing |
-| homeownership rate vs HPI | 0.01 | ownership alone predicts nothing |
-| median age vs homeownership | 0.69 | life-cycle effect, does not reach HPI |
+| median income vs HPI | 0.50 | strongest non-trivial predictor |
+| median home value vs HPI | 0.67 | expected, HPI measures value appreciation |
+| income vs median home value | 0.82 | wealthy metros have expensive housing |
+| homeownership rate vs HPI | -0.10 | weak negative, and it is composition: the 37 divisions average 0.644 ownership at HPI 415, the 373 plain MSAs 0.673 at HPI 342 |
+| median age vs homeownership | 0.63 | life-cycle effect, does not reach HPI |
 
-The income-vs-HPI scatter shows the affordability story: a cluster at HPI 550 to 615 sitting at 80k to 95k median income. Those are Bozeman, Charleston, Naples and Bend, where prices outran local income between 2019 and 2024.
+Most of these cells moved when the 37 metropolitan divisions joined the panel in commit c3af214 and the metro count went from 373 to 410. Income vs HPI moved twice: the FHFA 2026-Q3 re-pull in commit 2f9d03c shifted it on the unchanged 373 metros, then the division merge moved it again. Divisions are kept because FHFA publishes the 13 largest metros only as divisions and their parent MSAs are absent from the file, so nothing is double counted. Excluding them would drop New York, Los Angeles, Chicago, Dallas and Atlanta, which is the worst possible exclusion for a correlation against population. Values published before those commits were computed on the smaller population and are not comparable. Recompute rather than citing an older draft.
+
+The income-vs-HPI scatter shows the affordability story: a cluster at HPI 545 to 610 sitting at 80k to 95k median income. Those are Bozeman, Charleston, Naples and Bend, where prices outran local income between 2019 and 2024.
 
 Five charts in `results/visualizations/`: HPI distribution, income vs HPI, homeownership vs HPI, the top-15 bar chart, and the correlation heatmap.
 

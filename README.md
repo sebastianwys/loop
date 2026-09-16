@@ -24,9 +24,11 @@ Dots or Census boundaries, colored by any of 48 metrics, for 2014, 2019, 2024 or
 
 Metro housing markets shifted between the 2019 and 2024 vintages.
 
-- Mountain towns and Sun Belt coastal markets replaced Western tech metros at the top. Bozeman MT leads at HPI 615. Salt Lake City, Boise and Portland fell out of the top 15.
-- Population correlation with HPI dropped from 0.40 to 0.23. Metro size predicts less than it did.
-- Median income against HPI is 0.53, the strongest non-trivial predictor. Homeownership rate against HPI is 0.01, which is nothing.
+- Mountain towns and Sun Belt coastal markets displaced the Bay Area at the top. Bozeman MT is the highest whole metro at HPI 610, second overall behind the Miami-Miami Beach-Kendall division at 629. Salt Lake City, Boise and Portland OR all fell out of the top 15.
+- Population correlation with HPI is flat: 0.28 in 2014, 0.32 in 2019, 0.28 in 2024 on the 392 metros carrying all three vintages. Metro size is a weak predictor and has stayed one.
+- Median income against HPI is 0.50, the strongest non-trivial predictor. Homeownership rate against HPI is -0.10, weak enough to be indistinguishable from zero.
+
+Correlations are Pearson r on levels over all 410 metros and divisions at the 2024 vintage, pairwise complete. Row counts differ by vintage, 392 in 2014 and 395 in 2019, so any comparison across vintages is measured on the metros carrying both.
 
 ## The Setup
 
