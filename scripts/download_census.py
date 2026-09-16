@@ -248,13 +248,6 @@ def main():
     start, end = window(years[-1])[0], years[0]
     print(f"Vintages {years}, covering {start} to {end}")
 
-    # if the pinned years changed, drop old per-year csvs
-    for stale in RAW_DIR.glob("acs_5yr_*.csv"):
-        year_str = stale.stem.replace("acs_5yr_", "")
-        if year_str.isdigit() and int(year_str) not in years:
-            stale.unlink()
-            print(f"Removed stale file: {stale.name}")
-
     manifest = []
     all_frames = []
     failed = []
@@ -305,20 +298,32 @@ def main():
             print(f"  Variables attempted: {VARIABLES}")
             print(f"  This vintage may have different variable codes. Skipping.")
 
-    if all_frames:
-        combined = pd.concat(all_frames, ignore_index=True)
-        combined_path = RAW_DIR / "acs_5yr_combined.csv"
-        combined.to_csv(combined_path, index=False)
-        print(f"\nCombined file: {combined_path} ({len(combined)} total rows)")
+    if failed:
+        # a partial pull published over a complete one cannot be undone, so the
+        # combined csv and the manifest keep describing the last good run
+        sys.exit(
+            f"Census ACS download incomplete, vintages failed: {failed}. "
+            "The previous combined csv and manifest were left in place."
+        )
+
+    combined = pd.concat(all_frames, ignore_index=True)
+    combined_path = RAW_DIR / "acs_5yr_combined.csv"
+    combined.to_csv(combined_path, index=False)
+    print(f"\nCombined file: {combined_path} ({len(combined)} total rows)")
 
     manifest_path = RAW_DIR / "download_manifest.json"
     with open(manifest_path, "w") as f:
         json.dump(manifest, f, indent=2)
-
     print(f"Manifest saved to {manifest_path}")
-    if failed:
-        # the combined file is partial. fail loudly so no downstream step trusts it
-        sys.exit(f"Census ACS download incomplete, vintages failed: {failed}")
+
+    # the pinned years changed, so per-year csvs off the study go now that their
+    # replacements are on disk. a failed run above never reaches this
+    for stale in RAW_DIR.glob("acs_5yr_*.csv"):
+        year_str = stale.stem.replace("acs_5yr_", "")
+        if year_str.isdigit() and int(year_str) not in years:
+            stale.unlink()
+            print(f"Removed stale file: {stale.name}")
+
     print("Census ACS download complete.")
 
 
