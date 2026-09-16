@@ -76,6 +76,9 @@ jobs:
           npx wrangler@4.132.0 deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # only needed if the token can see more than one account. wrangler
+          # resolves it on its own when the token is scoped to just this one
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: say why nothing was published
         if: steps.commit.outputs.changes_detected == 'true' && env.CLOUDFLARE_API_TOKEN == ''
