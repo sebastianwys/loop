@@ -2,7 +2,7 @@
 
 Forecasting on top of the pipeline in the repo root. Given what is known about a metro at a quarter, how much does its house price index move over the next one, two, four and eight quarters, and how sure can the model be.
 
-Headline: a sequence GRU cuts the no-change error 39 percent at four quarters and 45 percent at eight, and its bands run 22 to 28 percent narrower than the best classical rule.
+Headline: a sequence GRU cuts the no-change error 43 percent at four quarters and 42 percent at eight, beats every classical rule at every horizon, and its bands run 23 to 34 percent narrower than the metro's own long run average.
 
 ## The Input
 
@@ -62,9 +62,18 @@ The target is log growth of the index over h quarters. A sample is one metro, on
 |---|---|---|
 | train | by 2017Q4 | fitting |
 | calibration | 2018 to 2021 | band width only |
-| test | origin 2022Q1 or later | scored once |
+| test | 2022Q1 or later | scored once |
 
-Origins whose outcome straddles two blocks are dropped. Nothing realized after 2021 reaches a model judged on 2022 onward.
+The outcome quarter decides the block and nothing else does, so one origin sits in
+different blocks at different horizons. Nothing realized after 2021 reaches a model
+judged on 2022 onward.
+
+An earlier version of `spec.block` read calibration and test off the origin instead.
+That left 3,280 calibration samples at eight quarters where the rule gives 6,560, and
+all of them landed in the 2020 to 2021 boom, so every published band width came off
+two years of the least representative data in the panel. It also discarded every
+sample whose outcome crossed a block edge. The blocks are horizon independent now,
+6,560 calibration and about 7,375 test samples at each horizon.
 
 ![how the backtest is split](results/figures/05_backtest_design.png)
 
@@ -93,21 +102,21 @@ Mean absolute error of the median forecast, in percentage points of growth. Cove
 
 | model | 1q | 2q | 4q | 8q | coverage 1q/2q/4q/8q |
 |---|---|---|---|---|---|
-| no change | 2.24 | 3.14 | 5.19 | 10.45 | 0.88 / 0.96 / 1.00 / 0.99 |
-| momentum | 2.15 | 3.03 | 5.44 | 13.72 | 0.75 / 0.84 / 0.86 / 0.71 |
-| metro mean | 2.00 | 2.48 | 3.04 | 5.30 | 0.89 / 0.97 / 1.00 / 1.00 |
-| ridge | 1.95 | 2.48 | 4.04 | 6.72 | 0.78 / 0.90 / 0.91 / 0.88 |
-| gradient boosting | 2.03 | 2.91 | 4.72 | 9.64 | 0.79 / 0.83 / 0.93 / 0.94 |
-| window mlp | 2.27 | 3.82 | 6.96 | 12.37 | 0.88 / 0.97 / 0.99 / 0.99 |
-| sequence gru | 1.98 | 2.50 | 3.23 | 6.09 | 0.83 / 0.92 / 0.96 / 0.92 |
+| no change | 2.30 | 3.72 | 7.66 | 18.05 | 0.87 / 0.91 / 0.86 / 0.68 |
+| momentum | 2.10 | 2.94 | 5.89 | 15.56 | 0.76 / 0.83 / 0.81 / 0.54 |
+| metro mean | 2.02 | 2.90 | 5.13 | 11.82 | 0.88 / 0.92 / 0.87 / 0.69 |
+| ridge | 1.91 | 2.55 | 4.74 | 10.78 | 0.78 / 0.88 / 0.85 / 0.63 |
+| gradient boosting | 2.00 | 2.83 | 5.03 | 11.45 | 0.79 / 0.84 / 0.89 / 0.74 |
+| window mlp | 2.26 | 4.07 | 8.42 | 18.64 | 0.88 / 0.94 / 0.92 / 0.73 |
+| sequence gru | 1.96 | 2.65 | 4.40 | 10.52 | 0.82 / 0.90 / 0.87 / 0.66 |
 
 ![model comparison](results/figures/12_model_comparison.png)
 
 Three honest readings of that table.
 
-- The GRU beats every rule that uses recent information. It does not beat the metro's own fifty year average, which edges it by 0.2 and 0.8 points at four and eight quarters. 2022 to 2026 was a return to trend after the 2021 boom, and a long mean is a very good guess at a trend.
-- The GRU earns its place on the bands. At four quarters its band is 22 percent narrower than the long run average's, for coverage of 0.96 against 1.00. At eight quarters, 28 percent narrower.
-- Its median ran high, by 1.6 points at four quarters and 3.8 at eight. A model fitted through 2017 carried the momentum it saw into a cooling market. The conformal margin repairs coverage, not that tilt.
+- The GRU wins at every horizon, by 0.34 points over ridge at four quarters and 0.26 at eight. It also beats the metro's own fifty year average, which is the rule that matters: a long mean is a good guess at a trend and a bad one across a boom, and it degrades from 5.13 to 11.82 as the horizon doubles while the GRU goes 4.40 to 10.52.
+- The GRU earns its place on the bands. At four quarters its band is 23 percent narrower than the long run average's for the same 0.87 coverage. At eight quarters it is 34 percent narrower for 0.66 against 0.69.
+- Every model under-covers at eight quarters, the GRU at 0.66 against a nominal 0.90. That is the honest cost of a fixed calibration window, and it is read out in The Limits below rather than smoothed over.
 
 The window MLP is worse than no change beyond one quarter. It is kept as the honest answer to what a plain perceptron does here.
 
@@ -124,7 +133,7 @@ At the 2026Q2 origin the median four quarter forecast across 410 metros is 4.4 p
 |---|---|---|
 | highest | El Centro, Muncie, Rockford, Lima, Erie | 7 to 8 percent |
 | lowest | Cape Coral, Punta Gorda, Oakland, Brunswick, Sarasota | under 1.1 percent |
-| Chicago division | | 6.3 percent, band -2.6 to 16.8 |
+| Chicago division | | 6.3 percent, band -3.2 to 17.5 |
 
 Every band is wide. That is the point of publishing one.
 
@@ -132,7 +141,7 @@ Every band is wide. That is the point of publishing one.
 
 ## The Limits
 
-- The 2018 to 2021 calibration block carries the boom's dispersion, so bands over-cover at long horizons and under-cover at one quarter. Rolling the calibration forward would tighten them.
+- Every model under-covers at eight quarters, 0.54 to 0.74 against a nominal 0.90. Conformal coverage is guaranteed only for exchangeable samples. Calibration outcomes land in 2018 to 2021, which is the run up and the boom; test outcomes land in 2022 onward, which is the correction. The two regimes are not exchangeable and no margin fitted on the first covers the second. Rolling the calibration window forward would fix it by calibrating on the period being scored, which is leakage, so the number is reported rather than repaired. A wider held out period, or a conformal method built for distribution shift, is the real answer.
 - The GRU sees unemployment and rents only from 2014. Every year of new data helps it more than it helps the long run average.
 - Listing and inventory exist only as annual means. Keeping their monthly history would give the model the fastest signal in the set.
 

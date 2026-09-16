@@ -24,11 +24,13 @@ ALPHA = 0.1
 WINDOW = 24
 SEED = 20260915
 
-# time blocks by forecast origin. a sample is one metro at one origin quarter
+# time blocks by outcome quarter. a sample is one metro at one origin quarter
 # for one horizon, and belongs to the block where its outcome is realized:
-# train when the outcome lands by TRAIN_END, calibration when it lands inside
-# the calibration years, test when the origin is at or after TEST_START.
-# nothing realized after 2021 reaches a model that is judged on 2022 onward
+# train when the outcome lands by TRAIN_END, calibration when it lands in the
+# calibration years, test when it lands at or after TEST_START. the outcome
+# decides it and nothing else, so one origin can sit in different blocks at
+# different horizons, which is the horizon moving the outcome. nothing realized
+# after 2021 reaches a model that is judged on 2022 onward
 TRAIN_END = "2017Q4"
 CAL_START = "2018Q1"
 CAL_END = "2021Q4"
@@ -102,17 +104,18 @@ def pct(log_growth):
     return 100.0 * (np.exp(np.asarray(log_growth, dtype=float)) - 1.0)
 
 
-# which block a sample falls in, by origin quarter and horizon. None means the
-# sample is unusable, its outcome would land in a gap between blocks
+# which block a sample falls in. the outcome quarter decides it and nothing
+# else, so a sample belongs to the block its outcome is realized in. reading
+# cal and test off the origin instead left only the 2020 to 2021 boom in the
+# calibration set at eight quarters, and discarded every sample whose outcome
+# crossed a boundary
 def block(origin, horizon):
     outcome = to_period(origin) + horizon
     if outcome <= to_period(TRAIN_END):
         return "train"
-    if to_period(CAL_START) <= to_period(origin) and outcome <= to_period(CAL_END):
+    if outcome <= to_period(CAL_END):
         return "cal"
-    if to_period(origin) >= to_period(TEST_START):
-        return "test"
-    return None
+    return "test"
 
 
 def mae(y, yhat):

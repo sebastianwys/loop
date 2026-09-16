@@ -9,12 +9,12 @@
       "dataset": "house price index growth forecasts with 90 percent conformal bands, realized growth and forecast surprise by metro"
     },
     "integrity": {
-      "sha256": "a6bf94c7d911f726a055f5638b3a7c2c02988da80152b4b9b4a9190024442aa4",
-      "size_kb": 138.3,
+      "sha256": "128b3ba20d34af305599c83419694a13644c3e4327792ba418afee81d52db1bc",
+      "size_kb": 138.4,
       "row_count": 3690
     },
     "version": "seqgru, origin 2026Q2",
-    "downloaded_at": "2026-09-15T21:49:20Z",
+    "downloaded_at": "2026-09-16T05:12:58Z",
     "notes": {
       "model": "seqgru",
       "origin": "2026Q2",
@@ -36,9 +36,9 @@
         "hpi_yoy_latest": 410
       },
       "inputs": {
-        "forecasts.csv": "dd4750f76262b3111c92b764926cb9f4bdd43aad25249c4627bc756b19bd0b72",
+        "forecasts.csv": "57b8bd99d2ad9ae0e9597b38ece03f8bcc3998daafa9ae23d42ff0b41b09a073",
         "panel.parquet": "be46e186d58732d450759c48c4078f1325a00f734cd3b86e93f48768b627b989",
-        "predictions_seqgru.parquet": "ceb92e78b0c527b91455dae34706e09ed5f5f0ca1036d4a671f2c0cbb1c0b213"
+        "predictions_seqgru.parquet": "e9368d3e57c25f7f097ae8ce77242dd10ed9e0028dc161fa4e81426e13f408d3"
       }
     }
   }

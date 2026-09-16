@@ -23,7 +23,7 @@ class TestSplits(unittest.TestCase):
         self.assertEqual(train.split_of("2017Q3", 1), "val")
         self.assertEqual(train.split_of("2018Q1", 1), "cal")
         self.assertEqual(train.split_of("2022Q1", 8), "test")
-        self.assertIsNone(train.split_of("2016Q1", 8))
+        self.assertEqual(train.split_of("2016Q1", 8), "cal")   # outcome 2018Q1
 
     def test_splits_table_has_one_label_per_horizon(self):
         table = train.splits(np.array(["2014Q3", "2018Q1"], dtype=object))
@@ -60,9 +60,15 @@ class TestFitAndScore(unittest.TestCase):
         self.assertTrue(self.predictions.y.notna().all())
         self.assertTrue(((self.predictions.q10 <= self.predictions.q50) & (self.predictions.q50 <= self.predictions.q90)).all())
         self.assertFalse(self.predictions.duplicated(["cbsa_code", "quarter", "horizon"]).any())
-        # a test row starts at or after the test start, a cal row lands by the cal end
+        # the block is decided by the outcome, so an eight quarter origin can sit
+        # before TEST_START while its outcome lands after it
         test = self.predictions[self.predictions.block == "test"]
-        self.assertTrue((test.quarter >= spec.TEST_START).all())
+        outcomes = test.apply(lambda r: str(spec.to_period(r.quarter) + r.horizon), axis=1)
+        self.assertTrue((outcomes >= spec.TEST_START).all())
+        cal = self.predictions[self.predictions.block == "cal"]
+        cal_outcomes = cal.apply(lambda r: str(spec.to_period(r.quarter) + r.horizon), axis=1)
+        self.assertTrue((cal_outcomes <= spec.CAL_END).all())
+        self.assertTrue((cal_outcomes >= spec.CAL_START).all())
 
     def test_seed_makes_the_run_repeat(self):
         again, history = train.fit_and_score(self.panel, "windowmlp", device="cpu", max_epochs=2, verbose=False)

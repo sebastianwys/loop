@@ -107,14 +107,23 @@ class TestSamples(unittest.TestCase):
         self.assertEqual(list(s.columns), backtest.SAMPLE_COLUMNS)
         self.assertTrue((s["horizon"] == 4).all())
 
-    def test_gap_origins_and_open_outcomes_are_dropped(self):
+    # only an outcome the panel never realizes is dropped. the origins that used
+    # to go with them were dropped because block() read the origin and left them
+    # between two blocks, which is the defect this suite now pins against
+    def test_open_outcomes_are_dropped(self):
         s = backtest.samples(self.panel, 8)
         origins = set(s["quarter"])
-        for gap in ("2016Q1", "2017Q4", "2020Q1", "2021Q4", "2024Q3", "2026Q2"):
-            self.assertNotIn(gap, origins)
+        for beyond in ("2024Q3", "2026Q2"):
+            self.assertNotIn(beyond, origins, "its outcome is past the panel")
         self.assertIn("2015Q4", origins)
         self.assertIn("2018Q1", origins)
         self.assertIn("2024Q2", origins)
+
+    def test_an_outcome_that_crosses_a_boundary_is_kept(self):
+        s = backtest.samples(self.panel, 8)
+        origins = set(s["quarter"])
+        for kept in ("2016Q1", "2017Q4", "2020Q1", "2021Q4"):
+            self.assertIn(kept, origins, "its outcome is realized, so it is a sample")
         late = s[s["cbsa_code"] == list(spec.SHOWCASE)[5]]
         self.assertEqual(late["quarter"].min(), "1990Q1", "a metro whose prices start in 1990 gets no earlier origin")
         self.assertEqual(s["quarter"].min(), "1975Q1")

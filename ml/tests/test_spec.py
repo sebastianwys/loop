@@ -48,14 +48,56 @@ class TestTarget(unittest.TestCase):
 
 
 class TestBlocks(unittest.TestCase):
+    # the outcome quarter alone decides the block. an earlier version mixed the
+    # clocks, reading cal off the origin as well as the outcome and test off the
+    # origin only, which halved the cal set at eight quarters and dropped every
+    # sample whose outcome crossed a boundary
     def test_outcome_decides_the_block(self):
-        self.assertEqual(spec.block("2015Q4", 8), "train")
-        self.assertIsNone(spec.block("2016Q1", 8))
-        self.assertEqual(spec.block("2018Q1", 8), "cal")
-        self.assertIsNone(spec.block("2020Q1", 8))
-        self.assertEqual(spec.block("2022Q1", 8), "test")
-        self.assertEqual(spec.block("2021Q4", 1), None)
-        self.assertEqual(spec.block("2017Q3", 1), "train")
+        self.assertEqual(spec.block("2015Q4", 8), "train")   # outcome 2017Q4
+        self.assertEqual(spec.block("2016Q1", 8), "cal")     # outcome 2018Q1
+        self.assertEqual(spec.block("2018Q1", 8), "cal")     # outcome 2020Q1
+        self.assertEqual(spec.block("2020Q1", 8), "test")    # outcome 2022Q1
+        self.assertEqual(spec.block("2022Q1", 8), "test")    # outcome 2024Q1
+        self.assertEqual(spec.block("2021Q4", 1), "test")    # outcome 2022Q1
+        self.assertEqual(spec.block("2017Q3", 1), "train")   # outcome 2017Q4
+
+    # the same origin lands in different blocks at different horizons, because
+    # the horizon is what moves the outcome
+    def test_the_horizon_moves_the_sample(self):
+        self.assertEqual(spec.block("2017Q2", 1), "train")   # outcome 2017Q3
+        self.assertEqual(spec.block("2017Q2", 4), "cal")     # outcome 2018Q2
+        self.assertEqual(spec.block("2017Q2", 8), "cal")     # outcome 2019Q2
+
+    # every boundary belongs to the earlier block, so no sample sits in two
+    def test_the_boundaries_close_on_the_left(self):
+        self.assertEqual(spec.block("2017Q3", 1), "train")   # outcome 2017Q4, TRAIN_END
+        self.assertEqual(spec.block("2017Q4", 1), "cal")     # outcome 2018Q1, CAL_START
+        self.assertEqual(spec.block("2021Q3", 1), "cal")     # outcome 2021Q4, CAL_END
+        self.assertEqual(spec.block("2021Q4", 1), "test")    # outcome 2022Q1, TEST_START
+
+    # nothing is discarded now. a sample has exactly one outcome, so it has
+    # exactly one block, and none of them straddle
+    def test_no_sample_is_dropped(self):
+        origins = [f"{y}Q{q}" for y in range(2010, 2027) for q in range(1, 5)]
+        origins = [o for o in origins if spec.to_period(o) <= spec.to_period("2026Q2")]
+        for h in (1, 2, 4, 8):
+            for o in origins:
+                self.assertIn(spec.block(o, h), ("train", "cal", "test"), f"{o} h={h}")
+
+    # the calibration window is the four years the readme names, at every
+    # horizon. reading it off the origin left eight quarters at h=8, all of
+    # them the 2020 to 2021 boom
+    def test_the_cal_window_is_the_same_four_years_at_every_horizon(self):
+        for h in (1, 2, 4, 8):
+            outcomes = sorted(
+                spec.to_period(o) + h
+                for y in range(2010, 2027) for q in range(1, 5)
+                for o in [f"{y}Q{q}"]
+                if spec.to_period(o) <= spec.to_period("2026Q2") and spec.block(o, h) == "cal"
+            )
+            self.assertEqual(len(outcomes), 16, f"h={h}")
+            self.assertEqual(outcomes[0], spec.to_period(spec.CAL_START), f"h={h}")
+            self.assertEqual(outcomes[-1], spec.to_period(spec.CAL_END), f"h={h}")
 
 
 class TestMeasures(unittest.TestCase):

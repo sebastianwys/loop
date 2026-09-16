@@ -241,7 +241,7 @@ def design_chart(data_date="2026Q2", start="2005Q1"):
     for block in backtest.BLOCKS:
         x0, x1 = _x(first[block]), _x(last[block]) + 0.25
         ax.fill_between([x0, x1], top - 0.24, top + 0.24, color=colors[block], alpha=0.3, linewidth=0)
-        note = {"train": f"train: outcomes to {last[block]}", "cal": f"cal: to {last[block]}", "test": f"test: from {first[block]}"}[block]
+        note = {"train": f"train: outcomes to {last[block]}", "cal": f"cal: to {last[block]}", "test": f"test: outcomes from {first[block]}"}[block]
         ax.text((x0 + x1) / 2, top, note, ha="center", va="center", fontsize=8, color=charts.INK2)
     quarters = [str(p) for p in pd.period_range(start, data_date, freq="Q")]
     end = spec.to_period(data_date)
@@ -283,7 +283,7 @@ def errors_chart(summary, data_date):
     models = list(dict.fromkeys(test["model"]))
     fig, ax = charts.figure(
         "Forecast error on the test block by horizon",
-        f"mean absolute error of the median forecast in percentage points; test block, origins from {spec.TEST_START}; panel through {data_date}",
+        f"mean absolute error of the median forecast in percentage points; test block, outcomes from {spec.TEST_START}; panel through {data_date}",
     )
     positions = np.arange(len(spec.HORIZONS))
     points = []
@@ -308,7 +308,7 @@ def calibration_chart(summary, data_date):
     models = list(dict.fromkeys(test["model"]))
     fig, axes = charts.figure(
         "Interval coverage before and after conformal calibration",
-        f"share of test outcomes inside the 10 to 90 band, target 0.9; test block, origins from {spec.TEST_START}; panel through {data_date}",
+        f"share of test outcomes inside the 10 to 90 band, target 0.9; test block, outcomes from {spec.TEST_START}; panel through {data_date}",
         size=(10, 6.5), rows=2, cols=2, sharey=True,
     )
     x = np.arange(len(models))
