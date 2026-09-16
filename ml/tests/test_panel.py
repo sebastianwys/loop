@@ -325,8 +325,12 @@ class TestContract(unittest.TestCase):
 
 @unittest.skipUnless((spec.RAW_DIR / "fhfa" / "hpi_master.csv").exists(), "raw files not on this machine")
 class TestRealFiles(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.frame = panel.build()
+
     def test_build_on_the_real_files(self):
-        frame = panel.build()
+        frame = self.frame
         self.assertEqual(list(frame.columns), spec.PANEL_COLUMNS)
         self.assertEqual(frame["cbsa_code"].nunique(), 410)
         self.assertFalse(frame.duplicated(spec.KEY).any())
@@ -345,6 +349,18 @@ class TestRealFiles(unittest.TestCase):
             self.assertEqual(info["rows"], len(frame))
             self.assertEqual(info["non_null_share"]["hpi"], 1.0)
             self.assertEqual(json.loads((Path(tmp) / "manifest.json").read_text())["metros"], 410)
+
+    # realtor, zillow extras and the permit folder publish at the msa level
+    # only, so a division carries those columns only because build lets it
+    # take its parent's rows. drop that and 37 metros lose a decade each
+    def test_a_division_inherits_what_its_sources_never_publish(self):
+        divisions = self.frame[self.frame["level"] == "division"]
+        self.assertEqual(divisions["cbsa_code"].nunique(), 37)
+        for name in ("listing_price_yoy", "inventory_yoy", "permits_per_1000"):
+            self.assertGreater(int(divisions[name].notna().sum()), 500, name)
+        chicago = divisions[divisions["cbsa_code"] == "16984"]
+        self.assertEqual(chicago["parent_cbsa"].iloc[0], "16980")
+        self.assertTrue(chicago["listing_price_yoy"].notna().any())
 
 
 if __name__ == "__main__":

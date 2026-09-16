@@ -6,6 +6,7 @@ from unittest import mock
 
 import numpy as np
 import pandas as pd
+import torch
 
 from loop import charts, nets, spec, train
 
@@ -97,6 +98,33 @@ class TestFitAndScore(unittest.TestCase):
         g = self.predictions[(self.predictions.block == row.block) & (self.predictions.horizon == row.horizon)]
         self.assertAlmostEqual(row.mae_pct, np.mean(np.abs(spec.pct(g.y) - spec.pct(g.q50))))
         self.assertEqual(train.best_epoch(self.history), int(self.history.loc[self.history.val_loss.idxmin(), "epoch"]))
+
+
+# early stopping is only worth the patience if the weights come back with it.
+# nothing failed when the restore was dropped and the shipped model was the
+# overfitted last epoch instead of the best validation one
+class TestEarlyStoppingRestoresTheBestWeights(unittest.TestCase):
+    def test_the_model_returned_is_the_best_validation_epoch(self):
+        windows = nets.build_windows(tiny_panel())
+        table = train.splits(windows.origins)
+        y_fit = np.where(table == "fit", windows.y, np.nan)
+        y_val = np.where(table == "val", windows.y, np.nan)
+        scripted = [1.0, 0.25, 0.8, 0.9, 1.2]
+        seen = []
+
+        def scripted_loss(model, inputs, y, idx, device):
+            seen.append(torch.cat([p.detach().flatten().clone() for p in model.parameters()]))
+            return scripted[len(seen) - 1]
+
+        with mock.patch.object(train, "batched_loss", scripted_loss):
+            fitted = train.train_one("windowmlp", windows, y_fit, y_val, device="cpu",
+                                     max_epochs=5, patience=3, verbose=False)
+
+        self.assertEqual(len(seen), 5)
+        self.assertEqual(fitted["epochs"], 2)
+        weights = torch.cat([p.detach().flatten() for p in fitted["model"].parameters()])
+        torch.testing.assert_close(weights, seen[1])
+        self.assertFalse(torch.equal(weights, seen[-1]))
 
 
 class TestForecast(unittest.TestCase):

@@ -117,6 +117,22 @@ class TestMeasures(unittest.TestCase):
         self.assertAlmostEqual(spec.coverage(y, lo, hi), 2 / 3)
         self.assertAlmostEqual(spec.mean_width(lo, hi), 1.5)
 
+    # scores 1 through 10 with the band never binding below. the correction
+    # takes the ceil((n+1)(1-alpha)) th score, the 10th, not the 9th. dropping
+    # the +1 undercovers by exactly one score and no coverage test notices
+    def test_conformal_margin_takes_the_finite_sample_rank(self):
+        y = np.arange(1.0, 11.0)
+        lo = np.full(10, -100.0)
+        hi = np.zeros(10)
+        self.assertEqual(spec.conformal_margin(y, lo, hi, alpha=0.1), 10.0)
+        self.assertEqual(spec.conformal_margin(y, lo, hi, alpha=0.2), 9.0)
+
+    # (n+1)(1-alpha) can ask for a rank the sample does not have, and the
+    # widest score is the most the sample can say
+    def test_conformal_margin_caps_at_the_widest_score(self):
+        y = np.arange(1.0, 6.0)
+        self.assertEqual(spec.conformal_margin(y, np.full(5, -100.0), np.zeros(5), alpha=0.1), 5.0)
+
     def test_conformal_margin_reaches_nominal_coverage(self):
         rng = np.random.default_rng(spec.SEED)
         y = rng.normal(size=2000)
