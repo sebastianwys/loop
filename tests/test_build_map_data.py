@@ -140,6 +140,9 @@ class BuildCase(unittest.TestCase):
     def metro(self, payload, cbsa):
         return next(m for m in payload["metros"] if m["cbsa"] == cbsa)
 
+    def build_to(self, out):
+        return json.loads(bm.build(out_path=out, paths=dict(self.paths)).read_text())
+
 
 class TestBaseCases(BuildCase):
     def test_growth_ptir_and_degree_share_exact(self):
@@ -637,6 +640,38 @@ class TestRebuildIsIdempotent(BuildCase):
         second = json.loads(self.build_at("2026-09-16T06:00:00Z", out).read_text())
         self.assertNotEqual(len(first["metros"]), len(second["metros"]))
         self.assertEqual(second["generated_at"], "2026-09-16T06:00:00Z")
+
+
+# the zillow csvs are gitignored, so a checkout that has not run that collector
+# cannot see them. a partial rebuild used to write nulls over every zhvi and
+# zori in the file and call it a build. losing a source is not a rebuild
+class TestARebuildCannotDropASource(BuildCase):
+    def test_a_source_that_vanished_stops_the_write(self):
+        out = Path(self.tmp.name) / "metros.json"
+        full = self.build_to(out)
+        self.assertIsNotNone(full["metros"][0]["years"]["2014"]["zhvi"])
+
+        before = out.read_bytes()
+        paths = dict(self.paths)
+        paths["zhvi"] = Path(self.tmp.name) / "absent_zhvi.csv"
+        with self.assertRaises(RuntimeError) as raised:
+            bm.build(out_path=out, paths=paths)
+        self.assertIn("zillow", str(raised.exception))
+        self.assertEqual(out.read_bytes(), before)
+
+    def test_a_first_build_with_no_zillow_is_allowed(self):
+        out = Path(self.tmp.name) / "fresh.json"
+        paths = dict(self.paths)
+        paths["zhvi"] = Path(self.tmp.name) / "absent_zhvi.csv"
+        paths["zori"] = Path(self.tmp.name) / "absent_zori.csv"
+        payload = json.loads(bm.build(out_path=out, paths=paths).read_text())
+        self.assertIsNone(payload["metros"][0]["years"]["2014"]["zhvi"])
+
+    def test_a_rebuild_with_every_source_present_is_fine(self):
+        out = Path(self.tmp.name) / "metros.json"
+        self.build_to(out)
+        again = json.loads(bm.build(out_path=out, paths=dict(self.paths)).read_text())
+        self.assertIsNotNone(again["metros"][0]["years"]["2014"]["zhvi"])
 
 
 class TestNationalIndicators(BuildCase):

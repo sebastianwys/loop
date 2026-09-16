@@ -601,6 +601,28 @@ def national_block(fred_frame, national_frame=None):
     return block or None
 
 
+# a source is optional on a first build and mandatory on every one after. the
+# zillow csvs are gitignored, so a checkout that has not run that collector
+# cannot see them, and a partial rebuild would write nulls over every zhvi and
+# zori in the file. fail instead, and name what went missing
+def refuse_to_lose_a_source(out_path, payload):
+    if not Path(out_path).exists():
+        return
+    try:
+        previous = json.loads(Path(out_path).read_text())
+    except ValueError:
+        return
+    had = {name for name, version in (previous.get("sources") or {}).items() if version}
+    has = {name for name, version in (payload.get("sources") or {}).items() if version}
+    lost = sorted(had - has)
+    if lost:
+        raise RuntimeError(
+            f"{out_path.name} already carries {lost} and this build cannot see "
+            "them, so writing would blank those columns. run those collectors "
+            "first, or build somewhere else"
+        )
+
+
 # optional inputs come back as none with a note instead of failing the build
 def optional(path, loader, label):
     path = Path(path)
@@ -643,6 +665,7 @@ def build(out_path=None, paths=None):
 
     out_path = Path(out_path) if out_path else WEB_DATA_DIR / "metros.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    refuse_to_lose_a_source(out_path, payload)
     # the daily national refresh rebuilds this whether or not fred moved, so a
     # rebuild that lands on the same numbers leaves the file exactly as it was
     if not unchanged_but_for_stamps(out_path, payload):

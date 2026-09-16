@@ -34,11 +34,14 @@ jobs:
       - run: pip install -r requirements.txt
 
       # national is the thirteen strip indicators, fred is the 30 year mortgage
-      # rate the strip also shows. fifteen series, both keyed on FRED_API_KEY
+      # rate the strip also shows. fifteen series, both keyed on FRED_API_KEY.
+      # zillow is not refreshed for its own sake: its csvs are gitignored, so a
+      # checkout cannot see them and the rebuild would blank every zhvi and
+      # zori. build_map_data refuses to write that, so the files have to be here
       - name: pull the fred series and rebuild the map data
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
-        run: python -m bot.run_bot --only national fred
+        run: python -m bot.run_bot --only national fred zillow
 
       - name: run the tests
         run: python run_tests.py
