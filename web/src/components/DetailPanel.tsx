@@ -33,11 +33,14 @@ export function latestRows(metro: Metro): MetricDef[] {
   return DEFS.filter((d) => d.group !== "Forecasts" && d.periods.includes("latest") && d.valueAt(metro, "latest") !== null);
 }
 
-// one line under the chart: what the points are and where the last one ends
-function historyNote(series: AnnualSeries, forecast: boolean): string {
+// one line under the chart: what the points are and where the last one ends.
+// a short newest year is not an annual mean, so it says what that point is
+export function historyNote(series: AnnualSeries, forecast: boolean): string {
   const lastYear = series.start + series.values.length - 1;
   const asOf = dateLabel(series.as_of) ?? series.as_of;
-  const base = `Annual mean of the index; ${lastYear} runs through ${asOf}.`;
+  const base = series.partial_year
+    ? `Annual mean of the index, through ${series.partial_year - 1}; the last point is the index at ${asOf}, not a full year.`
+    : `Annual mean of the index, through ${lastYear}.`;
   return forecast ? `${base} Dashed line and band: the model's expected path with its 90 percent band.` : base;
 }
 

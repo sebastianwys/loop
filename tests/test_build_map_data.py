@@ -571,20 +571,41 @@ def fhfa_fixture():
 
 
 class TestPriceHistory(BuildCase):
-    def test_series_is_the_annual_mean_from_2000_with_the_last_quarter(self):
+    # 2003 holds two quarters, 150 and 152. its mean, 151, is not an annual
+    # mean and sat on a line of them, and the forecast grew from 152 while
+    # appearing to start at 151
+    def test_a_short_newest_year_carries_the_level_at_as_of(self):
         path = Path(self.tmp.name) / "hpi_master.csv"
         fhfa_fixture().to_csv(path, index=False)
         abilene = self.metro(self.build(fhfa=path), "10180")
-        self.assertEqual(abilene["series"]["hpi"]["start"], 2000)
-        self.assertEqual(abilene["series"]["hpi"]["values"], [102.5, 112.5, 122.5, 151.0])
-        self.assertEqual(abilene["series"]["hpi"]["as_of"], "2003Q2")
+        hpi = abilene["series"]["hpi"]
+        self.assertEqual(hpi["start"], 2000)
+        self.assertEqual(hpi["values"], [102.5, 112.5, 122.5, 152.0])
+        self.assertEqual(hpi["as_of"], "2003Q2")
+        self.assertEqual(hpi["anchor"], 152.0)
+        self.assertEqual(hpi["partial_year"], 2003)
+        # the line now ends where the forecast starts
+        self.assertEqual(hpi["values"][-1], hpi["anchor"])
 
-    def test_missing_year_is_a_null_gap(self):
+    def test_a_complete_newest_year_is_still_its_mean(self):
+        rows = fhfa_fixture()
+        rows = rows[~((rows["place_id"] == "10180") & (rows["yr"] == "2003"))]
+        path = Path(self.tmp.name) / "hpi_master.csv"
+        rows.to_csv(path, index=False)
+        hpi = bm.load_fhfa_series(path)["10180"]
+        self.assertEqual(hpi["values"], [102.5, 112.5, 122.5])
+        self.assertEqual(hpi["as_of"], "2002Q4")
+        self.assertIsNone(hpi["partial_year"])
+
+    # 2000 holds one quarter and is not the newest year, so it has no annual
+    # mean to show. 2002 is the newest and carries its quarter's level
+    def test_a_short_year_inside_the_history_is_a_gap(self):
         path = Path(self.tmp.name) / "hpi_master.csv"
         fhfa_fixture().to_csv(path, index=False)
         series = bm.load_fhfa_series(path)
-        self.assertEqual(series["19100"]["values"], [200.0, None, 202.0])
+        self.assertEqual(series["19100"]["values"], [None, None, 202.0])
         self.assertEqual(series["19100"]["as_of"], "2002Q1")
+        self.assertEqual(series["19100"]["partial_year"], 2002)
 
     def test_no_history_file_means_no_series_key(self):
         abilene = self.metro(self.build(fhfa=Path(self.tmp.name) / "absent.csv"), "10180")

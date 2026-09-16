@@ -77,6 +77,9 @@ export interface AnnualSeries {
   values: (number | null)[];
   as_of: string;
   anchor?: number | null;
+  // the newest year when it holds fewer than four quarters. its value is the
+  // index at as_of, not an annual mean
+  partial_year?: number | null;
 }
 
 export interface MetroSeries {

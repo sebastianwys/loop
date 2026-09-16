@@ -147,5 +147,44 @@ class TestMeasures(unittest.TestCase):
         self.assertLess(m, 0)
 
 
+# the outcome was found by counting rows ahead, so a metro missing a quarter
+# overshot the one it wanted and the guard nulled a target both endpoints
+# support. 44 of the 410 real metros carry a gap
+class TestTargetIsFoundByCalendar(unittest.TestCase):
+    def frame(self, quarters, values):
+        return pd.DataFrame({
+            "cbsa_code": ["10180"] * len(quarters),
+            "quarter": quarters,
+            spec.TARGET_BASE: values,
+        })
+
+    def test_a_gap_before_the_outcome_does_not_hide_it(self):
+        # 2000Q2 is missing. the two quarter outcome for 2000Q1 is 2000Q3,
+        # which is right there
+        frame = self.frame(["2000Q1", "2000Q3", "2000Q4"], [1.0, 1.2, 1.3])
+        out = spec.target(frame, 2).to_numpy(dtype=float)
+        self.assertAlmostEqual(out[0], 0.2)
+        self.assertTrue(np.isnan(out[1]))
+
+    def test_an_outcome_that_is_genuinely_absent_is_still_null(self):
+        frame = self.frame(["2000Q1", "2000Q4"], [1.0, 1.3])
+        out = spec.target(frame, 2).to_numpy(dtype=float)
+        self.assertTrue(np.isnan(out).all())
+
+    def test_a_dense_frame_is_unchanged(self):
+        frame = self.frame(["2000Q1", "2000Q2", "2000Q3"], [1.0, 1.1, 1.3])
+        out = spec.target(frame, 1).to_numpy(dtype=float)
+        np.testing.assert_allclose(out[:2], [0.1, 0.2], atol=1e-12)
+        self.assertTrue(np.isnan(out[2]))
+
+    def test_the_outcome_never_crosses_a_metro(self):
+        frame = pd.DataFrame({
+            "cbsa_code": ["10180", "19100"],
+            "quarter": ["2000Q1", "2000Q2"],
+            spec.TARGET_BASE: [1.0, 5.0],
+        })
+        self.assertTrue(np.isnan(spec.target(frame, 1).to_numpy(dtype=float)).all())
+
+
 if __name__ == "__main__":
     unittest.main()

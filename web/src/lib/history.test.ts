@@ -166,7 +166,7 @@ function fhfaQuarterLevel(cbsa: string, year: number, quarter: number): number {
 }
 
 describe.skipIf(!REAL)("expected levels on the built data", () => {
-  it("compounds the model growth onto the origin quarter level, not the partial year mean", () => {
+  it("ends the line on the origin quarter level and compounds the model growth onto it", () => {
     const map = JSON.parse(readFileSync(MAP_PATH, "utf8")) as MapData;
     const metro = map.metros.find((m) => m.cbsa === "10180");
     const series = metro?.series?.hpi;
@@ -176,23 +176,25 @@ describe.skipIf(!REAL)("expected levels on the built data", () => {
     expect(series.as_of).toBe("2026Q2");
     expect(metro.latest.hpi_forecast_4q_date).toBe("2026-06");
 
-    // 2026 is a partial year: its annual value is the mean of q1 and q2, well
-    // below the q2 level the growth was measured from
-    expect(series.values[series.values.length - 1]).toBe(370);
+    // 2026 holds two quarters, so it is not an annual mean. the last point is
+    // the index at 2026Q2, which is the level the growth was measured from
+    expect(series.partial_year).toBe(2026);
     const origin = fhfaQuarterLevel("10180", 2026, 2);
     expect(origin).toBe(381.69);
+    expect(series.values[series.values.length - 1]).toBe(origin);
+    expect(series.anchor).toBe(origin);
 
     const f = forecastOf(metro);
     if (!f || f.mid4 === null || f.lo4 === null || f.hi4 === null) throw new Error("abilene has no four quarter forecast");
-    expect(f.mid4).toBe(5.698);
+    expect(f.mid4).toBe(5.9365);
 
     const one = buildHistory(series, f).forecast[0];
     expect(one.year).toBe(2027);
-    // 381.69 grown by 5.698, -3.3277 and 16.1856 percent
+    // 381.69 grown by 5.9365, -3.5886 and 17.0937 percent
     expect(one.value).toBeCloseTo(origin * (1 + f.mid4 / 100), 4);
     expect(one.lo).toBeCloseTo(origin * (1 + f.lo4 / 100), 4);
     expect(one.hi).toBeCloseTo(origin * (1 + f.hi4 / 100), 4);
     // what the detail panel prints, to one decimal
-    expect(Math.round(one.value * 10) / 10).toBe(403.4);
+    expect(Math.round(one.value * 10) / 10).toBe(404.3);
   });
 });

@@ -105,18 +105,18 @@ Mean absolute error of the median forecast, in percentage points of growth. Cove
 | no change | 2.30 | 3.72 | 7.66 | 18.05 | 0.87 / 0.91 / 0.86 / 0.68 |
 | momentum | 2.10 | 2.94 | 5.89 | 15.56 | 0.76 / 0.83 / 0.81 / 0.54 |
 | metro mean | 2.02 | 2.90 | 5.13 | 11.82 | 0.88 / 0.92 / 0.87 / 0.69 |
-| ridge | 1.91 | 2.55 | 4.74 | 10.78 | 0.78 / 0.88 / 0.85 / 0.63 |
-| gradient boosting | 2.00 | 2.83 | 5.03 | 11.45 | 0.79 / 0.84 / 0.89 / 0.74 |
-| window mlp | 2.26 | 4.07 | 8.42 | 18.64 | 0.88 / 0.94 / 0.92 / 0.73 |
-| sequence gru | 1.96 | 2.65 | 4.40 | 10.52 | 0.82 / 0.90 / 0.87 / 0.66 |
+| ridge | 1.91 | 2.55 | 4.74 | 10.77 | 0.78 / 0.88 / 0.85 / 0.63 |
+| gradient boosting | 2.00 | 2.89 | 5.06 | 11.68 | 0.79 / 0.84 / 0.91 / 0.75 |
+| window mlp | 2.29 | 4.20 | 8.60 | 18.90 | 0.88 / 0.94 / 0.92 / 0.73 |
+| sequence gru | 1.96 | 2.66 | 4.44 | 10.63 | 0.83 / 0.90 / 0.88 / 0.65 |
 
 ![model comparison](results/figures/12_model_comparison.png)
 
 Three honest readings of that table.
 
-- The GRU wins at every horizon, by 0.34 points over ridge at four quarters and 0.26 at eight. It also beats the metro's own fifty year average, which is the rule that matters: a long mean is a good guess at a trend and a bad one across a boom, and it degrades from 5.13 to 11.82 as the horizon doubles while the GRU goes 4.40 to 10.52.
-- The GRU earns its place on the bands. At four quarters its band is 23 percent narrower than the long run average's for the same 0.87 coverage. At eight quarters it is 34 percent narrower for 0.66 against 0.69.
-- Every model under-covers at eight quarters, the GRU at 0.66 against a nominal 0.90. That is the honest cost of a fixed calibration window, and it is read out in The Limits below rather than smoothed over.
+- The GRU wins where the horizon is long, by 0.30 points over ridge at four quarters and 0.14 at eight, and ridge wins the short ones, by 0.05 at one quarter and 0.11 at two. A penalised linear model on the same features is hard to beat one quarter out, and that is worth saying out loud. The GRU does beat the metro's own fifty year average at every horizon, which is the rule that matters: a long mean is a good guess at a trend and a bad one across a boom, and it degrades from 5.13 to 11.82 as the horizon doubles while the GRU goes 4.44 to 10.63.
+- The GRU earns its place on the bands. At four quarters its band is 22 percent narrower than the long run average's, at 0.88 coverage against 0.87. At eight quarters it is 33 percent narrower for 0.65 against 0.69.
+- Every model under-covers at eight quarters, the GRU at 0.65 against a nominal 0.90. That is the honest cost of a fixed calibration window, and it is read out in The Limits below rather than smoothed over.
 
 The window MLP is worse than no change beyond one quarter. It is kept as the honest answer to what a plain perceptron does here.
 
@@ -127,12 +127,12 @@ The GRU refitted on every outcome realized by 2026Q2, at the epoch count found a
 ![forecast fans](results/figures/11_forecast_fans.png)
 ![forecast distribution](results/figures/13_forecast_distribution.png)
 
-At the 2026Q2 origin the median four quarter forecast across 410 metros is 4.4 percent (10th to 90th percentile 2.7 to 6.0), positive everywhere. The eight quarter median is 9.6 percent.
+At the 2026Q2 origin the median four quarter forecast across 410 metros is 4.5 percent (10th to 90th percentile 2.8 to 6.2), positive everywhere. The eight quarter median is 9.9 percent.
 
 | where | metros | four quarter |
 |---|---|---|
-| highest | El Centro, Muncie, Rockford, Lima, Erie | 7 to 8 percent |
-| lowest | Cape Coral, Punta Gorda, Oakland, Brunswick, Sarasota | under 1.1 percent |
+| highest | El Centro, Muncie, Rockford, Lima, Erie | 7 to 9 percent |
+| lowest | Cape Coral, Punta Gorda, Oakland, Brunswick, North Port | under 1.2 percent |
 | Chicago division | | 6.3 percent, band -3.2 to 17.5 |
 
 Every band is wide. That is the point of publishing one.
@@ -141,7 +141,7 @@ Every band is wide. That is the point of publishing one.
 
 ## The Limits
 
-- The calibration block is fixed at 2018 to 2021 by choice, and every model under-covers at eight quarters because of it, 0.54 to 0.74 against a nominal 0.90. Conformal coverage is guaranteed only for exchangeable samples. Calibration outcomes land in 2018 to 2021, which is the run up and the boom; test outcomes land in 2022 onward, which is the correction. The two regimes are not exchangeable and no margin fitted on the first covers the second. Rolling the calibration window forward would fix it by calibrating on the period being scored, which is leakage, so the number is reported rather than repaired. A wider held out period, or a conformal method built for distribution shift, is the real answer.
+- The calibration block is fixed at 2018 to 2021 by choice, and every model under-covers at eight quarters because of it, 0.54 to 0.75 against a nominal 0.90. Conformal coverage is guaranteed only for exchangeable samples. Calibration outcomes land in 2018 to 2021, which is the run up and the boom; test outcomes land in 2022 onward, which is the correction. The two regimes are not exchangeable and no margin fitted on the first covers the second. Rolling the calibration window forward would fix it by calibrating on the period being scored, which is leakage, so the number is reported rather than repaired. A wider held out period, or a conformal method built for distribution shift, is the real answer.
 - The GRU sees unemployment and rents only from 2014. Every year of new data helps it more than it helps the long run average.
 - Listing and inventory exist only as annual means. Keeping their monthly history would give the model the fastest signal in the set.
 

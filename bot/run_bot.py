@@ -14,17 +14,24 @@ from bot import collectors as collectors_pkg
 def discover():
     names = sorted(module.name for module in pkgutil.iter_modules(collectors_pkg.__path__))
     ordered = ["gazetteer"] + [name for name in names if name != "gazetteer"]
-    found = []
+    found, broken = [], []
     for name in ordered:
-        module = importlib.import_module(f"bot.collectors.{name}")
+        # a module that will not import is one failed collector, not a reason
+        # to lose the whole run before the first one has been given a turn
+        try:
+            module = importlib.import_module(f"bot.collectors.{name}")
+        except Exception as e:
+            print(f"[{name}] FAILED to import {type(e).__name__}: {e}")
+            broken.append(name)
+            continue
         if callable(getattr(module, "collect", None)):
             found.append((name, module.collect))
-    return found
+    return found, broken
 
 
 def main():
-    failures = []
-    for name, collect in discover():
+    collectors, failures = discover()
+    for name, collect in collectors:
         try:
             collect()
         except Exception as e:

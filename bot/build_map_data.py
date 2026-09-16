@@ -130,10 +130,28 @@ def load_fhfa_series(path):
     series = {}
     for code, group in df.groupby("place_id"):
         annual = group.groupby("yr")["index_nsa"].mean()
+        quarters = group.groupby("yr")["index_nsa"].size()
         last_year = int(annual.index.max())
-        values = [rnd(annual.get(year), 1) if year in annual.index else None for year in range(SERIES_START, last_year + 1)]
         newest = group.sort_values(["yr", "period"]).iloc[-1]
-        series[str(code)] = {"start": SERIES_START, "values": values, "as_of": f"{int(newest['yr'])}Q{int(newest['period'])}", "anchor": rnd(newest["index_nsa"], 2)}
+        anchor = rnd(newest["index_nsa"], 2)
+
+        # a year is an annual mean only with all four quarters in. the newest
+        # year is short most of the time, so it carries the index at as_of
+        # instead, which is the level the forecast grows from. a short year
+        # inside the history has no annual mean and is drawn as the gap it is
+        values = []
+        for year in range(SERIES_START, last_year + 1):
+            if quarters.get(year, 0) >= 4:
+                values.append(rnd(annual.get(year), 1))
+            elif year == last_year:
+                values.append(anchor)
+            else:
+                values.append(None)
+
+        partial = last_year if quarters.get(last_year, 0) < 4 else None
+        series[str(code)] = {"start": SERIES_START, "values": values,
+                             "as_of": f"{int(newest['yr'])}Q{int(newest['period'])}",
+                             "anchor": anchor, "partial_year": partial}
     return series
 
 

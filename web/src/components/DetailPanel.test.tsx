@@ -2,7 +2,8 @@ import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { SAMPLE } from "../lib/data";
-import { DetailPanel } from "./DetailPanel";
+import { DetailPanel, historyNote } from "./DetailPanel";
+import type { AnnualSeries } from "../types";
 
 // no dom in this suite, so the markup is read as a string
 const html = (node: ReactElement) => renderToStaticMarkup(node);
@@ -42,5 +43,29 @@ describe("a number the metro took from its parent", () => {
     const markup = panel("25980");
     expect(markup).toContain("Abilene, TX");
     expect(markup).toContain("From the parent metro: ");
+  });
+});
+
+// the last point used to be a mean of however much of the year had been
+// published, drawn on a line of full-year means and labelled as that year
+describe("the note under the price history", () => {
+  const full: AnnualSeries = { start: 2000, values: [100, 110], as_of: "2001Q4", partial_year: null };
+  const short: AnnualSeries = { start: 2000, values: [100, 112], as_of: "2001Q2", partial_year: 2001 };
+
+  it("says the last point is a quarter when the year is short", () => {
+    const note = historyNote(short, false);
+    expect(note).toContain("through 2000");
+    expect(note).toContain("the index at 2001Q2");
+    expect(note).toContain("not a full year");
+  });
+
+  it("says nothing about quarters when the year is complete", () => {
+    const note = historyNote(full, false);
+    expect(note).toBe("Annual mean of the index, through 2001.");
+  });
+
+  it("keeps the forecast sentence either way", () => {
+    expect(historyNote(short, true)).toContain("90 percent band");
+    expect(historyNote(full, true)).toContain("90 percent band");
   });
 });

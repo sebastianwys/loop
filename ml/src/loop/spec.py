@@ -93,11 +93,16 @@ def quarter_of(date):
 # value of 0.05 means about five percent. pct() turns it into a percent
 def target(frame, horizon):
     frame = frame.sort_values(KEY)
-    ahead = frame.groupby("cbsa_code")[TARGET_BASE].shift(-horizon)
-    gap = frame.groupby("cbsa_code")["quarter"].shift(-horizon)
-    expected = frame["quarter"].map(lambda q: shift_quarter(q, horizon))
-    out = ahead - frame[TARGET_BASE]
-    return out.where(gap == expected)
+    # the outcome is the quarter the calendar names, looked up by key. counting
+    # rows ahead instead overshot it whenever a metro was missing a quarter in
+    # between, and nulled a target both endpoints could support
+    level = frame.set_index(["cbsa_code", "quarter"])[TARGET_BASE]
+    wanted = pd.MultiIndex.from_arrays([
+        frame["cbsa_code"].to_numpy(),
+        frame["quarter"].map(lambda q: shift_quarter(q, horizon)).to_numpy(),
+    ])
+    ahead = level.reindex(wanted).to_numpy(dtype=float)
+    return pd.Series(ahead - frame[TARGET_BASE].to_numpy(dtype=float), index=frame.index)
 
 
 def pct(log_growth):
