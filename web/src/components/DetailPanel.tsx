@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { geoNote, parentMetricsNote } from "../lib/geo";
+import { geoNote, inheritedFrom, parentMetricsNote } from "../lib/geo";
 import { forecastCaption, forecastLines } from "../lib/forecast";
 import { formatValue } from "../lib/format";
 import { forecastOf } from "../lib/history";
@@ -136,7 +136,10 @@ export function DetailPanel({ metro, metros, onClose }: Props) {
                   const labels = periods.map((p) => (p === "latest" ? (column.dates[d.id] ?? "latest") : p));
                   return (
                     <tr key={d.id}>
-                      <td>{d.label}</td>
+                      <td>
+                        {d.label}
+                        {inheritedFrom(metro, d) && <span className="date">{inheritedFrom(metro, d)}</span>}
+                      </td>
                       <td className="trend">
                         <InlineSpark values={periods.map((p) => d.valueAt(metro, p))} labels={labels} format={d.format} signed={d.kind === "diverging"} />
                       </td>
@@ -196,7 +199,10 @@ export function DetailPanel({ metro, metros, onClose }: Props) {
             <tbody>
               {latest.map((d) => (
                 <tr key={d.id}>
-                  <td>{d.label}</td>
+                  <td>
+                    {d.label}
+                    {inheritedFrom(metro, d) && <span className="date">{inheritedFrom(metro, d)}</span>}
+                  </td>
                   <td>{formatValue(d.valueAt(metro, "latest"), d.format, d.kind === "diverging")}</td>
                   <td>{dateLabel(defDate(d, metro, "latest"), d.source) ?? "-"}</td>
                 </tr>
