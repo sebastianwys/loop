@@ -203,6 +203,83 @@ class TestEnrichment(unittest.TestCase):
         self.assertEqual((out["cbsa_code"] == "p").sum(), 2)
 
 
+# a source on disk that hands back nothing is not the same as a source that is
+# not there. the second is declared in the manifest, the first used to leave a
+# feature null in every row of the panel with nobody the wiser
+class TestSilentlyEmptySource(unittest.TestCase):
+    def have(self, present=True):
+        return {name: {"path": f"data/raw/{name}/metrics.csv", "present": present}
+                for name in panel.ENRICHMENT}
+
+    def raw_dir(self, rows):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        root = Path(tmp.name)
+        for source, metrics in panel.ENRICHMENT.items():
+            (root / source).mkdir(parents=True)
+            frame = pd.DataFrame(rows.get(source, [
+                {"cbsa_code": "10180", "metric": metric, "period": "2020", "value": 1.0}
+                for metric in metrics
+            ]))
+            if frame.empty:
+                frame = pd.DataFrame(columns=["cbsa_code", "metric", "period", "value"])
+            frame.to_csv(root / source / "metrics.csv", index=False)
+        return root
+
+    def test_a_metric_that_never_arrives_is_refused(self):
+        root = self.raw_dir({"pep": [
+            {"cbsa_code": "10180", "metric": "population", "period": "2020", "value": 1.0},
+        ]})
+        with self.assertRaises(ValueError) as raised:
+            panel.read_metrics(root, self.have())
+        self.assertIn("pep", str(raised.exception))
+        self.assertIn("pop_estimate", str(raised.exception))
+
+    def test_an_empty_file_is_refused(self):
+        root = self.raw_dir({"realtor": []})
+        with self.assertRaises(ValueError) as raised:
+            panel.read_metrics(root, self.have())
+        self.assertIn("realtor", str(raised.exception))
+
+    # a column of text parses to all nulls, which is no data either
+    def test_values_that_are_all_unparsable_are_refused(self):
+        root = self.raw_dir({"bps": [
+            {"cbsa_code": "10180", "metric": "permits_units", "period": "2020", "value": "N/A"},
+        ]})
+        with self.assertRaises(ValueError) as raised:
+            panel.read_metrics(root, self.have())
+        self.assertIn("permits_units", str(raised.exception))
+
+    def test_every_source_delivering_passes(self):
+        out = panel.read_metrics(self.raw_dir({}), self.have())
+        self.assertEqual(set(out["metric"]), {m for ms in panel.ENRICHMENT.values() for m in ms})
+
+    # an absent source is the declared case, it stays quiet
+    def test_absent_sources_are_not_refused(self):
+        out = panel.read_metrics(self.raw_dir({}), self.have(present=False))
+        self.assertTrue(out.empty)
+
+    def test_a_feature_null_in_every_row_is_refused(self):
+        frame = pd.DataFrame({name: [np.nan, np.nan] for name in panel.ENRICHMENT_FEATURES})
+        frame["inventory_yoy"] = [np.nan, np.nan]
+        frame["pop_growth"] = [0.01, 0.02]
+        frame["domestic_migration_rate"] = [1.0, 2.0]
+        frame["permits_per_1000"] = [3.0, 4.0]
+        frame["income_growth"] = [0.03, 0.04]
+        frame["listing_price_yoy"] = [0.05, 0.06]
+        with self.assertRaises(ValueError) as raised:
+            panel.check_features(frame, self.have())
+        self.assertIn("inventory_yoy", str(raised.exception))
+
+    # the same all null column is expected when the source it needs is absent
+    def test_a_null_feature_is_allowed_when_its_source_is_missing(self):
+        frame = pd.DataFrame({name: [1.0, 2.0] for name in panel.ENRICHMENT_FEATURES})
+        frame["inventory_yoy"] = [np.nan, np.nan]
+        have = self.have()
+        have["zillow_extras"]["present"] = False
+        panel.check_features(frame, have)
+
+
 class TestStaticAndZillow(unittest.TestCase):
     def test_names_levels_and_parents(self):
         out = panel.static_columns(["10180", "16984"], gazetteer()).set_index("cbsa_code")

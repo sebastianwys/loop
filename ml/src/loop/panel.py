@@ -301,6 +301,15 @@ def read_metrics(raw_dir, have):
         frame = pd.read_csv(raw_dir / source / "metrics.csv", dtype={"cbsa_code": str, "metric": str, "period": str})
         frame = frame[frame["metric"].isin(metrics)]
         frame = frame.assign(cbsa_code=frame["cbsa_code"].str.zfill(5), value=pd.to_numeric(frame["value"], errors="coerce"))
+
+        # a file on disk that hands back nothing for a metric it declares would
+        # leave the feature it feeds null in every row, while the manifest still
+        # called the source present. that is a break, so say it here
+        arrived = set(frame.loc[frame["value"].notna(), "metric"])
+        bare = [metric for metric in metrics if metric not in arrived]
+        if bare:
+            raise ValueError(f"{source}/metrics.csv is on disk with no usable rows for {bare}")
+
         frames.append(frame[["cbsa_code", "metric", "period", "value"]])
     if not frames:
         return pd.DataFrame({"cbsa_code": pd.Series(dtype=str), "metric": pd.Series(dtype=str),
@@ -357,6 +366,7 @@ def build(raw_dir=spec.RAW_DIR):
     features = inherit_from_parent(enrichment_features(read_metrics(raw_dir, have)), parents_of(gazetteer))
     for name in ENRICHMENT_FEATURES:
         panel[name] = as_of(features[features["metric"] == name], spine)
+    check_features(panel, have)
 
     return contract(panel.sort_values(spec.KEY).reset_index(drop=True))
 
@@ -375,6 +385,22 @@ ABSENT = {
     "pep": ["pop_growth", "domestic_migration_rate", "permits_per_1000"], "bps": ["permits_per_1000"],
     "bea": ["income_growth"], "realtor": ["listing_price_yoy"], "zillow_extras": ["inventory_yoy"],
 }
+
+
+# which enrichment sources feed a derived feature, read back off ABSENT so the
+# two cannot drift apart
+def feeders(feature):
+    return [source for source in ENRICHMENT if feature in ABSENT.get(source, [])]
+
+
+# a feature null in every row while every source behind it is on disk means the
+# rows arrived and never joined. the panel is 71,072 rows, nobody reads a column
+# of nulls off the end of a build, so it stops here
+def check_features(panel, have):
+    for name in ENRICHMENT_FEATURES:
+        behind = feeders(name)
+        if panel[name].isna().all() and all(have[source]["present"] for source in behind):
+            raise ValueError(f"{name} is null in every row while {behind} are on disk")
 
 
 # a path as the manifest may name it: inside the repo, never a machine path
