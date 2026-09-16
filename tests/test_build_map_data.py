@@ -219,8 +219,10 @@ class TestEdgeCases(BuildCase):
         self.assertEqual(payload["sources"]["fred"], None)
         self.assertIsNone(abilene["years"]["2019"]["zhvi"])
         self.assertIsNone(abilene["years"]["2019"]["unemp"])
+        # no fhfa master in this build, so the headline index has no latest either
         self.assertEqual(abilene["latest"], {"zhvi": None, "zhvi_date": None, "zori": None,
-                                             "zori_date": None, "unemp": None, "unemp_date": None})
+                                             "zori_date": None, "unemp": None, "unemp_date": None,
+                                             "hpi": None, "hpi_date": None})
         # the required inputs still produce the census side
         self.assertEqual(abilene["ptir"]["2024"], 2.5)
 
@@ -273,7 +275,8 @@ class TestEdgeCases(BuildCase):
         self.assertEqual(list(metro["years"]), ["2014", "2019", "2024"])
         self.assertEqual(list(metro["years"]["2014"]), ["hpi", "income", "pop", "age", "degree_share",
                                                         "own_rate", "home_value", "zhvi", "zori", "unemp"])
-        self.assertEqual(list(metro["latest"]), ["zhvi", "zhvi_date", "zori", "zori_date", "unemp", "unemp_date"])
+        self.assertEqual(list(metro["latest"]), ["zhvi", "zhvi_date", "zori", "zori_date", "unemp", "unemp_date",
+                                                 "hpi", "hpi_date"])
         self.assertEqual(list(metro["growth"]), ["hpi_14_19", "hpi_19_24", "income_14_24", "pop_14_24", "home_value_14_24"])
         self.assertEqual(list(metro["ptir"]), ["2014", "2019", "2024"])
         # the file is plain ascii json with no nan tokens
@@ -602,6 +605,36 @@ class TestNationalIndicators(BuildCase):
 # vintages the two rows are different places wearing the same code, and the only
 # honest answer is null. salisbury 41540 is the real case in the shipped merged
 # file: 2014 and 2019 are the md-de footprint, 2024 is md only
+# the headline hpi reads the newest fhfa quarter, not the 2024 vintage average.
+# the vintages stay in the year panels; latest is the quarter the series ends on
+class TestLatestHpi(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        merged = bm.load_merged(bm.DEFAULT_PATHS["merged"])
+        cls.rows = merged[merged["cbsa_code"] == "10180"]
+        centroids = bm.load_centroids(bm.DEFAULT_PATHS["centroids"])
+        series = bm.load_fhfa_series(bm.DEFAULT_PATHS["fhfa"])
+        cls.metro = bm.build_metros(cls.rows, centroids, series=series)[0][0]
+
+    def test_latest_carries_the_newest_quarter(self):
+        hpi = self.metro["series"]["hpi"]
+        self.assertEqual(hpi["as_of"], "2026Q2")
+        self.assertEqual(self.metro["latest"]["hpi"], hpi["anchor"])
+
+    def test_the_date_is_the_quarter_end_month(self):
+        self.assertEqual(self.metro["latest"]["hpi_date"], "2026-06")
+
+    # the vintage average is a different number and keeps its own slot
+    def test_the_2024_vintage_is_untouched(self):
+        self.assertEqual(self.metro["years"]["2024"]["hpi"], 335.55)
+        self.assertNotEqual(self.metro["latest"]["hpi"], self.metro["years"]["2024"]["hpi"])
+
+    def test_a_metro_without_a_series_has_no_latest_hpi(self):
+        centroids = bm.load_centroids(bm.DEFAULT_PATHS["centroids"])
+        bare = bm.build_metros(self.rows, centroids)[0][0]
+        self.assertIsNone(bare["latest"].get("hpi"))
+
+
 class TestFootprintChange(unittest.TestCase):
     def salisbury(self):
         merged = bm.load_merged(bm.DEFAULT_PATHS["merged"])

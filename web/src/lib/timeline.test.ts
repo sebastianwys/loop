@@ -62,12 +62,15 @@ describe("latest dates and counts", () => {
     expect(latestDate(def("median_listing_price"), SAMPLE.metros)).toBe("2026-08");
     expect(latestDate(def("unemp"), SAMPLE.metros)).toBe("2026-07");
     expect(latestDate(def("permits_per_1000"), SAMPLE.metros)).toBe("2025");
-    expect(latestDate(def("hpi"), SAMPLE.metros)).toBeNull();
+    expect(latestDate(def("hpi"), SAMPLE.metros)).toBe("2026-06");
+    // income is still a vintage only measure, so it has no latest at all
+    expect(latestDate(def("income"), SAMPLE.metros)).toBeNull();
     expect(latestDate(def("unemp"), [])).toBeNull();
   });
 
   it("count metros with a value at each declared period only", () => {
-    expect(periodCounts(def("hpi"), SAMPLE.metros)).toEqual({ "2014": 3, "2019": 3, "2024": 2, latest: 0 });
+    expect(periodCounts(def("hpi"), SAMPLE.metros)).toEqual({ "2014": 3, "2019": 3, "2024": 2, latest: 1 });
+    expect(periodCounts(def("income"), SAMPLE.metros)).toEqual({ "2014": 2, "2019": 3, "2024": 3, latest: 0 });
     expect(periodCounts(def("irs_net_returns"), SAMPLE.metros)).toEqual({ "2014": 2, "2019": 3, "2024": 0, latest: 3 });
     expect(periodCounts(def("hpi_forecast_4q"), SAMPLE.metros)).toEqual({ "2014": 0, "2019": 0, "2024": 0, latest: 2 });
     expect(periodCounts(def("hpi_19_24"), SAMPLE.metros)).toEqual({ "2014": 0, "2019": 0, "2024": 0, latest: 0 });
@@ -83,7 +86,8 @@ describe("latest dates and counts", () => {
 
   it("list the published periods by id", () => {
     const published = publishedPeriods(SAMPLE.metros);
-    expect(published.hpi).toEqual(["2014", "2019", "2024"]);
+    expect(published.hpi).toEqual(["2014", "2019", "2024", "latest"]);
+    expect(published.income).toEqual(["2014", "2019", "2024"]);
     expect(published.irs_net_returns).toEqual(["2014", "2019", "latest"]);
     expect(published.hpi_19_24).toEqual([]);
     expect(publishedPeriods([]).unemp).toEqual(["2014", "2019", "2024", "latest"]);
@@ -92,7 +96,7 @@ describe("latest dates and counts", () => {
 
 describe("buildTimeline", () => {
   it("draws four ticks with the years filled and latest hollow for a vintage only measure", () => {
-    const model = buildTimeline(def("hpi"), SAMPLE.metros);
+    const model = buildTimeline(def("income"), SAMPLE.metros);
     expect(model.ticks.map((t) => t.period)).toEqual(["2014", "2019", "2024", "latest"]);
     expect(model.ticks.map((t) => t.available)).toEqual([true, true, true, false]);
     expect(model.ticks.map((t) => t.label)).toEqual(["2014", "2019", "2024", "latest"]);
@@ -221,11 +225,11 @@ describe("latestColumn", () => {
     const differ = latestColumn(abilene, [def("hpi"), def("zhvi"), def("median_listing_price")]);
     expect(differ.show).toBe(true);
     expect(differ.header).toBeNull();
-    expect(differ.dates).toEqual({ zhvi: "Jul 2026", median_listing_price: "Aug 2026" });
+    expect(differ.dates).toEqual({ hpi: "Jun 2026", zhvi: "Jul 2026", median_listing_price: "Aug 2026" });
   });
 
   it("stays hidden when no row has a latest value for the metro", () => {
-    expect(latestColumn(abilene, [def("hpi"), def("income")])).toEqual({ show: false, header: null, dates: {} });
+    expect(latestColumn(abilene, [def("income"), def("pop")])).toEqual({ show: false, header: null, dates: {} });
     expect(latestColumn(sparse, [def("zhvi")]).show).toBe(false);
     // the division inherits its permits, so the derived rate has no latest value
     expect(latestColumn(sparse, [def("permits_per_1000")])).toEqual({ show: false, header: null, dates: {} });

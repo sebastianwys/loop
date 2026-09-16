@@ -115,7 +115,7 @@ export const DEFS: MetricDef[] = [
   // house prices
   change("hpi_19_24", "HPI growth, 2019 to 2024", "House prices", "fhfa"),
   change("hpi_14_19", "HPI growth, 2014 to 2019", "House prices", "fhfa"),
-  field("hpi", "House price index", "index", "sequential", "House prices", "fhfa", YEARS),
+  field("hpi", "House price index", "index", "sequential", "House prices", "fhfa", ALL),
   { id: "ptir", label: "Price to income ratio", format: "ratio", kind: "sequential", group: "House prices", source: "census", periods: YEARS,
     valueAt: (m, p) => (p && p !== "latest" ? num(m?.ptir?.[p]) : null) },
   field("home_value", "Median home value", "usd", "sequential", "House prices", "census", YEARS),

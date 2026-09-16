@@ -137,6 +137,25 @@ describe("captions and labels", () => {
   });
 });
 
+// the headline index reads the newest fhfa quarter. the vintage averages stay
+// in the year panels, and they are a different number
+describe("house price index at latest", () => {
+  it("offers a latest period and reads the newest quarter", () => {
+    expect(def("hpi").periods).toContain("latest");
+    const latest = def("hpi").valueAt(abilene, "latest");
+    const vintage = def("hpi").valueAt(abilene, "2024");
+    expect(latest).not.toBeNull();
+    expect(latest).not.toBe(vintage);
+    expect(resolveMetric(def("hpi"), "latest").dateOf(abilene)).toMatch(/^\d{4}-\d{2}$/);
+  });
+
+  it("keeps the vintage years reachable", () => {
+    for (const y of ["2014", "2019", "2024"] as Period[]) {
+      expect(def("hpi").valueAt(abilene, y)).not.toBeNull();
+    }
+  });
+});
+
 describe("forecasts", () => {
   const ids = ["hpi_forecast_4q", "hpi_forecast_8q", "hpi_trend_5y", "hpi_yoy_latest", "hpi_surprise_4q"];
 

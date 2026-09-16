@@ -60,6 +60,13 @@ def name_states(name):
     return None if missing(name) else STATE_LIST.findall(f"{name} ")
 
 
+# "2026Q2" as the quarter's end month, "2026-06", which is how every other
+# latest date in the contract reads
+def quarter_end_month(as_of):
+    m = re.fullmatch(r"(\d{4})Q([1-4])", str(as_of or ""))
+    return None if not m else f"{m.group(1)}-{int(m.group(2)) * 3:02d}"
+
+
 # (later - earlier) / earlier. none if either side is missing or earlier is 0
 def growth(later, earlier):
     if missing(later) or missing(earlier) or earlier == 0:
@@ -501,6 +508,7 @@ def build_metros(merged, centroids, zhvi=None, zori=None, bls_frame=None, enrich
                 return None
             return growth(value(later_year, col), value(earlier_year, col))
 
+        hpi_series = series.get(cbsa) if series else None
         zhvi_latest, zhvi_date = zillow_latest(zhvi_row)
         zori_latest, zori_date = zillow_latest(zori_row)
         unemp_latest, unemp_date = bls_latest(bls_frame, cbsa)
@@ -518,6 +526,10 @@ def build_metros(merged, centroids, zhvi=None, zori=None, bls_frame=None, enrich
                 "zhvi": rnd(zhvi_latest, 1), "zhvi_date": zhvi_date,
                 "zori": rnd(zori_latest, 1), "zori_date": zori_date,
                 "unemp": rnd(unemp_latest, 1), "unemp_date": unemp_date,
+                # the headline index reads the newest fhfa quarter. the
+                # 2014/2019/2024 vintage averages keep their year panels
+                "hpi": hpi_series.get("anchor") if hpi_series else None,
+                "hpi_date": quarter_end_month(hpi_series.get("as_of")) if hpi_series else None,
             },
             "growth": {
                 f"hpi_{y0 % 100}_{y1 % 100}": rnd(growth(value(y1, "avg_index_nsa"), value(y0, "avg_index_nsa")), 4),
@@ -528,8 +540,8 @@ def build_metros(merged, centroids, zhvi=None, zori=None, bls_frame=None, enrich
             },
             "ptir": {str(y): rnd(ratio(value(y, "median_home_value"), value(y, "median_income")), 4) for y in STUDY_YEARS},
         }
-        if series and cbsa in series:
-            record["series"] = {"hpi": series[cbsa]}
+        if hpi_series:
+            record["series"] = {"hpi": hpi_series}
         metros.append(apply_enrichments(record, enrichments, parent["cbsa"] if parent else None))
 
     metros.sort(key=lambda m: m["name"])
