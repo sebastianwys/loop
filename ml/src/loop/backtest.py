@@ -19,8 +19,10 @@ SUMMARY_COLUMNS = [
 BLOCKS = ("train", "cal", "test")
 
 
-def load_panel(path=spec.PANEL_PATH):
-    panel = pd.read_parquet(path)
+# the path is read at call time, not captured in the default: bound there, a
+# test that redirects spec.PANEL_PATH still reads the production panel
+def load_panel(path=None):
+    panel = pd.read_parquet(spec.PANEL_PATH if path is None else path)
     missing = [c for c in spec.PANEL_COLUMNS if c not in panel.columns]
     if missing:
         raise ValueError(f"panel lacks columns {missing}")

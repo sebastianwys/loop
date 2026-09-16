@@ -149,11 +149,39 @@ class TestRecord(NationalCase):
         months = self.months_for(indicator_id, rows)
         return bm.indicator_record(indicators.by_id(indicator_id), months)
 
-    def test_level_value_is_as_published_and_history_rounds(self):
+    # a tile and the chart drawn beside it read one series, so they read one
+    # number. rounding the history to a decimal the tile does not use put the
+    # shipped fed funds tile at 3.75 and its own chart at 3.8
+    def test_level_value_is_as_published_and_the_history_matches_it(self):
         record = self.record("treasury_10y", self.rate_rows())
         self.assertEqual(record["date"], "2026-08")
         self.assertEqual(record["value"], 4.69)
-        self.assertEqual(record["history"][-1], {"date": "2026-08", "value": 4.7})
+        self.assertEqual(record["history"][-1], {"date": "2026-08", "value": 4.69})
+
+    # a quarter point target is published as 3.75 and must stay 3.75
+    def test_a_quarter_point_rate_survives_into_the_history(self):
+        rows = [("DFEDTARU", f"{m}-01", "3.75") for m in month_span("2026-08", 3)]
+        record = self.record("fed_funds", rows)
+        self.assertEqual(record["value"], 3.75)
+        self.assertEqual(record["history"][-1]["value"], 3.75)
+
+    # the same contract on the other two transforms, where the rounding that
+    # matters is the transform's own
+    def test_every_transform_ends_its_history_on_the_tile_value(self):
+        cases = [
+            ("treasury_10y", self.rate_rows()),
+            ("fed_funds", [("DFEDTARU", f"{m}-01", "3.75") for m in month_span("2026-08", 3)]),
+            ("cpi", [("CPIAUCSL", f"{m}-01", f"{100.0 + i:.3f}")
+                     for i, m in enumerate(month_span("2026-08", 26))]),
+            ("rate_path", [
+                ("DGS1", "2026-06-30", "3.80"), ("DGS1", "2026-07-31", "3.60"),
+                ("EFFR", "2026-06-30", "4.33"), ("EFFR", "2026-07-31", "4.33"),
+            ]),
+        ]
+        for indicator_id, rows in cases:
+            record = self.record(indicator_id, rows)
+            self.assertEqual(record["history"][-1]["value"], record["value"], indicator_id)
+            self.assertEqual(record["history"][-1]["date"], record["date"], indicator_id)
 
     # forty basis points higher than the same month a year before
     def test_change_12m_sign_and_units_on_a_level(self):

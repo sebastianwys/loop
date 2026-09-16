@@ -325,7 +325,10 @@ def indicator_record(spec, months):
         "value": value,
         "date": newest,
         "change_12m": diff(value, months.get(month_back(newest, 12))),
-        "history": [{"date": m, "value": rnd_zero(months[m], 1)} for m in dates[-indicators.HISTORY_MONTHS:]],
+        # the transform already rounded to the precision the tile publishes, so
+        # the chart carries the tile's own number. rounding again here put the
+        # fed funds tile at 3.75 and the line beside it at 3.8
+        "history": [{"date": m, "value": months[m]} for m in dates[-indicators.HISTORY_MONTHS:]],
     }
 
 

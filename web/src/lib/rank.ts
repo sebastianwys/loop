@@ -20,9 +20,27 @@ export function rankMetros(metros: Metro[], metric: Metric, limit?: number): Ran
   return limit === undefined ? rows : rows.slice(0, limit);
 }
 
-// case insensitive substring match on the name
+// how well a name answers the query: 0 the name starts with it, 1 a word in the
+// name starts with it, 2 it appears inside a word. -1 is no match
+function matchRank(name: string, q: string): number {
+  const lower = name.toLowerCase();
+  if (lower.startsWith(q)) return 0;
+  if (!lower.includes(q)) return -1;
+  return lower.split(/[^a-z0-9]+/).some((word) => word.startsWith(q)) ? 1 : 2;
+}
+
+// case insensitive match on the name, best answers first. the cap falls after
+// the ranking: applying it to the build's own order meant typing "san" spent
+// all eight slots on Thousand Oaks and Mount Pleasant and never reached San
+// Francisco
 export function searchMetros(metros: Metro[], query: string, limit = 8): Metro[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];
-  return metros.filter((m) => m.name.toLowerCase().includes(q)).slice(0, limit);
+  const hits: { metro: Metro; rank: number }[] = [];
+  for (const metro of metros) {
+    const rank = matchRank(metro.name, q);
+    if (rank >= 0) hits.push({ metro, rank });
+  }
+  hits.sort((a, b) => a.rank - b.rank || a.metro.name.localeCompare(b.metro.name));
+  return hits.slice(0, limit).map((h) => h.metro);
 }

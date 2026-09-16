@@ -260,6 +260,49 @@ class TestRun(unittest.TestCase):
                 self.assertGreater(os.path.getsize(root / "figures" / f"{name}.png"), 1000)
 
 
+# ml/data/panel.parquet is not tracked, so a fresh clone has no panel. run()
+# used to fall back on a made up one and write it into the tracked backtest and
+# forecast csvs, with only the figures carrying the note
+class TestRunWillNotInventAPanel(unittest.TestCase):
+    def dirs(self, root):
+        return [
+            mock.patch.object(spec, "ML_ROOT", root),
+            mock.patch.object(spec, "PANEL_PATH", root / "data" / "panel.parquet"),
+            mock.patch.object(spec, "BACKTEST_DIR", root / "backtest"),
+            mock.patch.object(spec, "FORECAST_DIR", root / "forecast"),
+            mock.patch.object(spec, "MODELS_DIR", root / "models"),
+            mock.patch.object(charts, "FIGURES_DIR", root / "figures"),
+        ]
+
+    def run_in(self, root, **kwargs):
+        patches = self.dirs(root)
+        for p in patches:
+            p.start()
+        try:
+            return train.run(device="cpu", max_epochs=1, verbose=False, **kwargs)
+        finally:
+            for p in patches:
+                p.stop()
+
+    def test_a_missing_panel_stops_the_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            with self.assertRaises(FileNotFoundError) as raised:
+                self.run_in(root)
+            self.assertIn("panel", str(raised.exception))
+            for folder in ("backtest", "forecast", "models"):
+                self.assertFalse(any((root / folder).glob("*")) if (root / folder).exists() else False, folder)
+
+    # asking for it out loud still works, and the figures still say so
+    def test_an_explicit_synthetic_run_is_allowed_and_labelled(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            out = self.run_in(root, allow_synthetic=True)
+            self.assertEqual(out["source"], "synthetic")
+            self.assertTrue((root / "forecast" / "forecasts.csv").exists())
+        self.assertIn("synthetic panel", train.note("synthetic", "2026Q2"))
+
+
 class TestShippedSelectionIgnoresTheTestBlock(unittest.TestCase):
     # the cal block always picks windowmlp. the test block picks whichever model
     # the fixture hands the low test error to. selection may read cal rows only

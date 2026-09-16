@@ -404,11 +404,19 @@ def synthetic_panel(n_metros=12, start="1995Q1", end="2026Q2", seed=spec.SEED):
     return panel[spec.PANEL_COLUMNS]
 
 
-def load_panel(panel=None):
+# ml/data/panel.parquet is not tracked, so a clone that has not built one has
+# no panel at all. a made up panel must be asked for out loud: it used to be
+# the silent fallback and its results went into the tracked csvs unmarked
+def load_panel(panel=None, allow_synthetic=False):
     if panel is not None:
         return panel, "given"
     if spec.PANEL_PATH.exists():
         return pd.read_parquet(spec.PANEL_PATH), "panel"
+    if not allow_synthetic:
+        raise FileNotFoundError(
+            f"no panel at {spec.PANEL_PATH}. build it with panel.build(), pass one "
+            "in, or ask for a synthetic panel with allow_synthetic=True"
+        )
     return synthetic_panel(n_metros=120, start="1980Q1"), "synthetic"
 
 
@@ -569,8 +577,8 @@ def plot_distribution(forecasts, model_name, when):
     return charts.save(fig, "13_forecast_distribution")
 
 
-def run(panel=None, device=None, max_epochs=MAX_EPOCHS, patience=PATIENCE, verbose=True):
-    panel, source = load_panel(panel)
+def run(panel=None, device=None, max_epochs=MAX_EPOCHS, patience=PATIENCE, verbose=True, allow_synthetic=False):
+    panel, source = load_panel(panel, allow_synthetic)
     last = last_quarter(panel)
     when = note(source, last)
     for folder in (spec.ML_ROOT / "data", spec.BACKTEST_DIR, spec.FORECAST_DIR, spec.MODELS_DIR):
