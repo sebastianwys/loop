@@ -93,6 +93,9 @@ def dataset(panel, horizons=spec.HORIZONS):
 def assert_no_leakage(panel, features, horizon, builder=features_at_origin, n=5, seed=spec.SEED):
     rng = np.random.default_rng(seed)
     pool = samples(panel, horizon)
+    # min(n, len(pool)) over an empty pool checks nothing and still passes
+    if pool.empty:
+        raise AssertionError(f"no samples at horizon {horizon}, so nothing was checked")
     picks = pool.iloc[rng.choice(len(pool), size=min(n, len(pool)), replace=False)]
     columns = [c for c in features.columns if c not in spec.KEY]
     full = features.set_index(spec.KEY)

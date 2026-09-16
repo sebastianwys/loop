@@ -90,14 +90,42 @@ class TestLogDiff(unittest.TestCase):
 class TestQuarterMeans(unittest.TestCase):
     def test_mean_of_months_skips_the_annual_average(self):
         frame = pd.DataFrame({
-            "cbsa_code": ["x"] * 5, "year": [2020] * 5,
-            "period": ["M01", "M02", "M03", "M13", "M04"],
-            "value": [4.0, 5.0, 6.0, 99.0, 7.0],
+            "cbsa_code": ["x"] * 7, "year": [2020] * 7,
+            "period": ["M01", "M02", "M03", "M13", "M04", "M05", "M06"],
+            "value": [4.0, 5.0, 6.0, 99.0, 7.0, 8.0, 9.0],
         })
         out = panel.quarter_mean_of_months(frame).set_index("quarter")["value"]
         self.assertEqual(len(out), 2)
         self.assertAlmostEqual(out["2020Q1"], 5.0)
-        self.assertAlmostEqual(out["2020Q2"], 7.0)
+        # 99 is the year's own average, not a thirteenth month
+        self.assertAlmostEqual(out["2020Q2"], 8.0)
+
+    # the audit wanted a short quarter dropped. it was tried and measured: the
+    # only short quarter in the panel is 2025Q4, october 2025 was never
+    # published because of the shutdown, and dropping it sent 385 metros back
+    # to the 2024 annual average. two real months of the quarter beat a number
+    # from the year before
+    def test_a_short_quarter_keeps_the_months_it_has(self):
+        frame = pd.DataFrame({
+            "cbsa_code": ["x"] * 5,
+            "year": [2025] * 5,
+            "period": ["M07", "M08", "M09", "M11", "M12"],
+            "value": [4.0, 5.0, 6.0, 3.2, 3.4],
+        })
+        out = panel.quarter_mean_of_months(frame).set_index("quarter")["value"]
+        self.assertAlmostEqual(out["2025Q3"], 5.0)
+        self.assertAlmostEqual(out["2025Q4"], 3.3)
+
+    # a month that came back null is not a month that was published
+    def test_a_null_month_is_not_averaged_as_a_value(self):
+        frame = pd.DataFrame({
+            "cbsa_code": ["x"] * 3,
+            "year": [2026] * 3,
+            "period": ["M01", "M02", "M03"],
+            "value": [4.0, 6.0, float("nan")],
+        })
+        out = panel.quarter_mean_of_months(frame).set_index("quarter")["value"]
+        self.assertAlmostEqual(out["2026Q1"], 5.0)
 
     def test_mean_of_dates_by_quarter(self):
         frame = pd.DataFrame({
@@ -151,12 +179,24 @@ class TestAsOf(unittest.TestCase):
 class TestUnemployment(unittest.TestCase):
     def test_months_first_then_the_lagged_annual_average(self):
         bls = pd.DataFrame({
-            "cbsa_code": ["x"] * 4, "year": [2019, 2020, 2021, 2021],
-            "period": ["M13", "M13", "M07", "M08"], "value": [3.0, 9.0, 5.0, 6.0],
+            "cbsa_code": ["x"] * 5, "year": [2019, 2020, 2021, 2021, 2021],
+            "period": ["M13", "M13", "M07", "M08", "M09"], "value": [3.0, 9.0, 5.0, 6.0, 7.0],
         })
         out = panel.unemployment(bls, spine(["x"], ["2019Q4", "2020Q2", "2021Q1", "2021Q3"])).tolist()
         self.assertTrue(np.isnan(out[0]))
-        self.assertEqual(out[1:], [3.0, 9.0, 5.5])
+        self.assertEqual(out[1:], [3.0, 9.0, 6.0])
+
+    # a quarter with some months uses them; only a quarter with none at all
+    # falls back to the annual rule
+    def test_only_a_quarter_with_no_months_takes_the_annual_average(self):
+        bls = pd.DataFrame({
+            "cbsa_code": ["x"] * 5, "year": [2020, 2021, 2021, 2021, 2021],
+            "period": ["M13", "M07", "M08", "M09", "M11"], "value": [9.0, 5.0, 6.0, 7.0, 3.3],
+        })
+        out = panel.unemployment(bls, spine(["x"], ["2021Q3", "2021Q4", "2022Q1"])).tolist()
+        self.assertEqual(out[0], 6.0)
+        self.assertEqual(out[1], 3.3)
+        self.assertEqual(out[2], 9.0)
 
 
 class TestEnrichment(unittest.TestCase):
@@ -189,6 +229,37 @@ class TestEnrichment(unittest.TestCase):
         annual = pd.DataFrame({"cbsa_code": ["x", "x"], "year": [2018, 2020], "value": [1.0, 2.0]})
         out = panel.annual_log_change(annual)
         self.assertTrue(out["value"].isna().all())
+
+    # the audit asked for the opposite of this and it would have been a defect:
+    # the parent is a larger geography, so a year by year fill puts chicago's
+    # 9.4 million next to gary's 719 thousand and calls the step a growth rate
+    def test_a_division_holding_part_of_a_metric_inherits_none_of_it(self):
+        long = pd.DataFrame({
+            "cbsa_code": ["p", "p", "p", "d", "q"],
+            "metric": ["pop", "pop", "other", "pop", "pop"],
+            "period": ["2019", "2020", "2020", "2020", "2020"],
+            "value": [9_435_971.0, 9_500_000.0, 1.0, 718_960.0, 5.0],
+        })
+        out = panel.inherit_from_parent(long, {"d": "p"})
+        mine = out[out["cbsa_code"] == "d"]
+        pop = mine[mine["metric"] == "pop"]
+        self.assertEqual(list(pop["period"]), ["2020"])
+        self.assertEqual(float(pop["value"].iloc[0]), 718_960.0)
+        # a metric it has none of still comes over whole
+        self.assertEqual(set(mine["metric"]), {"pop", "other"})
+        # and no year of the parent's own series leaked in
+        self.assertNotIn(9_435_971.0, set(mine["value"]))
+
+    def test_the_derived_growth_never_crosses_the_seam(self):
+        long = pd.DataFrame({
+            "cbsa_code": ["p", "p", "d"],
+            "metric": ["pop_estimate"] * 3,
+            "period": ["2019", "2020", "2020"],
+            "value": [9_435_971.0, 9_500_000.0, 718_960.0],
+        })
+        features = panel.enrichment_features(panel.inherit_from_parent(long, {"d": "p"}))
+        growth = features[(features["cbsa_code"] == "d") & (features["metric"] == "pop_growth")]
+        self.assertTrue(growth.empty or growth["value"].isna().all())
 
     def test_division_takes_missing_metrics_from_its_parent(self):
         long = pd.DataFrame({

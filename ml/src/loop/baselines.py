@@ -105,6 +105,10 @@ def _pick_alpha(train, h):
 
 
 def ridge(data):
+    # main() prints this dict as the alphas of the run it just made, so a
+    # horizon left behind by an earlier call must not survive into it
+    RIDGE_ALPHA.clear()
+
     def fit(h, g):
         train = g[g["block"] == "train"]
         alpha = _pick_alpha(train, h)

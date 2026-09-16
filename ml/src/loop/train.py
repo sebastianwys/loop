@@ -71,6 +71,13 @@ def build_model(model_name, n_metros):
     return MODELS[model_name](n_metros)
 
 
+# how much a batch counts toward an epoch's loss: its valid cells. the loss
+# itself is a per-cell mean, so weighting by rows would let a ragged batch
+# carry the weight of a full one and put the two curves on different scales
+def loss_weight(y):
+    return int((~torch.isnan(y)).sum())
+
+
 def batched_loss(model, inputs, y, idx, device):
     model.eval()
     total, count = 0.0, 0
@@ -79,9 +86,9 @@ def batched_loss(model, inputs, y, idx, device):
             sel = idx[start : start + EVAL_BATCH]
             batch_y = y[sel].to(device)
             pred = model(*[x[sel].to(device) for x in inputs])
-            n_valid = int((~torch.isnan(batch_y)).sum())
-            total += float(nets.pinball_loss(pred, batch_y)) * n_valid
-            count += n_valid
+            weight = loss_weight(batch_y)
+            total += float(nets.pinball_loss(pred, batch_y)) * weight
+            count += weight
     return total / max(count, 1)
 
 
@@ -137,8 +144,9 @@ def train_one(model_name, windows, y_fit, y_val=None, device=None, max_epochs=MA
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            total += loss.item() * len(batch_y)
-            count += len(batch_y)
+            weight = loss_weight(batch_y)
+            total += loss.item() * weight
+            count += weight
         train_loss = total / max(count, 1)
         val_loss = float("nan") if val_idx is None else batched_loss(model, inputs, y_val_t, val_idx, device)
         history.append({"epoch": epoch, "train_loss": train_loss, "val_loss": val_loss})
@@ -466,29 +474,34 @@ def plot_training_curves(histories, epochs, when):
     return charts.save(fig, "09_training_curves")
 
 
-def plot_calibration(predictions, model_name, when):
+# the raw quantiles belong on a diagonal: each one claims its own nominal
+# level. the conformal edges do not. a symmetric margin is fitted for the band
+# as a whole to reach 1 - alpha, so drawing its edges at 0.1 and 0.9 measured
+# them against levels they never claimed and doubled the apparent miss. the
+# band's own number, its coverage, goes in the title instead
+def plot_calibration(predictions, model_name, when, return_figure=False):
     test = predictions[predictions["block"] == "test"]
-    fig, axes = charts.figure("Quantile calibration", f"share of test block outcomes below each predicted quantile, {model_name}, raw and after the conformal margin, {when}", size=(8, 7.5), rows=2, cols=2)
+    fig, axes = charts.figure("Quantile calibration", f"share of test block outcomes below each predicted quantile, {model_name}, {when}. the conformal band is one interval, so its coverage is reported rather than plotted", size=(8, 7.5), rows=2, cols=2)
     fig.subplots_adjust(top=0.86, hspace=0.4, wspace=0.3)
     nominal = list(spec.QUANTILES)
     for k, (ax, h) in enumerate(zip(axes.flat, spec.HORIZONS)):
         g = test[test["horizon"] == h]
         y = g["y"].to_numpy()
         raw = [np.mean(y <= g[qname(q)].to_numpy()) for q in nominal]
-        conformal = [np.mean(y <= g[c].to_numpy()) for c in ("lo", "q50", "hi")]
+        covered = spec.coverage(g["y"], g["lo"], g["hi"])
         ax.plot([0, 1], [0, 1], color=charts.AXIS, linewidth=0.8)
         ax.plot(nominal, raw, marker="o", markersize=4, color=charts.SERIES[0], label="raw quantiles")
-        ax.plot(nominal, conformal, marker="o", markersize=4, color=charts.SERIES[1], label="after conformal margin")
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)
         ax.set_xticks(nominal)
-        ax.set_title(f"{h} quarter{'s' if h > 1 else ''} ahead, n {len(g)}")
+        ax.set_title(f"{h} quarter{'s' if h > 1 else ''} ahead, n {len(g)}, band coverage {covered:.2f} of {1 - spec.ALPHA:.2f}")
         ax.set_xlabel("nominal quantile")
         if k % 2 == 0:
             ax.set_ylabel("share of outcomes below")
         if k == 0:
             ax.legend(loc="upper left")
-    return charts.save(fig, "10_quantile_calibration")
+    path = charts.save(fig, "10_quantile_calibration")
+    return fig if return_figure else path
 
 
 def plot_fans(panel, forecasts, model_name, when):

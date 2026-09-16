@@ -25,6 +25,9 @@ class TestBaselines(unittest.TestCase):
         cls.data = backtest.dataset(cls.panel)
         with threadpool_limits(limits=THREADS):
             cls.results = {name: baselines.run_model(name, cls.data) for name in baselines.MODELS}
+        # the alphas of this run, taken here. the module global holds the last
+        # ridge call's horizons and any later call replaces them
+        cls.ridge_alphas = dict(baselines.RIDGE_ALPHA)
 
     def test_every_test_sample_gets_a_finite_median(self):
         for name, (preds, _, _) in self.results.items():
@@ -78,7 +81,7 @@ class TestBaselines(unittest.TestCase):
             test = summary[summary["block"] == "test"]
             for h, value in zip(test["horizon"], test["relative_mae"]):
                 self.assertLess(value, 1.0, f"{name} at {h} quarters")
-        self.assertEqual(sorted(baselines.RIDGE_ALPHA), list(spec.HORIZONS))
+        self.assertEqual(sorted(self.ridge_alphas), list(spec.HORIZONS))
         for alpha in baselines.RIDGE_ALPHA.values():
             self.assertIn(alpha, list(baselines.ALPHAS))
 
@@ -127,6 +130,19 @@ class TestRunAll(unittest.TestCase):
         self.assertEqual(len(combined), len(names) * len(spec.HORIZONS) * len(backtest.BLOCKS))
         self.assertEqual(list(combined["model"].unique()), names)
         self.assertEqual(len(margins), len(names) * len(spec.HORIZONS))
+
+
+# the chosen alphas live in a module global that main() prints as this run's.
+# a horizon left there by an earlier run was printed as if it had just been
+# fitted, which is a lie in the run log the readme quotes
+class TestRidgeAlphasAreThisRunsOnly(unittest.TestCase):
+    def test_a_stale_horizon_does_not_survive_the_next_fit(self):
+        data = backtest.dataset(synthetic_panel(), horizons=(4,))
+        baselines.RIDGE_ALPHA[99] = 1.234
+        with threadpool_limits(limits=THREADS):
+            baselines.run_model("ridge", data)
+        self.assertEqual(set(baselines.RIDGE_ALPHA), {4})
+        self.assertNotIn(99, baselines.RIDGE_ALPHA)
 
 
 if __name__ == "__main__":

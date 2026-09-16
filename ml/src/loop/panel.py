@@ -99,9 +99,15 @@ def log_diff(frame, column, steps):
 
 # quarterly mean of the monthly rows of a bls style frame: period M01 to M12 is
 # a month, M13 is the annual average and is not a month
+# the mean of the months that exist, deliberately, and a month published as
+# null is not a month. requiring all three was tried and is worse: the only
+# short quarter in the panel is 2025Q4, where the shutdown means october was
+# never published and never will be, and dropping it sends 385 metros back to
+# the previous year's annual average. abilene would read 3.4, a number from
+# 2024, instead of 3.30, which is november and december of the quarter itself
 def quarter_mean_of_months(frame):
     period = frame["period"].astype(str)
-    monthly = frame[period.str.fullmatch(MONTH_OF_YEAR).to_numpy()]
+    monthly = frame[period.str.fullmatch(MONTH_OF_YEAR).to_numpy()].dropna(subset=["value"])
     month = monthly["period"].astype(str).str[1:].astype(int)
     quarter = monthly["year"].astype(int).astype(str) + "Q" + ((month - 1) // 3 + 1).astype(str)
     grouped = monthly.assign(quarter=quarter.to_numpy()).groupby(["cbsa_code", "quarter"], as_index=False)
@@ -219,6 +225,13 @@ def enrichment_features(metrics):
 # it, the way the map fills the division panels. derived rates are inherited,
 # never counts, so a division is not handed the parent's permits over its own
 # population
+# all or nothing per metric, and deliberately so. a division that holds part of
+# a metric keeps only its own rows: the parent is a different, larger geography,
+# so filling its missing years from the parent splices two scales into one
+# series. gary in holds 718,960 people from 2020 and its parent chicago holds
+# 9,435,971, thirteen times more, so a year by year fill would hand gary a
+# minus 257 percent population growth at the seam. the nulls are the honest
+# answer, and the map discloses a whole metric taken from a parent
 def inherit_from_parent(long, parents):
     filled = [long]
     for division, parent in parents.items():

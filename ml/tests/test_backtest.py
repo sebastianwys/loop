@@ -300,5 +300,16 @@ class TestHelpers(unittest.TestCase):
             self.assertEqual(len(pd.read_parquet(predictions)), 1)
 
 
+# the check picks min(n, len(pool)) samples, so an empty pool means the loop
+# body never runs and the assertion passes having compared nothing
+class TestLeakageCheckCannotPassVacuously(unittest.TestCase):
+    def test_no_samples_is_an_error_not_a_pass(self):
+        panel = synthetic_panel().head(0)
+        features = backtest.features_at_origin(synthetic_panel())
+        with self.assertRaises(AssertionError) as raised:
+            backtest.assert_no_leakage(panel, features, 4)
+        self.assertIn("no samples", str(raised.exception))
+
+
 if __name__ == "__main__":
     unittest.main()

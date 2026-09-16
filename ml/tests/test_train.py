@@ -357,5 +357,64 @@ class TestShippedSelectionIgnoresTheTestBlock(unittest.TestCase):
         self.assertEqual(favours_seqgru["shipped"], "windowmlp")
 
 
+# the history csv puts the two curves on one axis, so they have to be the same
+# functional. the training loss weighted each batch's per-cell mean by its row
+# count while the validation loss weighted by valid cells, so a ragged batch
+# moved one curve and not the other
+class TestTheTwoLossCurvesWeighTheSameWay(unittest.TestCase):
+    def test_a_batch_weighs_by_valid_cells_not_by_rows(self):
+        y = torch.tensor([[1.0, float("nan")], [2.0, 3.0], [float("nan"), float("nan")]])
+        self.assertEqual(train.loss_weight(y), 3)
+
+    def test_the_epoch_loss_is_the_cell_weighted_mean_of_its_batches(self):
+        windows = nets.build_windows(tiny_panel())
+        table = train.splits(windows.origins)
+        y_fit = np.where(table == "fit", windows.y, np.nan)
+        # ragged on purpose: every other row keeps one horizon, so a batch's
+        # cell count stops tracking its row count
+        y_fit[::2, 1:] = np.nan
+        seen = []
+        real = nets.pinball_loss
+
+        # a loss that differs per batch, so the two weightings cannot agree
+        def by_size(pred, y):
+            cells = int((~torch.isnan(y)).sum())
+            seen.append((cells, len(y)))
+            return real(pred, y) * 0.0 + float(cells)
+
+        # small batches, so the ragged rows land unevenly and the two
+        # weightings have something to disagree about
+        with mock.patch.object(nets, "pinball_loss", by_size), \
+             mock.patch.object(train, "BATCH", 3):
+            fitted = train.train_one("windowmlp", windows, y_fit, None, device="cpu",
+                                     epochs=1, verbose=False)
+
+        cells = sum(c for c, _ in seen)
+        rows = sum(r for _, r in seen)
+        by_cells = sum(c * c for c, _ in seen) / cells
+        by_rows = sum(c * r for c, r in seen) / rows
+        train_loss = float(fitted["history"]["train_loss"].iloc[0])
+        self.assertAlmostEqual(train_loss, by_cells, places=6)
+        self.assertNotAlmostEqual(by_cells, by_rows, places=6)
+
+
+# a symmetric conformal margin targets 90 percent coverage for the band as a
+# whole, not the 0.1 and 0.9 marginals, so plotting its edges on a quantile
+# diagonal doubled the miscalibration the figure appeared to show
+class TestTheCalibrationFigureOnlyPlotsQuantiles(unittest.TestCase):
+    def test_one_series_per_panel_and_the_band_coverage_in_the_title(self):
+        panel = tiny_panel()
+        predictions, _ = train.fit_and_score(panel, "windowmlp", device="cpu", max_epochs=1, verbose=False)
+        with tempfile.TemporaryDirectory() as tmp:
+            with mock.patch.object(charts, "FIGURES_DIR", Path(tmp)):
+                fig = train.plot_calibration(predictions, "windowmlp", "data through 2026Q2", return_figure=True)
+        for ax in fig.axes:
+            if not ax.get_title():
+                continue
+            # the diagonal plus one calibration curve, and nothing else
+            self.assertEqual(len(ax.lines), 2, ax.get_title())
+            self.assertIn("band coverage", ax.get_title())
+
+
 if __name__ == "__main__":
     unittest.main()
