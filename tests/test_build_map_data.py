@@ -626,3 +626,39 @@ class TestFootprintChange(unittest.TestCase):
         centroids = bm.load_centroids(bm.DEFAULT_PATHS["centroids"])
         metros, _, _ = bm.build_metros(merged, centroids)
         self.assertEqual(metros[0]["growth"]["hpi_14_19"], 0.1469)
+
+    # omb renames the principal cities without moving a county line. bakersfield
+    # is kern county in both vintages and austin's san marcos sits in hays, which
+    # the metro already had. an earlier guard compared the whole name and blanked
+    # 78 metros that had only been renamed, so the state list is the test
+    def test_a_renamed_metro_keeps_its_growth(self):
+        merged = bm.load_merged(bm.DEFAULT_PATHS["merged"])
+        centroids = bm.load_centroids(bm.DEFAULT_PATHS["centroids"])
+        for cbsa, was, now in (
+            ("12540", "Bakersfield, CA Metro Area", "Bakersfield-Delano, CA Metro Area"),
+            ("12420", "Austin-Round Rock, TX Metro Area", "Austin-Round Rock-San Marcos, TX Metro Area"),
+        ):
+            rows = merged[merged["cbsa_code"] == cbsa]
+            names = {int(r["year"]): r["NAME"] for _, r in rows.iterrows()}
+            # precondition: renamed, same states
+            self.assertEqual(names[2014], was)
+            self.assertEqual(names[2024], now)
+            metros, _, _ = bm.build_metros(rows, centroids)
+            self.assertIsNotNone(metros[0]["growth"]["pop_14_24"], cbsa)
+
+    # a metro that gained or lost a state really was redrawn
+    def test_a_state_leaving_the_name_blanks_the_growth(self):
+        merged = bm.load_merged(bm.DEFAULT_PATHS["merged"])
+        centroids = bm.load_centroids(bm.DEFAULT_PATHS["centroids"])
+        for cbsa in ("21780", "35084", "49340"):
+            rows = merged[merged["cbsa_code"] == cbsa]
+            metros, _, _ = bm.build_metros(rows, centroids)
+            self.assertIsNone(metros[0]["growth"]["pop_14_24"], cbsa)
+
+    def test_name_states_reads_both_lists_off_a_division(self):
+        self.assertEqual(bm.name_states("Salisbury, MD-DE Metro Area"), ["MD-DE"])
+        self.assertEqual(
+            bm.name_states("Chicago-Naperville-Schaumburg, IL Metro Division; Chicago-Naperville-Elgin, IL-IN Metro Area"),
+            ["IL", "IL-IN"],
+        )
+        self.assertIsNone(bm.name_states(None))

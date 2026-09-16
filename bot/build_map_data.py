@@ -51,6 +51,15 @@ def as_int(value):
     return None if missing(value) else int(round(float(value)))
 
 
+# the state lists in an acs name, the MD-DE in "Salisbury, MD-DE Metro Area".
+# a division name carries two, its own and its parent's, so both are returned
+STATE_LIST = re.compile(r",\s*([A-Z]{2}(?:-[A-Z]{2})*)[\s;]")
+
+
+def name_states(name):
+    return None if missing(name) else STATE_LIST.findall(f"{name} ")
+
+
 # (later - earlier) / earlier. none if either side is missing or earlier is 0
 def growth(later, earlier):
     if missing(later) or missing(earlier) or earlier == 0:
@@ -479,13 +488,16 @@ def build_metros(merged, centroids, zhvi=None, zori=None, bls_frame=None, enrich
             row = rows.get(year)
             return None if row is None else row.get(col)
 
-        # an acs vintage's NAME carries its county set, so two vintages joined
-        # on cbsa_code are the same place only while the names agree. when omb
-        # redraws a cbsa the pair is not a rate and reports null. hpi is left
-        # alone, fhfa restates its whole series on one delineation
+        # a vintage pair that gains or loses a state is a redrawn cbsa and has no
+        # growth rate to report. the full name is too loose a test: omb renames the
+        # principal cities without moving a county line, so bakersfield becomes
+        # bakersfield-delano on the same kern county and austin gains san marcos
+        # from a county it already had. the state list moves only with the
+        # counties. hpi is left alone, fhfa restates its series on one delineation
         def acs_growth(later_year, earlier_year, col):
-            later_name, earlier_name = value(later_year, "NAME"), value(earlier_year, "NAME")
-            if not missing(later_name) and not missing(earlier_name) and later_name != earlier_name:
+            later_states = name_states(value(later_year, "NAME"))
+            earlier_states = name_states(value(earlier_year, "NAME"))
+            if later_states and earlier_states and later_states != earlier_states:
                 return None
             return growth(value(later_year, col), value(earlier_year, col))
 
