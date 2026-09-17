@@ -45,9 +45,10 @@ POPULATION = "B01003_001E"
 
 # hud keys these six states town by town and everywhere else county by county.
 # connecticut is the one state where hud's town rows still carry the pre 2022
-# counties while the delineation carries planning regions, so its towns are
-# matched and weighted by the town code alone
+# counties while the delineation carries planning regions, so its towns are the
+# only ones matched and weighted by the town code alone
 NEW_ENGLAND = {"09", "23", "25", "33", "44", "50"}
+CONNECTICUT = "09"
 
 # the census county subdivision row that stands for the part of a county with
 # no town, never a place hud publishes for
@@ -57,6 +58,11 @@ NO_SUBDIVISION = "00000"
 # (X-RateLimit-Limit), so a little over one second between calls
 TIMEOUT = 120
 MIN_INTERVAL = 1.05
+
+# how many metros a year is probed with before it is written off. eight spread
+# across the list costs a few calls and makes a false drop, which would cost a
+# whole column, all but impossible
+PROBES = 8
 
 # a metro entity id carries the cbsa code twice, METRO10180M10180. a hud metro
 # fmr subarea carries MM plus an old pmsa code or N plus a county fips instead,
@@ -181,8 +187,10 @@ def parse_state_list(payload):
             continue
         code = str(entry.get("state_code", "")).strip().upper()
         try:
+            # an infinity converts to a float and then refuses to be an int,
+            # which would take the whole collector down from a list endpoint
             fips = f"{int(float(str(entry.get('state_num', '')).strip())):02d}"
-        except ValueError:
+        except (ValueError, OverflowError):
             continue
         if len(code) == 2:
             codes.setdefault(fips, code)
@@ -201,19 +209,29 @@ def parse_state_rows(payload):
         if not isinstance(row, dict):
             continue
         fips = str(row.get("fips_code", "")).strip()
-        area = str(row.get("metro_name", "")).strip()
+        # a json null would read as the string "None" and gather every unnamed
+        # row in the country into one pretend fmr area
+        name = row.get("metro_name")
+        area = str(name).strip() if name is not None else ""
         if len(fips) == 10 and area:
             out[fips] = (area, to_number(row.get(TWO_BEDROOM)))
     return out
 
 
 # the county a hud row sits in, as the delineation names it. a county row says
-# so in its own fips; a town row is placed by the census, which is the only way
-# a connecticut town reaches its planning region
+# so in its own fips. a town is placed by the census: on its whole fips where
+# hud and the census agree about the county, and on state and town code alone
+# in connecticut, where hud still names the pre 2022 county.
+#
+# the whole fips has to be tried first. town codes repeat across counties, and
+# maine has one that does: the penobscot indian island reservation is 57936 in
+# both aroostook and penobscot. keyed on the town code alone the two rows
+# collapse, and whichever the census returned last decides where both of them
+# land, which put an aroostook row inside the bangor rollup
 def home_county(fips, regions):
     if fips.endswith("99999"):
         return fips[:5]
-    return regions.get(fips[:2] + fips[5:], fips[:5])
+    return regions.get(fips) or regions.get(fips[:2] + fips[5:]) or fips[:5]
 
 
 # the hud rows that make up one cbsa, in a stable order
@@ -222,13 +240,12 @@ def rows_for(counties, rows, regions):
     return [(fips, rows[fips]) for fips in sorted(rows) if home_county(fips, regions) in wanted]
 
 
-# the population behind one hud row. towns are keyed by state and town code so
-# that connecticut, where hud and the census disagree about the county, still
-# finds its weight
+# the population behind one hud row, looked up the same way home_county places
+# it: the whole fips first, then state and town code for connecticut
 def weight_of(fips, county_pop, town_pop):
     if fips.endswith("99999"):
         return county_pop.get(fips[:5])
-    return town_pop.get(fips[:2] + fips[5:])
+    return town_pop.get(fips) or town_pop.get(fips[:2] + fips[5:])
 
 
 # one value for a cbsa from the rows inside it, weighted by population. a row
@@ -263,8 +280,12 @@ def census_rows(params, key):
 
 
 # county populations for the whole country and town populations for the new
-# england states in play, plus the county the census puts each town in. a town
-# code repeated across two counties, which happens once in maine, is summed
+# england states in play, plus the county the census puts each town in.
+#
+# a town is indexed on its whole fips, state, county and town code, which is
+# what hud sends everywhere it agrees with the census about the county. only
+# connecticut, where it does not, also gets the shorter state and town key, so
+# a town code that repeats across two counties cannot collapse the two rows
 def census_population(states, key):
     county_pop, town_pop, regions = {}, {}, {}
     for row in census_rows({"get": POPULATION, "for": "county:*"}, key):
@@ -277,11 +298,16 @@ def census_population(states, key):
             value, town = row[0], row[-1]
             if town == NO_SUBDIVISION:
                 continue
-            town_key = row[-3] + town
-            regions[town_key] = row[-3] + row[-2]
+            exact, county = row[-3] + row[-2] + town, row[-3] + row[-2]
             population = to_number(value)
+            regions[exact] = county
             if population:
-                town_pop[town_key] = town_pop.get(town_key, 0.0) + population
+                town_pop[exact] = population
+            if state == CONNECTICUT:
+                loose = row[-3] + town
+                regions[loose] = county
+                if population:
+                    town_pop[loose] = town_pop.get(loose, 0.0) + population
     return county_pop, town_pop, regions
 
 
@@ -359,36 +385,51 @@ def newest_year(client, base, entities):
     return None
 
 
+# the entities a year is probed with: a spread across the sorted list rather
+# than the head of it, since the head is always the same three metros and a
+# year they happen to lack would take the whole column down for everyone
+def probe_entities(entities, wanted=PROBES):
+    ordered = list(entities)
+    if len(ordered) <= wanted:
+        return ordered
+    stride = len(ordered) / wanted
+    return [ordered[int(i * stride)] for i in range(wanted)]
+
+
 # the years worth asking every metro about. the api has no fair market rents
 # or income limits before fiscal 2017, and one call per metro for a year that
-# holds nothing is a thousand refusals, so a year a few entities all refuse is
-# dropped here and recorded as missing
+# holds nothing is a thousand refusals, so a year every probe refuses is
+# dropped here and recorded as missing. the test is whether hud answered with
+# data at all, which is weaker than whether the answer carries a year: some
+# responses are usable without one
 def usable_years(client, base, entities, years):
     keep = []
     for year in years:
-        for entity in list(entities)[:3]:
+        for entity in probe_entities(entities):
             _, payload = client.get_json(base + entity, {"year": year})
-            if payload_year(payload):
+            if isinstance(payload, dict) and payload.get("data"):
                 keep.append(year)
                 break
     return keep
 
 
-# the rollup values for one year. fresh holds the rows hud published for this
-# year, so a rent comes from the year asked for; layout holds the newest county
-# to fmr area map known, which is all income limits need, since they are asked
-# one fmr area at a time rather than one county at a time
+# the rollup values for one year, from the county and town rows hud published
+# for that year and no other. an older year's rows used to stand in for the
+# layout when a state answered nothing, on the grounds that income limits only
+# need to know which fmr area a county sits in. that was wrong: when hud splits
+# an area between two years, the stale map asks one area for a value and
+# applies it to the whole cbsa, which reads as confident and is not. a year
+# with no rows for a state now simply has no rollup for the cbsas in it
 def rollup_records(client, year, years_for, rollups, rows, geo, captured, skipped, areas):
-    fresh, layout = rows
     regions, county_pop, town_pop = geo
     records, income, found = [], {}, {"fmr": 0, "il": 0}
     for code, counties in rollups.items():
-        placed = rows_for(counties, layout, regions)
-        if placed:
-            areas[code] = sorted({area for _, (area, _) in placed})
+        placed = rows_for(counties, rows, regions)
+        if not placed:
+            continue
+        areas[code] = {"year": year, "areas": sorted({area for _, (area, _) in placed})}
         if year in years_for["fmr"]:
-            parts = [(rent, weight_of(fips, county_pop, town_pop))
-                     for fips, (_, rent) in rows_for(counties, fresh, regions)]
+            parts = [(rent, weight_of(fips, county_pop, town_pop)) for fips, (_, rent) in placed]
             value = weighted(parts)
             if value is not None:
                 records.append((code, DATASETS["fmr"][1], year, float(round(value))))
@@ -402,7 +443,7 @@ def rollup_records(client, year, years_for, rollups, rows, geo, captured, skippe
                         captured["il"][fips] = payload
                         income[area] = parse_income_limits(payload)
                     else:
-                        key = str(status) if payload is None else "nodata"
+                        key = f"rollup il {status}" if payload is None else "rollup il nodata"
                         skipped[key] = skipped.get(key, 0) + 1
                         income[area] = None
                 parts.append((income[area], weight_of(fips, county_pop, town_pop)))
@@ -472,7 +513,6 @@ def collect():
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     records, skipped, raw_files, rolled = [], {}, [], {}
-    rows_by_state = {}
     for year in sorted(set(years_for["fmr"]) | set(years_for["il"])):
         captured = {"year": year, "fmr": {}, "il": {}, "states": {}}
         for dataset, (base, metric, parse) in DATASETS.items():
@@ -493,11 +533,9 @@ def collect():
             print(f"[hud] {dataset} {year}: {found} of {len(entities)} metros with a value")
 
         if rollups:
-            # this year's county and town rows carry this year's rents. an
-            # older year stands in for the layout alone, so that a year one
-            # dataset publishes and the other does not still knows which fmr
-            # area a county sits in
-            fresh, layout = {}, {}
+            # only this year's rows, so a rent and the fmr area map behind an
+            # income both come from the year being asked about
+            fresh = {}
             for fips in needed:
                 postal = states.get(fips)
                 if not postal:
@@ -507,12 +545,10 @@ def collect():
                 rows = parse_state_rows(payload) if isinstance(payload, dict) else {}
                 if rows:
                     captured["states"][postal] = payload
-                    rows_by_state[postal] = rows
                     fresh.update(rows)
                 else:
                     skipped[f"statedata {status}"] = skipped.get(f"statedata {status}", 0) + 1
-                layout.update(rows or rows_by_state.get(postal, {}))
-            records.extend(rollup_records(client, year, years_for, rollups, (fresh, layout),
+            records.extend(rollup_records(client, year, years_for, rollups, fresh,
                                           (regions, county_pop, town_pop), captured, skipped, rolled))
 
         count = len(captured["fmr"]) + len(captured["il"]) + len(captured["states"])
@@ -531,7 +567,13 @@ def collect():
         periods = df.loc[df["metric"] == metric, "period"]
         through[dataset] = periods.max() if len(periods) else "none"
     built = sorted(set(df["cbsa_code"]) & set(rolled))
-    weighted_codes = [code for code in built if len(rolled[code]) > 1]
+    weighted_codes = [code for code in built if len(rolled[code]["areas"]) > 1]
+    # how many codes carry each metric in each year. a code counts as present
+    # in codes_without_a_value if it has any value at all, so a year that went
+    # half missing shows up here and nowhere else
+    coverage = {}
+    for (metric, period), group in df.groupby(["metric", "period"]):
+        coverage.setdefault(metric, {})[str(period)] = len(group)
     version = f"fmr through {through['fmr']}, income limits through {through['il']}"
     if built:
         version += f", {len(built)} metros built from hud fmr areas"
@@ -555,7 +597,11 @@ def collect():
             "rollup_weights": f"acs 5 year {CENSUS_VINTAGE} {POPULATION}, counties and new england towns",
             "rollup_codes": len(built),
             "rollup_codes_weighted": len(weighted_codes),
+            # the areas behind each rebuilt code, and the year they describe.
+            # hud can split or merge an area between years, so this is the last
+            # year that resolved rather than a statement about all of them
             "rollup_areas": {code: rolled[code] for code in built},
+            "study_codes_by_metric_and_year": coverage,
             "codes_without_a_value": sorted(set(levels) - set(df["cbsa_code"])),
         },
     )]

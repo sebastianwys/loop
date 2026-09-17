@@ -550,7 +550,21 @@ class TestRollups(FakeHud, unittest.TestCase):
         self.assertEqual(notes["rollup_codes"], 2)
         # only the connecticut metro needed a weight, the division did not
         self.assertEqual(notes["rollup_codes_weighted"], 1)
-        self.assertEqual(notes["rollup_areas"]["16984"], [CHICAGO_AREA])
+        # the areas, and the year they describe, since hud can split or merge
+        # an area between years
+        self.assertEqual(notes["rollup_areas"]["16984"]["areas"], [CHICAGO_AREA])
+        self.assertEqual(notes["rollup_areas"]["16984"]["year"],
+                         max(notes["years"]["fmr"] + notes["years"]["il"]))
+        # every metro and year the run asked for, so a year that went half
+        # missing cannot hide behind an empty codes_without_a_value. chicago's
+        # 2019 income is blank in the fixture, and this is the only note that
+        # says so: the code still has values in other years, so it is not in
+        # codes_without_a_value, and 2019 has rows, so it is not in
+        # years_without_data either
+        self.assertEqual(notes["study_codes_by_metric_and_year"]["median_family_income"],
+                         {"2019": 3, "2024": 4, "2025": 4})
+        self.assertEqual(notes["study_codes_by_metric_and_year"]["fmr_2br"],
+                         {"2019": 4, "2024": 4, "2026": 4})
         self.assertIn("2 metros built from hud fmr areas", manifest[0]["version"])
 
     def test_income_limits_are_asked_once_per_area_not_once_per_county(self):
@@ -715,8 +729,28 @@ class TestCensusPopulation(unittest.TestCase):
     def test_counties_towns_and_regions_come_back_keyed_for_the_lookups(self, _):
         counties, towns, regions = hud.census_population(["17", "09"], "")
         self.assertEqual(counties, {"17031": 5275541.0, "17043": 932877.0})
-        self.assertEqual(towns, {"0901220": 100.0, "0901430": 300.0})
-        self.assertEqual(regions, {"0901220": "09140", "0901430": "09140"})
+        # a town is indexed on its whole fips, and connecticut also on the
+        # shorter key, since hud names a county there that the census does not
+        self.assertEqual(towns, {"0914001220": 100.0, "0901220": 100.0,
+                                 "0914001430": 300.0, "0901430": 300.0})
+        self.assertEqual(regions, {"0914001220": "09140", "0901220": "09140",
+                                   "0914001430": "09140", "0901430": "09140"})
+
+    # the maine case: one town code in two counties. keyed on the code alone
+    # the rows collapse and the last county read decides where both of them
+    # land, which is how an aroostook row got into the bangor rollup
+    @patch("bot.collectors.hud.fetch")
+    def test_a_town_code_in_two_counties_keeps_them_apart(self, fetch):
+        fetch.return_value = response(200, [
+            ["B01003_001E", "state", "county", "county subdivision"],
+            ["40", "23", "003", "57936"], ["60", "23", "019", "57936"],
+        ])
+        _, towns, regions = hud.census_population(["23"], "")
+        self.assertEqual(towns, {"2300357936": 40.0, "2301957936": 60.0})
+        self.assertEqual(hud.home_county("2300357936", regions), "23003")
+        self.assertEqual(hud.home_county("2301957936", regions), "23019")
+        self.assertEqual(hud.weight_of("2300357936", {}, towns), 40.0)
+        self.assertEqual(hud.weight_of("2301957936", {}, towns), 60.0)
 
     @patch("bot.collectors.hud.fetch", side_effect=fake_census)
     def test_only_new_england_states_are_asked_for_towns(self, fetch):
@@ -733,7 +767,7 @@ class TestCensusPopulation(unittest.TestCase):
         fetch.return_value = response(200, [["B01003_001E", "state", "county", "county subdivision"],
                                             ["500", "09", "140", "00000"], ["100", "09", "140", "01220"]])
         _, towns, _ = hud.census_population(["09"], "")
-        self.assertEqual(towns, {"0901220": 100.0})
+        self.assertEqual(towns, {"0914001220": 100.0, "0901220": 100.0})
 
 
 if __name__ == "__main__":
