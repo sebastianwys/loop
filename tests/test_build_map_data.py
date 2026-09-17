@@ -286,7 +286,7 @@ class TestEdgeCases(BuildCase):
 
     def test_output_shape_and_sort_order(self):
         payload = self.build()
-        self.assertEqual(list(payload), ["generated_at", "years", "sources", "national", "metros"])
+        self.assertEqual(list(payload), ["generated_at", "years", "sources", "provenance", "national", "metros"])
         self.assertEqual(payload["years"], [2014, 2019, 2024])
         names = [m["name"] for m in payload["metros"]]
         self.assertEqual(names, sorted(names))
@@ -351,6 +351,36 @@ class TestHelpers(unittest.TestCase):
         self.assertIsNone(bm.rnd(float("nan"), 2))
         self.assertEqual(bm.rnd(1.23456, 2), 1.23)
         self.assertEqual(bm.as_int(167171.0), 167171)
+
+
+# a folder's version line, which the site prints as its vintage
+class TestFolderVersion(unittest.TestCase):
+    def test_a_rollup_entry_speaks_for_the_folder(self):
+        entries = [
+            {"filename": "metrics.csv", "version": "ACS 5-year 2014, 2019, 2024"},
+            {"filename": "acs_extra_2014.csv", "version": "ACS 5-year 2014"},
+            {"filename": "acs_extra_2019.csv", "version": "ACS 5-year 2019"},
+        ]
+        self.assertEqual(bm.folder_version(entries), "ACS 5-year 2014, 2019, 2024")
+
+    # census holds three peer vintages and no rollup, so taking the first named
+    # one of the three and the site's vintage line said 2014
+    def test_peer_files_are_all_named(self):
+        entries = [
+            {"filename": "acs_5yr_2014.csv", "version": "ACS 5-year 2014"},
+            {"filename": "acs_5yr_2019.csv", "version": "ACS 5-year 2019"},
+            {"filename": "acs_5yr_2024.csv", "version": "ACS 5-year 2024"},
+        ]
+        self.assertEqual(bm.folder_version(entries),
+                         "ACS 5-year 2014, ACS 5-year 2019, ACS 5-year 2024")
+
+    def test_one_version_across_several_files_is_not_repeated(self):
+        entries = [{"filename": "a.csv", "version": "2026-Q2"}, {"filename": "b.txt", "version": "2026-Q2"}]
+        self.assertEqual(bm.folder_version(entries), "2026-Q2")
+
+    def test_a_manifest_with_no_version_says_present(self):
+        self.assertEqual(bm.folder_version([{"filename": "a.csv"}]), "present")
+        self.assertEqual(bm.folder_version([]), "present")
 
 
 if __name__ == "__main__":
@@ -557,8 +587,127 @@ class TestEnrichment(unittest.TestCase):
         self.assertIsNone(abi["years"]["2024"]["hpi_forecast_4q"])
 
 
-# the fhfa master file, four quarters a year for one metro and a metro with
-# a missing year, plus rows the loader must drop (state level, purchase-only)
+# every collector writes a download manifest beside its files. the block built
+# from them is what makes the pipeline checkable from the site: the upstream
+# url, the version, and the hash each file had when it landed
+class TestProvenance(BuildCase):
+    def manifest(self, name, entries):
+        folder = Path(self.tmp.name) / name
+        folder.mkdir(exist_ok=True)
+        (folder / "download_manifest.json").write_text(json.dumps(entries))
+        return folder
+
+    def entry(self, **fields):
+        return {
+            "filename": "hpi_master.csv",
+            "source": {"url": "https://www.fhfa.gov/hpi/hpi_master.csv", "provider": "FHFA"},
+            "integrity": {"sha256": "f7eca3", "row_count": 186011},
+            "version": "2026-Q2",
+            "downloaded_at": "2026-09-14T23:12:18Z",
+            **fields,
+        }
+
+    def block(self):
+        return self.build()["provenance"]
+
+    def test_a_source_carries_its_url_version_hash_and_rows(self):
+        self.manifest("fhfa", [self.entry()])
+        self.assertEqual(self.block(), [{
+            "source": "fhfa",
+            "provider": "FHFA",
+            "url": "https://www.fhfa.gov/hpi/hpi_master.csv",
+            "version": "2026-Q2",
+            "downloaded_at": "2026-09-14T23:12:18Z",
+            "files": 1,
+            "row_count": 186011,
+            "filename": "hpi_master.csv",
+            "sha256": "f7eca3",
+        }])
+
+    # the collectors that call an api write endpoint where the ones that pull
+    # a file write url, and both are where the bytes came from
+    def test_an_api_collector_names_its_endpoint(self):
+        self.manifest("bls", [self.entry(source={"endpoint": "https://api.bls.gov/publicAPI/v2/", "provider": "BLS"})])
+        self.assertEqual(self.block()[0]["url"], "https://api.bls.gov/publicAPI/v2/")
+
+    # bps carries thirteen files and hud five. listing every one would put the
+    # folder's file list on the page instead of its provenance
+    def test_several_files_are_summarised_not_listed(self):
+        self.manifest("bps", [
+            self.entry(filename="permits_cbsa.csv", downloaded_at="2026-09-15T19:05:09Z"),
+            self.entry(filename="ma2014a.txt", integrity={"sha256": "818643", "row_count": 381},
+                       downloaded_at="2026-09-15T19:05:11Z"),
+        ])
+        entry = self.block()[0]
+        self.assertEqual((entry["files"], entry["row_count"]), (2, 186392))
+        # the hash belongs to the named file, the first, which is the one the build reads
+        self.assertEqual((entry["filename"], entry["sha256"]), ("permits_cbsa.csv", "f7eca3"))
+        # and the folder is as old as its newest download
+        self.assertEqual(entry["downloaded_at"], "2026-09-15T19:05:11Z")
+
+    def test_one_entry_per_folder_in_folder_order(self):
+        self.manifest("zillow", [self.entry()])
+        self.manifest("acs", [self.entry()])
+        self.assertEqual([e["source"] for e in self.block()], ["acs", "zillow"])
+
+    # a source with no manifest still has its metrics read, it just has nothing
+    # to prove with
+    def test_a_folder_without_a_manifest_is_left_out(self):
+        folder = Path(self.tmp.name) / "nomanifest"
+        folder.mkdir()
+        (folder / "metrics.csv").write_text("cbsa_code,metric,period,value\n10180,permits,2024,850\n")
+        payload = self.build()
+        self.assertEqual(payload["provenance"], [])
+        self.assertEqual(payload["sources"]["nomanifest"], "present")
+        self.assertEqual(self.metro(payload, "10180")["years"]["2024"]["permits"], 850.0)
+
+    # a half written manifest is a bad line on a page, never a failed build
+    def test_a_malformed_manifest_is_skipped_not_fatal(self):
+        for text in ("{not json", "[]", "{}", '["a string"]'):
+            self.manifest("broken", [])
+            (Path(self.tmp.name) / "broken" / "download_manifest.json").write_text(text)
+            self.manifest("fhfa", [self.entry()])
+            self.assertEqual([e["source"] for e in self.block()], ["fhfa"], text)
+
+    def test_a_manifest_that_names_no_source_is_left_out(self):
+        self.manifest("forecast", [{"version": "gru, origin 2026Q2"}])
+        self.assertEqual(self.block(), [])
+
+    # a manifest missing a field carries the key as null, so the site reads one
+    # shape for every source
+    def test_a_field_the_manifest_lacks_is_null_not_absent(self):
+        self.manifest("fred", [{"source": {"url": "https://api.stlouisfed.org/fred/series/observations"}}])
+        entry = self.block()[0]
+        self.assertEqual(list(entry), ["source", "provider", "url", "version", "downloaded_at",
+                                       "files", "row_count", "filename", "sha256"])
+        self.assertEqual([entry["provider"], entry["version"], entry["downloaded_at"],
+                          entry["row_count"], entry["filename"], entry["sha256"]], [None] * 6)
+
+    def test_a_build_with_no_sources_at_all_has_an_empty_block(self):
+        self.assertEqual(self.block(), [])
+
+
+# the shipped manifests, where the shapes really differ: fhfa writes source.url
+# and the api collectors write source.endpoint, and a folder holds one file or
+# thirteen. a block that cannot read them proves nothing on the page
+class TestShippedProvenance(unittest.TestCase):
+    def test_every_raw_folder_with_a_manifest_reaches_the_block(self):
+        raw = Path(bm.DEFAULT_PATHS["enrichment_dir"])
+        folders = sorted(p.parent.name for p in raw.glob("*/download_manifest.json"))
+        block = bm.provenance_block(raw)
+        self.assertEqual([e["source"] for e in block], folders)
+        self.assertGreater(len(block), 10)
+        for entry in block:
+            self.assertTrue(entry["url"].startswith("https://"), entry["source"])
+            self.assertEqual(len(entry["sha256"]), 64, entry["source"])
+            self.assertGreater(entry["row_count"], 0, entry["source"])
+            self.assertTrue(entry["downloaded_at"].endswith("Z"), entry["source"])
+
+
+# the fhfa master file. 10180 runs four quarters a year from 2000 after one
+# quarter of 1999, 19100 never holds a full year, 12580 is the deep metro fhfa
+# phased in at the start, and the rest are rows the loader must drop (state
+# level, purchase-only, and 1974, below the floor)
 def fhfa_fixture():
     rows = []
     for year in (2000, 2001, 2002):
@@ -566,6 +715,10 @@ def fhfa_fixture():
             rows.append(("traditional", "all-transactions", "quarterly", "MSA", "10180", str(year), str(q), 100.0 + 10 * (year - 2000) + q))
     for year in (2000, 2002):
         rows.append(("traditional", "all-transactions", "quarterly", "MSA", "19100", str(year), "1", 200.0 + (year - 2000)))
+    for year in (1974, 1975, 1976, 1978):
+        for q in (1, 2, 3, 4):
+            rows.append(("traditional", "all-transactions", "quarterly", "MSA", "12580", str(year), str(q), 10.0 * (year - 1973) + q))
+    rows.append(("traditional", "all-transactions", "quarterly", "MSA", "12580", "1977", "2", 99.0))
     rows.append(("traditional", "all-transactions", "quarterly", "MSA", "10180", "2003", "1", 150.0))
     rows.append(("traditional", "all-transactions", "quarterly", "MSA", "10180", "2003", "2", 152.0))
     rows.append(("traditional", "purchase-only", "quarterly", "MSA", "10180", "2003", "2", 999.0))
@@ -575,12 +728,16 @@ def fhfa_fixture():
 
 
 class TestPriceHistory(BuildCase):
+    def fhfa_path(self):
+        path = Path(self.tmp.name) / "hpi_master.csv"
+        fhfa_fixture().to_csv(path, index=False)
+        return path
+
     # 2003 holds two quarters, 150 and 152. its mean, 151, is not an annual
     # mean and sat on a line of them, and the forecast grew from 152 while
     # appearing to start at 151
     def test_a_short_newest_year_carries_the_level_at_as_of(self):
-        path = Path(self.tmp.name) / "hpi_master.csv"
-        fhfa_fixture().to_csv(path, index=False)
+        path = self.fhfa_path()
         abilene = self.metro(self.build(fhfa=path), "10180")
         hpi = abilene["series"]["hpi"]
         self.assertEqual(hpi["start"], 2000)
@@ -601,15 +758,53 @@ class TestPriceHistory(BuildCase):
         self.assertEqual(hpi["as_of"], "2002Q4")
         self.assertIsNone(hpi["partial_year"])
 
-    # 2000 holds one quarter and is not the newest year, so it has no annual
-    # mean to show. 2002 is the newest and carries its quarter's level
+    # 1977 holds one quarter between two full years, so it has no annual mean
+    # to show and the line breaks around it
     def test_a_short_year_inside_the_history_is_a_gap(self):
-        path = Path(self.tmp.name) / "hpi_master.csv"
-        fhfa_fixture().to_csv(path, index=False)
-        series = bm.load_fhfa_series(path)
-        self.assertEqual(series["19100"]["values"], [None, None, 202.0])
+        series = bm.load_fhfa_series(self.fhfa_path())
+        self.assertEqual(series["12580"]["values"], [22.5, 32.5, None, 52.5])
+        self.assertIsNone(series["12580"]["partial_year"])
+
+    # fhfa publishes from 1975 and the panel now draws all of it. a 2000 floor
+    # threw away the two housing cycles before it, which is most of what an
+    # index this old is worth reading for
+    def test_the_history_reaches_back_to_1975(self):
+        series = bm.load_fhfa_series(self.fhfa_path())
+        self.assertEqual(bm.SERIES_START, 1975)
+        self.assertEqual(series["12580"]["start"], 1975)
+        self.assertEqual(series["12580"]["as_of"], "1978Q4")
+        self.assertEqual(series["12580"]["anchor"], 54.0)
+
+    # 1974 is below the floor, so its four quarters never reach the map even
+    # though the master file carries them
+    def test_quarters_before_the_floor_are_left_out(self):
+        series = bm.load_fhfa_series(self.fhfa_path())
+        self.assertEqual(series["12580"]["values"][0], 22.5)
+        self.assertNotIn(11.0, series["12580"]["values"])
+
+    # fhfa phases a metro in mid year, so its first year often has no mean.
+    # a null in front of the line is empty margin on the panel, not a gap, so
+    # the series starts at the first year it can draw. 10180 holds 1999Q4 alone
+    def test_a_short_first_year_moves_the_start_instead_of_leading_with_a_null(self):
+        series = bm.load_fhfa_series(self.fhfa_path())
+        self.assertEqual(series["10180"]["start"], 2000)
+        self.assertEqual(series["10180"]["values"][0], 102.5)
+
+    # 19100 holds one quarter in 2000 and one in 2002 and no full year at all,
+    # so everything before the newest quarter trims away
+    def test_a_metro_with_no_full_year_is_its_newest_quarter_alone(self):
+        series = bm.load_fhfa_series(self.fhfa_path())
+        self.assertEqual(series["19100"]["values"], [202.0])
+        self.assertEqual(series["19100"]["start"], 2002)
         self.assertEqual(series["19100"]["as_of"], "2002Q1")
         self.assertEqual(series["19100"]["partial_year"], 2002)
+
+    # start plus the values is the year the series ends on, or the panel draws
+    # the line against the wrong years
+    def test_the_start_and_the_values_agree_on_the_last_year(self):
+        for code, last in (("10180", 2003), ("19100", 2002), ("12580", 1978)):
+            series = bm.load_fhfa_series(self.fhfa_path())[code]
+            self.assertEqual(series["start"] + len(series["values"]) - 1, last, code)
 
     def test_no_history_file_means_no_series_key(self):
         abilene = self.metro(self.build(fhfa=Path(self.tmp.name) / "absent.csv"), "10180")
@@ -722,6 +917,14 @@ class TestLatestHpi(unittest.TestCase):
 
     def test_the_date_is_the_quarter_end_month(self):
         self.assertEqual(self.metro["latest"]["hpi_date"], "2026-06")
+
+    # the shipped master file starts abilene in 1987, thirteen years before the
+    # old floor let anything through, and runs to the quarter as_of names
+    def test_the_shipped_series_reaches_back_past_the_old_floor(self):
+        hpi = self.metro["series"]["hpi"]
+        self.assertEqual(hpi["start"], 1987)
+        self.assertEqual(hpi["values"][0], 98.0)
+        self.assertEqual(hpi["start"] + len(hpi["values"]) - 1, 2026)
 
     # the vintage average is a different number and keeps its own slot
     def test_the_2024_vintage_is_untouched(self):

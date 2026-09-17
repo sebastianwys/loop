@@ -9,12 +9,12 @@
       "dataset": "Metro inventory, days to pending, price cut share and one year ZHVF growth, annual means plus the newest month"
     },
     "integrity": {
-      "sha256": "e2429864b6246f2fb4b8c86237d73a6255e28c7ac6e66493f54116734812105e",
-      "size_kb": 742.6,
-      "row_count": 23565
+      "sha256": "b5091797fad5076c9963e8b7370796129e70f6e6aa5539a3f2c1d0b71db1a41f",
+      "size_kb": 740.3,
+      "row_count": 23550
     },
-    "version": "through 2026-07-31",
-    "downloaded_at": "2026-09-15T19:54:05Z",
+    "version": "through 2026-08-31",
+    "downloaded_at": "2026-09-17T04:43:58Z",
     "notes": {
       "attribution": "Data provided by Zillow Research (zillow.com/research/data). Zillow terms of use apply.",
       "processing": "raw csvs read in memory and not kept, names mapped to cbsa codes through the gazetteer",
@@ -22,35 +22,35 @@
         "inventory": {
           "url": "https://files.zillowstatic.com/research/public_csvs/invt_fs/Metro_invt_fs_uc_sfrcondo_sm_month.csv",
           "dataset": "For sale inventory, all homes, smoothed, monthly, metro, count of listings",
-          "sha256": "e5354ba0ec7291b54777eb5661d1951edfcaa9fb6a2d079d20c42105929e4d30",
-          "size_kb": 583.6,
+          "sha256": "39e4dfc4edb24c378bce9d9c45fbee0231bbc8904b5d4160ad5ee66efb0ff1b0",
+          "size_kb": 589.2,
           "rows": 927,
-          "newest_column": "2026-07-31"
+          "newest_column": "2026-08-31"
         },
         "days_to_pending": {
           "url": "https://files.zillowstatic.com/research/public_csvs/mean_doz_pending/Metro_mean_doz_pending_uc_sfrcondo_sm_month.csv",
           "dataset": "Mean days to pending, all homes, smoothed, monthly, metro, days",
-          "sha256": "e492f04c8ff1ca629a9309eae029c7fdde0d6adaf93e12c203ba2d882b22fafd",
-          "size_kb": 301.4,
-          "rows": 784,
-          "newest_column": "2026-07-31"
+          "sha256": "ccf0f5a0e6ebbe233bdffa09332841e2aff3f854a5750633a1b2bf2e1ba3c539",
+          "size_kb": 303.9,
+          "rows": 776,
+          "newest_column": "2026-08-31"
         },
         "price_cut_share": {
           "url": "https://files.zillowstatic.com/research/public_csvs/perc_listings_price_cut/Metro_perc_listings_price_cut_uc_sfrcondo_sm_month.csv",
           "dataset": "Share of listings with a price cut, all homes, smoothed, monthly, metro, fraction",
-          "sha256": "5510e569235e335336ab01d71d4847fec3e4fe0cb95c14fd8fcd0b271538a5cb",
-          "size_kb": 1803.9,
+          "sha256": "d996fb1e2ea0ab626d0dd71e0ad280c647a3830abfcf0d421ef91298451ab407",
+          "size_kb": 1821.7,
           "rows": 927,
-          "newest_column": "2026-07-31"
+          "newest_column": "2026-08-31"
         },
         "zhvf_forecast": {
           "url": "https://files.zillowstatic.com/research/public_csvs/zhvf_growth/Metro_zhvf_growth_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv",
           "dataset": "ZHVF one year home value growth forecast, mid tier, smoothed, seasonally adjusted, metro, percent",
-          "sha256": "c5b79ca19c344664ec4010915e0bbe4f2e42fb225cd230c9a9b427807b83c781",
-          "size_kb": 50.4,
+          "sha256": "b7c90601383b447da242c2b3b2289b2da01742e0ce292732c9aecd5d8347829a",
+          "size_kb": 49.9,
           "rows": 894,
-          "newest_column": "2027-07-31",
-          "base_date": "2026-07-31"
+          "newest_column": "2027-08-31",
+          "base_date": "2026-08-31"
         }
       },
       "skipped": [],

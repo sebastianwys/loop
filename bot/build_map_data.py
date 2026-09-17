@@ -21,9 +21,15 @@ DEFAULT_PATHS = {
     "fhfa": RAW_DIR / "fhfa" / "hpi_master.csv",
 }
 
-# the detail panel draws the price history from this year on, one annual
-# mean of the quarterly index per year, the last year partial
-SERIES_START = 2000
+# fhfa's metro series begin in 1975, so the panel draws the whole history, one
+# annual mean of the quarterly index per year, the last year partial. this is
+# the floor, not every metro's start: fhfa phased most of them in later and each
+# one begins at its own first drawable year
+SERIES_START = 1975
+
+# sources whose files are read straight into the build rather than discovered
+# as a metrics.csv, so they need naming for the vintage line by hand
+DIRECT_SOURCES = ("fhfa", "census")
 
 # zillow monthly columns look like 2024-01-31
 MONTH = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -113,10 +119,10 @@ def load_bls(path):
 
 
 # the fhfa master file holds every quarter since 1975 for every metro and
-# division. keep the one series the pipeline uses, average it by year from
-# SERIES_START and remember the last quarter, so the panel can label the
-# partial year. anchor is that quarter's own level, the base the model
-# measured its forecast growth from
+# division. keep the one series the pipeline uses, average it by year from the
+# metro's own first quarter and remember the last quarter, so the panel can
+# label the partial year. anchor is that quarter's own level, the base the
+# model measured its forecast growth from
 def load_fhfa_series(path):
     df = pd.read_csv(path, dtype={"place_id": str, "yr": str, "period": str}, usecols=[
         "hpi_type", "hpi_flavor", "frequency", "level", "place_id", "yr", "period", "index_nsa"])
@@ -131,7 +137,7 @@ def load_fhfa_series(path):
     for code, group in df.groupby("place_id"):
         annual = group.groupby("yr")["index_nsa"].mean()
         quarters = group.groupby("yr")["index_nsa"].size()
-        last_year = int(annual.index.max())
+        first_year, last_year = int(annual.index.min()), int(annual.index.max())
         newest = group.sort_values(["yr", "period"]).iloc[-1]
         anchor = rnd(newest["index_nsa"], 2)
 
@@ -140,7 +146,7 @@ def load_fhfa_series(path):
         # instead, which is the level the forecast grows from. a short year
         # inside the history has no annual mean and is drawn as the gap it is
         values = []
-        for year in range(SERIES_START, last_year + 1):
+        for year in range(first_year, last_year + 1):
             if quarters.get(year, 0) >= 4:
                 values.append(rnd(annual.get(year), 1))
             elif year == last_year:
@@ -148,8 +154,13 @@ def load_fhfa_series(path):
             else:
                 values.append(None)
 
+        # fhfa phases a metro in mid year, so the first year is often short and
+        # has no mean to draw. that is empty margin at the left of the panel
+        # rather than a gap in a line, so the series starts at its first value
+        drawn = next((i for i, value in enumerate(values) if value is not None), 0)
+
         partial = last_year if quarters.get(last_year, 0) < 4 else None
-        series[str(code)] = {"start": SERIES_START, "values": values,
+        series[str(code)] = {"start": first_year + drawn, "values": values[drawn:],
                              "as_of": f"{int(newest['yr'])}Q{int(newest['period'])}",
                              "anchor": anchor, "partial_year": partial}
     return series
@@ -375,6 +386,8 @@ def indicators_updated(frame):
 # --- generic enrichment ---
 
 ENRICHMENT_COLUMNS = ["cbsa_code", "metric", "period", "value"]
+# the file name the metrics contract is written under, in every source folder
+ENRICHMENT_FILE = "metrics.csv"
 
 # core field names a collector may not reuse
 RESERVED = {"hpi", "income", "pop", "age", "degree_share", "own_rate", "home_value", "zhvi", "zori", "unemp"}
@@ -406,18 +419,43 @@ def load_enrichment(path):
 # the raw folder holds one subfolder per collector. any extra path is a source
 # folder on its own, the model's export under ml/results, skipped until it exists
 def discover_enrichments(raw_dir, *folders):
-    files = sorted(Path(raw_dir).glob("*/metrics.csv"))
-    files += [Path(f) / "metrics.csv" for f in folders if (Path(f) / "metrics.csv").exists()]
+    files = sorted(Path(raw_dir).glob(f"*/{ENRICHMENT_FILE}"))
+    files += [Path(f) / ENRICHMENT_FILE for f in folders if (Path(f) / ENRICHMENT_FILE).exists()]
     return [load_enrichment(p) for p in files]
 
 
 # the version string from a source's manifest, for the sources block
+# a collector that rolls several downloads into one metrics.csv writes that
+# file's entry first and describes the whole folder in its version. a folder
+# with no such rollup holds peer files instead, and taking the first of them
+# named one census vintage of three and one gazetteer file of two
+def folder_version(entries):
+    for entry in entries:
+        if entry.get("filename") == ENRICHMENT_FILE:
+            return entry.get("version", "present")
+    seen = [e.get("version") for e in entries if e.get("version")]
+    distinct = list(dict.fromkeys(seen))
+    return ", ".join(distinct) if distinct else "present"
+
+
+# the vintage line for the sources that are read straight into the build. a
+# folder that is not on disk is left out rather than listed as present, because
+# the line is what the site shows a reader as proof the source was fetched
+def direct_versions(raw_dir):
+    out = {}
+    for name in DIRECT_SOURCES:
+        folder = Path(raw_dir) / name
+        if (folder / "download_manifest.json").exists():
+            out[name] = enrichment_version(folder)
+    return out
+
+
 def enrichment_version(folder):
     manifest = Path(folder) / "download_manifest.json"
     if not manifest.exists():
         return "present"
     entries = json.loads(manifest.read_text())
-    return entries[0].get("version", "present") if entries else "present"
+    return folder_version(entries) if entries else "present"
 
 
 # annual values keyed (metric, year), plus the newest period per metric
@@ -458,6 +496,59 @@ def apply_enrichments(metro, enrichments, parent_code=None):
             metro["latest"][f"{metric}_date"] = period
     metro["parent_metrics"] = sorted(inherited)
     return metro
+
+
+# --- provenance ---
+
+# one line per source folder rather than one per file: the first manifest entry
+# is the file the folder is named for, the one the build reads, and the rest are
+# totalled into files and row_count instead of being copied out whole. a
+# manifest that is missing, unreadable, or that cannot say where the bytes came
+# from proves nothing, so its folder is left out rather than failing the build
+def provenance_entry(manifest):
+    manifest = Path(manifest)
+    try:
+        entries = json.loads(manifest.read_text())
+    except (OSError, ValueError):
+        entries = None
+    if not isinstance(entries, list) or not entries or not all(isinstance(e, dict) for e in entries):
+        return None
+    first = entries[0]
+    integrity = first.get("integrity") or {}
+    source = first.get("source") or {}
+    # collectors that hit an api write endpoint, the ones that pull a file write url
+    url = source.get("url") or source.get("endpoint")
+    if not url:
+        return None
+    rows = [(e.get("integrity") or {}).get("row_count") for e in entries]
+    rows = [r for r in rows if isinstance(r, int)]
+    stamps = [e["downloaded_at"] for e in entries if e.get("downloaded_at")]
+    return {
+        "source": manifest.parent.name,
+        "provider": source.get("provider"),
+        "url": url,
+        "version": first.get("version"),
+        # the folder is as old as its newest download
+        "downloaded_at": max(stamps) if stamps else None,
+        "files": len(entries),
+        "row_count": sum(rows) if rows else None,
+        # the hash belongs to one file, so the file is named beside it
+        "filename": first.get("filename"),
+        "sha256": integrity.get("sha256"),
+    }
+
+
+# what makes the pipeline checkable from the site: every raw folder, where it
+# came from, which version it was and the hash it had when it landed
+def provenance_block(raw_dir):
+    block = []
+    for manifest in sorted(Path(raw_dir).glob("*/download_manifest.json")):
+        entry = provenance_entry(manifest)
+        if entry is None:
+            print(f"[build] {manifest.parent.name} has no usable download manifest, left out of provenance")
+            continue
+        block.append(entry)
+    return block
 
 
 # --- assembly ---
@@ -657,8 +748,14 @@ def build(out_path=None, paths=None):
             "zillow": zillow_version(zhvi),
             "bls": bls_version(bls_frame),
             "fred": fred_version(fred_frame),
+            # fhfa and census are not enrichment folders, they feed the merged
+            # csv and the price series directly, so the discovery loop below
+            # never reached them and the footer's vintage line silently omitted
+            # the two sources the whole map is built on
+            **direct_versions(p["enrichment_dir"]),
             **{e["name"]: enrichment_version(e["folder"]) for e in enrichments},
         },
+        "provenance": provenance_block(p["enrichment_dir"]),
         "national": national_block(fred_frame, national_frame),
         "metros": metros,
     }

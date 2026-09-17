@@ -9,12 +9,12 @@
       "dataset": "Fair market rents, two bedroom, and income limits, median family income, by metro area and fiscal year"
     },
     "integrity": {
-      "sha256": "ed64c64b7b6472472c132f7601e4552f7342a874567c13fa81737a5e9e033214",
+      "sha256": "34aa287831a03d5fa47ac56bfd59df3a5cbab4f8edd52b1eace7f43a5f83fd40",
       "size_kb": 79.1,
       "row_count": 2452
     },
     "version": "fmr through 2027, income limits through 2026, 66 metros built from hud fmr areas",
-    "downloaded_at": "2026-09-17T02:26:51Z",
+    "downloaded_at": "2026-09-17T05:07:36Z",
     "notes": {
       "income_limits_endpoint": "https://www.huduser.gov/hudapi/public/il/data/{entityid}?year={year}",
       "metro_list": "https://www.huduser.gov/hudapi/public/fmr/listMetroAreas",
@@ -44,265 +44,481 @@
       "rollup_codes": 66,
       "rollup_codes_weighted": 33,
       "rollup_areas": {
-        "11200": [
-          "Amherst Town-Northampton, MA MSA"
-        ],
-        "11244": [
-          "Santa Ana-Anaheim-Irvine, CA HUD Metro FMR Area"
-        ],
-        "11694": [
-          "Culpeper County, VA HUD Metro FMR Area",
-          "Jefferson County, WV HUD Metro FMR Area",
-          "Rappahannock County, VA HUD Metro FMR Area",
-          "Warren County, VA HUD Metro FMR Area",
-          "Washington-Arlington-Alexandria, DC-VA-MD HUD Metro FMR Area"
-        ],
-        "12054": [
-          "Atlanta-Sandy Springs-Roswell, GA HUD Metro FMR Area",
-          "Butts County, GA HUD Metro FMR Area",
-          "Lumpkin County, GA HUD Metro FMR Area",
-          "Meriwether County, GA HUD Metro FMR Area",
-          "Morgan County, GA HUD Metro FMR Area"
-        ],
-        "12620": [
-          "Aroostook County, ME",
-          "Bangor, ME HUD Metro FMR Area",
-          "Penobscot County, ME (part) HUD Metro FMR Area"
-        ],
-        "13220": [
-          "Fayette County, WV HUD Metro FMR Area",
-          "Raleigh County, WV HUD Metro FMR Area"
-        ],
-        "14020": [
-          "Bloomington, IN HUD Metro FMR Area",
-          "Owen County, IN HUD Metro FMR Area"
-        ],
-        "14454": [
-          "Boston-Cambridge-Quincy, MA-NH HUD Metro FMR Area",
-          "Brockton, MA HUD Metro FMR Area"
-        ],
-        "14580": [
-          "Bozeman, MT MSA"
-        ],
-        "14860": [
-          "Bridgeport-Stamford-Danbury, CT MSA"
-        ],
-        "15764": [
-          "Boston-Cambridge-Quincy, MA-NH HUD Metro FMR Area",
-          "Lawrence, MA-NH HUD Metro FMR Area",
-          "Lowell, MA HUD Metro FMR Area"
-        ],
-        "15804": [
-          "Philadelphia-Camden-Wilmington, PA-NJ-DE-MD MSA"
-        ],
-        "16984": [
-          "Chicago-Joliet-Naperville, IL HUD Metro FMR Area",
-          "Grundy County, IL HUD Metro FMR Area"
-        ],
-        "17410": [
-          "Ashtabula County, OH HUD Metro FMR Area",
-          "Cleveland, OH HUD Metro FMR Area"
-        ],
-        "19124": [
-          "Dallas, TX HUD Metro FMR Area"
-        ],
-        "19804": [
-          "Detroit-Warren-Livonia, MI HUD Metro FMR Area"
-        ],
-        "20994": [
-          "Chicago-Joliet-Naperville, IL HUD Metro FMR Area",
-          "DeKalb County, IL HUD Metro FMR Area",
-          "Kendall County, IL HUD Metro FMR Area"
-        ],
-        "21794": [
-          "Seattle-Bellevue, WA HUD Metro FMR Area"
-        ],
-        "22744": [
-          "Fort Lauderdale, FL HUD Metro FMR Area"
-        ],
-        "23104": [
-          "Fort Worth-Arlington, TX HUD Metro FMR Area",
-          "Wise County, TX HUD Metro FMR Area"
-        ],
-        "23224": [
-          "Washington-Arlington-Alexandria, DC-VA-MD HUD Metro FMR Area"
-        ],
-        "24260": [
-          "Hall County, NE HUD Metro FMR Area",
-          "Howard County, NE HUD Metro FMR Area",
-          "Merrick County, NE HUD Metro FMR Area"
-        ],
-        "25180": [
-          "Hagerstown, MD HUD Metro FMR Area",
-          "Martinsburg, WV HUD Metro FMR Area",
-          "Morgan County, WV HUD Metro FMR Area"
-        ],
-        "25740": [
-          "Broadwater County, MT HUD Metro FMR Area",
-          "Jefferson County, MT HUD Metro FMR Area",
-          "Lewis and Clark County, MT HUD Metro FMR Area"
-        ],
-        "25940": [
-          "Beaufort County, SC HUD Metro FMR Area",
-          "Jasper County, SC HUD Metro FMR Area"
-        ],
-        "26980": [
-          "Iowa City, IA HUD Metro FMR Area",
-          "Washington County, IA HUD Metro FMR Area"
-        ],
-        "27860": [
-          "Jonesboro, AR HUD Metro FMR Area",
-          "Poinsett County, AR HUD Metro FMR Area"
-        ],
-        "28450": [
-          "Kenosha, WI MSA"
-        ],
-        "28880": [
-          "Kiryas Joel-Poughkeepsie-Newburgh, NY MSA"
-        ],
-        "29200": [
-          "Carroll County, IN HUD Metro FMR Area",
-          "Lafayette-West Lafayette, IN HUD Metro FMR Area",
-          "Warren County, IN HUD Metro FMR Area"
-        ],
-        "29404": [
-          "Chicago-Joliet-Naperville, IL HUD Metro FMR Area"
-        ],
-        "29414": [
-          "Gary, IN HUD Metro FMR Area",
-          "Jasper County, IN HUD Metro FMR Area"
-        ],
-        "29484": [
-          "Middlesex-Somerset-Hunterdon, NJ HUD Metro FMR Area",
-          "Monmouth-Ocean, NJ HUD Metro FMR Area"
-        ],
-        "30500": [
-          "Calvert County, MD HUD Metro FMR Area",
-          "St. Mary's County, MD HUD Metro FMR Area"
-        ],
-        "31084": [
-          "Los Angeles-Long Beach-Glendale, CA HUD Metro FMR Area"
-        ],
-        "31700": [
-          "Hillsborough County, NH (part) HUD Metro FMR Area",
-          "Manchester, NH HUD Metro FMR Area",
-          "Nashua, NH HUD Metro FMR Area"
-        ],
-        "31924": [
-          "Atlanta-Sandy Springs-Roswell, GA HUD Metro FMR Area",
-          "Haralson County, GA HUD Metro FMR Area"
-        ],
-        "33124": [
-          "Miami-Miami Beach-Kendall, FL HUD Metro FMR Area"
-        ],
-        "33500": [
-          "McHenry County, ND HUD Metro FMR Area",
-          "Renville County, ND HUD Metro FMR Area",
-          "Ward County, ND HUD Metro FMR Area"
-        ],
-        "33874": [
-          "Philadelphia-Camden-Wilmington, PA-NJ-DE-MD MSA"
-        ],
-        "35004": [
-          "Nassau-Suffolk, NY HUD Metro FMR Area"
-        ],
-        "35084": [
-          "Middlesex-Somerset-Hunterdon, NJ HUD Metro FMR Area",
-          "Newark, NJ HUD Metro FMR Area"
-        ],
-        "35300": [
-          "New Haven, CT MSA"
-        ],
-        "35614": [
-          "Bergen-Passaic, NJ HUD Metro FMR Area",
-          "Jersey City, NJ HUD Metro FMR Area",
-          "New York, NY HUD Metro FMR Area"
-        ],
-        "36084": [
-          "Oakland-Fremont, CA HUD Metro FMR Area"
-        ],
-        "37140": [
-          "Ballard County, KY HUD Metro FMR Area",
-          "Carlisle County, KY HUD Metro FMR Area",
-          "Livingston County, KY HUD Metro FMR Area",
-          "Massac County, IL HUD Metro FMR Area",
-          "McCracken County, KY HUD Metro FMR Area"
-        ],
-        "37964": [
-          "Philadelphia-Camden-Wilmington, PA-NJ-DE-MD MSA"
-        ],
-        "38240": [
-          "Pinehurst-Southern Pines, NC MSA"
-        ],
-        "38860": [
-          "Cumberland County, ME (part) HUD Metro FMR Area",
-          "Portland, ME HUD Metro FMR Area",
-          "Sagadahoc County, ME HUD Metro FMR Area",
-          "York County, ME (part) HUD Metro FMR Area",
-          "York-Kittery-South Berwick, ME HUD Metro FMR Area"
-        ],
-        "40484": [
-          "Boston-Cambridge-Quincy, MA-NH HUD Metro FMR Area",
-          "Lawrence, MA-NH HUD Metro FMR Area",
-          "Portsmouth-Rochester, NH HUD Metro FMR Area",
-          "Western Rockingham County, NH HUD Metro FMR Area"
-        ],
-        "41304": [
-          "Tampa-St. Petersburg-Clearwater, FL MSA"
-        ],
-        "41780": [
-          "Erie County, OH HUD Metro FMR Area",
-          "Ottawa County, OH HUD Metro FMR Area"
-        ],
-        "41884": [
-          "San Francisco, CA HUD Metro FMR Area"
-        ],
-        "42034": [
-          "San Francisco, CA HUD Metro FMR Area"
-        ],
-        "42644": [
-          "Seattle-Bellevue, WA HUD Metro FMR Area"
-        ],
-        "43640": [
-          "Slidell-Mandeville-Covington, LA MSA"
-        ],
-        "45104": [
-          "Tacoma, WA HUD Metro FMR Area"
-        ],
-        "45294": [
-          "Tampa-St. Petersburg-Clearwater, FL MSA"
-        ],
-        "45900": [
-          "Benzie County, MI HUD Metro FMR Area",
-          "Grand Traverse County, MI HUD Metro FMR Area",
-          "Kalkaska County, MI HUD Metro FMR Area",
-          "Leelanau County, MI HUD Metro FMR Area"
-        ],
-        "46300": [
-          "Jerome County, ID HUD Metro FMR Area",
-          "Twin Falls County, ID HUD Metro FMR Area"
-        ],
-        "47664": [
-          "Detroit-Warren-Livonia, MI HUD Metro FMR Area",
-          "Livingston County, MI HUD Metro FMR Area"
-        ],
-        "47764": [
-          "Washington-Arlington-Alexandria, DC-VA-MD HUD Metro FMR Area"
-        ],
-        "47930": [
-          "Waterbury-Shelton, CT MSA"
-        ],
-        "48424": [
-          "West Palm Beach-Boca Raton, FL HUD Metro FMR Area"
-        ],
-        "48680": [
-          "Wildwood-The Villages, FL MSA"
-        ],
-        "48864": [
-          "Philadelphia-Camden-Wilmington, PA-NJ-DE-MD MSA"
-        ]
+        "11200": {
+          "year": 2027,
+          "areas": [
+            "Amherst Town-Northampton, MA MSA"
+          ]
+        },
+        "11244": {
+          "year": 2027,
+          "areas": [
+            "Santa Ana-Anaheim-Irvine, CA HUD Metro FMR Area"
+          ]
+        },
+        "11694": {
+          "year": 2027,
+          "areas": [
+            "Culpeper County, VA HUD Metro FMR Area",
+            "Jefferson County, WV HUD Metro FMR Area",
+            "Rappahannock County, VA HUD Metro FMR Area",
+            "Warren County, VA HUD Metro FMR Area",
+            "Washington-Arlington-Alexandria, DC-VA-MD HUD Metro FMR Area"
+          ]
+        },
+        "12054": {
+          "year": 2027,
+          "areas": [
+            "Atlanta-Sandy Springs-Roswell, GA HUD Metro FMR Area",
+            "Butts County, GA HUD Metro FMR Area",
+            "Lumpkin County, GA HUD Metro FMR Area",
+            "Meriwether County, GA HUD Metro FMR Area",
+            "Morgan County, GA HUD Metro FMR Area"
+          ]
+        },
+        "12620": {
+          "year": 2027,
+          "areas": [
+            "Bangor, ME HUD Metro FMR Area",
+            "Penobscot County, ME (part) HUD Metro FMR Area"
+          ]
+        },
+        "13220": {
+          "year": 2027,
+          "areas": [
+            "Fayette County, WV HUD Metro FMR Area",
+            "Raleigh County, WV HUD Metro FMR Area"
+          ]
+        },
+        "14020": {
+          "year": 2027,
+          "areas": [
+            "Bloomington, IN HUD Metro FMR Area",
+            "Owen County, IN HUD Metro FMR Area"
+          ]
+        },
+        "14454": {
+          "year": 2027,
+          "areas": [
+            "Boston-Cambridge-Quincy, MA-NH HUD Metro FMR Area",
+            "Brockton, MA HUD Metro FMR Area"
+          ]
+        },
+        "14580": {
+          "year": 2027,
+          "areas": [
+            "Bozeman, MT MSA"
+          ]
+        },
+        "14860": {
+          "year": 2027,
+          "areas": [
+            "Bridgeport-Stamford-Danbury, CT MSA"
+          ]
+        },
+        "15764": {
+          "year": 2027,
+          "areas": [
+            "Boston-Cambridge-Quincy, MA-NH HUD Metro FMR Area",
+            "Lawrence, MA-NH HUD Metro FMR Area",
+            "Lowell, MA HUD Metro FMR Area"
+          ]
+        },
+        "15804": {
+          "year": 2027,
+          "areas": [
+            "Philadelphia-Camden-Wilmington, PA-NJ-DE-MD MSA"
+          ]
+        },
+        "16984": {
+          "year": 2027,
+          "areas": [
+            "Chicago-Joliet-Naperville, IL HUD Metro FMR Area",
+            "Grundy County, IL HUD Metro FMR Area"
+          ]
+        },
+        "17410": {
+          "year": 2027,
+          "areas": [
+            "Ashtabula County, OH HUD Metro FMR Area",
+            "Cleveland, OH HUD Metro FMR Area"
+          ]
+        },
+        "19124": {
+          "year": 2027,
+          "areas": [
+            "Dallas, TX HUD Metro FMR Area"
+          ]
+        },
+        "19804": {
+          "year": 2027,
+          "areas": [
+            "Detroit-Warren-Livonia, MI HUD Metro FMR Area"
+          ]
+        },
+        "20994": {
+          "year": 2027,
+          "areas": [
+            "Chicago-Joliet-Naperville, IL HUD Metro FMR Area",
+            "DeKalb County, IL HUD Metro FMR Area",
+            "Kendall County, IL HUD Metro FMR Area"
+          ]
+        },
+        "21794": {
+          "year": 2027,
+          "areas": [
+            "Seattle-Bellevue, WA HUD Metro FMR Area"
+          ]
+        },
+        "22744": {
+          "year": 2027,
+          "areas": [
+            "Fort Lauderdale, FL HUD Metro FMR Area"
+          ]
+        },
+        "23104": {
+          "year": 2027,
+          "areas": [
+            "Fort Worth-Arlington, TX HUD Metro FMR Area",
+            "Wise County, TX HUD Metro FMR Area"
+          ]
+        },
+        "23224": {
+          "year": 2027,
+          "areas": [
+            "Washington-Arlington-Alexandria, DC-VA-MD HUD Metro FMR Area"
+          ]
+        },
+        "24260": {
+          "year": 2027,
+          "areas": [
+            "Hall County, NE HUD Metro FMR Area",
+            "Howard County, NE HUD Metro FMR Area",
+            "Merrick County, NE HUD Metro FMR Area"
+          ]
+        },
+        "25180": {
+          "year": 2027,
+          "areas": [
+            "Hagerstown, MD HUD Metro FMR Area",
+            "Martinsburg, WV HUD Metro FMR Area",
+            "Morgan County, WV HUD Metro FMR Area"
+          ]
+        },
+        "25740": {
+          "year": 2027,
+          "areas": [
+            "Broadwater County, MT HUD Metro FMR Area",
+            "Jefferson County, MT HUD Metro FMR Area",
+            "Lewis and Clark County, MT HUD Metro FMR Area"
+          ]
+        },
+        "25940": {
+          "year": 2027,
+          "areas": [
+            "Beaufort County, SC HUD Metro FMR Area",
+            "Jasper County, SC HUD Metro FMR Area"
+          ]
+        },
+        "26980": {
+          "year": 2027,
+          "areas": [
+            "Iowa City, IA HUD Metro FMR Area",
+            "Washington County, IA HUD Metro FMR Area"
+          ]
+        },
+        "27860": {
+          "year": 2027,
+          "areas": [
+            "Jonesboro, AR HUD Metro FMR Area",
+            "Poinsett County, AR HUD Metro FMR Area"
+          ]
+        },
+        "28450": {
+          "year": 2027,
+          "areas": [
+            "Kenosha, WI MSA"
+          ]
+        },
+        "28880": {
+          "year": 2027,
+          "areas": [
+            "Kiryas Joel-Poughkeepsie-Newburgh, NY MSA"
+          ]
+        },
+        "29200": {
+          "year": 2027,
+          "areas": [
+            "Carroll County, IN HUD Metro FMR Area",
+            "Lafayette-West Lafayette, IN HUD Metro FMR Area",
+            "Warren County, IN HUD Metro FMR Area"
+          ]
+        },
+        "29404": {
+          "year": 2027,
+          "areas": [
+            "Chicago-Joliet-Naperville, IL HUD Metro FMR Area"
+          ]
+        },
+        "29414": {
+          "year": 2027,
+          "areas": [
+            "Gary, IN HUD Metro FMR Area",
+            "Jasper County, IN HUD Metro FMR Area"
+          ]
+        },
+        "29484": {
+          "year": 2027,
+          "areas": [
+            "Middlesex-Somerset-Hunterdon, NJ HUD Metro FMR Area",
+            "Monmouth-Ocean, NJ HUD Metro FMR Area"
+          ]
+        },
+        "30500": {
+          "year": 2027,
+          "areas": [
+            "Calvert County, MD HUD Metro FMR Area",
+            "St. Mary's County, MD HUD Metro FMR Area"
+          ]
+        },
+        "31084": {
+          "year": 2027,
+          "areas": [
+            "Los Angeles-Long Beach-Glendale, CA HUD Metro FMR Area"
+          ]
+        },
+        "31700": {
+          "year": 2027,
+          "areas": [
+            "Hillsborough County, NH (part) HUD Metro FMR Area",
+            "Manchester, NH HUD Metro FMR Area",
+            "Nashua, NH HUD Metro FMR Area"
+          ]
+        },
+        "31924": {
+          "year": 2027,
+          "areas": [
+            "Atlanta-Sandy Springs-Roswell, GA HUD Metro FMR Area",
+            "Haralson County, GA HUD Metro FMR Area"
+          ]
+        },
+        "33124": {
+          "year": 2027,
+          "areas": [
+            "Miami-Miami Beach-Kendall, FL HUD Metro FMR Area"
+          ]
+        },
+        "33500": {
+          "year": 2027,
+          "areas": [
+            "McHenry County, ND HUD Metro FMR Area",
+            "Renville County, ND HUD Metro FMR Area",
+            "Ward County, ND HUD Metro FMR Area"
+          ]
+        },
+        "33874": {
+          "year": 2027,
+          "areas": [
+            "Philadelphia-Camden-Wilmington, PA-NJ-DE-MD MSA"
+          ]
+        },
+        "35004": {
+          "year": 2027,
+          "areas": [
+            "Nassau-Suffolk, NY HUD Metro FMR Area"
+          ]
+        },
+        "35084": {
+          "year": 2027,
+          "areas": [
+            "Middlesex-Somerset-Hunterdon, NJ HUD Metro FMR Area",
+            "Newark, NJ HUD Metro FMR Area"
+          ]
+        },
+        "35300": {
+          "year": 2027,
+          "areas": [
+            "New Haven, CT MSA"
+          ]
+        },
+        "35614": {
+          "year": 2027,
+          "areas": [
+            "Bergen-Passaic, NJ HUD Metro FMR Area",
+            "Jersey City, NJ HUD Metro FMR Area",
+            "New York, NY HUD Metro FMR Area"
+          ]
+        },
+        "36084": {
+          "year": 2027,
+          "areas": [
+            "Oakland-Fremont, CA HUD Metro FMR Area"
+          ]
+        },
+        "37140": {
+          "year": 2027,
+          "areas": [
+            "Ballard County, KY HUD Metro FMR Area",
+            "Carlisle County, KY HUD Metro FMR Area",
+            "Livingston County, KY HUD Metro FMR Area",
+            "Massac County, IL HUD Metro FMR Area",
+            "McCracken County, KY HUD Metro FMR Area"
+          ]
+        },
+        "37964": {
+          "year": 2027,
+          "areas": [
+            "Philadelphia-Camden-Wilmington, PA-NJ-DE-MD MSA"
+          ]
+        },
+        "38240": {
+          "year": 2027,
+          "areas": [
+            "Pinehurst-Southern Pines, NC MSA"
+          ]
+        },
+        "38860": {
+          "year": 2027,
+          "areas": [
+            "Cumberland County, ME (part) HUD Metro FMR Area",
+            "Portland, ME HUD Metro FMR Area",
+            "Sagadahoc County, ME HUD Metro FMR Area",
+            "York County, ME (part) HUD Metro FMR Area",
+            "York-Kittery-South Berwick, ME HUD Metro FMR Area"
+          ]
+        },
+        "40484": {
+          "year": 2027,
+          "areas": [
+            "Boston-Cambridge-Quincy, MA-NH HUD Metro FMR Area",
+            "Lawrence, MA-NH HUD Metro FMR Area",
+            "Portsmouth-Rochester, NH HUD Metro FMR Area",
+            "Western Rockingham County, NH HUD Metro FMR Area"
+          ]
+        },
+        "41304": {
+          "year": 2027,
+          "areas": [
+            "Tampa-St. Petersburg-Clearwater, FL MSA"
+          ]
+        },
+        "41780": {
+          "year": 2027,
+          "areas": [
+            "Erie County, OH HUD Metro FMR Area",
+            "Ottawa County, OH HUD Metro FMR Area"
+          ]
+        },
+        "41884": {
+          "year": 2027,
+          "areas": [
+            "San Francisco, CA HUD Metro FMR Area"
+          ]
+        },
+        "42034": {
+          "year": 2027,
+          "areas": [
+            "San Francisco, CA HUD Metro FMR Area"
+          ]
+        },
+        "42644": {
+          "year": 2027,
+          "areas": [
+            "Seattle-Bellevue, WA HUD Metro FMR Area"
+          ]
+        },
+        "43640": {
+          "year": 2027,
+          "areas": [
+            "Slidell-Mandeville-Covington, LA MSA"
+          ]
+        },
+        "45104": {
+          "year": 2027,
+          "areas": [
+            "Tacoma, WA HUD Metro FMR Area"
+          ]
+        },
+        "45294": {
+          "year": 2027,
+          "areas": [
+            "Tampa-St. Petersburg-Clearwater, FL MSA"
+          ]
+        },
+        "45900": {
+          "year": 2027,
+          "areas": [
+            "Benzie County, MI HUD Metro FMR Area",
+            "Grand Traverse County, MI HUD Metro FMR Area",
+            "Kalkaska County, MI HUD Metro FMR Area",
+            "Leelanau County, MI HUD Metro FMR Area"
+          ]
+        },
+        "46300": {
+          "year": 2027,
+          "areas": [
+            "Jerome County, ID HUD Metro FMR Area",
+            "Twin Falls County, ID HUD Metro FMR Area"
+          ]
+        },
+        "47664": {
+          "year": 2027,
+          "areas": [
+            "Detroit-Warren-Livonia, MI HUD Metro FMR Area",
+            "Livingston County, MI HUD Metro FMR Area"
+          ]
+        },
+        "47764": {
+          "year": 2027,
+          "areas": [
+            "Washington-Arlington-Alexandria, DC-VA-MD HUD Metro FMR Area"
+          ]
+        },
+        "47930": {
+          "year": 2027,
+          "areas": [
+            "Waterbury-Shelton, CT MSA"
+          ]
+        },
+        "48424": {
+          "year": 2027,
+          "areas": [
+            "West Palm Beach-Boca Raton, FL HUD Metro FMR Area"
+          ]
+        },
+        "48680": {
+          "year": 2027,
+          "areas": [
+            "Wildwood-The Villages, FL MSA"
+          ]
+        },
+        "48864": {
+          "year": 2027,
+          "areas": [
+            "Philadelphia-Camden-Wilmington, PA-NJ-DE-MD MSA"
+          ]
+        }
       },
-      "codes_without_a_value": []
+      "study_codes_by_metric_and_year": {
+        "fmr_2br": {
+          "2019": 406,
+          "2024": 410,
+          "2027": 410
+        },
+        "median_family_income": {
+          "2019": 406,
+          "2024": 410,
+          "2026": 410
+        }
+      },
+      "codes_without_a_value": [],
+      "towns_without_a_weight": [
+        "2301918580",
+        "2301978015",
+        "2301985230",
+        "2302358070"
+      ],
+      "codes_missing_an_fmr_area": {}
     }
   },
   {
@@ -315,12 +531,12 @@
       "dataset": "raw fmr, il and state responses per entity for fiscal year 2019"
     },
     "integrity": {
-      "sha256": "8dbead6047963cedb958ee22edbb8a44aaf52842460fa6a490653001bb8d1b92",
-      "size_kb": 1876.9,
-      "row_count": 826
+      "sha256": "19f94488412001d253f213b79beb2fee158841789832c67ff932a250617e675e",
+      "size_kb": 1876.2,
+      "row_count": 825
     },
     "version": "2019",
-    "downloaded_at": "2026-09-17T02:26:51Z"
+    "downloaded_at": "2026-09-17T05:07:36Z"
   },
   {
     "filename": "hud_2024.json",
@@ -332,12 +548,12 @@
       "dataset": "raw fmr, il and state responses per entity for fiscal year 2024"
     },
     "integrity": {
-      "sha256": "53fdea69e80687d20fb6d7fc672a53f237cf47487e3aefe6762a17e45141afdd",
-      "size_kb": 1897.0,
-      "row_count": 834
+      "sha256": "a9cc498052102569184dbae468915d1bde5387b2d5d595c50b8473ff9ddae3ea",
+      "size_kb": 1896.3,
+      "row_count": 833
     },
     "version": "2024",
-    "downloaded_at": "2026-09-17T02:26:51Z"
+    "downloaded_at": "2026-09-17T05:07:36Z"
   },
   {
     "filename": "hud_2026.json",
@@ -349,12 +565,12 @@
       "dataset": "raw fmr, il and state responses per entity for fiscal year 2026"
     },
     "integrity": {
-      "sha256": "f9d9a283c07f588b19b85f4729c960e48b8ffcb93211e67832092d1c27aecb8e",
-      "size_kb": 1592.4,
-      "row_count": 491
+      "sha256": "93fe1eb84d1b1f06183b3835b25a5017318abdc161798533dff37bc63c89cf58",
+      "size_kb": 1591.7,
+      "row_count": 490
     },
     "version": "2026",
-    "downloaded_at": "2026-09-17T02:26:51Z"
+    "downloaded_at": "2026-09-17T05:07:36Z"
   },
   {
     "filename": "hud_2027.json",
@@ -371,6 +587,6 @@
       "row_count": 376
     },
     "version": "2027",
-    "downloaded_at": "2026-09-17T02:26:51Z"
+    "downloaded_at": "2026-09-17T05:07:36Z"
   }
 ]

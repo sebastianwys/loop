@@ -9,12 +9,12 @@
       "dataset": "ZHVI, all homes, mid tier, smoothed, seasonally adjusted, monthly, metro"
     },
     "integrity": {
-      "sha256": "9d8c9d0c78b9b4247f5cb106cacbe566f7593fc04d233872c37c0972dd180c5e",
-      "size_kb": 4354.8,
+      "sha256": "d4b5d78b88dbd08a9b83129a876de5190e1fce8b720dcec2e3b4944fe222b877",
+      "size_kb": 4372.5,
       "row_count": 895
     },
-    "version": "through 2026-07-31",
-    "downloaded_at": "2026-09-15T19:54:02Z",
+    "version": "through 2026-08-31",
+    "downloaded_at": "2026-09-17T04:43:55Z",
     "notes": "Data provided by Zillow Research (zillow.com/research/data). Zillow terms of use apply."
   },
   {
@@ -27,12 +27,12 @@
       "dataset": "ZORI, all homes plus multifamily, smoothed, monthly, metro"
     },
     "integrity": {
-      "sha256": "101b64c46ec30a929b69ccd64ade2446951830a866e315090d9c61d7ee749b4d",
-      "size_kb": 1030.1,
-      "row_count": 752
+      "sha256": "4177880bb6a7df096024dd8bb1d725d2892dbcc4fd42a00984cbafd0b22f4c38",
+      "size_kb": 1041.9,
+      "row_count": 750
     },
-    "version": "through 2026-07-31",
-    "downloaded_at": "2026-09-15T19:54:02Z",
+    "version": "through 2026-08-31",
+    "downloaded_at": "2026-09-17T04:43:55Z",
     "notes": "Data provided by Zillow Research (zillow.com/research/data). Zillow terms of use apply."
   }
 ]
