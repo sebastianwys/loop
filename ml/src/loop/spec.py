@@ -41,7 +41,7 @@ TEST_START = "2022Q1"
 KEY = ["cbsa_code", "quarter"]
 STATIC = ["name", "level", "parent_cbsa", "date"]
 TARGET_BASE = "log_hpi"
-LEVELS = ["hpi", "log_hpi", "unemp", "mortgage", "zhvi", "zori"]
+LEVELS = ["hpi", "log_hpi", "hpi_exp", "unemp", "mortgage", "zhvi", "zori"]
 FEATURES = [
     "hpi_qoq",
     "hpi_yoy",
@@ -55,8 +55,34 @@ FEATURES = [
     "income_growth",
     "listing_price_yoy",
     "inventory_yoy",
+    # fhfa's second estimate of the same metro quarter and the standard error
+    # it publishes with it. both reach back to 1991, which is where the fitting
+    # block lives, unlike every covariate above: unemployment reaches 79 percent
+    # of the fitting samples and the rest under 15. adding these cut the
+    # validation loss from 0.006564 to 0.006202
+    "hpi_exp_yoy",
+    "hpi_rstderr",
 ]
-PANEL_COLUMNS = KEY + STATIC + LEVELS + [c for c in FEATURES if c not in LEVELS]
+
+# columns the panel carries that no model reads. each was built for the same
+# reason as the two above, tried on the validation block and rejected there:
+# the calendar quarter 0.006565, the metro against the cross section 0.006565,
+# the four national series 0.006618, against a 0.006564 without them. a
+# national series is the same number in all 410 metros, so it teaches the
+# window which era it sits in and nothing about the place. they stay in the
+# panel because the figures and the map read them, and because a negative
+# result that is easy to re-run is worth more than one written down
+CONTEXT = [
+    "hpi_rstderr_rel",
+    "hpi_yoy_rel",
+    "cpi_yoy",
+    "treasury_10y",
+    "term_spread",
+    "natl_unemp",
+    "quarter_sin",
+    "quarter_cos",
+]
+PANEL_COLUMNS = KEY + STATIC + LEVELS + [c for c in FEATURES + CONTEXT if c not in LEVELS]
 
 # metros the walkthrough charts name, chosen to span the map: the two chicago
 # pieces, sun belt boom towns, a mountain town, a coastal giant and a rust

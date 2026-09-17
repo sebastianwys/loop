@@ -12,6 +12,11 @@ import pandas as pd
 
 from loop.spec import FORECAST_DIR, KEY, ML_ROOT, PANEL_PATH, TARGET_BASE, pct, quarter_end, shift_quarter
 
+# fhfa's own standard error for the metro's index at the origin, as a share of
+# that index. it is not a forecast, it rides along because the map reads this
+# file and nothing else carries it
+INDEX_ERROR = "hpi_rstderr_rel"
+
 DATA_DIR = ML_ROOT / "data"
 FORECASTS_PATH = FORECAST_DIR / "forecasts.csv"
 METRICS_PATH = FORECAST_DIR / "metrics.csv"
@@ -30,7 +35,7 @@ FORECAST_METRICS = {
     "hpi_forecast_8q_lo": (8, "lo_pct"),
     "hpi_forecast_8q_hi": (8, "hi_pct"),
 }
-REALIZED_METRICS = ["hpi_yoy_latest", "hpi_trend_5y"]
+REALIZED_METRICS = ["hpi_yoy_latest", "hpi_trend_5y", "hpi_index_error"]
 SURPRISE_METRIC = "hpi_surprise_4q"
 METRICS = list(FORECAST_METRICS) + REALIZED_METRICS + [SURPRISE_METRIC]
 
@@ -106,10 +111,13 @@ def realized_values(panel, origin):
         return wide[quarter] if quarter in wide.columns else pd.Series(np.nan, index=wide.index)
 
     now = level(origin)
-    return {
+    out = {
         "hpi_yoy_latest": _pct(now - level(shift_quarter(origin, -4))),
         "hpi_trend_5y": _pct((now - level(shift_quarter(origin, -20))) / 5.0),
     }
+    at_origin = panel[panel["quarter"] == origin].set_index("cbsa_code")[INDEX_ERROR]
+    out["hpi_index_error"] = at_origin.astype(float).dropna()
+    return out
 
 
 # realized four quarter growth to the origin minus the median the model gave
@@ -209,7 +217,7 @@ def main():
     forecasts = pd.read_csv(FORECASTS_PATH, dtype={"cbsa_code": str, "origin": str, "model": str})
     if not PANEL_PATH.exists():
         raise FileNotFoundError(f"{PANEL_PATH.name} is missing, build the panel first")
-    panel = pd.read_parquet(PANEL_PATH, columns=KEY + [TARGET_BASE])
+    panel = pd.read_parquet(PANEL_PATH, columns=KEY + [TARGET_BASE, INDEX_ERROR])
     model = str(forecasts["model"].iloc[0])
     predictions_path = DATA_DIR / f"predictions_{model}.parquet"
     predictions = pd.read_parquet(predictions_path) if predictions_path.exists() else None

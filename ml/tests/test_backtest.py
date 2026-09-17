@@ -34,6 +34,18 @@ def synthetic_panel(metros=36, start="1975Q1", end="2026Q2", seed=spec.SEED):
     codes = list(spec.SHOWCASE) + [str(90000 + i) for i in range(metros - len(spec.SHOWCASE))]
     cycle = _ar1(rng, n, 0.8, 0.0025)
     mortgage = 7.5 + 3.0 * np.sin(np.arange(n) / 25.0) + rng.normal(0.0, 0.15, n)
+
+    # the national columns are one number per quarter shared by every metro,
+    # which is what makes them useless to a model and worth having in a fixture
+    short_rate = 4.0 + 2.5 * np.sin(np.arange(n) / 19.0)
+    national = {
+        "cpi_yoy": 0.03 + 0.02 * np.sin(np.arange(n) / 31.0),
+        "treasury_10y": mortgage - 1.6,
+        "term_spread": mortgage - 1.6 - short_rate,
+        "natl_unemp": 6.0 + 2.0 * np.sin(np.arange(n) / 23.0),
+        "quarter_sin": np.sin(2.0 * np.pi * periods.quarter / 4.0),
+        "quarter_cos": np.cos(2.0 * np.pi * periods.quarter / 4.0),
+    }
     parts = []
     for i, code in enumerate(codes):
         drift = rng.normal(0.008, 0.002)
@@ -70,9 +82,32 @@ def synthetic_panel(metros=36, start="1975Q1", end="2026Q2", seed=spec.SEED):
             "income_growth": np.where(years >= 2014, 2.0 + 20.0 * annual + rng.normal(0.0, 0.3, n), np.nan),
             "listing_price_yoy": np.where(years >= 2017, 0.5 * state + rng.normal(0.0, 0.01, n), np.nan),
             "inventory_yoy": np.where(years >= 2017, -3.0 * state + rng.normal(0.0, 0.05, n), np.nan),
+            **national,
         })
+
+        # fhfa's expanded index is a second estimate of the same quarter from
+        # 1991, and its standard error is larger for a metro with fewer sales,
+        # so a later code carries a looser measurement here
+        expanded = pd.Series(np.where(years >= 1991, hpi * np.exp(rng.normal(0.0, 0.004, n)), np.nan))
+        frame["hpi_exp"] = expanded
+        frame["hpi_exp_yoy"] = _yoy(expanded)
+        error = np.where(years >= 1991, 0.3 + 0.12 * i + rng.normal(0.0, 0.05, n), np.nan)
+        frame["hpi_rstderr"] = np.abs(error)
+        frame["hpi_rstderr_rel"] = 100.0 * frame["hpi_rstderr"] / expanded
+
         parts.append(frame)
     panel = pd.concat(parts, ignore_index=True)
+
+    # the cross section column has to be built after the metros are together,
+    # it is the metro against the median of every other metro that quarter
+    panel["hpi_yoy_rel"] = panel["hpi_yoy"] - panel.groupby("quarter")["hpi_yoy"].transform("median")
+
+    # a column added to the contract and not to this fixture makes every test
+    # that reads a synthetic panel die on a bare KeyError, several files away
+    # from the one that changed. say which column instead
+    absent = [c for c in spec.PANEL_COLUMNS if c not in panel.columns]
+    if absent:
+        raise AssertionError(f"synthetic_panel does not build {absent}, which the panel contract requires")
     return panel[spec.PANEL_COLUMNS]
 
 

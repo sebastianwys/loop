@@ -20,14 +20,23 @@ sys.path.insert(0, str(spec.REPO_ROOT))
 from bot.build_map_data import display_name, load_bls, load_fred, load_zillow, match_zillow  # noqa: E402
 
 FHFA = "fhfa/hpi_master.csv"
+FHFA_EXP = "fhfa/hpi_exp_metro.txt"
 BLS = "bls/laus_metro_unemployment.csv"
 FRED = "fred/mortgage30us.csv"
+NATIONAL = "national/indicators.csv"
 GAZETTEER = "gazetteer/cbsa_centroids.csv"
 ZILLOW = {"zhvi": "zillow/zhvi_metro.csv", "zori": "zillow/zori_metro.csv"}
 MERGED = spec.REPO_ROOT / "data" / "integrated" / "hpi_census_merged.csv"
 
 # the one fhfa series per metro: the quarterly all-transactions index
 FHFA_FILTER = {"level": "MSA", "frequency": "quarterly", "hpi_type": "traditional", "hpi_flavor": "all-transactions"}
+
+# the national series the panel reads off the strip's file, and what each one
+# becomes. every metro in a quarter gets the same value, so these carry no
+# cross section, only the era a window sits in
+MACRO = {"cpi_yoy": "CPIAUCSL", "treasury_10y": "DGS10", "natl_unemp": "UNRATE", "_short_rate": "DGS1"}
+MACRO_YOY = "cpi_yoy"
+MACRO_COLUMNS = ["cpi_yoy", "treasury_10y", "term_spread", "natl_unemp"]
 
 # enrichment sources and the metrics each one contributes
 ENRICHMENT = {
@@ -74,6 +83,61 @@ def fhfa_series(raw):
     if out.duplicated(spec.KEY).any():
         raise ValueError("fhfa filter left more than one series for a metro")
     return out
+
+
+# the expanded data index: fhfa's second estimate of the same metro quarter,
+# built from more records, published beside the all-transactions series since
+# 1991. rstderr is the standard error fhfa reports for it, which is the only
+# published measure of how thin a metro's repeat sale record is, and the model
+# has no other way to know that abilene is measured worse than chicago
+def expanded_series(raw):
+    out = pd.DataFrame({
+        "cbsa_code": raw["city"].astype(str).str.zfill(5).to_numpy(),
+        "quarter": (raw["yr"].astype(str) + "Q" + raw["qtr"].astype(str)).to_numpy(),
+        "hpi_exp": pd.to_numeric(raw["index_nsa"], errors="coerce").to_numpy(),
+        "hpi_rstderr": pd.to_numeric(raw["rstderr"], errors="coerce").to_numpy(),
+    })
+    out = out.dropna(subset=["hpi_exp"]).sort_values(spec.KEY).reset_index(drop=True)
+    if out.duplicated(spec.KEY).any():
+        raise ValueError("the expanded file holds more than one row for a metro and quarter")
+    return out
+
+
+# the national series as one row per quarter. a rate is the quarter's mean of
+# its month end readings, the way the mortgage rate already is, and the price
+# index becomes a twelve month log change before it is averaged, so no column
+# carries a level that trends for fifty years
+def national_quarterly(indicators):
+    frame = indicators.assign(
+        month=pd.to_datetime(indicators["date"]).dt.to_period("M").astype(str),
+        value=pd.to_numeric(indicators["value"], errors="coerce"),
+    ).dropna(subset=["value"])
+    frame = frame.drop_duplicates(["series_id", "month"], keep="last")
+    wide = frame.pivot(index="month", columns="series_id", values="value").sort_index()
+
+    out = pd.DataFrame(index=wide.index)
+    for name, series in MACRO.items():
+        if series not in wide.columns:
+            out[name] = np.nan
+            continue
+        column = wide[series]
+        if name == MACRO_YOY:
+            earlier = column.reindex((pd.PeriodIndex(wide.index, freq="M") - 12).astype(str)).to_numpy()
+            column = pd.Series(safe_log(column).to_numpy() - safe_log(pd.Series(earlier)).to_numpy(), index=wide.index)
+        out[name] = column
+    out["term_spread"] = out["treasury_10y"] - out["_short_rate"]
+    out = out.drop(columns="_short_rate")
+
+    quarter = pd.PeriodIndex(out.index, freq="M").asfreq("Q").astype(str)
+    return out.groupby(quarter.to_numpy()).mean().rename_axis("quarter").reset_index()
+
+
+# where a metro sits against the whole country that quarter. the cross section
+# median is subtracted, so a metro running with the national cycle reads zero
+# and only what is particular to it survives
+def relative_to_median(frame, column):
+    median = frame.groupby("quarter")[column].transform("median")
+    return frame[column] - median
 
 
 # log change over a number of quarters within one metro. the earlier value is
@@ -301,7 +365,8 @@ def unemployment(bls, spine):
 # --- assembly ---
 
 def sources(raw_dir=spec.RAW_DIR):
-    files = {"fhfa": FHFA, "bls": BLS, "fred": FRED, "gazetteer": GAZETTEER, **ZILLOW}
+    files = {"fhfa": FHFA, "fhfa_exp": FHFA_EXP, "bls": BLS, "fred": FRED, "national": NATIONAL,
+             "gazetteer": GAZETTEER, **ZILLOW}
     files.update({source: f"{source}/metrics.csv" for source in ENRICHMENT})
     return {name: {"path": f"data/raw/{rel}", "present": (raw_dir / rel).exists()} for name, rel in files.items()}
 
@@ -347,10 +412,41 @@ def build(raw_dir=spec.RAW_DIR):
     panel["hpi_qoq"] = log_diff(panel, "hpi", 1)
     panel["hpi_yoy"] = log_diff(panel, "hpi", 4)
 
+    if have["fhfa_exp"]["present"]:
+        expanded = expanded_series(pd.read_csv(raw_dir / FHFA_EXP, sep="\t", dtype=str))
+        panel = panel.merge(expanded, on=spec.KEY, how="left")
+    else:
+        panel["hpi_exp"] = np.nan
+        panel["hpi_rstderr"] = np.nan
+    panel["hpi_exp_yoy"] = log_diff(panel, "hpi_exp", 4)
+
+    # the standard error as a share of the index it belongs to. fhfa rebases
+    # every metro to 100 at its own start, so the raw error is not comparable
+    # across metros: 5.9 index points is 1.5 percent of an index at 400 and 3.9
+    # percent of one at 150
+    level = pd.Series(np.asarray(panel["hpi_exp"], dtype=float), index=panel.index)
+    panel["hpi_rstderr_rel"] = 100.0 * panel["hpi_rstderr"] / level.where(level > 0)
+    panel["hpi_yoy_rel"] = relative_to_median(panel, "hpi_yoy")
+
     gazetteer = pd.read_csv(raw_dir / GAZETTEER, dtype=str)
     panel = panel.merge(static_columns(panel["cbsa_code"].unique(), gazetteer), on="cbsa_code", how="left")
     panel["date"] = quarter_dates(panel["quarter"])
     spine = panel[spec.KEY]
+
+    # the calendar quarter as two numbers a quarter apart on a circle, so that
+    # 4Q and 1Q sit beside each other the way the year does. the index is not
+    # seasonally adjusted and nothing else in the window says which quarter it is
+    quarter_number = periods(panel["quarter"]).quarter.to_numpy(dtype=float)
+    panel["quarter_sin"] = np.sin(2.0 * np.pi * quarter_number / 4.0)
+    panel["quarter_cos"] = np.cos(2.0 * np.pi * quarter_number / 4.0)
+
+    if have["national"]["present"]:
+        macro = national_quarterly(pd.read_csv(raw_dir / NATIONAL, dtype=str))
+        for column in MACRO_COLUMNS:
+            panel[column] = attach(spine, macro[["quarter", column]].rename(columns={column: "value"}), ["quarter"])
+    else:
+        for column in MACRO_COLUMNS:
+            panel[column] = np.nan
 
     panel["unemp"] = unemployment(load_bls(raw_dir / BLS), spine) if have["bls"]["present"] else np.nan
     if have["fred"]["present"]:
@@ -395,6 +491,7 @@ def sha256(path):
 # what a missing source costs, for the manifest
 ABSENT = {
     "bls": ["unemp"], "fred": ["mortgage"], "zhvi": ["zhvi", "zhvi_yoy"], "zori": ["zori", "zori_yoy"],
+    "fhfa_exp": ["hpi_exp", "hpi_exp_yoy", "hpi_rstderr"], "national": MACRO_COLUMNS,
     "pep": ["pop_growth", "domestic_migration_rate", "permits_per_1000"], "bps": ["permits_per_1000"],
     "bea": ["income_growth"], "realtor": ["listing_price_yoy"], "zillow_extras": ["inventory_yoy"],
 }
@@ -449,12 +546,14 @@ def write(panel, path=spec.PANEL_PATH, manifest_path=spec.PANEL_MANIFEST, have=N
 # --- figures ---
 
 COVERAGE = [
-    ("hpi", "hpi"), ("unemp", "unemp"), ("mortgage", "mortgage"), ("zhvi", "zhvi"), ("zori", "zori"),
+    ("hpi", "hpi"), ("expanded hpi", "hpi_exp"), ("index error", "hpi_rstderr"), ("national macro", "cpi_yoy"),
+    ("unemp", "unemp"), ("mortgage", "mortgage"), ("zhvi", "zhvi"), ("zori", "zori"),
     ("permits", "permits_per_1000"), ("population", "pop_growth"), ("income", "income_growth"),
     ("listings", "listing_price_yoy"), ("inventory", "inventory_yoy"),
 ]
-GROWTH = ["hpi_qoq", "hpi_yoy", "zhvi_yoy", "zori_yoy", "pop_growth", "income_growth", "listing_price_yoy", "inventory_yoy"]
-RATES = ["unemp", "mortgage"]
+GROWTH = ["hpi_qoq", "hpi_yoy", "zhvi_yoy", "zori_yoy", "pop_growth", "income_growth", "listing_price_yoy",
+          "inventory_yoy", "hpi_exp_yoy", "hpi_yoy_rel", "cpi_yoy"]
+RATES = ["unemp", "mortgage", "treasury_10y", "term_spread", "natl_unemp"]
 
 
 # share of metros with a value in each year, one row per source series
@@ -578,12 +677,16 @@ def feature_bands(panel, column, minimum=50):
 
 def feature_trends_figure(panel):
     latest = panel["quarter"].max()
+    cols = 3
+    rows = -(-len(spec.FEATURES) // cols)
     fig, axes = charts.figure(
         "How each feature moved across metros",
         f"median across metros as the line, interquartile range as the band, quarters with at least 50 metros, "
         f"through {latest}; growth features in percent",
-        size=(11, 11.5), rows=4, cols=3, gridspec_kw={"hspace": 0.62, "wspace": 0.32})
+        size=(11, 2.9 * rows), rows=rows, cols=cols, gridspec_kw={"hspace": 0.62, "wspace": 0.32})
     fig.subplots_adjust(top=0.9)
+    for ax in axes.ravel()[len(spec.FEATURES):]:
+        ax.set_visible(False)
     for ax, column in zip(axes.ravel(), spec.FEATURES):
         stats = feature_bands(panel, column)
         scale = spec.pct if column in GROWTH else (lambda v: np.asarray(v, dtype=float))

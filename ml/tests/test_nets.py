@@ -154,6 +154,25 @@ class TestModels(unittest.TestCase):
         self.assertAlmostEqual(float(q[0, 0, 0]), 0.3 - step, places=6)
         self.assertAlmostEqual(float(q[0, 0, 2]), 0.3 + step, places=6)
 
+    # the widths used to be default arguments, so they were fixed when the
+    # module was imported. an ablation that changes the feature list then built
+    # a model expecting the old channel count, which is silent until the shapes
+    # disagree deep in a forward pass
+    def test_input_width_follows_the_feature_list_at_build_time(self):
+        original = nets.SEQ_FEATURES
+        try:
+            nets.SEQ_FEATURES = original[:3]
+            self.assertEqual(nets.SeqGRU(5).gru.input_size, 6)
+            nets.SEQ_FEATURES = original
+            self.assertEqual(nets.SeqGRU(5).gru.input_size, 2 * len(original))
+        finally:
+            nets.SEQ_FEATURES = original
+
+    def test_explicit_widths_win_over_the_feature_list(self):
+        model = nets.SeqGRU(5, n_seq=14, n_static=6)
+        self.assertEqual(model.gru.input_size, 14)
+        self.assertEqual(model.head.in_features, nets.HIDDEN_GRU + 6 + nets.EMBED)
+
     def test_state_dict_carries_target_stats(self):
         model = nets.WindowMLP(3)
         model.set_target_stats(np.full(4, 0.02), np.full(4, 0.05))

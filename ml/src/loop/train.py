@@ -361,6 +361,13 @@ def shifted(values, steps):
     return out
 
 
+# log change over a number of quarters inside each metro, on a frame that is
+# already sorted by metro and quarter
+def safe_log_diff(frame, column, steps):
+    values = np.log(frame[column].where(frame[column] > 0))
+    return values - values.groupby(frame["cbsa_code"]).shift(steps)
+
+
 def synthetic_panel(n_metros=12, start="1995Q1", end="2026Q2", seed=spec.SEED):
     rng = np.random.default_rng(seed)
     periods = pd.period_range(start, end, freq="Q")
@@ -372,6 +379,19 @@ def synthetic_panel(n_metros=12, start="1995Q1", end="2026Q2", seed=spec.SEED):
     from_2016q3 = periods >= spec.to_period("2016Q3")
     national = 0.008 + ar1(rng, n, 0.8, 0.004)
     mortgage = np.clip(6.0 + ar1(rng, n, 0.95, 0.3), 2.5, 12.0)
+    from_1991 = years >= 1991
+
+    # one number per quarter for every metro. no cross section, which is the
+    # whole reason these are carried and not fitted
+    short_rate = np.clip(mortgage - 2.0 + ar1(rng, n, 0.9, 0.2), 0.0, 10.0)
+    macro = {
+        "cpi_yoy": 0.025 + ar1(rng, n, 0.9, 0.004),
+        "treasury_10y": mortgage - 1.6,
+        "term_spread": mortgage - 1.6 - short_rate,
+        "natl_unemp": np.clip(5.5 + ar1(rng, n, 0.95, 0.3), 2.0, 12.0),
+        "quarter_sin": np.sin(2.0 * np.pi * periods.quarter.to_numpy() / 4.0),
+        "quarter_cos": np.cos(2.0 * np.pi * periods.quarter.to_numpy() / 4.0),
+    }
     showcase = list(spec.SHOWCASE)
     codes = showcase[:n_metros] + [str(20000 + 7 * i) for i in range(max(0, n_metros - len(showcase)))]
 
@@ -415,8 +435,23 @@ def synthetic_panel(n_metros=12, start="1995Q1", end="2026Q2", seed=spec.SEED):
             "income_growth": np.where(from_2014, yearly(0.03 + beta * 0.005, 0.01), np.nan),
             "listing_price_yoy": np.where(from_2016q3, 4.0 * (log_hpi - shifted(log_hpi, 4)) + ar1(rng, n, 0.5, 0.02), np.nan),
             "inventory_yoy": np.where(from_2016q3, ar1(rng, n, 0.7, 0.05) - 2.0 * local, np.nan),
+            # fhfa's second estimate of the same quarter, published from 1991,
+            # and the standard error it carries. a later metro is smaller here,
+            # so its index is the looser measurement
+            "hpi_exp": np.where(from_1991, np.exp(log_hpi + ar1(rng, n, 0.5, 0.004)), np.nan),
+            "hpi_rstderr": np.where(from_1991, np.abs(0.3 + 0.2 * m + ar1(rng, n, 0.6, 0.05)), np.nan),
+            **macro,
         }))
     panel = pd.concat(frames, ignore_index=True)
+    panel["hpi_exp_yoy"] = safe_log_diff(panel, "hpi_exp", 4)
+    panel["hpi_rstderr_rel"] = 100.0 * panel["hpi_rstderr"] / panel["hpi_exp"].where(panel["hpi_exp"] > 0)
+    panel["hpi_yoy_rel"] = panel["hpi_yoy"] - panel.groupby("quarter")["hpi_yoy"].transform("median")
+
+    # a column added to the contract and not here dies on a bare KeyError in
+    # whichever test happened to run first. name the column instead
+    absent = [c for c in spec.PANEL_COLUMNS if c not in panel.columns]
+    if absent:
+        raise ValueError(f"synthetic_panel does not build {absent}, which the panel contract requires")
     return panel[spec.PANEL_COLUMNS]
 
 

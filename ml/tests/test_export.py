@@ -22,15 +22,18 @@ def quarters(n):
 
 # abilene has five years of prices: 100 twenty quarters back, 150 / 1.06 four
 # quarters back and 150 at the origin, straight lines in between. metro 00420
-# has six quarters at 3 percent a year. 99999 is not in the panel at all
+# has six quarters at 3 percent a year. 99999 is not in the panel at all.
+# the index error climbs a tenth a quarter so a reader that takes the wrong
+# quarter reads a different number, not the same one by luck
 def panel_frame():
     rows = []
     start, knee, end = math.log(100.0), math.log(150.0 / 1.06), math.log(150.0)
     for i, q in enumerate(quarters(21)):
         level = start + (knee - start) * i / 16 if i <= 16 else knee + (end - knee) * (i - 16) / 4
-        rows.append({"cbsa_code": "10180", "quarter": q, "log_hpi": level})
+        rows.append({"cbsa_code": "10180", "quarter": q, "log_hpi": level, "hpi_rstderr_rel": 0.5 + 0.1 * i})
     for i, q in enumerate(quarters(6)):
-        rows.append({"cbsa_code": "00420", "quarter": q, "log_hpi": math.log(100.0) + math.log(1.03) * (i - 1) / 4})
+        rows.append({"cbsa_code": "00420", "quarter": q, "log_hpi": math.log(100.0) + math.log(1.03) * (i - 1) / 4,
+                     "hpi_rstderr_rel": 2.0 + 0.1 * i})
     return pd.DataFrame(rows)
 
 
@@ -95,6 +98,18 @@ class TestBuildMetrics(ExportCase):
         self.assertFalse(self.metrics.duplicated(["cbsa_code", "metric"]).any())
         self.assertEqual(list(self.metrics["cbsa_code"]), sorted(self.metrics["cbsa_code"]))
 
+    # the error belongs to the origin quarter, not the metro's newest row and
+    # not an average over the window
+    def test_the_index_error_is_the_origins_own_value(self):
+        rows = self.metrics[self.metrics["metric"] == "hpi_index_error"].set_index("cbsa_code")["value"]
+        self.assertAlmostEqual(float(rows["10180"]), 0.5 + 0.1 * 20)
+        self.assertAlmostEqual(float(rows["00420"]), 2.0 + 0.1 * 5)
+
+    def test_a_metro_outside_the_panel_gets_no_index_error(self):
+        rows = self.metrics[self.metrics["metric"] == "hpi_index_error"]
+        self.assertNotIn("99999", set(rows["cbsa_code"]))
+        self.assertIn("99999", set(self.metrics["cbsa_code"]))
+
     def test_period_is_the_last_month_of_the_origin_quarter(self):
         self.assertEqual(set(self.metrics["period"]), {"2026-06"})
         self.assertEqual(export.period_of("2025Q4"), "2025-12")
@@ -130,8 +145,11 @@ class TestBuildMetrics(ExportCase):
     def test_metro_missing_in_the_panel_keeps_only_its_forecasts(self):
         self.assertEqual(self.metrics_of("99999"), sorted(export.FORECAST_METRICS))
 
+    # the five year trend needs twenty quarters, the year needs four and the
+    # index error needs only the origin row, so a short metro keeps two of three
     def test_short_history_gives_the_year_but_not_the_trend(self):
-        self.assertEqual(self.metrics_of("00420"), sorted(list(export.FORECAST_METRICS) + ["hpi_yoy_latest"]))
+        self.assertEqual(self.metrics_of("00420"),
+                         sorted(list(export.FORECAST_METRICS) + ["hpi_yoy_latest", "hpi_index_error"]))
 
     def test_without_predictions_there_is_no_surprise(self):
         metrics = export.build_metrics(self.forecasts, self.panel)

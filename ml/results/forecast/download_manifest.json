@@ -9,12 +9,12 @@
       "dataset": "house price index growth forecasts with 90 percent conformal bands, realized growth and forecast surprise by metro"
     },
     "integrity": {
-      "sha256": "edeb8a3b09ec5e57fa9eddc6464c21c87d7b9fcc75bc138de48617c7ddbcf809",
-      "size_kb": 138.4,
-      "row_count": 3690
+      "sha256": "b2573c00154a7d909b1105a1ea068517970241028956c26635e278ae97685e06",
+      "size_kb": 153.2,
+      "row_count": 4100
     },
     "version": "seqgru, origin 2026Q2",
-    "downloaded_at": "2026-09-16T06:00:15Z",
+    "downloaded_at": "2026-09-17T04:55:53Z",
     "notes": {
       "model": "seqgru",
       "origin": "2026Q2",
@@ -31,14 +31,15 @@
         "hpi_forecast_8q": 410,
         "hpi_forecast_8q_hi": 410,
         "hpi_forecast_8q_lo": 410,
+        "hpi_index_error": 410,
         "hpi_surprise_4q": 410,
         "hpi_trend_5y": 410,
         "hpi_yoy_latest": 410
       },
       "inputs": {
-        "forecasts.csv": "6e59e3f56565528cb99c7918ac2d7dc1a5abaf0c8ef84c22a369357abaf06633",
-        "panel.parquet": "be46e186d58732d450759c48c4078f1325a00f734cd3b86e93f48768b627b989",
-        "predictions_seqgru.parquet": "b6f614bbaecc419fddf4e6dbbeb072561deb1e00689a5272fea12a343da89754"
+        "forecasts.csv": "2c3788d233bd7c70268598bf2935372389428b454224e8ad9729a986eebca653",
+        "panel.parquet": "9ab3e18f0d307558a4e651e375b205df2d9f1f462b8a10addb34bf9ce7d2a4e5",
+        "predictions_seqgru.parquet": "7f687f80e59869cb06a350b330c4650418291ec14a120ba0cd65a972a5fd5549"
       }
     }
   }

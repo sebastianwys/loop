@@ -51,6 +51,99 @@ class TestFhfa(unittest.TestCase):
             panel.fhfa_series(pd.DataFrame(rows))
 
 
+class TestExpandedSeries(unittest.TestCase):
+    def raw(self):
+        return pd.DataFrame({
+            "city": ["10180", "10180", "16984"],
+            "metro_name": ["Abilene, TX", "Abilene, TX", "Chicago"],
+            "yr": ["1991", "1991", "1991"],
+            "qtr": ["1", "2", "1"],
+            "index_nsa": ["100.00", "106.99", "100.00"],
+            "rstderr": ["0.00", "4.96", "0.31"],
+        })
+
+    def test_the_code_and_quarter_are_rebuilt(self):
+        out = panel.expanded_series(self.raw())
+        self.assertEqual(out["quarter"].tolist(), ["1991Q1", "1991Q2", "1991Q1"])
+        self.assertEqual(out["cbsa_code"].tolist(), ["10180", "10180", "16984"])
+        self.assertEqual(out["hpi_exp"].tolist(), [100.0, 106.99, 100.0])
+        self.assertEqual(out["hpi_rstderr"].tolist(), [0.0, 4.96, 0.31])
+
+    def test_a_row_without_an_index_is_dropped_and_its_error_with_it(self):
+        raw = self.raw()
+        raw.loc[1, "index_nsa"] = ""
+        out = panel.expanded_series(raw)
+        self.assertEqual(len(out), 2)
+        self.assertNotIn("1991Q2", out["quarter"].tolist())
+
+    def test_a_repeated_metro_quarter_raises(self):
+        raw = self.raw()
+        raw.loc[1, "qtr"] = "1"
+        with self.assertRaises(ValueError):
+            panel.expanded_series(raw)
+
+
+class TestNationalQuarterly(unittest.TestCase):
+    def indicators(self):
+        rows = []
+        # two years of months so the twelve month change has a base
+        for year in (2019, 2020):
+            for month in range(1, 13):
+                date = f"{year}-{month:02d}-01"
+                step = (year - 2019) * 12 + month
+                rows.append({"series_id": "CPIAUCSL", "date": date, "value": 100.0 + step})
+                rows.append({"series_id": "DGS10", "date": date, "value": 2.0 + 0.1 * month})
+                rows.append({"series_id": "DGS1", "date": date, "value": 1.0})
+                rows.append({"series_id": "UNRATE", "date": date, "value": 4.0})
+        return pd.DataFrame(rows)
+
+    def test_one_row_per_quarter_with_the_mean_of_its_months(self):
+        out = panel.national_quarterly(self.indicators())
+        self.assertEqual(out["quarter"].tolist()[:2], ["2019Q1", "2019Q2"])
+        self.assertEqual(len(out), len(set(out["quarter"])))
+        first = out[out["quarter"] == "2019Q1"].iloc[0]
+        self.assertAlmostEqual(float(first["treasury_10y"]), np.mean([2.1, 2.2, 2.3]))
+        self.assertAlmostEqual(float(first["natl_unemp"]), 4.0)
+
+    def test_the_price_index_arrives_as_a_twelve_month_change(self):
+        out = panel.national_quarterly(self.indicators())
+        self.assertTrue(np.isnan(out.loc[out["quarter"] == "2019Q1", "cpi_yoy"].iloc[0]))
+        value = out.loc[out["quarter"] == "2020Q1", "cpi_yoy"].iloc[0]
+        expected = np.mean([np.log((113.0 + i) / (101.0 + i)) for i in range(3)])
+        self.assertAlmostEqual(float(value), expected)
+
+    def test_the_spread_is_the_long_rate_less_the_short_one(self):
+        out = panel.national_quarterly(self.indicators())
+        row = out[out["quarter"] == "2019Q1"].iloc[0]
+        self.assertAlmostEqual(float(row["term_spread"]), float(row["treasury_10y"]) - 1.0)
+
+    def test_a_series_that_is_not_in_the_file_is_null_not_an_error(self):
+        frame = self.indicators()
+        out = panel.national_quarterly(frame[frame["series_id"] != "UNRATE"])
+        self.assertTrue(out["natl_unemp"].isna().all())
+
+
+class TestRelativeToMedian(unittest.TestCase):
+    def test_the_cross_section_median_of_a_quarter_is_removed(self):
+        frame = pd.DataFrame({
+            "cbsa_code": ["a", "b", "c", "a", "b", "c"],
+            "quarter": ["2020Q1"] * 3 + ["2020Q2"] * 3,
+            "hpi_yoy": [0.01, 0.02, 0.06, 0.10, 0.20, 0.30],
+        })
+        out = panel.relative_to_median(frame, "hpi_yoy")
+        self.assertEqual([round(v, 10) for v in out.tolist()], [-0.01, 0.0, 0.04, -0.10, 0.0, 0.10])
+
+    def test_a_metro_with_no_value_stays_null_and_does_not_move_the_median(self):
+        frame = pd.DataFrame({
+            "cbsa_code": ["a", "b", "c"],
+            "quarter": ["2020Q1"] * 3,
+            "hpi_yoy": [0.01, np.nan, 0.03],
+        })
+        out = panel.relative_to_median(frame, "hpi_yoy")
+        self.assertTrue(np.isnan(out.iloc[1]))
+        self.assertAlmostEqual(out.iloc[0], -0.01)
+
+
 class TestLogDiff(unittest.TestCase):
     def frame(self):
         return pd.DataFrame({

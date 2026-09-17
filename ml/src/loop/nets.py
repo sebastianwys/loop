@@ -13,7 +13,8 @@ from loop import spec
 
 # quarterly features read as a sequence over the window, annual ones read once
 # at the origin. hpi_qoq comes first because it decides whether a window counts
-SEQ_FEATURES = ["hpi_qoq", "hpi_yoy", "unemp", "mortgage", "zhvi_yoy", "zori_yoy", "listing_price_yoy", "inventory_yoy"]
+SEQ_FEATURES = ["hpi_qoq", "hpi_yoy", "unemp", "mortgage", "zhvi_yoy", "zori_yoy", "listing_price_yoy",
+                "inventory_yoy", "hpi_exp_yoy", "hpi_rstderr"]
 STATIC_FEATURES = ["permits_per_1000", "pop_growth", "domestic_migration_rate", "income_growth"]
 MIN_HISTORY = 8
 CLIP = 6.0
@@ -173,9 +174,19 @@ class QuantileNet(nn.Module):
         return self.y_loc.view(1, -1, 1) + self.y_scale.view(1, -1, 1) * q
 
 
+# the input widths default to the feature lists, resolved when the model is
+# built rather than when the class is defined. bound as a default argument they
+# went stale the moment anything changed SEQ_FEATURES, which is exactly what an
+# ablation does, and the model then read the wrong number of channels
+def _widths(n_seq, n_static):
+    return (2 * len(SEQ_FEATURES) if n_seq is None else n_seq,
+            2 * len(STATIC_FEATURES) if n_static is None else n_static)
+
+
 class WindowMLP(QuantileNet):
-    def __init__(self, n_metros, window=spec.WINDOW, n_seq=2 * len(SEQ_FEATURES), n_static=2 * len(STATIC_FEATURES), embed=EMBED, hidden=HIDDEN_MLP):
+    def __init__(self, n_metros, window=spec.WINDOW, n_seq=None, n_static=None, embed=EMBED, hidden=HIDDEN_MLP):
         super().__init__()
+        n_seq, n_static = _widths(n_seq, n_static)
         self.embed = nn.Embedding(n_metros, embed)
         n_in = window * n_seq + n_static + embed
         self.net = nn.Sequential(
@@ -192,8 +203,9 @@ class WindowMLP(QuantileNet):
 
 
 class SeqGRU(QuantileNet):
-    def __init__(self, n_metros, n_seq=2 * len(SEQ_FEATURES), n_static=2 * len(STATIC_FEATURES), embed=EMBED, hidden=HIDDEN_GRU):
+    def __init__(self, n_metros, n_seq=None, n_static=None, embed=EMBED, hidden=HIDDEN_GRU):
         super().__init__()
+        n_seq, n_static = _widths(n_seq, n_static)
         self.embed = nn.Embedding(n_metros, embed)
         self.gru = nn.GRU(n_seq, hidden, batch_first=True)
         self.head = nn.Linear(hidden + n_static + embed, N_HORIZONS * N_QUANTILES)
