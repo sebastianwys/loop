@@ -50,6 +50,24 @@ POPULATION = "B01003_001E"
 NEW_ENGLAND = {"09", "23", "25", "33", "44", "50"}
 CONNECTICUT = "09"
 
+# hud still sends the town era subdivision code for the massachusetts places
+# that became cities; the census reassigned them. the pairs are few and fixed,
+# so they are written down rather than matched by name, where a wrong join
+# would cost more than the gap it closed. a town that falls out of this table
+# is counted and named at the end of the run, so the next one is visible
+RETIRED_TOWN_CODES = {
+    "2500940710": "2500940675",  # methuen
+    "2501773440": "2501773405",  # watertown
+    "2500901260": "2500901185",  # amesbury
+    "2501519370": "2501519365",  # easthampton
+    "2501724925": "2501724960",  # framingham, fiscal 2019 only
+}
+
+# how many counties of an fmr area to ask before writing the area off. one
+# refusal used to blank it for every cbsa that touches it, and the mean went
+# out over whatever else answered
+IL_ATTEMPTS = 3
+
 # the census county subdivision row that stands for the part of a county with
 # no town, never a place hud publishes for
 NO_SUBDIVISION = "00000"
@@ -231,7 +249,8 @@ def parse_state_rows(payload):
 def home_county(fips, regions):
     if fips.endswith("99999"):
         return fips[:5]
-    return regions.get(fips) or regions.get(fips[:2] + fips[5:]) or fips[:5]
+    census = RETIRED_TOWN_CODES.get(fips, fips)
+    return regions.get(census) or regions.get(census[:2] + census[5:]) or fips[:5]
 
 
 # the hud rows that make up one cbsa, in a stable order
@@ -245,7 +264,8 @@ def rows_for(counties, rows, regions):
 def weight_of(fips, county_pop, town_pop):
     if fips.endswith("99999"):
         return county_pop.get(fips[:5])
-    return town_pop.get(fips) or town_pop.get(fips[:2] + fips[5:])
+    census = RETIRED_TOWN_CODES.get(fips, fips)
+    return town_pop.get(census) or town_pop.get(census[:2] + census[5:])
 
 
 # one value for a cbsa from the rows inside it, weighted by population. a row
@@ -420,14 +440,20 @@ def usable_years(client, base, entities, years):
 # an area between two years, the stale map asks one area for a value and
 # applies it to the whole cbsa, which reads as confident and is not. a year
 # with no rows for a state now simply has no rollup for the cbsas in it
-def rollup_records(client, year, years_for, rollups, rows, geo, captured, skipped, areas):
+def rollup_records(client, year, years_for, rollups, rows, geo, captured, skipped, areas, gaps):
     regions, county_pop, town_pop = geo
-    records, income, found = [], {}, {"fmr": 0, "il": 0}
+    records, income, tries, found = [], {}, {}, {"fmr": 0, "il": 0}
     for code, counties in rollups.items():
         placed = rows_for(counties, rows, regions)
         if not placed:
             continue
         areas[code] = {"year": year, "areas": sorted({area for _, (area, _) in placed})}
+        # a town the census cannot weigh leaves both sums, so the mean tilts
+        # toward the areas that could be weighed. name them rather than let
+        # the next retired town code go quietly
+        for fips, _ in placed:
+            if not fips.endswith("99999") and weight_of(fips, county_pop, town_pop) is None:
+                gaps["unweighted_towns"].add(fips)
         if year in years_for["fmr"]:
             parts = [(rent, weight_of(fips, county_pop, town_pop)) for fips, (_, rent) in placed]
             value = weighted(parts)
@@ -435,9 +461,13 @@ def rollup_records(client, year, years_for, rollups, rows, geo, captured, skippe
                 records.append((code, DATASETS["fmr"][1], year, float(round(value))))
                 found["fmr"] += 1
         if year in years_for["il"]:
-            parts = []
+            parts, short = [], []
             for fips, (area, _) in placed:
-                if area not in income:
+                # an unanswered area is not cached as missing straight away:
+                # the next cbsa that touches it offers another county to ask,
+                # and only after a few refusals is the area written off
+                if area not in income and tries.get(area, 0) < IL_ATTEMPTS:
+                    tries[area] = tries.get(area, 0) + 1
                     status, payload = client.get_json(IL_URL + fips, {"year": year})
                     if isinstance(payload, dict) and "data" in payload:
                         captured["il"][fips] = payload
@@ -445,8 +475,15 @@ def rollup_records(client, year, years_for, rollups, rows, geo, captured, skippe
                     else:
                         key = f"rollup il {status}" if payload is None else "rollup il nodata"
                         skipped[key] = skipped.get(key, 0) + 1
-                        income[area] = None
-                parts.append((income[area], weight_of(fips, county_pop, town_pop)))
+                if income.get(area) is None:
+                    short.append(area)
+                parts.append((income.get(area), weight_of(fips, county_pop, town_pop)))
+            # a mean over the areas that answered is not this metro's income,
+            # it is the income of the part of it that replied. withhold it and
+            # say which area was missing
+            if short:
+                gaps["codes_missing_an_area"].setdefault(code, sorted(set(short)))
+                continue
             value = weighted(parts)
             if value is not None:
                 records.append((code, DATASETS["il"][1], year, float(round(value))))
@@ -513,6 +550,7 @@ def collect():
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     records, skipped, raw_files, rolled = [], {}, [], {}
+    gaps = {"unweighted_towns": set(), "codes_missing_an_area": {}}
     for year in sorted(set(years_for["fmr"]) | set(years_for["il"])):
         captured = {"year": year, "fmr": {}, "il": {}, "states": {}}
         for dataset, (base, metric, parse) in DATASETS.items():
@@ -549,7 +587,8 @@ def collect():
                 else:
                     skipped[f"statedata {status}"] = skipped.get(f"statedata {status}", 0) + 1
             records.extend(rollup_records(client, year, years_for, rollups, fresh,
-                                          (regions, county_pop, town_pop), captured, skipped, rolled))
+                                          (regions, county_pop, town_pop), captured, skipped,
+                                          rolled, gaps))
 
         count = len(captured["fmr"]) + len(captured["il"]) + len(captured["states"])
         if count:
@@ -603,6 +642,10 @@ def collect():
             "rollup_areas": {code: rolled[code] for code in built},
             "study_codes_by_metric_and_year": coverage,
             "codes_without_a_value": sorted(set(levels) - set(df["cbsa_code"])),
+            # a town the census could not weigh, and a cbsa whose income was
+            # withheld because one of its fmr areas never answered
+            "towns_without_a_weight": sorted(gaps["unweighted_towns"]),
+            "codes_missing_an_fmr_area": gaps["codes_missing_an_area"],
         },
     )]
     for path, year, count in raw_files:

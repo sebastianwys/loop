@@ -586,6 +586,24 @@ class TestRollups(FakeHud, unittest.TestCase):
         self.assertEqual(manifest[0]["notes"]["codes_without_a_value"], ["99999"])
         self.assertIn("only codes that sit in one fmr area resolve", out)
 
+    # a mean over the areas that answered is the income of the part of the
+    # metro that replied, not the metro's. one refusal used to blank the area
+    # for every cbsa touching it and publish the rest as if whole
+    def test_an_area_that_never_answers_withholds_the_income(self):
+        without_waterbury = {k: v for k, v in IL.items() if k[0] != "0900901430"}
+        with patch.dict(IL, without_waterbury, clear=True):
+            _, frame, manifest, _, _, _ = self.run_collect()
+        notes = manifest[0]["notes"]
+        self.assertEqual(self.rows(frame, "99999", "median_family_income"), {})
+        self.assertEqual(notes["codes_missing_an_fmr_area"]["99999"],
+                         ["Waterbury, CT HUD Metro FMR Area"])
+        # the rent does not depend on that call, so it still publishes
+        self.assertEqual(self.rows(frame, "99999", "fmr_2br"),
+                         {"2019": 1400.0, "2024": 1750.0, "2026": 2100.0})
+        # and the metro that never needed the area is untouched
+        self.assertEqual(self.rows(frame, "16984", "median_family_income"),
+                         {"2019": 100000.0, "2024": 120000.0, "2025": 125000.0})
+
     def test_state_responses_are_captured_beside_the_entity_responses(self):
         _, _, manifest, _, raw, _ = self.run_collect()
         self.assertEqual(sorted(raw["hud_2024.json"]["states"]), ["CT", "IL"])
@@ -701,6 +719,18 @@ class TestWeights(unittest.TestCase):
 
     def test_a_place_with_no_population_has_no_weight(self):
         self.assertIsNone(hud.weight_of("0604199999", self.COUNTY, self.TOWN))
+
+    # hud sends methuen's town era code, the census reassigned it. unfixed, a
+    # town of 53,000 left both sums and tilted the division toward the areas
+    # that could be weighed
+    def test_a_retired_town_code_still_finds_its_weight_and_its_county(self):
+        towns = {"2500940675": 53475.0}
+        regions = {"2500940675": "25009"}
+        self.assertEqual(hud.weight_of("2500940710", {}, towns), 53475.0)
+        self.assertEqual(hud.home_county("2500940710", regions), "25009")
+
+    def test_a_town_the_table_does_not_know_still_falls_back_to_its_own_fips(self):
+        self.assertEqual(hud.weight_of("2501234567", {}, {"2501234567": 12.0}), 12.0)
 
     def test_a_single_area_needs_no_weight_at_all(self):
         self.assertEqual(hud.weighted([(1428.0, None)]), 1428.0)
