@@ -686,6 +686,43 @@ class TestProvenance(BuildCase):
     def test_a_build_with_no_sources_at_all_has_an_empty_block(self):
         self.assertEqual(self.block(), [])
 
+    # the model's export is computed rather than downloaded, so it lives under
+    # ml/results and not under data/raw. it writes a manifest in the same shape
+    # and the site reads a file out of it, so it belongs on the page like the
+    # rest. the raw folder glob alone cannot see it
+    def test_a_folder_outside_the_raw_directory_reaches_the_block(self):
+        other = tempfile.TemporaryDirectory()
+        self.addCleanup(other.cleanup)
+        folder = Path(other.name) / "forecast"
+        folder.mkdir()
+        (folder / "download_manifest.json").write_text(json.dumps([self.entry(
+            filename="metrics.csv",
+            source={"endpoint": "loop.export", "provider": "Loop forecasting model"},
+            version="seqgru, origin 2026Q2",
+        )]))
+        self.manifest("fhfa", [self.entry()])
+        block = self.build(forecast_dir=folder)["provenance"]
+        self.assertEqual([e["source"] for e in block], ["fhfa", "forecast"])
+        self.assertEqual((block[1]["url"], block[1]["version"]), ("loop.export", "seqgru, origin 2026Q2"))
+
+    # the vintage line and the provenance table are two readings of the same
+    # folders. a source in one and not the other leaves a reader deciding which
+    # of the two to believe, which is the opposite of the point
+    def test_the_vintage_line_names_every_folder_the_block_does(self):
+        other = tempfile.TemporaryDirectory()
+        self.addCleanup(other.cleanup)
+        folder = Path(other.name) / "forecast"
+        folder.mkdir()
+        (folder / "download_manifest.json").write_text(json.dumps([self.entry(
+            filename="metrics.csv", source={"endpoint": "loop.export", "provider": "Loop"})]))
+        for name in ("fhfa", "census", "boundaries", "national"):
+            self.manifest(name, [self.entry(version=f"{name} vintage")])
+        payload = self.build(forecast_dir=folder)
+        named = {e["source"] for e in payload["provenance"]}
+        self.assertTrue(named.issubset(set(payload["sources"])), named - set(payload["sources"]))
+        for name in ("fhfa", "census", "boundaries", "national"):
+            self.assertEqual(payload["sources"][name], f"{name} vintage")
+
 
 # the shipped manifests, where the shapes really differ: fhfa writes source.url
 # and the api collectors write source.endpoint, and a folder holds one file or
@@ -702,6 +739,15 @@ class TestShippedProvenance(unittest.TestCase):
             self.assertEqual(len(entry["sha256"]), 64, entry["source"])
             self.assertGreater(entry["row_count"], 0, entry["source"])
             self.assertTrue(entry["downloaded_at"].endswith("Z"), entry["source"])
+
+    # the model's export, where the map's forecast metrics come from. it is
+    # computed here, so its address is the function that wrote it rather than an
+    # https url, and it is the one row on the page that is not a download
+    def test_the_model_export_is_on_the_page_as_a_computed_source(self):
+        block = bm.provenance_block(bm.DEFAULT_PATHS["enrichment_dir"], bm.DEFAULT_PATHS["forecast_dir"])
+        entry = next(e for e in block if e["source"] == "forecast")
+        self.assertEqual((entry["url"], entry["filename"]), ("loop.export", "metrics.csv"))
+        self.assertEqual(len(entry["sha256"]), 64)
 
 
 # the fhfa master file. 10180 runs four quarters a year from 2000 after one

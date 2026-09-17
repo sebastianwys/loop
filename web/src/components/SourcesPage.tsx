@@ -230,18 +230,19 @@ export function SourcesPage({ data, go }: ViewProps) {
             <h3>The forecast is computed here, not downloaded</h3>
             <p>
               {opener(forecasts.length)} of the metrics on this site are written by the forecasting model in
-              the repository's ml directory rather than fetched from a publisher. Nothing was downloaded for
-              them, so there is no upstream file to checksum and no row for them among the sources, and this
-              page will not invent one.
+              the repository's ml directory rather than fetched from a publisher. It is the one row above with
+              no address to follow, because nothing was downloaded for it: the address column names the code
+              that wrote the file instead of a publisher's url.
             </p>
             <ul className="metric-list">
               {forecasts.map((def) => <li key={def.id}>{def.label}</li>)}
             </ul>
             <p>
-              That does not leave them unsourced. The model is fit on the sources this build records, and its
-              export carries a manifest of its own at ml/results/forecast/download_manifest.json, in the same
-              shape as the download manifests this page is built from: the sha256 of the file the site reads,
-              its row count, its vintage and the checksums of the three artifacts it was built from.
+              It is checkable the same way as the rest. The model is fit on the sources this build records,
+              and its export writes a manifest of its own at ml/results/forecast/download_manifest.json in the
+              same shape as the download manifests this page is built from, so the hash in the table above is
+              the hash of the file the site reads. That manifest carries one thing the table has no column
+              for: the checksums of the three artifacts the export was computed from.
               {modelVintage ? ` This build reads the ${modelVintage} export.` : ""}
             </p>
             {report.rows.length > 0 && (
@@ -260,9 +261,10 @@ export function SourcesPage({ data, go }: ViewProps) {
         )}
 
         <p className="sources-foot">
-          Every file named above is in the repository under data/raw, in the folder the source column names,
-          beside the download manifest this page is built from. Running a sha256 over that file returns the
-          value in the last column, which is what makes the rest of this site checkable rather than trustable.
+          Every file named above is in the repository beside the download manifest this page is built from,
+          under data/raw in the folder the source column names, and under ml/results for the one the model
+          computed. Running a sha256 over that file returns the value in the last column, which is what makes
+          the rest of this site checkable rather than trustable.
         </p>
       </div>
     </main>

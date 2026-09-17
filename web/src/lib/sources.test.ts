@@ -209,9 +209,10 @@ const present = existsSync(PATH);
 const built: MapData | null = present ? (JSON.parse(readFileSync(PATH, "utf8")) as MapData) : null;
 
 describe.skipIf(!present)("the provenance block of the built metros.json", () => {
-  it("has one row per raw data folder, each naming a file and its checksum", () => {
+  it("has one row per source folder, each naming a file and its checksum", () => {
     const report = buildSources(built!);
-    expect(report.rows).toHaveLength(16);
+    // sixteen raw folders and the model's own export, which is computed here
+    expect(report.rows).toHaveLength(17);
     for (const { entry: row } of report.rows) {
       expect(row.sha256, row.source).toMatch(/^[0-9a-f]{64}$/);
       expect(row.filename, row.source).not.toBe("");
@@ -225,11 +226,14 @@ describe.skipIf(!present)("the provenance block of the built metros.json", () =>
     for (const { entry: row } of buildSources(built!).rows) {
       const safe = safeUrl(row.url);
       expect(safe.stripped, `${row.source} url`).toEqual([]);
-      expect(safe.href, `${row.source} url`).toBe(row.url);
+      // the model's export was computed here rather than fetched, so its
+      // address is the code that wrote it and there is nothing to open
+      if (row.source === "forecast") expect(safe.href, `${row.source} url`).toBeNull();
+      else expect(safe.href, `${row.source} url`).toBe(row.url);
     }
   });
 
-  it("builds metrics out of twelve folders and names what the other four do", () => {
+  it("builds metrics out of thirteen folders and names what the other four do", () => {
     const report = buildSources(built!);
     const quiet = report.rows.filter((r) => r.metrics.length === 0).map((r) => r.entry.source);
     expect(quiet).toEqual(["boundaries", "fred", "gazetteer", "national"]);
@@ -239,14 +243,11 @@ describe.skipIf(!present)("the provenance block of the built metros.json", () =>
     }
   });
 
-  it("gives every visible metric a folder except the model's, which is not a download", () => {
+  it("gives every visible metric a folder, the model's included", () => {
     const report = buildSources(built!);
-    expect(report.unsourced).toEqual(["forecast"]);
+    expect(report.unsourced).toEqual([]);
     const placed = new Set(report.rows.flatMap((r) => r.metrics.map((d) => d.id)));
-    for (const def of visibleDefs(built!.metros)) {
-      if (def.source === "forecast") expect(placed.has(def.id), def.id).toBe(false);
-      else expect(placed.has(def.id), def.id).toBe(true);
-    }
+    for (const def of visibleDefs(built!.metros)) expect(placed.has(def.id), def.id).toBe(true);
   });
 
   it("names a metric under one folder only, so no number is claimed twice", () => {
@@ -260,11 +261,12 @@ describe.skipIf(!present)("the provenance block of the built metros.json", () =>
       expect(row.version, row.source).not.toBe("");
       expect(row.provider, row.source).not.toBe("");
     }
-    // the model is in the vintages but not in the downloads, which is the
-    // asymmetry the page has to explain rather than paper over
+    // the vintage line and the provenance table are two readings of one list
+    // of folders. a source in one and not the other leaves a reader deciding
+    // which of the two to believe
     const folders = new Set(report.rows.map((r) => r.entry.source));
-    const missing = Object.keys(built!.sources).filter((k) => !folders.has(k));
-    expect(missing).toEqual(["forecast"]);
+    expect(Object.keys(built!.sources).filter((k) => !folders.has(k))).toEqual([]);
+    expect([...folders].filter((f) => !(f in built!.sources))).toEqual([]);
   });
 
   it("agrees with the source labels the rest of the site uses", () => {

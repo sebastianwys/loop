@@ -27,9 +27,8 @@ DEFAULT_PATHS = {
 # one begins at its own first drawable year
 SERIES_START = 1975
 
-# sources whose files are read straight into the build rather than discovered
-# as a metrics.csv, so they need naming for the vintage line by hand
-DIRECT_SOURCES = ("fhfa", "census")
+# the file every collector writes beside its downloads
+MANIFEST_FILE = "download_manifest.json"
 
 # zillow monthly columns look like 2024-01-31
 MONTH = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -438,23 +437,39 @@ def folder_version(entries):
     return ", ".join(distinct) if distinct else "present"
 
 
-# the vintage line for the sources that are read straight into the build. a
-# folder that is not on disk is left out rather than listed as present, because
-# the line is what the site shows a reader as proof the source was fetched
-def direct_versions(raw_dir):
-    out = {}
-    for name in DIRECT_SOURCES:
-        folder = Path(raw_dir) / name
-        if (folder / "download_manifest.json").exists():
-            out[name] = enrichment_version(folder)
-    return out
+# every folder the build can prove a download out of: one per collector under
+# the raw directory, plus whatever folders are handed in, which is where the
+# model's export lives. that one is computed rather than downloaded, so it sits
+# outside data/raw and the glob alone cannot see it
+def source_folders(raw_dir, *folders):
+    found = [m.parent for m in sorted(Path(raw_dir).glob(f"*/{MANIFEST_FILE}"))]
+    return found + [Path(f) for f in folders if (Path(f) / MANIFEST_FILE).exists()]
+
+
+# the vintage line, one entry per folder that carries a manifest. it used to be
+# built by walking the enrichment folders, which are the ones writing a
+# metrics.csv, so it left out fhfa and census, the two sources the whole map is
+# built on, along with boundaries and national. the caller overrides the four
+# that read their version out of the frame the build actually loaded
+def manifest_versions(raw_dir, *folders):
+    return {f.name: enrichment_version(f) for f in source_folders(raw_dir, *folders)}
+
+
+# a manifest is a list of entries or it is nothing. missing, unreadable, or the
+# wrong shape all come back as none, because none of the three says anything
+# about where the bytes came from. a bad line on a page, never a failed build
+def read_manifest(folder):
+    try:
+        entries = json.loads((Path(folder) / MANIFEST_FILE).read_text())
+    except (OSError, ValueError):
+        return None
+    if not isinstance(entries, list) or not entries or not all(isinstance(e, dict) for e in entries):
+        return None
+    return entries
 
 
 def enrichment_version(folder):
-    manifest = Path(folder) / "download_manifest.json"
-    if not manifest.exists():
-        return "present"
-    entries = json.loads(manifest.read_text())
+    entries = read_manifest(folder)
     return folder_version(entries) if entries else "present"
 
 
@@ -505,13 +520,10 @@ def apply_enrichments(metro, enrichments, parent_code=None):
 # totalled into files and row_count instead of being copied out whole. a
 # manifest that is missing, unreadable, or that cannot say where the bytes came
 # from proves nothing, so its folder is left out rather than failing the build
-def provenance_entry(manifest):
-    manifest = Path(manifest)
-    try:
-        entries = json.loads(manifest.read_text())
-    except (OSError, ValueError):
-        entries = None
-    if not isinstance(entries, list) or not entries or not all(isinstance(e, dict) for e in entries):
+def provenance_entry(folder):
+    folder = Path(folder)
+    entries = read_manifest(folder)
+    if entries is None:
         return None
     first = entries[0]
     integrity = first.get("integrity") or {}
@@ -524,7 +536,7 @@ def provenance_entry(manifest):
     rows = [r for r in rows if isinstance(r, int)]
     stamps = [e["downloaded_at"] for e in entries if e.get("downloaded_at")]
     return {
-        "source": manifest.parent.name,
+        "source": folder.name,
         "provider": source.get("provider"),
         "url": url,
         "version": first.get("version"),
@@ -540,12 +552,12 @@ def provenance_entry(manifest):
 
 # what makes the pipeline checkable from the site: every raw folder, where it
 # came from, which version it was and the hash it had when it landed
-def provenance_block(raw_dir):
+def provenance_block(raw_dir, *folders):
     block = []
-    for manifest in sorted(Path(raw_dir).glob("*/download_manifest.json")):
-        entry = provenance_entry(manifest)
+    for folder in source_folders(raw_dir, *folders):
+        entry = provenance_entry(folder)
         if entry is None:
-            print(f"[build] {manifest.parent.name} has no usable download manifest, left out of provenance")
+            print(f"[build] {folder.name} has no usable download manifest, left out of provenance")
             continue
         block.append(entry)
     return block
@@ -744,18 +756,19 @@ def build(out_path=None, paths=None):
         "generated_at": utc_now(),
         "years": list(STUDY_YEARS),
         "sources": {
+            # every folder that carries a manifest, so the vintage line and the
+            # provenance block below are two readings of one list rather than
+            # two lists that drift. the four below override it, because a
+            # version read off the frame the build loaded beats one read off a
+            # manifest describing a file the build may not have opened
+            **manifest_versions(p["enrichment_dir"], p["forecast_dir"]),
             "gazetteer": f"{GAZETTEER_YEAR} Gazetteer",
             "zillow": zillow_version(zhvi),
             "bls": bls_version(bls_frame),
             "fred": fred_version(fred_frame),
-            # fhfa and census are not enrichment folders, they feed the merged
-            # csv and the price series directly, so the discovery loop below
-            # never reached them and the footer's vintage line silently omitted
-            # the two sources the whole map is built on
-            **direct_versions(p["enrichment_dir"]),
             **{e["name"]: enrichment_version(e["folder"]) for e in enrichments},
         },
-        "provenance": provenance_block(p["enrichment_dir"]),
+        "provenance": provenance_block(p["enrichment_dir"], p["forecast_dir"]),
         "national": national_block(fred_frame, national_frame),
         "metros": metros,
     }

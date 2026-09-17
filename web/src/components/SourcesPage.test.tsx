@@ -48,6 +48,13 @@ const PROVENANCE: Provenance[] = [
     url: "https://www.zillow.com/research/data/", files: 1, row_count: 23550, filename: "metrics.csv",
     sha256: "b5091797fad5076c9963e8b7370796129e70f6e6aa5539a3f2c1d0b71db1a41f",
   }),
+  // the one source computed here rather than fetched. its address is the code
+  // that wrote the file, so the page has nothing to link and must not pretend
+  entry({
+    source: "forecast", provider: "Loop forecasting model", version: "gru, origin 2026Q2",
+    url: "loop.export", files: 1, row_count: 4100, filename: "metrics.csv",
+    sha256: "b2573c00154a7d909b1105a1ea068517970241028956c26635e278ae97685e06",
+  }),
 ];
 
 const render = (data: MapData) =>
@@ -112,16 +119,21 @@ describe("the sources view", () => {
     expect(feeds.slice(cut)).not.toContain("Zillow home value index");
   });
 
-  it("says the forecast is computed here and has no download to checksum", () => {
+  it("says the forecast is computed here and points at the manifest it writes", () => {
     expect(page).toContain("The forecast is computed here, not downloaded");
     expect(page).toContain("ml/results/forecast/download_manifest.json");
     expect(page).toContain("gru, origin 2026Q2");
   });
 
-  it("keeps the forecast out of the download tables rather than inventing a row for it", () => {
+  it("gives the model's export a row of its own, with the code that wrote it as the address", () => {
     const tables = page.slice(0, page.indexOf("sources-model"));
-    expect(tables).not.toContain("Expected HPI growth, next 4 quarters");
-    expect(page).toContain("Expected HPI growth, next 4 quarters");
+    expect(tables).toContain("Loop forecasting model");
+    expect(tables).toContain("b2573c00154a");
+    // an address that is not an http url is text, never a link a reader can follow
+    expect(tables).toContain("<code class=\"url\">loop.export</code>");
+    expect(tables).not.toContain("href=\"loop.export\"");
+    // and the metrics it builds are named under it, like every other folder
+    expect(tables).toContain("Expected HPI growth, next 4 quarters");
   });
 
   it("credits the index standard error to the publisher it belongs to, not to the model", () => {
