@@ -11,11 +11,26 @@ export interface ColorScale {
   kind: ScaleKind;
   domain: [number, number] | null;
   bins: Bin[];
+  // true when the end classes take everything past the domain, so the legend
+  // says "or more" rather than naming an edge the values plainly carry past
+  clipped: boolean;
   color: (value: number | null) => string;
 }
 
 const finite = (values: (number | null)[]) =>
   values.filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+
+// where a diverging domain ends, as a quantile of the magnitudes rather than at
+// the largest one. the domain used to run to the biggest number in the data, so
+// a single outlier set the width of all five classes and everything ordinary
+// fell into the neutral middle: net domestic migration put 404 of 410 metros in
+// one class, and net natural change 395. measured over the built map at this
+// quantile they are 305 and 301, and every class carries metros.
+//
+// this is the rule the animated annual run has always used, for the same reason
+// and with the same finding written beside it: a domain wide enough to hold the
+// extreme washes out everything else. the end classes take what is past them
+const DIVERGING_QUANTILE = 0.95;
 
 function quantile(sorted: number[], q: number): number {
   const pos = (sorted.length - 1) * q;
@@ -45,16 +60,20 @@ function oneSided(data: number[]): boolean {
 export function buildScale(values: (number | null)[], asked: ScaleKind): ColorScale {
   const data = finite(values);
   if (data.length === 0) {
-    return { kind: asked, domain: null, bins: [], color: () => NULL_GRAY };
+    return { kind: asked, domain: null, bins: [], clipped: false, color: () => NULL_GRAY };
   }
 
   const kind: ScaleKind = asked === "diverging" && oneSided(data) ? "sequential" : asked;
   const colors = kind === "diverging" ? DIVERGING : SEQUENTIAL;
   const n = colors.length;
   let breaks: number[];
+  let clipped = false;
 
   if (kind === "diverging") {
-    const max = Math.max(...data.map(Math.abs)) || 1;
+    const magnitudes = data.map(Math.abs).sort((a, b) => a - b);
+    const largest = magnitudes[magnitudes.length - 1];
+    const max = quantile(magnitudes, DIVERGING_QUANTILE) || largest || 1;
+    clipped = max < largest;
     breaks = Array.from({ length: n + 1 }, (_, i) => -max + (2 * max * i) / n);
   } else {
     const sorted = [...data].sort((a, b) => a - b);
@@ -66,6 +85,7 @@ export function buildScale(values: (number | null)[], asked: ScaleKind): ColorSc
         kind,
         domain: [min, max],
         bins: [only],
+        clipped: false,
         color: (v) => (v === null || !Number.isFinite(v) ? NULL_GRAY : only.color),
       };
     }
@@ -86,5 +106,5 @@ export function buildScale(values: (number | null)[], asked: ScaleKind): ColorSc
     const hit = bins.find((b) => v >= b.from && v < b.to);
     return (hit ?? bins[n - 1]).color;
   };
-  return { kind, domain, bins, color };
+  return { kind, domain, bins, clipped, color };
 }

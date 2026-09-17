@@ -1,4 +1,5 @@
 import contextlib
+import hashlib
 import importlib.util
 import io
 import tempfile
@@ -121,3 +122,56 @@ class SuppressionSentinelTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# every published result, every figure and the whole map are computed on one
+# file, and its identity was written into three documents and into no assertion
+# that runs. any of the pipeline's own failure modes changes it silently: the
+# degree share denominator that joined on 2026-09-16 moved the hash, and both
+# suites stayed green through it.
+#
+# the loader ml/MILESTONES.md milestone 1 describes checks the hash on read.
+# this is the other half, the one that catches the drift today: it reads the
+# real file and fails if the shape, the coverage or the bytes move
+class TestTheIntegratedFileIsTheOneEverythingWasComputedOn(unittest.TestCase):
+    PATH = Path(__file__).resolve().parent.parent / "data" / "integrated" / "hpi_census_merged.csv"
+    SHA256 = "ce2322ba9a7a6c938db3b2616baadf95ecdbd528d64ed0598d5e4d93394e9d4b"
+    SHAPE = (1197, 24)
+    METROS = 410
+    YEARS = [2014, 2019, 2024]
+    LEVELS = {"msa": 1101, "division": 96}
+
+    @classmethod
+    def setUpClass(cls):
+        if not cls.PATH.exists():
+            raise unittest.SkipTest(f"{cls.PATH.name} is not in this checkout")
+        cls.frame = pd.read_csv(cls.PATH, dtype={"cbsa_code": str, "geo_level": str, "parent_cbsa": str})
+
+    # the number quoted in ml/README.md. when the pipeline is
+    # re-run on purpose, update it here in the same commit as the prose
+    def test_the_bytes_are_the_ones_the_documents_name(self):
+        self.assertEqual(hashlib.sha256(self.PATH.read_bytes()).hexdigest(), self.SHA256)
+
+    def test_the_shape_and_the_coverage_are_the_published_ones(self):
+        self.assertEqual(self.frame.shape, self.SHAPE)
+        self.assertEqual(self.frame["cbsa_code"].nunique(), self.METROS)
+        self.assertEqual(sorted(int(y) for y in self.frame["year"].unique()), self.YEARS)
+        self.assertEqual(self.frame["geo_level"].value_counts().to_dict(), self.LEVELS)
+
+    # the 13 split metros are why every fhfa code joins at all, so a rebuild
+    # that quietly lost the division rows has to be loud
+    def test_the_thirty_seven_divisions_are_all_present(self):
+        divisions = self.frame[self.frame["geo_level"] == "division"]
+        self.assertEqual(divisions["cbsa_code"].nunique(), 37)
+        self.assertEqual(divisions["parent_cbsa"].nunique(), 13)
+
+    # the columns downstream reads by name. a rename is a silent null in every
+    # reader, which is exactly what the degree share denominator was
+    def test_the_columns_downstream_reads_are_all_there(self):
+        for column in ("place_id", "place_name", "cbsa_code", "year", "avg_index_nsa", "median_income",
+                       "total_pop", "median_age", "adults_25_plus", "bachelors_count", "masters_count",
+                       "median_home_value", "homeownership_rate", "geo_level", "parent_cbsa", "NAME"):
+            self.assertIn(column, self.frame.columns)
+
+    def test_no_metro_repeats_a_year(self):
+        self.assertFalse(self.frame.duplicated(["cbsa_code", "year"]).any())

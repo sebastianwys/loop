@@ -177,7 +177,7 @@ export function MapPage({ data, route, go, viewport, shell }: ViewProps) {
           open={legendOpen}
           onToggle={() => setLegendOpen((was) => !was)}
           inherited={anyInherited}
-          clipped={deep !== null}
+          clipped={deep !== null || scale.clipped}
         />
         {selectedMetro && <DetailPanel metro={selectedMetro} metros={metros} onClose={() => go({ metro: null })} />}
       </div>
