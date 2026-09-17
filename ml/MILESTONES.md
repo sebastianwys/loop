@@ -15,6 +15,12 @@ One milestone is one small unit of work: a test goes green, results land, commit
 | 7 | residuals: metros the best model misses most, signed, to `results/residuals.csv` plus a chart | csv and png exist; the readme names the top 5 | this is question 2, and it is the interesting part |
 | 8 | tag `ml-v0.1`. readme gets a results section with the metrics table and two charts | tag pushed | a citable checkpoint |
 
+Milestone 1 landed 2026-09-17: `ml/src/loop/data.py` with `load()` and
+`check_shape()`, `ml/tests/test_data.py` on the real file and on tampered
+copies, and `panel.py` reading the integrated csv through it, so no panel can
+be built on a file that is not the published one. The panel rebuilt byte for
+byte identical, which is the proof the loader changed nothing but the check.
+
 ## Wave 2: scenarios
 
 | # | milestone | done when | why |

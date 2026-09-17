@@ -13,7 +13,7 @@ import matplotlib.dates as mdates
 import numpy as np
 import pandas as pd
 
-from loop import charts, spec
+from loop import charts, data, spec
 
 # the map's zillow name matching lives in the bot package at the repo root
 sys.path.insert(0, str(spec.REPO_ROOT))
@@ -459,7 +459,10 @@ def build(raw_dir=spec.RAW_DIR):
     # suffix, has the same shape
     metros = static_columns(panel["cbsa_code"].unique(), gazetteer)
     if MERGED.exists():
-        merged = pd.read_csv(MERGED, dtype=str)[["cbsa_code", "place_name"]].drop_duplicates("cbsa_code")
+        # through loop.data, so a panel cannot be built on an integrated file
+        # that is not the published one. it is the same two columns either way,
+        # the loader just refuses a frame nobody can reproduce first
+        merged = data.load(MERGED)[["cbsa_code", "place_name"]].drop_duplicates("cbsa_code")
         metros = metros.merge(merged, on="cbsa_code", how="left")
         metros["place_name"] = metros["place_name"].fillna(metros["name"])
     else:
