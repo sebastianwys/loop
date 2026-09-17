@@ -25,6 +25,9 @@ export interface RouteState {
   // the period the reader asked for, not the one on screen: a metric that
   // does not publish it draws the nearest, and the ask survives the detour
   period: Period | null;
+  // the year of an annual run, on the same contract as period. a metric whose
+  // run does not reach it draws the nearest year the run has
+  year: number | null;
   metro: string | null;
   mode: MapMode;
   compare: string[];
@@ -34,6 +37,7 @@ export const DEFAULT_ROUTE: RouteState = {
   view: "map",
   metric: DEFS[0].id,
   period: null,
+  year: null,
   metro: null,
   mode: "dots",
   compare: [],
@@ -41,7 +45,7 @@ export const DEFAULT_ROUTE: RouteState = {
 
 // the keys this app owns. everything else in a query string belongs to
 // somebody else and is carried through untouched
-const KEYS = ["view", "metric", "period", "metro", "mode", "compare"] as const;
+const KEYS = ["view", "metric", "period", "year", "metro", "mode", "compare"] as const;
 
 // URLSearchParams is lenient: a stray percent or a bare "=" becomes a junk
 // key rather than a throw, and a junk key is not one that is ever read
@@ -63,6 +67,17 @@ function readMetric(raw: string | null, period: Period | null): { metric: string
   const hit = raw === null ? null : defById(raw);
   if (!hit) return { metric: DEFAULT_ROUTE.metric, period };
   return { metric: hit.def.id, period: period ?? (raw === hit.def.id ? null : hit.period) };
+}
+
+// a four digit calendar year. the range is deliberately wider than any run on
+// the site, because which years are reachable is the metric's business and not
+// the address bar's
+const YEAR = /^[0-9]{4}$/;
+
+function readYear(raw: string | null): number | null {
+  if (raw === null || !YEAR.test(raw)) return null;
+  const year = Number(raw);
+  return year >= 1900 && year <= 2100 ? year : null;
 }
 
 function readCode(raw: string | null): string | null {
@@ -89,6 +104,7 @@ export function parseRoute(search: string): RouteState {
     view: one(p.get("view"), VIEW_IDS, DEFAULT_ROUTE.view),
     metric,
     period,
+    year: readYear(p.get("year")),
     metro: readCode(p.get("metro")),
     mode: one(p.get("mode"), MODES, DEFAULT_ROUTE.mode),
     compare: readCodes(p.get("compare")),
@@ -103,6 +119,7 @@ export function writeParams(route: RouteState, current = ""): string {
   if (route.view !== DEFAULT_ROUTE.view) out.set("view", route.view);
   if (route.metric !== DEFAULT_ROUTE.metric) out.set("metric", route.metric);
   if (route.period !== null) out.set("period", route.period);
+  if (route.year !== null) out.set("year", String(route.year));
   if (route.metro !== null) out.set("metro", route.metro);
   if (route.mode !== DEFAULT_ROUTE.mode) out.set("mode", route.mode);
   if (route.compare.length > 0) out.set("compare", route.compare.join(","));
@@ -116,8 +133,9 @@ export function writeParams(route: RouteState, current = ""): string {
 }
 
 export function sameRoute(a: RouteState, b: RouteState): boolean {
-  return a.view === b.view && a.metric === b.metric && a.period === b.period && a.metro === b.metro
-    && a.mode === b.mode && a.compare.length === b.compare.length && a.compare.every((c, i) => c === b.compare[i]);
+  return a.view === b.view && a.metric === b.metric && a.period === b.period && a.year === b.year
+    && a.metro === b.metro && a.mode === b.mode && a.compare.length === b.compare.length
+    && a.compare.every((c, i) => c === b.compare[i]);
 }
 
 // which history entry a change deserves. arriving somewhere new is what the
@@ -156,6 +174,31 @@ export function routeMetric(route: RouteState, metros: Metro[]): RouteMetric {
   return { def, metric: resolveMetric(def, period), period, available };
 }
 
+// the shortest gap between two replaces of the address bar. a browser rate
+// limits history writes, safari at a hundred in thirty seconds, and playing
+// the timeline asks for one a quarter second for as long as the run lasts
+export const REPLACE_MS = 500;
+
+export type HistoryAction =
+  | { kind: "none" }
+  | { kind: "push" }
+  | { kind: "replace" }
+  | { kind: "wait"; ms: number };
+
+// what a route change owes the address bar. a state whose address is already
+// showing owes nothing. arriving somewhere is a destination and lands at once,
+// because a delayed push would let a second change land in front of it and
+// take the back button with it. everything else recolours what is already on
+// screen, and those are capped: the first lands now and the last lands at
+// rest, so a reader who drags the year scrubber still leaves a shareable link
+export function historyAction(
+  from: RouteState, to: RouteState, next: string, current: string, since: number,
+): HistoryAction {
+  if (next === current) return { kind: "none" };
+  if (isNavigation(from, to)) return { kind: "push" };
+  return since >= REPLACE_MS ? { kind: "replace" } : { kind: "wait", ms: REPLACE_MS - since };
+}
+
 export type Go = (patch: Partial<RouteState> | ((route: RouteState) => Partial<RouteState>)) => void;
 
 function search(): string {
@@ -181,15 +224,42 @@ export function useRoute(): { route: RouteState; go: Go } {
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
+  // a write the cap deferred, and when the last write landed. both are refs
+  // because neither is drawn and a render for either would be a wasted one
+  const pending = useRef<number | null>(null);
+  const wroteAt = useRef(0);
+
   useEffect(() => {
     const from = shown.current;
     const next = writeParams(route, search());
     shown.current = route;
-    if (next === search()) return;
     const url = `${window.location.pathname}${next}${window.location.hash}`;
-    if (isNavigation(from, route)) window.history.pushState(null, "", url);
-    else window.history.replaceState(null, "", url);
+    const write = (kind: "push" | "replace") => {
+      if (kind === "push") window.history.pushState(null, "", url);
+      else window.history.replaceState(null, "", url);
+      wroteAt.current = Date.now();
+    };
+    // whatever was waiting was for an older state, so it is dropped rather
+    // than written after this one. a popstate lands here too, with nothing to
+    // write, which is what clears a deferred write the reader navigated away from
+    if (pending.current !== null) window.clearTimeout(pending.current);
+    pending.current = null;
+
+    const action = historyAction(from, route, next, search(), Date.now() - wroteAt.current);
+    if (action.kind === "none") return;
+    if (action.kind === "wait") {
+      pending.current = window.setTimeout(() => {
+        pending.current = null;
+        write("replace");
+      }, action.ms);
+      return;
+    }
+    write(action.kind);
   }, [route]);
+
+  useEffect(() => () => {
+    if (pending.current !== null) window.clearTimeout(pending.current);
+  }, []);
 
   const go = useCallback<Go>((patch) => {
     setRoute((r) => ({ ...r, ...(typeof patch === "function" ? patch(r) : patch) }));

@@ -23,9 +23,6 @@ export function MapPage({ data, route, go, viewport, shell }: ViewProps) {
   const [boundaries, setBoundaries] = useState<BoundaryIndex | null>(null);
   const [shapesStatus, setShapesStatus] = useState<ShapesStatus>("idle");
   const [legendOpen, setLegendOpen] = useState(() => legendStartsOpen(viewport.mode));
-  // the year of an annual history, when the metric on screen has one. it is
-  // component state and not route state: see the note above the provider
-  const [year, setYear] = useState<number | null>(null);
 
   const mode = route.mode;
   const { open, drawer, setOpen } = shell;
@@ -82,7 +79,7 @@ export function MapPage({ data, route, go, viewport, shell }: ViewProps) {
   // whose sources publish nothing but the four vintage panels
   const deep = useMemo(() => buildDeepTimeline(metric.def, metros), [metric.def, metros]);
   // a year the reader left behind on another metric is clamped into this run
-  const shownYear = deep ? frameAt(deep, year).year : null;
+  const shownYear = deep ? frameAt(deep, route.year).year : null;
   // what the map, the legend and the ranking are all reading. one object, so
   // the three cannot disagree about which year is on screen
   const shown = useMemo(
@@ -105,14 +102,14 @@ export function MapPage({ data, route, go, viewport, shell }: ViewProps) {
     () => metros.some((m) => isInherited(m, shown) && shown.accessor(m) !== null),
     [metros, shown],
   );
-  // the year does not go in the address bar. route.ts owns every write to
-  // history and parseRoute derives the whole of RouteState, so a year written
-  // beside it as a foreign key would be restored by neither popstate nor a
-  // shared link, and a second writer would race the effect that owns the bar.
-  // adding year to RouteState is a change to route.ts, which is not ours
+  // the year is route state like the metric, so a link carries the frame the
+  // reader was looking at. it is the fastest changing key the address bar has,
+  // a new one every quarter second while the run plays, which is why route.ts
+  // caps how often a replace reaches history
+  const onYearChange = useCallback((year: number) => go({ year }), [go]);
   const scrub = useMemo<YearScrub>(
-    () => ({ deep, year: shownYear, onYearChange: setYear, reducedMotion: viewport.reducedMotion }),
-    [deep, shownYear, viewport.reducedMotion],
+    () => ({ deep, year: shownYear, onYearChange, reducedMotion: viewport.reducedMotion }),
+    [deep, shownYear, onYearChange, viewport.reducedMotion],
   );
   const selectedMetro = metros.find((m) => m.cbsa === route.metro) ?? null;
 

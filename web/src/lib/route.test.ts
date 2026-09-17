@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { SAMPLE } from "./data";
 import { DEFS } from "./metrics";
 import {
-  DEFAULT_ROUTE, isNavigation, parseRoute, pruneMetros, routeMetric, sameRoute, writeParams, type RouteState,
+  DEFAULT_ROUTE, historyAction, isNavigation, parseRoute, pruneMetros, REPLACE_MS, routeMetric, sameRoute,
+  writeParams, type RouteState,
 } from "./route";
 
 const route = (patch: Partial<RouteState> = {}): RouteState => ({ ...DEFAULT_ROUTE, ...patch });
@@ -15,11 +16,13 @@ describe("reading an address", () => {
     expect(parseRoute("?&&")).toEqual(DEFAULT_ROUTE);
   });
 
-  it("reads the view, the metric, the period, the metro, the map mode and the comparison", () => {
-    expect(parseRoute("?view=compare&metric=zhvi&period=2019&metro=10180&mode=shapes&compare=10180,19100")).toEqual({
+  it("reads the view, the metric, the period, the year, the metro, the map mode and the comparison", () => {
+    const address = "?view=compare&metric=zhvi&period=2019&year=1994&metro=10180&mode=shapes&compare=10180,19100";
+    expect(parseRoute(address)).toEqual({
       view: "compare",
       metric: "zhvi",
       period: "2019",
+      year: 1994,
       metro: "10180",
       mode: "shapes",
       compare: ["10180", "19100"],
@@ -47,6 +50,16 @@ describe("an address that cannot be trusted", () => {
     expect(parseRoute("?period=2015").period).toBeNull();
     expect(parseRoute("?period=LATEST").period).toBeNull();
     expect(parseRoute("?period[]=2019").period).toBeNull();
+  });
+
+  // the year the timeline animates. which years a metric can actually draw is
+  // the metric's business, so the address bar only insists on a calendar year
+  it("forgets a year that is not four digits of a plausible calendar", () => {
+    expect(parseRoute("?year=1994").year).toBe(1994);
+    expect(parseRoute("?year=2026").year).toBe(2026);
+    for (const bad of ["", "19", "19945", "1994.5", "-1994", "1899", "2101", "nineteen", "1994x"]) {
+      expect(parseRoute(`?year=${bad}`).year, bad).toBeNull();
+    }
   });
 
   it("drops a metro code that is not five digits", () => {
@@ -99,6 +112,7 @@ describe("writing an address", () => {
 
   it("writes only what is not the default", () => {
     expect(writeParams(route({ metro: "10180" }))).toBe("?metro=10180");
+    expect(writeParams(route({ year: 1994 }))).toBe("?year=1994");
     expect(writeParams(route({ mode: "shapes" }))).toBe("?mode=shapes");
     expect(writeParams(route({ view: "compare", compare: ["10180", "19100"] })))
       .toBe("?view=compare&compare=10180,19100");
@@ -116,7 +130,8 @@ describe("writing an address", () => {
       route({ metric: "zhvi", period: "2019" }),
       route({ view: "compare", compare: ["10180", "19100", "25980"] }),
       route({ metro: "19100", mode: "shapes", period: "latest" }),
-      route({ view: "compare", metric: "zori", period: "2014", metro: "10180", mode: "shapes", compare: ["10180"] }),
+      route({ metric: "zhvi", year: 1994 }),
+      route({ view: "compare", metric: "zori", period: "2014", year: 2003, metro: "10180", mode: "shapes", compare: ["10180"] }),
     ];
     for (const state of states) expect(parseRoute(writeParams(state))).toEqual(state);
   });
@@ -130,6 +145,8 @@ describe("telling one state from another", () => {
     expect(sameRoute(route({ compare: ["1"] }), route({ compare: ["1", "2"] }))).toBe(false);
     expect(sameRoute(DEFAULT_ROUTE, route({ mode: "shapes" }))).toBe(false);
     expect(sameRoute(DEFAULT_ROUTE, route({ period: "2014" }))).toBe(false);
+    expect(sameRoute(DEFAULT_ROUTE, route({ year: 1994 }))).toBe(false);
+    expect(sameRoute(route({ year: 1994 }), route({ year: 1995 }))).toBe(false);
   });
 });
 
@@ -147,6 +164,44 @@ describe("which changes deserve a history entry", () => {
     expect(isNavigation(DEFAULT_ROUTE, route({ mode: "shapes" }))).toBe(false);
     expect(isNavigation(route({ view: "compare" }), route({ view: "compare", compare: ["10180"] }))).toBe(false);
     expect(isNavigation(route({ metro: "10180" }), DEFAULT_ROUTE)).toBe(false);
+    expect(isNavigation(DEFAULT_ROUTE, route({ year: 1994 }))).toBe(false);
+  });
+});
+
+// a browser rate limits history writes, and the timeline asks for one every
+// quarter second for as long as a run plays. safari throws after a hundred in
+// thirty seconds, which two runs of a fifty year metric would reach
+describe("how often the address bar may be written", () => {
+  const url = (r: RouteState) => writeParams(r);
+
+  it("owes nothing when the address is already the one the state writes", () => {
+    const here = url(route({ year: 1994 }));
+    expect(historyAction(DEFAULT_ROUTE, route({ year: 1994 }), here, here, 0)).toEqual({ kind: "none" });
+  });
+
+  it("lands a destination at once, however recently anything else was written", () => {
+    const to = route({ view: "compare" });
+    expect(historyAction(DEFAULT_ROUTE, to, url(to), "", 0)).toEqual({ kind: "push" });
+    expect(historyAction(DEFAULT_ROUTE, to, url(to), "", REPLACE_MS * 10)).toEqual({ kind: "push" });
+  });
+
+  it("lands the first recolour at once and defers the ones crowding it", () => {
+    const to = route({ year: 1994 });
+    expect(historyAction(DEFAULT_ROUTE, to, url(to), "", REPLACE_MS)).toEqual({ kind: "replace" });
+    expect(historyAction(DEFAULT_ROUTE, to, url(to), "", REPLACE_MS + 1)).toEqual({ kind: "replace" });
+    expect(historyAction(DEFAULT_ROUTE, to, url(to), "", 0)).toEqual({ kind: "wait", ms: REPLACE_MS });
+    expect(historyAction(DEFAULT_ROUTE, to, url(to), "", REPLACE_MS - 100)).toEqual({ kind: "wait", ms: 100 });
+  });
+
+  // the run is what this exists for: at a frame every YEAR_MS, the cap has to
+  // hold the whole of a fifty year metric under what a browser allows
+  it("keeps a full run of the timeline inside what a browser allows", () => {
+    const frames = 52;
+    const runMs = frames * 260;
+    const writes = Math.ceil(runMs / REPLACE_MS);
+    expect(writes).toBeLessThan(frames);
+    // two runs back to back, the case that throws in safari without the cap
+    expect(writes * 2).toBeLessThan(100);
   });
 });
 
