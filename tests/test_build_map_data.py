@@ -1102,10 +1102,11 @@ class TestTheFootprintIsACountySet(unittest.TestCase):
         cls.merged = bm.load_merged(bm.DEFAULT_PATHS["merged"])
         cls.centroids = bm.load_centroids(bm.DEFAULT_PATHS["centroids"])
         cls.membership = bm.load_membership(bm.DEFAULT_PATHS["membership"])
+        cls.population = bm.load_county_population(bm.DEFAULT_PATHS["county_population"])
 
-    def metro(self, cbsa, membership=None):
+    def metro(self, cbsa, membership=None, population=None):
         rows = self.merged[self.merged["cbsa_code"] == cbsa]
-        metros, _, _ = bm.build_metros(rows, self.centroids, membership=membership)
+        metros, _, _ = bm.build_metros(rows, self.centroids, membership=membership, county_population=population)
         return metros[0]
 
     def test_the_shipped_file_carries_a_county_set_per_vintage(self):
@@ -1180,6 +1181,84 @@ class TestTheFootprintIsACountySet(unittest.TestCase):
             with self.assertRaises(ValueError) as caught:
                 bm.load_membership(path)
             self.assertIn("county_fips", str(caught.exception))
+
+
+# omb tidies a boundary far more often than it redraws a metro, and a county
+# set test cannot tell the two apart on its own. weighed by the people who
+# changed hands, 4 of the 84 changed metros are under one percent and 43 are at
+# ten or more, so the rule keeps the tidy and refuses the redraw
+class TestASmallBoundaryMoveIsNotARedraw(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.merged = bm.load_merged(bm.DEFAULT_PATHS["merged"])
+        cls.centroids = bm.load_centroids(bm.DEFAULT_PATHS["centroids"])
+        cls.membership = bm.load_membership(bm.DEFAULT_PATHS["membership"])
+        cls.population = bm.load_county_population(bm.DEFAULT_PATHS["county_population"])
+
+    def metro(self, cbsa, population=None):
+        rows = self.merged[self.merged["cbsa_code"] == cbsa]
+        metros, _, _ = bm.build_metros(rows, self.centroids, membership=self.membership,
+                                       county_population=population)
+        return metros[0]
+
+    def test_the_shipped_file_carries_a_population_per_vintage(self):
+        self.assertEqual(sorted(self.population), ["2014", "2019", "2024"])
+        for vintage in self.population:
+            self.assertGreater(len(self.population[vintage]), 3000, vintage)
+        # harris county, texas, is the one houston never let go of
+        self.assertGreater(self.population["2024"]["48201"], 4_000_000)
+
+    # houston gained one county carrying under half a percent of its people. a
+    # metro is not a different place because a boundary was tidied
+    def test_a_move_under_the_tolerance_reports_the_rate_and_says_so(self):
+        self.assertIsNone(self.metro("26420")["growth"]["pop_14_24"])
+        houston = self.metro("26420", self.population)
+        self.assertIsNotNone(houston["growth"]["pop_14_24"])
+        self.assertLess(houston["footprint_moved"], bm.FOOTPRINT_TOLERANCE)
+        self.assertGreater(houston["footprint_moved"], 0)
+
+    # lynchburg lost a county that carries nobody: bedford city merged into
+    # bedford county, so the county set moved and not one person did
+    def test_a_move_of_nobody_reports_the_rate(self):
+        lynchburg = self.metro("31340", self.population)
+        self.assertIsNotNone(lynchburg["growth"]["pop_14_24"])
+        self.assertEqual(lynchburg["footprint_moved"], 0.0)
+
+    # salisbury at 67 percent and the connecticut metros, where planning regions
+    # replaced counties outright, are the redraws the rule exists for
+    def test_a_move_over_the_tolerance_still_reports_nothing(self):
+        for cbsa in ("41540", "14860", "25540", "35300", "35980"):
+            metro = self.metro(cbsa, self.population)
+            self.assertIsNone(metro["growth"]["pop_14_24"], cbsa)
+            self.assertNotIn("footprint_moved", metro, cbsa)
+
+    def test_a_metro_that_never_moved_carries_no_note(self):
+        abilene = self.metro("10180", self.population)
+        self.assertIsNotNone(abilene["growth"]["pop_14_24"])
+        self.assertNotIn("footprint_moved", abilene)
+
+    # without the populations nothing can be weighed, so every redraw is refused
+    # again rather than guessed at
+    def test_no_population_file_falls_back_to_all_or_nothing(self):
+        self.assertIsNone(self.metro("26420")["growth"]["pop_14_24"])
+        self.assertNotIn("footprint_moved", self.metro("26420"))
+
+    def test_exactly_the_seven_measured_metros_are_marked(self):
+        metros, _, _ = bm.build_metros(self.merged, self.centroids, membership=self.membership,
+                                       county_population=self.population)
+        marked = sorted(m["cbsa"] for m in metros if "footprint_moved" in m)
+        self.assertEqual(marked, ["16740", "17140", "26420", "31340", "33460", "47260", "48620"])
+        for metro in metros:
+            if "footprint_moved" in metro:
+                self.assertIsNotNone(metro["growth"]["pop_14_24"], metro["cbsa"])
+
+    def test_a_population_file_missing_a_column_says_which(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "p.csv"
+            path.write_text("vintage,county_fips\n2014,48201\n")
+            with self.assertRaises(ValueError) as caught:
+                bm.load_county_population(path)
+            self.assertIn("population", str(caught.exception))
 
 
 class TestFootprintChange(unittest.TestCase):

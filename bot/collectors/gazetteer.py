@@ -3,7 +3,7 @@ import zipfile
 
 import pandas as pd
 
-from bot.common import RAW_DIR, fetch, manifest_entry, write_manifest
+from bot.common import RAW_DIR, env_key, fetch, manifest_entry, write_manifest
 
 YEAR = 2024
 GAZ = f"https://www2.census.gov/geo/docs/maps-data/data/gazetteer/{YEAR}_Gazetteer/{YEAR}_Gaz_"
@@ -29,6 +29,14 @@ OUT_DIR = RAW_DIR / "gazetteer"
 OUT_FILE = OUT_DIR / "cbsa_centroids.csv"
 MEMBERSHIP_FILE = OUT_DIR / "cbsa_counties.csv"
 VINTAGE_MEMBERSHIP_FILE = OUT_DIR / "cbsa_counties_by_vintage.csv"
+COUNTY_POPULATION_FILE = OUT_DIR / "county_population_by_vintage.csv"
+
+# how many people a county that moved between two vintages carries, which is
+# what says whether a redrawn cbsa is a different place or the same one with a
+# boundary tidied. acs 5-year, the same table and the same vintages the rest of
+# the pipeline is pinned to
+CENSUS_URL = "https://api.census.gov/data/{year}/acs/acs5"
+POPULATION = "B01003_001E"
 
 # cbsa_type 1 = metro, 2 = micro from the gazetteer, 3 = division, derived here
 DIVISION = 3
@@ -114,6 +122,38 @@ def parse_membership(content):
     return pairs.drop_duplicates().sort_values(["cbsa_code", "county_fips"]).reset_index(drop=True)
 
 
+# county population per vintage. the census answers a header row and then one
+# row per county, and suppresses a value as a large negative sentinel
+def parse_population(rows):
+    head, body = rows[0], rows[1:]
+    out = {}
+    for row in body:
+        record = dict(zip(head, row))
+        fips = str(record["state"]).zfill(2) + str(record["county"]).zfill(3)
+        try:
+            population = float(record[POPULATION])
+        except (TypeError, ValueError):
+            continue
+        if population >= 0:
+            out[fips] = population
+    return out
+
+
+def county_population(years, key):
+    frames = []
+    for year in sorted(years):
+        response = fetch(CENSUS_URL.format(year=year), params={"get": POPULATION, "for": "county:*", "key": key})
+        # the census answers a missing or bad key with an html page and a 200,
+        # so the content type is the only thing that catches it
+        if "json" not in response.headers.get("content-type", ""):
+            raise RuntimeError(f"census answered {response.status_code} without json for {year}")
+        counties = parse_population(response.json())
+        frames.append(pd.DataFrame({"vintage": str(year), "county_fips": list(counties),
+                                    "population": list(counties.values())}))
+        print(f"[gazetteer] {len(counties)} county populations for {year}")
+    return pd.concat(frames, ignore_index=True)
+
+
 # one membership table per acs vintage, so the map can ask whether a cbsa code
 # meant the same counties in two vintages before it reports a growth rate
 def vintage_membership(books):
@@ -175,12 +215,24 @@ def collect():
     by_vintage = vintage_membership(books)
     divisions = division_centroids(delineation, counties)
 
+    # the population behind a county that moved. without a census key the file
+    # is left as it is, which is fine: these are historical vintages and they
+    # do not move. the build falls back to withholding every redrawn rate
+    key = env_key("CENSUS_API_KEY")
+    population = None
+    if key:
+        population = county_population(VINTAGE_DELINEATIONS, key)
+    else:
+        print("[gazetteer] no CENSUS_API_KEY, county populations left as they are")
+
     df = pd.concat([cbsa[COLUMNS], divisions], ignore_index=True)
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     df.to_csv(OUT_FILE, index=False)
     membership.to_csv(MEMBERSHIP_FILE, index=False)
     by_vintage.to_csv(VINTAGE_MEMBERSHIP_FILE, index=False)
+    if population is not None:
+        population.to_csv(COUNTY_POPULATION_FILE, index=False)
     write_manifest(OUT_DIR, [
         manifest_entry(
             OUT_FILE, URL, "U.S. Census Bureau",
@@ -201,9 +253,18 @@ def collect():
             "omb february 2013, september 2018 and july 2023 delineations", len(by_vintage),
             {"vintages": sorted(VINTAGE_DELINEATIONS), "sources": VINTAGE_DELINEATIONS},
         ),
-    ])
+    ] + ([
+        manifest_entry(
+            COUNTY_POPULATION_FILE, CENSUS_URL.format(year="{year}"), "U.S. Census Bureau",
+            f"county population ({POPULATION}) at each acs vintage, the weight behind a county that moved",
+            "ACS 5-year " + ", ".join(sorted(VINTAGE_DELINEATIONS)), len(population),
+            {"table": POPULATION, "vintages": sorted(VINTAGE_DELINEATIONS)},
+        ),
+    ] if population is not None else []))
     print(f"[gazetteer] {len(cbsa)} cbsas and {len(divisions)} divisions -> {OUT_FILE.name}")
     print(f"[gazetteer] {len(membership)} cbsa county pairs -> {MEMBERSHIP_FILE.name}")
     print(f"[gazetteer] {len(by_vintage)} pairs across {by_vintage['vintage'].nunique()} vintages "
           f"-> {VINTAGE_MEMBERSHIP_FILE.name}")
+    if population is not None:
+        print(f"[gazetteer] {len(population)} county populations -> {COUNTY_POPULATION_FILE.name}")
     return OUT_FILE

@@ -99,6 +99,9 @@ export interface Metro {
   zillow_scope?: "metro" | "parent metro" | null;
   // enrichment metrics a division took from its parent metro
   parent_metrics?: string[];
+  // set when the decade rates are reported over a footprint that moved, as the
+  // share of the metro's people that changed hands between the two vintages
+  footprint_moved?: number;
   lat: number;
   lon: number;
   years: Record<YearKey, YearValues>;

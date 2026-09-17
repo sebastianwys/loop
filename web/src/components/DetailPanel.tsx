@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { geoNote, inheritedFrom, parentMetricsNote } from "../lib/geo";
+import { footprintNote, geoNote, inheritedFrom, parentMetricsNote } from "../lib/geo";
 import { forecastCaption, forecastLines } from "../lib/forecast";
 import { formatValue } from "../lib/format";
 import { forecastOf } from "../lib/history";
@@ -86,6 +86,7 @@ export function DetailPanel({ metro, metros, onClose }: Props) {
   const forecast = forecastOf(metro);
   const forecasts = forecastLines(metro);
   const inherited = parentMetricsNote(metro);
+  const footprint = footprintNote(metro);
   // a measure in a vintage table shows its latest value there already
   const shown = new Set(GROUPS.flatMap((group) => yearRows(metro, group).map((d) => d.id)));
   const latest = latestRows(metro).filter((d) => !shown.has(d.id));
@@ -179,6 +180,7 @@ export function DetailPanel({ metro, metros, onClose }: Props) {
           ))}
         </tbody>
       </table>
+      {footprint && <p className="geo-note">{footprint}</p>}
 
       {forecasts.length > 0 && (
         <>

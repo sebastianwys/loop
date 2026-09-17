@@ -20,7 +20,20 @@ DEFAULT_PATHS = {
     "national": RAW_DIR / "national" / "indicators.csv",
     "fhfa": RAW_DIR / "fhfa" / "hpi_master.csv",
     "membership": RAW_DIR / "gazetteer" / "cbsa_counties_by_vintage.csv",
+    "county_population": RAW_DIR / "gazetteer" / "county_population_by_vintage.csv",
 }
+
+# how much of a metro's people may change hands between two vintages before the
+# two are different places. omb tidies a boundary far more often than it redraws
+# a metro, and the two look identical to a county set test: houston moved 0.46
+# percent of its people, charlotte 0.97, minneapolis 0.44, and lynchburg lost a
+# county that carries nobody at all, since bedford city merged into bedford
+# county. withholding those is a worse answer than reporting them. the ones this
+# still refuses are the real redraws: salisbury at 66.9 percent and the four
+# connecticut metros at 166 to 202, where planning regions replaced counties
+# outright. measured over all 84 changed metros, 4 are under one percent, 7
+# under two, 25 under five and 43 at ten or more
+FOOTPRINT_TOLERANCE = 0.02
 
 # fhfa's metro series begin in 1975, so the panel draws the whole history, one
 # annual mean of the quarterly index per year, the last year partial. this is
@@ -124,6 +137,19 @@ def load_membership(path):
     out = {}
     for (vintage, code), group in df.groupby(["vintage", "cbsa_code"]):
         out.setdefault(str(vintage), {})[str(code)] = frozenset(group["county_fips"])
+    return out
+
+
+# county population per vintage, as {vintage: {county_fips: population}}
+def load_county_population(path):
+    df = pd.read_csv(path, dtype={"vintage": str, "county_fips": str})
+    absent = [c for c in ("vintage", "county_fips", "population") if c not in df.columns]
+    if absent:
+        raise ValueError(f"{Path(path).name} is missing columns {absent}")
+    df["population"] = pd.to_numeric(df["population"], errors="coerce")
+    out = {}
+    for vintage, group in df.dropna(subset=["population"]).groupby("vintage"):
+        out[str(vintage)] = dict(zip(group["county_fips"], group["population"]))
     return out
 
 
@@ -671,7 +697,7 @@ def year_record(row, zhvi_row, zori_row, bls_frame, cbsa, year):
 
 
 def build_metros(merged, centroids, zhvi=None, zori=None, bls_frame=None, enrichments=(), series=None,
-                 membership=None):
+                 membership=None, county_population=None):
     metros, dropped, unmatched = [], 0, 0
     y0, y1, y2 = STUDY_YEARS
 
@@ -679,6 +705,23 @@ def build_metros(merged, centroids, zhvi=None, zori=None, bls_frame=None, enrich
     # of that vintage does not carry the code at all
     def counties_at(year, code):
         return None if not membership else membership.get(str(year), {}).get(str(code))
+
+    # the share of a metro's people that changed hands between two vintages: the
+    # counties it gained, counted where they were counted, plus the ones it lost,
+    # over what it held in the earlier one. none when the populations are not on
+    # disk, which sends the caller back to refusing every redraw
+    def moved_share(later_year, earlier_year, added, removed, kept):
+        if not county_population:
+            return None
+        later_pop = county_population.get(str(later_year), {})
+        earlier_pop = county_population.get(str(earlier_year), {})
+        if not later_pop or not earlier_pop:
+            return None
+        base = sum(earlier_pop.get(f, 0.0) for f in kept | removed)
+        if base <= 0:
+            return None
+        moved = sum(later_pop.get(f, 0.0) for f in added) + sum(earlier_pop.get(f, 0.0) for f in removed)
+        return moved / base
     for cbsa, group in merged.groupby("cbsa_code", sort=False):
         if cbsa not in centroids.index:
             dropped += 1
@@ -726,21 +769,41 @@ def build_metros(merged, centroids, zhvi=None, zori=None, bls_frame=None, enrich
         # county moving is not a change either, which is why the whole name was
         # never the test: bakersfield became bakersfield-delano on the same kern
         # county. hpi is left alone, fhfa restates its series on one delineation
-        def same_footprint(later_year, earlier_year):
+        # none when the two vintages are the same place, otherwise the share of
+        # the metro's people that changed hands. a share the tolerance allows is
+        # reported anyway and recorded in approx_growth, since a boundary tidied
+        # is not a metro redrawn
+        def footprint_move(later_year, earlier_year):
             later_counties = counties_at(later_year, cbsa)
             earlier_counties = counties_at(earlier_year, cbsa)
-            if later_counties is not None and earlier_counties is not None:
-                return later_counties == earlier_counties
-            later_states = name_states(value(later_year, "NAME"))
-            earlier_states = name_states(value(earlier_year, "NAME"))
-            if later_states and earlier_states:
-                return later_states == earlier_states
-            return True
+            if later_counties is None or earlier_counties is None:
+                later_states = name_states(value(later_year, "NAME"))
+                earlier_states = name_states(value(earlier_year, "NAME"))
+                if later_states and earlier_states and later_states != earlier_states:
+                    return 1.0
+                return None
+            if later_counties == earlier_counties:
+                return None
+            share = moved_share(later_year, earlier_year,
+                                later_counties - earlier_counties,
+                                earlier_counties - later_counties,
+                                later_counties & earlier_counties)
+            # a change nobody can weigh is a change
+            return 1.0 if share is None else share
+
+        # the three acs rates all span the same pair of vintages, so one number
+        # describes all of them. it is set only when a rate was reported over a
+        # footprint that did move, which is seven of the 410 metros
+        moved = []
 
         def acs_growth(later_year, earlier_year, col):
-            if not same_footprint(later_year, earlier_year):
+            share = footprint_move(later_year, earlier_year)
+            if share is not None and share > FOOTPRINT_TOLERANCE:
                 return None
-            return growth(value(later_year, col), value(earlier_year, col))
+            rate = growth(value(later_year, col), value(earlier_year, col))
+            if share is not None and rate is not None:
+                moved.append(share)
+            return rate
 
         hpi_series = series.get(cbsa) if series else None
         zhvi_latest, zhvi_date = zillow_latest(zhvi_row)
@@ -774,6 +837,11 @@ def build_metros(merged, centroids, zhvi=None, zori=None, bls_frame=None, enrich
             },
             "ptir": {str(y): rnd(ratio(value(y, "median_home_value"), value(y, "median_income")), 4) for y in STUDY_YEARS},
         }
+        # the decade rates are this metro's, over a footprint that moved by less
+        # than the tolerance. the number is here so the panel can say so rather
+        # than presenting them as exact
+        if moved:
+            record["footprint_moved"] = rnd(max(moved), 4)
         if hpi_series:
             record["series"] = {"hpi": hpi_series}
         metros.append(apply_enrichments(record, enrichments, parent["cbsa"] if parent else None))
@@ -856,10 +924,11 @@ def build(out_path=None, paths=None):
     national_frame = optional(p["national"], load_national, "national indicators")
     fhfa_series = optional(p["fhfa"], load_fhfa_series, "fhfa history")
     membership = optional(p["membership"], load_membership, "cbsa county membership by vintage")
+    county_population = optional(p["county_population"], load_county_population, "county population by vintage")
     enrichments = discover_enrichments(p["enrichment_dir"], p["forecast_dir"])
 
     metros, dropped, unmatched = build_metros(merged, centroids, zhvi, zori, bls_frame, enrichments, fhfa_series,
-                                              membership)
+                                              membership, county_population)
 
     payload = {
         "generated_at": utc_now(),

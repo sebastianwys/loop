@@ -359,6 +359,25 @@ class TestGazetteerMembership(unittest.TestCase):
         self.assertEqual(df.vintage.tolist(), ["2014"] + ["2024"] * 6)
         self.assertEqual(df[df.vintage == "2014"].cbsa_code.tolist(), ["10180"])
 
+    # the weight behind a county that moved. the census suppresses a value as a
+    # large negative sentinel, which pandas reads as a number and a mean would
+    # carry straight into the answer
+    def test_county_population_drops_a_suppressed_value(self):
+        rows = [
+            [POPULATION := "B01003_001E", "state", "county"],
+            ["4780000", "48", "201"],
+            ["-666666666", "48", "203"],
+            [None, "48", "205"],
+            ["", "48", "207"],
+            ["0", "48", "209"],
+        ]
+        parsed = gazetteer.parse_population(rows)
+        self.assertEqual(parsed, {"48201": 4780000.0, "48209": 0.0})
+
+    def test_county_population_pads_the_fips_to_five_digits(self):
+        parsed = gazetteer.parse_population([["B01003_001E", "state", "county"], ["100", "9", "1"]])
+        self.assertEqual(list(parsed), ["09001"])
+
     def test_the_three_vintages_are_the_delineations_they_were_published_on(self):
         self.assertEqual(sorted(gazetteer.VINTAGE_DELINEATIONS), ["2014", "2019", "2024"])
         self.assertEqual(gazetteer.VINTAGE_DELINEATIONS["2024"], gazetteer.DELINEATION_URL)

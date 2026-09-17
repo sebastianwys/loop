@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { geoNote, parentMetricsNote } from "./geo";
+import { footprintNote, geoNote, parentMetricsNote } from "./geo";
 import type { Metro } from "../types";
 
 const base = { cbsa: "1", name: "x", lat: 0, lon: 0 } as unknown as Metro;
@@ -33,5 +33,39 @@ describe("parentMetricsNote", () => {
   it("lists inherited metrics by label, deduplicated, unknown keys as they are", () => {
     const m = { ...base, parent_metrics: ["permits_units", "inventory", "permits_units", "mystery"] };
     expect(parentMetricsNote(m)).toBe("From the parent metro: Housing units permitted, For sale inventory, mystery.");
+  });
+});
+
+// omb tidies a boundary far more often than it redraws a metro, and a change
+// too small to move the rate is reported rather than withheld. the note is what
+// keeps that from being a silent claim
+describe("footprintNote", () => {
+  it("says nothing for a metro whose lines never moved", () => {
+    expect(footprintNote(base)).toBeNull();
+    expect(footprintNote({ ...base, footprint_moved: undefined })).toBeNull();
+  });
+
+  it("names the share that changed hands", () => {
+    const note = footprintNote({ ...base, footprint_moved: 0.0046 });
+    expect(note).toContain("0.46 percent");
+    expect(note).toContain("close rather than identical");
+  });
+
+  // lynchburg lost a county that carries nobody, since bedford city merged into
+  // bedford county. "0.00 percent" would read as a rounding artefact
+  it("says under a hundredth rather than printing a zero", () => {
+    expect(footprintNote({ ...base, footprint_moved: 0 })).toContain("under 0.01 percent");
+  });
+
+  // the note has to say where the rule stops, or a reader cannot tell this from
+  // a metro that was redrawn outright and reports nothing
+  it("names the tolerance so the silence on other metros is explained", () => {
+    expect(footprintNote({ ...base, footprint_moved: 0.01 })).toContain("more than two percent");
+  });
+
+  it("ignores a value that is not a share", () => {
+    for (const bad of [Number.NaN, Number.POSITIVE_INFINITY, -1]) {
+      expect(footprintNote({ ...base, footprint_moved: bad }), String(bad)).toBeNull();
+    }
   });
 });

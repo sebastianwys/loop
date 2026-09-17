@@ -14,7 +14,7 @@
       "row_count": 972
     },
     "version": "2024 Gazetteer",
-    "downloaded_at": "2026-09-17T05:48:53Z",
+    "downloaded_at": "2026-09-17T06:07:38Z",
     "notes": {
       "county_gazetteer": "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2024_Gazetteer/2024_Gaz_counties_national.zip",
       "delineation": "https://www2.census.gov/programs-surveys/metro-micro/geographies/reference-files/2023/delineation-files/list1_2023.xlsx",
@@ -36,7 +36,7 @@
       "row_count": 2054
     },
     "version": "omb july 2023 delineation",
-    "downloaded_at": "2026-09-17T05:48:53Z",
+    "downloaded_at": "2026-09-17T06:07:38Z",
     "notes": {
       "cbsas": 972
     }
@@ -56,7 +56,7 @@
       "row_count": 6074
     },
     "version": "omb february 2013, september 2018 and july 2023 delineations",
-    "downloaded_at": "2026-09-17T05:48:53Z",
+    "downloaded_at": "2026-09-17T06:07:38Z",
     "notes": {
       "vintages": [
         "2014",
@@ -68,6 +68,31 @@
         "2019": "https://www2.census.gov/programs-surveys/metro-micro/geographies/reference-files/2018/delineation-files/list1_Sep_2018.xls",
         "2024": "https://www2.census.gov/programs-surveys/metro-micro/geographies/reference-files/2023/delineation-files/list1_2023.xlsx"
       }
+    }
+  },
+  {
+    "filename": "county_population_by_vintage.csv",
+    "file_format": "CSV",
+    "source": {
+      "endpoint": "https://api.census.gov/data/{year}/acs/acs5",
+      "provider": "U.S. Census Bureau",
+      "access_method": "REST API",
+      "dataset": "county population (B01003_001E) at each acs vintage, the weight behind a county that moved"
+    },
+    "integrity": {
+      "sha256": "6b46fe8998e1de0db63addd0655428980fecc709ac4474b181b75420e3f57741",
+      "size_kb": 179.0,
+      "row_count": 9662
+    },
+    "version": "ACS 5-year 2014, 2019, 2024",
+    "downloaded_at": "2026-09-17T06:07:38Z",
+    "notes": {
+      "table": "B01003_001E",
+      "vintages": [
+        "2014",
+        "2019",
+        "2024"
+      ]
     }
   }
 ]
