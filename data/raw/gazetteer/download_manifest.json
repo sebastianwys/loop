@@ -14,7 +14,7 @@
       "row_count": 972
     },
     "version": "2024 Gazetteer",
-    "downloaded_at": "2026-09-17T01:41:46Z",
+    "downloaded_at": "2026-09-17T05:48:53Z",
     "notes": {
       "county_gazetteer": "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2024_Gazetteer/2024_Gaz_counties_national.zip",
       "delineation": "https://www2.census.gov/programs-surveys/metro-micro/geographies/reference-files/2023/delineation-files/list1_2023.xlsx",
@@ -36,9 +36,38 @@
       "row_count": 2054
     },
     "version": "omb july 2023 delineation",
-    "downloaded_at": "2026-09-17T01:41:46Z",
+    "downloaded_at": "2026-09-17T05:48:53Z",
     "notes": {
       "cbsas": 972
+    }
+  },
+  {
+    "filename": "cbsa_counties_by_vintage.csv",
+    "file_format": "CSV",
+    "source": {
+      "endpoint": "https://www2.census.gov/programs-surveys/metro-micro/geographies/reference-files/2023/delineation-files/list1_2023.xlsx",
+      "provider": "U.S. Office of Management and Budget, via the U.S. Census Bureau",
+      "access_method": "Direct HTTP download",
+      "dataset": "the counties of every cbsa and metropolitan division on the delineation each acs vintage was published on"
+    },
+    "integrity": {
+      "sha256": "0c7867ccf970ab464d5f7dbe2f881f85410555e9e69da3ab708cd7a6676ade89",
+      "size_kb": 100.9,
+      "row_count": 6074
+    },
+    "version": "omb february 2013, september 2018 and july 2023 delineations",
+    "downloaded_at": "2026-09-17T05:48:53Z",
+    "notes": {
+      "vintages": [
+        "2014",
+        "2019",
+        "2024"
+      ],
+      "sources": {
+        "2014": "https://www2.census.gov/programs-surveys/metro-micro/geographies/reference-files/2013/delineation-files/list1.xls",
+        "2019": "https://www2.census.gov/programs-surveys/metro-micro/geographies/reference-files/2018/delineation-files/list1_Sep_2018.xls",
+        "2024": "https://www2.census.gov/programs-surveys/metro-micro/geographies/reference-files/2023/delineation-files/list1_2023.xlsx"
+      }
     }
   }
 ]

@@ -1091,6 +1091,97 @@ class TestLatestHpi(unittest.TestCase):
         self.assertIsNone(bare["latest"].get("hpi"))
 
 
+# the state list in an acs name was only ever a proxy for the thing that
+# decides whether two vintages are the same place, which is the county set omb
+# published for each of them. measured against the delineations, 84 of the 410
+# metros changed county set between the 2014 and 2024 vintages and the name
+# test saw 13 of them
+class TestTheFootprintIsACountySet(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.merged = bm.load_merged(bm.DEFAULT_PATHS["merged"])
+        cls.centroids = bm.load_centroids(bm.DEFAULT_PATHS["centroids"])
+        cls.membership = bm.load_membership(bm.DEFAULT_PATHS["membership"])
+
+    def metro(self, cbsa, membership=None):
+        rows = self.merged[self.merged["cbsa_code"] == cbsa]
+        metros, _, _ = bm.build_metros(rows, self.centroids, membership=membership)
+        return metros[0]
+
+    def test_the_shipped_file_carries_a_county_set_per_vintage(self):
+        self.assertEqual(sorted(self.membership), ["2014", "2019", "2024"])
+        for vintage in ("2014", "2019", "2024"):
+            self.assertGreater(len(self.membership[vintage]), 900, vintage)
+        # abilene is callahan, jones and taylor counties in all three
+        for vintage in ("2014", "2019", "2024"):
+            self.assertEqual(self.membership[vintage]["10180"], frozenset({"48059", "48253", "48441"}), vintage)
+
+    # bend went from deschutes alone to three counties, with no state moving, so
+    # the name test could never have seen it
+    def test_a_metro_that_gained_counties_inside_one_state_has_no_decade_growth(self):
+        self.assertEqual(self.membership["2014"]["13460"], frozenset({"41017"}))
+        self.assertEqual(self.membership["2024"]["13460"], frozenset({"41013", "41017", "41031"}))
+        self.assertIsNotNone(self.metro("13460")["growth"]["pop_14_24"])
+        self.assertIsNone(self.metro("13460", self.membership)["growth"]["pop_14_24"])
+
+    # asheville lost a county, the other direction
+    def test_a_metro_that_lost_counties_has_no_decade_growth(self):
+        self.assertEqual(self.membership["2014"]["11700"] - self.membership["2024"]["11700"], frozenset({"37087"}))
+        self.assertIsNotNone(self.metro("11700")["growth"]["pop_14_24"])
+        self.assertIsNone(self.metro("11700", self.membership)["growth"]["pop_14_24"])
+
+    # charleston wv gained two counties in 2019 and gave them back in 2024, so
+    # its 2014 and 2024 sets match and the decade rate it publishes is sound.
+    # a metro that was redrawn and redrawn back is still the same place
+    def test_a_metro_redrawn_and_redrawn_back_keeps_its_decade_growth(self):
+        self.assertNotEqual(self.membership["2014"]["16620"], self.membership["2019"]["16620"])
+        self.assertEqual(self.membership["2014"]["16620"], self.membership["2024"]["16620"])
+        self.assertIsNotNone(self.metro("16620", self.membership)["growth"]["pop_14_24"])
+
+    # nassau-suffolk never moved a county. its acs name carries its parent's
+    # state list as well as its own, and the parent lost pennsylvania, so the
+    # name test blanked a division that was never redrawn
+    def test_a_division_is_judged_on_its_own_counties_not_its_parents_name(self):
+        for vintage in ("2014", "2024"):
+            self.assertEqual(self.membership[vintage]["35004"], frozenset({"36059", "36103"}), vintage)
+        self.assertIsNone(self.metro("35004")["growth"]["pop_14_24"])
+        self.assertIsNotNone(self.metro("35004", self.membership)["growth"]["pop_14_24"])
+
+    # a rename with no county moving is still not a change
+    def test_a_renamed_metro_keeps_its_growth_under_the_county_test(self):
+        for cbsa in ("12540", "12420"):
+            self.assertEqual(self.membership["2014"][cbsa], self.membership["2024"][cbsa], cbsa)
+            self.assertIsNotNone(self.metro(cbsa, self.membership)["growth"]["pop_14_24"], cbsa)
+
+    # salisbury is the case the original finding named, and the county test sees
+    # it too: the name test is not load bearing for it any more
+    def test_salisbury_is_still_blanked(self):
+        self.assertNotEqual(self.membership["2014"]["41540"], self.membership["2024"]["41540"])
+        self.assertIsNone(self.metro("41540", self.membership)["growth"]["pop_14_24"])
+        # and the 2014 to 2019 hpi pair, which fhfa restates on one delineation, keeps its number
+        self.assertEqual(self.metro("41540", self.membership)["growth"]["hpi_14_19"], 0.1469)
+
+    # 21 of the 410 are areas omb created after 2013, so the 2013 delineation
+    # does not carry them at all. an unknown county set is not evidence of a
+    # change, and the name test is what answers for them
+    def test_a_code_the_delineation_does_not_carry_falls_back_to_the_name(self):
+        self.assertNotIn("28450", self.membership["2014"])
+        kenosha = self.metro("28450", self.membership)
+        self.assertEqual(kenosha["growth"]["pop_14_24"], self.metro("28450")["growth"]["pop_14_24"])
+
+    def test_a_build_with_no_membership_file_still_runs_on_the_name(self):
+        self.assertIsNone(self.metro("41540")["growth"]["pop_14_24"])
+        self.assertIsNotNone(self.metro("12540")["growth"]["pop_14_24"])
+
+    def test_a_membership_file_missing_a_column_says_which(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "m.csv"
+            path.write_text("vintage,cbsa_code\n2014,10180\n")
+            with self.assertRaises(ValueError) as caught:
+                bm.load_membership(path)
+            self.assertIn("county_fips", str(caught.exception))
+
+
 class TestFootprintChange(unittest.TestCase):
     def salisbury(self):
         merged = bm.load_merged(bm.DEFAULT_PATHS["merged"])

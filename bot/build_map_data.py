@@ -19,6 +19,7 @@ DEFAULT_PATHS = {
     "fred": RAW_DIR / "fred" / "mortgage30us.csv",
     "national": RAW_DIR / "national" / "indicators.csv",
     "fhfa": RAW_DIR / "fhfa" / "hpi_master.csv",
+    "membership": RAW_DIR / "gazetteer" / "cbsa_counties_by_vintage.csv",
 }
 
 # fhfa's metro series begin in 1975, so the panel draws the whole history, one
@@ -111,6 +112,19 @@ def load_zillow(path):
     df = df[~df["RegionName"].duplicated()].set_index("RegionName")
     months = sorted(c for c in df.columns if MONTH.match(c))
     return df[months].apply(pd.to_numeric, errors="coerce")
+
+
+# the counties of every cbsa on the delineation each acs vintage was published
+# on, as {vintage: {cbsa_code: frozenset of county fips}}
+def load_membership(path):
+    df = pd.read_csv(path, dtype=str)
+    absent = [c for c in ("vintage", "cbsa_code", "county_fips") if c not in df.columns]
+    if absent:
+        raise ValueError(f"{Path(path).name} is missing columns {absent}")
+    out = {}
+    for (vintage, code), group in df.groupby(["vintage", "cbsa_code"]):
+        out.setdefault(str(vintage), {})[str(code)] = frozenset(group["county_fips"])
+    return out
 
 
 def load_bls(path):
@@ -656,9 +670,15 @@ def year_record(row, zhvi_row, zori_row, bls_frame, cbsa, year):
     }
 
 
-def build_metros(merged, centroids, zhvi=None, zori=None, bls_frame=None, enrichments=(), series=None):
+def build_metros(merged, centroids, zhvi=None, zori=None, bls_frame=None, enrichments=(), series=None,
+                 membership=None):
     metros, dropped, unmatched = [], 0, 0
     y0, y1, y2 = STUDY_YEARS
+
+    # the counties a cbsa code held in one vintage, or none when the delineation
+    # of that vintage does not carry the code at all
+    def counties_at(year, code):
+        return None if not membership else membership.get(str(year), {}).get(str(code))
     for cbsa, group in merged.groupby("cbsa_code", sort=False):
         if cbsa not in centroids.index:
             dropped += 1
@@ -688,16 +708,37 @@ def build_metros(merged, centroids, zhvi=None, zori=None, bls_frame=None, enrich
             row = rows.get(year)
             return None if row is None else row.get(col)
 
-        # a vintage pair that gains or loses a state is a redrawn cbsa and has no
-        # growth rate to report. the full name is too loose a test: omb renames the
-        # principal cities without moving a county line, so bakersfield becomes
-        # bakersfield-delano on the same kern county and austin gains san marcos
-        # from a county it already had. the state list moves only with the
-        # counties. hpi is left alone, fhfa restates its series on one delineation
-        def acs_growth(later_year, earlier_year, col):
+        # a growth rate compares a place to itself, so a vintage pair whose cbsa
+        # was redrawn between them has none to report. the truth is the county
+        # set omb published for each vintage, which is what redrawing moves.
+        #
+        # the state list in the acs name used to stand in for it, and it is far
+        # too coarse: measured against the delineations, 84 of the 410 metros
+        # changed county set between the 2014 and 2024 vintages and the state
+        # list saw 13 of them. bend or went from one county to three, charleston
+        # wv lost two, bridgeport ct swapped a county for two of connecticut's
+        # new planning regions, and every one of them published a decade growth
+        # rate comparing two different places.
+        #
+        # the name is still the fallback, for a code the delineation of a vintage
+        # does not carry at all: 21 of the 410 are areas omb created after 2013,
+        # and an unknown county set is not evidence of a change. a rename with no
+        # county moving is not a change either, which is why the whole name was
+        # never the test: bakersfield became bakersfield-delano on the same kern
+        # county. hpi is left alone, fhfa restates its series on one delineation
+        def same_footprint(later_year, earlier_year):
+            later_counties = counties_at(later_year, cbsa)
+            earlier_counties = counties_at(earlier_year, cbsa)
+            if later_counties is not None and earlier_counties is not None:
+                return later_counties == earlier_counties
             later_states = name_states(value(later_year, "NAME"))
             earlier_states = name_states(value(earlier_year, "NAME"))
-            if later_states and earlier_states and later_states != earlier_states:
+            if later_states and earlier_states:
+                return later_states == earlier_states
+            return True
+
+        def acs_growth(later_year, earlier_year, col):
+            if not same_footprint(later_year, earlier_year):
                 return None
             return growth(value(later_year, col), value(earlier_year, col))
 
@@ -814,9 +855,11 @@ def build(out_path=None, paths=None):
     fred_frame = optional(p["fred"], load_fred, "fred")
     national_frame = optional(p["national"], load_national, "national indicators")
     fhfa_series = optional(p["fhfa"], load_fhfa_series, "fhfa history")
+    membership = optional(p["membership"], load_membership, "cbsa county membership by vintage")
     enrichments = discover_enrichments(p["enrichment_dir"], p["forecast_dir"])
 
-    metros, dropped, unmatched = build_metros(merged, centroids, zhvi, zori, bls_frame, enrichments, fhfa_series)
+    metros, dropped, unmatched = build_metros(merged, centroids, zhvi, zori, bls_frame, enrichments, fhfa_series,
+                                              membership)
 
     payload = {
         "generated_at": utc_now(),

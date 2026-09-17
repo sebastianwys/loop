@@ -8,3 +8,6 @@ pandas==3.0.2
 requests==2.33.1
 seaborn==0.13.2
 snakemake==9.20.0
+# the february 2013 and september 2018 omb delineations are legacy .xls, which
+# openpyxl cannot read. they are frozen history and the only reason this is here
+xlrd==2.0.2

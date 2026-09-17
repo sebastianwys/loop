@@ -194,7 +194,7 @@ Verifying integrity: Census files will match, because each vintage endpoint is f
 
 | source | what it adds |
 | --- | --- |
-| Census Gazetteer | centroids. Division centroids derived from their counties, plus the counties of every CBSA and division from the OMB 2023 delineation. |
+| Census Gazetteer | centroids. Division centroids derived from their counties, plus the counties of every CBSA and division from the OMB 2023 delineation, and from the February 2013 and September 2018 delineations the two older ACS vintages were published on, so a decade growth rate can be withheld from a CBSA that was redrawn between them. |
 | Zillow | ZHVI, ZORI, inventory, days to pending, price cuts, ZHVF forecast |
 | BLS | metro unemployment |
 | FRED | 30-year mortgage rate, plus thirteen national indicators for the strip |

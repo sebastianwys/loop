@@ -334,6 +334,37 @@ class TestGazetteerMembership(unittest.TestCase):
         df = self.membership(self.ROWS + [self.ROWS[0]])
         self.assertEqual(df[df.cbsa_code == "10180"].county_fips.tolist(), ["48441"])
 
+    # the february 2013 workbook heads the column "Metro Division Code" and the
+    # two later ones "Metropolitan Division Code". same column, same codes, and
+    # reading the older file is the whole point of pulling it
+    def test_the_2013_workbook_names_the_division_column_differently(self):
+        old_rows = [{("Metro Division Code" if k == "Metropolitan Division Code" else k): v
+                     for k, v in row.items()} for row in self.ROWS]
+        df = gazetteer.parse_membership(self.workbook(old_rows))
+        self.assertEqual(df[df.cbsa_code == "16984"].county_fips.tolist(), ["17031", "17043"])
+        self.assertEqual(df.cbsa_code.tolist(), self.membership().cbsa_code.tolist())
+
+    def test_a_workbook_with_no_division_column_says_so(self):
+        rows = [{k: v for k, v in row.items() if k != "Metropolitan Division Code"} for row in self.ROWS]
+        with self.assertRaises(ValueError) as caught:
+            gazetteer.parse_membership(self.workbook(rows))
+        self.assertIn("division column", str(caught.exception))
+
+    # the county set per acs vintage, which is what decides whether a growth
+    # rate compares a place to itself
+    def test_one_membership_table_per_vintage(self):
+        books = {"2014": self.workbook(self.ROWS[:1]), "2024": self.workbook(self.ROWS)}
+        df = gazetteer.vintage_membership(books)
+        self.assertEqual(list(df.columns), ["vintage", "cbsa_code", "county_fips"])
+        self.assertEqual(df.vintage.tolist(), ["2014"] + ["2024"] * 6)
+        self.assertEqual(df[df.vintage == "2014"].cbsa_code.tolist(), ["10180"])
+
+    def test_the_three_vintages_are_the_delineations_they_were_published_on(self):
+        self.assertEqual(sorted(gazetteer.VINTAGE_DELINEATIONS), ["2014", "2019", "2024"])
+        self.assertEqual(gazetteer.VINTAGE_DELINEATIONS["2024"], gazetteer.DELINEATION_URL)
+        self.assertIn("/2013/", gazetteer.VINTAGE_DELINEATIONS["2014"])
+        self.assertIn("/2018/", gazetteer.VINTAGE_DELINEATIONS["2019"])
+
 
 class TestBlsDivisions(unittest.TestCase):
     # verified live: the chicago division answers under area type DV

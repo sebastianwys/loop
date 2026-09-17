@@ -12,9 +12,23 @@ COUNTY_URL = GAZ + "counties_national.zip"
 # omb's july 2023 delineation: the county makeup of every cbsa and division
 DELINEATION_URL = ("https://www2.census.gov/programs-surveys/metro-micro/geographies/"
                    "reference-files/2023/delineation-files/list1_2023.xlsx")
+REFERENCE = "https://www2.census.gov/programs-surveys/metro-micro/geographies/reference-files"
+
+# the delineation each acs vintage was published on, which is what decides
+# whether two vintages of a cbsa code are the same place. omb redraws county
+# lines between them and the code does not change, so a growth rate across a
+# redraw compares two different places wearing one code. these two files are
+# frozen history and will not be republished
+VINTAGE_DELINEATIONS = {
+    "2014": f"{REFERENCE}/2013/delineation-files/list1.xls",
+    "2019": f"{REFERENCE}/2018/delineation-files/list1_Sep_2018.xls",
+    "2024": DELINEATION_URL,
+}
+
 OUT_DIR = RAW_DIR / "gazetteer"
 OUT_FILE = OUT_DIR / "cbsa_centroids.csv"
 MEMBERSHIP_FILE = OUT_DIR / "cbsa_counties.csv"
+VINTAGE_MEMBERSHIP_FILE = OUT_DIR / "cbsa_counties_by_vintage.csv"
 
 # cbsa_type 1 = metro, 2 = micro from the gazetteer, 3 = division, derived here
 DIVISION = 3
@@ -56,11 +70,24 @@ def parse_counties(text):
 
 # the rows of the delineation workbook that belong to a division, one per county.
 # the sheet has two title rows above the header
-def parse_delineation(content):
+# the 2013 workbook heads the column "Metro Division Code" and the two later
+# ones "Metropolitan Division Code". same column, same codes
+DIVISION_COLUMNS = ("Metropolitan Division Code", "Metro Division Code")
+
+
+def read_workbook(content):
     df = pd.read_excel(io.BytesIO(content), header=2, dtype=str)
-    df = df[df["Metropolitan Division Code"].notna()]
+    division = next((c for c in DIVISION_COLUMNS if c in df.columns), None)
+    if division is None:
+        raise ValueError(f"delineation workbook has no division column, found {list(df.columns)[:6]}")
+    return df, division
+
+
+def parse_delineation(content):
+    df, division = read_workbook(content)
+    df = df[df[division].notna()]
     return pd.DataFrame({
-        "cbsa_code": df["Metropolitan Division Code"].str.strip(),
+        "cbsa_code": df[division].str.strip(),
         "name": df["Metropolitan Division Title"].str.strip() + " Metro Division",
         "parent_cbsa": df["CBSA Code"].str.strip(),
         "county_fips": df["FIPS State Code"].str.strip().str.zfill(2)
@@ -74,17 +101,28 @@ def parse_delineation(content):
 # hud has no entity for the code. a division county is listed twice, once under
 # the division and once under its parent metro
 def parse_membership(content):
-    df = pd.read_excel(io.BytesIO(content), header=2, dtype=str)
+    df, division_col = read_workbook(content)
     fips = (df["FIPS State Code"].str.strip().str.zfill(2)
             + df["FIPS County Code"].str.strip().str.zfill(3))
-    division = df["Metropolitan Division Code"].notna()
+    division = df[division_col].notna()
     pairs = pd.concat([
         pd.DataFrame({"cbsa_code": df["CBSA Code"].str.strip(), "county_fips": fips}),
-        pd.DataFrame({"cbsa_code": df.loc[division, "Metropolitan Division Code"].str.strip(),
+        pd.DataFrame({"cbsa_code": df.loc[division, division_col].str.strip(),
                       "county_fips": fips[division]}),
     ], ignore_index=True).dropna()
     pairs = pairs[(pairs["cbsa_code"].str.len() == 5) & (pairs["county_fips"].str.len() == 5)]
     return pairs.drop_duplicates().sort_values(["cbsa_code", "county_fips"]).reset_index(drop=True)
+
+
+# one membership table per acs vintage, so the map can ask whether a cbsa code
+# meant the same counties in two vintages before it reports a growth rate
+def vintage_membership(books):
+    frames = []
+    for vintage, content in sorted(books.items()):
+        pairs = parse_membership(content)
+        pairs.insert(0, "vintage", vintage)
+        frames.append(pairs)
+    return pd.concat(frames, ignore_index=True)
 
 
 # no gazetteer exists for divisions, so each one gets the land weighted mean of
@@ -128,11 +166,13 @@ def collect():
     cbsa = parse_gazetteer(_unzip_text(_download(URL)))
     cbsa["parent_cbsa"] = ""
 
-    print("[gazetteer] fetching county centroids and the 2023 delineation file")
+    print("[gazetteer] fetching county centroids and three delineation files")
     counties = parse_counties(_unzip_text(_download(COUNTY_URL)))
-    workbook = _download(DELINEATION_URL)
+    books = {vintage: _download(url) for vintage, url in VINTAGE_DELINEATIONS.items()}
+    workbook = books["2024"]
     delineation = parse_delineation(workbook)
     membership = parse_membership(workbook)
+    by_vintage = vintage_membership(books)
     divisions = division_centroids(delineation, counties)
 
     df = pd.concat([cbsa[COLUMNS], divisions], ignore_index=True)
@@ -140,6 +180,7 @@ def collect():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     df.to_csv(OUT_FILE, index=False)
     membership.to_csv(MEMBERSHIP_FILE, index=False)
+    by_vintage.to_csv(VINTAGE_MEMBERSHIP_FILE, index=False)
     write_manifest(OUT_DIR, [
         manifest_entry(
             OUT_FILE, URL, "U.S. Census Bureau",
@@ -153,7 +194,16 @@ def collect():
             "omb july 2023 delineation", len(membership),
             {"cbsas": int(membership["cbsa_code"].nunique())},
         ),
+        manifest_entry(
+            VINTAGE_MEMBERSHIP_FILE, DELINEATION_URL,
+            "U.S. Office of Management and Budget, via the U.S. Census Bureau",
+            "the counties of every cbsa and metropolitan division on the delineation each acs vintage was published on",
+            "omb february 2013, september 2018 and july 2023 delineations", len(by_vintage),
+            {"vintages": sorted(VINTAGE_DELINEATIONS), "sources": VINTAGE_DELINEATIONS},
+        ),
     ])
     print(f"[gazetteer] {len(cbsa)} cbsas and {len(divisions)} divisions -> {OUT_FILE.name}")
     print(f"[gazetteer] {len(membership)} cbsa county pairs -> {MEMBERSHIP_FILE.name}")
+    print(f"[gazetteer] {len(by_vintage)} pairs across {by_vintage['vintage'].nunique()} vintages "
+          f"-> {VINTAGE_MEMBERSHIP_FILE.name}")
     return OUT_FILE
