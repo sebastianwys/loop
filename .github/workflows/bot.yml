@@ -16,6 +16,12 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  # a manual run must never race the scheduled one: both rebase onto main and
+  # commit the same generated file
+  group: monthly-bot
+  cancel-in-progress: false
+
 jobs:
   collect:
     runs-on: ubuntu-latest
@@ -40,14 +46,32 @@ jobs:
           HUD_API_TOKEN: ${{ secrets.HUD_API_TOKEN }}
         run: python -m bot.run_bot
 
-      - name: run the tests
-        run: python run_tests.py
-
       # main may have moved during the hour the collectors take. rebase the new
       # data onto it so the commit below lands as a fast forward instead of a
-      # rejected push that throws the run away
+      # rejected push that throws the run away.
+      #
+      # the map json is thrown away first and rebuilt after. it is generated,
+      # and it is written as one long line, so any edit upstream conflicts with
+      # any edit here. an autostash that conflicts still exits 0, leaves the
+      # markers in the file, and the commit step below would add them: that
+      # ships invalid json and a map with no data. rebuilding from the merged
+      # raw data is the only resolution that means anything for a file nobody
+      # writes by hand
       - name: catch up with main
-        run: git pull --rebase --autostash origin main
+        run: |
+          git checkout -- web/public/data/metros.json
+          git pull --rebase --autostash origin main
+          if [ -n "$(git ls-files --unmerged)" ]; then
+            echo "the rebase left conflicts behind, refusing to commit:"
+            git ls-files --unmerged
+            exit 1
+          fi
+          python -m bot.build_map_data
+          python -c "import json; json.load(open('web/public/data/metros.json'))"
+
+      # after the rebuild, so they see the file that is about to be committed
+      - name: run the tests
+        run: python run_tests.py
 
       # commits only if the previous steps passed, with the actions bot identity
       - name: commit the refresh
