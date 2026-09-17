@@ -194,7 +194,7 @@ Verifying integrity: Census files will match, because each vintage endpoint is f
 
 | source | what it adds |
 | --- | --- |
-| Census Gazetteer | centroids. Division centroids derived from their counties. |
+| Census Gazetteer | centroids. Division centroids derived from their counties, plus the counties of every CBSA and division from the OMB 2023 delineation. |
 | Zillow | ZHVI, ZORI, inventory, days to pending, price cuts, ZHVF forecast |
 | BLS | metro unemployment |
 | FRED | 30-year mortgage rate, plus thirteen national indicators for the strip |
@@ -204,7 +204,7 @@ Verifying integrity: Census files will match, because each vintage endpoint is f
 | IRS | county-to-county migration |
 | BEA, HUD | personal income, fair market rents. Keys required. |
 
-Divisions inherit metro-level sources from their parent and say so. Run it with `python -m bot.run_bot`. `CENSUS_API_KEY` and `FRED_API_KEY` are required; `BLS_API_KEY`, `BEA_API_KEY` and `HUD_API_TOKEN` add the rest. A source with no key is skipped.
+Divisions inherit metro-level sources from their parent and say so. HUD is the exception: it publishes for its own fair market rent areas rather than for CBSAs, so 66 of the 410 study codes have no HUD entity, the 37 divisions among them. Each of those is rebuilt from the counties the delineation gives it, every county carrying the value of the HUD area it sits in, averaged by ACS population when the counties span more than one area, which is why the HUD collector reads `CENSUS_API_KEY` as well as its own token. Without the census key the codes that sit in a single area still resolve and the rest stay missing rather than being averaged blind. New England is keyed town by town, and in Connecticut HUD still names the pre-2022 counties while the delineation names planning regions, so its towns are placed by the census. Four Massachusetts municipalities that became cities, Methuen, Watertown, Amesbury and Easthampton, carry their pre-incorporation subdivision code at HUD and their new one at the census, so they are placed but not weighted. Measured against the 2024 figures that costs Cambridge-Newton-Framingham 0.18 percent, 261 dollars on a 144,364 dollar median, and nothing anywhere else, since towns inside one fair market rent area all carry the same value and dropping some only shifts the share between areas. HUD has nothing before fiscal 2017, so 2014 is blank for every metro and the map says so rather than showing an empty panel. Run it with `python -m bot.run_bot`. `CENSUS_API_KEY` and `FRED_API_KEY` are required; `BLS_API_KEY`, `BEA_API_KEY` and `HUD_API_TOKEN` add the rest. A source with no key is skipped.
 
 `web/` is the React and Leaflet map. Settings and deploy steps are in [web/README.md](../web/README.md).
 

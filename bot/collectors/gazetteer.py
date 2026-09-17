@@ -14,6 +14,7 @@ DELINEATION_URL = ("https://www2.census.gov/programs-surveys/metro-micro/geograp
                    "reference-files/2023/delineation-files/list1_2023.xlsx")
 OUT_DIR = RAW_DIR / "gazetteer"
 OUT_FILE = OUT_DIR / "cbsa_centroids.csv"
+MEMBERSHIP_FILE = OUT_DIR / "cbsa_counties.csv"
 
 # cbsa_type 1 = metro, 2 = micro from the gazetteer, 3 = division, derived here
 DIVISION = 3
@@ -67,6 +68,25 @@ def parse_delineation(content):
     })
 
 
+# the county makeup of every cbsa and every division, one row per pair. hud
+# publishes for its own fmr areas, which are built from counties rather than
+# from cbsas, so the hud collector rebuilds a metro out of these counties when
+# hud has no entity for the code. a division county is listed twice, once under
+# the division and once under its parent metro
+def parse_membership(content):
+    df = pd.read_excel(io.BytesIO(content), header=2, dtype=str)
+    fips = (df["FIPS State Code"].str.strip().str.zfill(2)
+            + df["FIPS County Code"].str.strip().str.zfill(3))
+    division = df["Metropolitan Division Code"].notna()
+    pairs = pd.concat([
+        pd.DataFrame({"cbsa_code": df["CBSA Code"].str.strip(), "county_fips": fips}),
+        pd.DataFrame({"cbsa_code": df.loc[division, "Metropolitan Division Code"].str.strip(),
+                      "county_fips": fips[division]}),
+    ], ignore_index=True).dropna()
+    pairs = pairs[(pairs["cbsa_code"].str.len() == 5) & (pairs["county_fips"].str.len() == 5)]
+    return pairs.drop_duplicates().sort_values(["cbsa_code", "county_fips"]).reset_index(drop=True)
+
+
 # no gazetteer exists for divisions, so each one gets the land weighted mean of
 # its counties' internal points
 def division_centroids(delineation, counties):
@@ -110,18 +130,30 @@ def collect():
 
     print("[gazetteer] fetching county centroids and the 2023 delineation file")
     counties = parse_counties(_unzip_text(_download(COUNTY_URL)))
-    delineation = parse_delineation(_download(DELINEATION_URL))
+    workbook = _download(DELINEATION_URL)
+    delineation = parse_delineation(workbook)
+    membership = parse_membership(workbook)
     divisions = division_centroids(delineation, counties)
 
     df = pd.concat([cbsa[COLUMNS], divisions], ignore_index=True)
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     df.to_csv(OUT_FILE, index=False)
-    write_manifest(OUT_DIR, [manifest_entry(
-        OUT_FILE, URL, "U.S. Census Bureau",
-        f"{YEAR} Gazetteer cbsa and county internal points, divisions derived from the omb july 2023 delineation",
-        f"{YEAR} Gazetteer", len(df),
-        {"county_gazetteer": COUNTY_URL, "delineation": DELINEATION_URL, "divisions": int(len(divisions))},
-    )])
+    membership.to_csv(MEMBERSHIP_FILE, index=False)
+    write_manifest(OUT_DIR, [
+        manifest_entry(
+            OUT_FILE, URL, "U.S. Census Bureau",
+            f"{YEAR} Gazetteer cbsa and county internal points, divisions derived from the omb july 2023 delineation",
+            f"{YEAR} Gazetteer", len(df),
+            {"county_gazetteer": COUNTY_URL, "delineation": DELINEATION_URL, "divisions": int(len(divisions))},
+        ),
+        manifest_entry(
+            MEMBERSHIP_FILE, DELINEATION_URL, "U.S. Office of Management and Budget, via the U.S. Census Bureau",
+            "the counties of every cbsa and metropolitan division",
+            "omb july 2023 delineation", len(membership),
+            {"cbsas": int(membership["cbsa_code"].nunique())},
+        ),
+    ])
     print(f"[gazetteer] {len(cbsa)} cbsas and {len(divisions)} divisions -> {OUT_FILE.name}")
+    print(f"[gazetteer] {len(membership)} cbsa county pairs -> {MEMBERSHIP_FILE.name}")
     return OUT_FILE

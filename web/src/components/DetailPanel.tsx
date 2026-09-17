@@ -115,7 +115,9 @@ export function DetailPanel({ metro, metros, onClose }: Props) {
         if (rows.length === 0) return null;
         const column = latestColumn(metro, rows);
         const columns: Period[] = column.show ? [...YEARS, "latest"] : YEARS;
-        const note = laterStartsNote(rows.map((d) => ({ label: d.label, periods: published[d.id] ?? d.periods })));
+        const note = laterStartsNote(rows.map((d) => ({
+          label: d.label, periods: published[d.id] ?? d.periods, source: d.source,
+        })));
         return (
           <details key={group} open={group === "House prices"}>
             <summary>{group}, by vintage year</summary>

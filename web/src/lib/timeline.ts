@@ -217,22 +217,33 @@ export function periodLabel(metric: Metric, metro: Metro): string {
   return dateLabel(metric.dateOf(metro), metric.source) ?? "latest";
 }
 
+// why a source has nothing at the first vintage year, when the reason is the
+// source's own and not this metro's. a blank year reads as "never published"
+// rather than "unknown" once the note says so
+const LATE_START: Partial<Record<Source, string>> = {
+  hud: "HUD publishes no fair market rents or income limits before fiscal 2017.",
+};
+
 // "From 2019: Median listing price, Active listings." for the measures in a
-// table whose first published period comes after the first vintage year
-export function laterStartsNote(rows: { label: string; periods: Period[] }[]): string | null {
+// table whose first published period comes after the first vintage year,
+// followed by the reason each late source gives
+export function laterStartsNote(rows: { label: string; periods: Period[]; source?: Source }[]): string | null {
   const byStart = new Map<string, string[]>();
+  const reasons = new Set<string>();
   for (const row of rows) {
     const first = row.periods[0];
     if (!first || first === PERIODS[0]) continue;
     const labels = byStart.get(first) ?? [];
     labels.push(row.label);
     byStart.set(first, labels);
+    const why = row.source ? LATE_START[row.source] : undefined;
+    if (why) reasons.add(why);
   }
   if (byStart.size === 0) return null;
-  return [...byStart.entries()]
+  const starts = [...byStart.entries()]
     .sort((a, b) => PERIODS.indexOf(a[0] as Period) - PERIODS.indexOf(b[0] as Period))
-    .map(([start, labels]) => `From ${start}: ${labels.join(", ")}.`)
-    .join(" ");
+    .map(([start, labels]) => `From ${start}: ${labels.join(", ")}.`);
+  return [...starts, ...reasons].join(" ");
 }
 
 export interface LatestColumn {

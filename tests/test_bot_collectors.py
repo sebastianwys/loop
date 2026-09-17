@@ -260,6 +260,59 @@ class TestGazetteerDivisions(unittest.TestCase):
         self.assertEqual(len(out), 0)
 
 
+class TestGazetteerMembership(unittest.TestCase):
+    ROWS = [
+        # a plain metro, one county
+        {"CBSA Code": "10180", "Metropolitan Division Code": None, "Metropolitan Division Title": None,
+         "FIPS State Code": "48", "FIPS County Code": "441"},
+        # a split metro: both counties belong to the metro and to a division
+        {"CBSA Code": "16980", "Metropolitan Division Code": "16984",
+         "Metropolitan Division Title": "Chicago-Naperville-Schaumburg, IL",
+         "FIPS State Code": "17", "FIPS County Code": "031"},
+        {"CBSA Code": "16980", "Metropolitan Division Code": "16984",
+         "Metropolitan Division Title": "Chicago-Naperville-Schaumburg, IL",
+         "FIPS State Code": "17", "FIPS County Code": "043"},
+        # single digit state and two digit county, the zero padding case
+        {"CBSA Code": "35300", "Metropolitan Division Code": None, "Metropolitan Division Title": None,
+         "FIPS State Code": "9", "FIPS County Code": "170"},
+    ]
+
+    def workbook(self, rows):
+        import io
+        buffer = io.BytesIO()
+        with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+            pd.DataFrame(rows).to_excel(writer, index=False, startrow=2)
+        return buffer.getvalue()
+
+    def membership(self, rows=None):
+        return gazetteer.parse_membership(self.workbook(self.ROWS if rows is None else rows))
+
+    def test_every_county_is_listed_under_its_cbsa(self):
+        df = self.membership()
+        self.assertEqual(df[df.cbsa_code == "16980"].county_fips.tolist(), ["17031", "17043"])
+        self.assertEqual(df[df.cbsa_code == "10180"].county_fips.tolist(), ["48441"])
+
+    # hud has no entity for a division, so the division needs its own counties
+    def test_a_division_county_is_listed_twice(self):
+        df = self.membership()
+        self.assertEqual(df[df.cbsa_code == "16984"].county_fips.tolist(), ["17031", "17043"])
+        self.assertEqual(len(df), 6)
+
+    def test_fips_are_padded_to_five_digits_as_strings(self):
+        df = self.membership()
+        self.assertEqual(df[df.cbsa_code == "35300"].county_fips.tolist(), ["09170"])
+        self.assertTrue(df.county_fips.str.len().eq(5).all())
+
+    def test_columns_and_order(self):
+        df = self.membership()
+        self.assertEqual(list(df.columns), ["cbsa_code", "county_fips"])
+        self.assertEqual(df.cbsa_code.tolist(), sorted(df.cbsa_code.tolist()))
+
+    def test_a_repeated_pair_is_kept_once(self):
+        df = self.membership(self.ROWS + [self.ROWS[0]])
+        self.assertEqual(df[df.cbsa_code == "10180"].county_fips.tolist(), ["48441"])
+
+
 class TestBlsDivisions(unittest.TestCase):
     # verified live: the chicago division answers under area type DV
     def test_division_series_uses_dv(self):

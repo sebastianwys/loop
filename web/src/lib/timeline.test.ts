@@ -216,6 +216,19 @@ describe("labels", () => {
     expect(laterStartsNote(rows.slice(0, 1))).toBeNull();
     expect(laterStartsNote([])).toBeNull();
   });
+
+  // a blank 2014 for hud is the api's own floor, not a hole in this metro
+  it("names why a late source is late, once, and only when it is late", () => {
+    const hud = { label: "Median family income", periods: ["2019", "2024", "latest"] as Period[], source: "hud" as const };
+    const rent = { label: "Fair market rent, two bedroom", periods: ["2019", "2024"] as Period[], source: "hud" as const };
+    expect(laterStartsNote([hud, rent])).toBe(
+      "From 2019: Median family income, Fair market rent, two bedroom. "
+      + "HUD publishes no fair market rents or income limits before fiscal 2017.",
+    );
+    const early = { label: "House price index", periods: ["2014", "2019"] as Period[], source: "fhfa" as const };
+    expect(laterStartsNote([early])).toBeNull();
+    expect(laterStartsNote([{ ...hud, source: "zillow" as const }])).toBe("From 2019: Median family income.");
+  });
 });
 
 describe("latestColumn", () => {
