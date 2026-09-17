@@ -43,6 +43,22 @@ describe.skipIf(!present)("built metros.json", () => {
     }
   });
 
+  // the metric the site opens on, which is the one map most readers will ever
+  // see. it is declared diverging and no metro is on the losing side of it, so
+  // a symmetric ramp spends two of its five classes on a half of the axis that
+  // holds nobody and the legend still advertises them
+  it("fills every class it advertises on the metric the site opens on", () => {
+    const metric = resolveMetric(DEFS[0], null);
+    const values = data!.metros.map(metric.accessor);
+    const scale = buildScale(values, metric.kind);
+    expect(scale.kind).toBe("sequential");
+    expect(scale.bins).toHaveLength(5);
+    for (const bin of scale.bins) {
+      const inside = values.filter((v) => v !== null && v >= bin.from && v <= bin.to);
+      expect(inside.length, `${bin.from} to ${bin.to}`).toBeGreaterThan(0);
+    }
+  });
+
   // bea and hud wait on a key, the forecast on an export run of the model
   it("hides only the sources that have not been collected", () => {
     const hidden = DEFS.filter((d) => !visibleDefs(data!.metros).includes(d)).map((d) => d.source);

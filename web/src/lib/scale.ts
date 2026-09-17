@@ -24,15 +24,31 @@ function quantile(sorted: number[], q: number): number {
   return sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo);
 }
 
+// whether a run ever changes sign. all zeros is not one sided: nothing about
+// it points a direction, and the diverging ramp's neutral middle is the honest
+// colour for it
+function oneSided(data: number[]): boolean {
+  return data.some((v) => v > 0) !== data.some((v) => v < 0);
+}
+
 // five classes, the documented ramp length. sequential bins are quantiles so
 // every class carries metros; diverging bins are equal width and symmetric
-// around zero so the middle class is the neutral gray
-export function buildScale(values: (number | null)[], kind: ScaleKind): ColorScale {
+// around zero so the middle class is the neutral gray.
+//
+// a diverging ramp is a claim that the two directions are different kinds of
+// thing, and the symmetry around zero is what makes the middle neutral. that
+// is right for net migration, where a metro can lose people, and wrong for a
+// run no metro is on the wrong side of: house price growth 2019 to 2024 is
+// positive in all 395 metros that have it, so two of the five classes hold
+// nobody and the legend advertises them anyway, with the whole country inside
+// the top two. a run that never changes sign is read on the sequential ramp
+export function buildScale(values: (number | null)[], asked: ScaleKind): ColorScale {
   const data = finite(values);
   if (data.length === 0) {
-    return { kind, domain: null, bins: [], color: () => NULL_GRAY };
+    return { kind: asked, domain: null, bins: [], color: () => NULL_GRAY };
   }
 
+  const kind: ScaleKind = asked === "diverging" && oneSided(data) ? "sequential" : asked;
   const colors = kind === "diverging" ? DIVERGING : SEQUENTIAL;
   const n = colors.length;
   let breaks: number[];
