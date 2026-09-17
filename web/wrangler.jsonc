@@ -7,5 +7,23 @@
   "workers_dev": true,
   "assets": {
     "directory": "./dist"
+  },
+  // keep logging settings in the file rather than the dashboard, so a deploy
+  // from here does not silently turn off what the dashboard turned on. every
+  // value is written out even where it matches the default, so that a change
+  // of default cannot move them under us. traces stay off: this worker serves
+  // assets and runs no script, so there is nothing to trace
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true,
+      "persist": true
+    },
+    "traces": {
+      "enabled": false,
+      "head_sampling_rate": 1,
+      "persist": true
+    }
   }
 }

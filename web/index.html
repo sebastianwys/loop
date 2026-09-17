@@ -10,10 +10,19 @@
     <meta name="description" content="Loop: housing, income, jobs and migration across 410 U.S. metros, with thirteen national indicators." />
     <link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin />
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Loop" />
     <meta property="og:title" content="Loop, U.S. metro dashboard" />
     <meta property="og:description" content="Housing, income, jobs and migration across 410 U.S. metros, with thirteen national indicators." />
     <meta property="og:url" content="https://loop.macroviz.workers.dev" />
-    <meta name="twitter:card" content="summary" />
+    <!-- linkedin counts og:image among the tags it requires and wants at least
+         1200x627, so the url is absolute rather than relative. the card is built
+         from the map's own data by scripts/make_og_card.py -->
+    <meta property="og:image" content="https://loop.macroviz.workers.dev/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="A dot map of 406 U.S. metros in the contiguous states, each sized by population and shaded by median household income." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://loop.macroviz.workers.dev/og.png" />
     <title>Loop, U.S. metro dashboard</title>
   </head>
   <body>
