@@ -1,5 +1,8 @@
-import type { Metro, Period } from "../types";
-import { PERIODS, availablePeriods, dateAt, defDate, DEFS, type Metric, type MetricDef, type Source } from "./metrics";
+import type { AnnualSeries, Metro, MetroSeries, Period } from "../types";
+import {
+  PERIODS, SOURCE_LABEL, availablePeriods, dateAt, defDate, DEFS, num,
+  type Metric, type MetricDef, type Source,
+} from "./metrics";
 
 // the axis starts at the first vintage year and always runs past the last
 // one, so a latest tick has room even before any source reports a date
@@ -206,9 +209,203 @@ export function prevPeriod(current: Period | null, available: Period[]): Period 
   return i > 0 ? available[i - 1] : null;
 }
 
+// ---- deep annual histories ----
+
+// the definitions an annual history backs, and the series each one reads. the
+// house price index is the only measure whose source publishes a full annual
+// run; every other definition keeps the four vintage panels, which is all the
+// acs, the permits survey and the rest report
+export const DEEP_DEFS: Record<string, keyof MetroSeries> = { hpi: "hpi" };
+
+// the colour domain is the nearest round number to this quantile of every
+// change the run carries, which on the built data is ten percent. wider caps
+// were measured and they wash the map out: at twenty percent the neutral
+// middle class holds two fifths of the country in an ordinary year and nine
+// tenths of it in 2012. at ten percent it holds a fifth, the crash years
+// spread across three classes, and only the 2021 and 2022 booms peg the top,
+// which is a true thing to say about 2021 and 2022
+const CAP_QUANTILE = 0.9;
+const CAP_STEP = 5;
+const CAP_MIN = 5;
+
+export function seriesOf(metro: Metro, key: keyof MetroSeries): AnnualSeries | null {
+  const series = metro?.series?.[key];
+  if (!series || !Array.isArray(series.values) || !Number.isFinite(series.start)) return null;
+  return series;
+}
+
+// the level a calendar year holds, null outside the run or where the year is
+// missing. a missing year is not a zero, so it stays null all the way out
+export function levelAt(series: AnnualSeries | null, year: number): number | null {
+  if (!series) return null;
+  const i = year - series.start;
+  return i < 0 || i >= series.values.length ? null : num(series.values[i]);
+}
+
+// the change into a year, in percent. fhfa rebases the index to 100 at each
+// metro's own first quarter, so two metros' levels say nothing side by side
+// while their growth rates are the same measurement everywhere
+export function growthAt(series: AnnualSeries | null, year: number): number | null {
+  const from = levelAt(series, year - 1);
+  const to = levelAt(series, year);
+  if (from === null || to === null || from <= 0) return null;
+  return (to / from - 1) * 100;
+}
+
+export interface DeepFrame {
+  year: number;
+  // position along the scrubber, 0 at the first frame and 1 at the last
+  t: number;
+  // metros with a growth value this year. the rest have no index yet
+  count: number;
+  // the year stops at the series' as of quarter rather than running whole
+  partial: boolean;
+}
+
+export interface DeepTimeline {
+  key: keyof MetroSeries;
+  frames: DeepFrame[];
+  // metros in the build, the denominator every count is read against
+  total: number;
+  // the colour domain, the same plus and minus in every frame
+  cap: number;
+  // the quarter the partial last frame runs to, when the series agree on one
+  asOf: string | null;
+}
+
+const roundTo = (value: number, step: number) => Math.round(value / step) * step;
+
+// the value at a quantile of an ascending array, by nearest rank
+function quantileOf(sorted: number[], q: number): number {
+  const i = Math.floor((sorted.length - 1) * q);
+  return sorted[Math.min(sorted.length - 1, Math.max(0, i))];
+}
+
+// one frame per calendar year the histories cover, trimmed to the years that
+// carry a growth value. null when this definition has no history behind it,
+// which is what puts the four vintage panels back on screen
+export function buildDeepTimeline(def: MetricDef, metros: Metro[]): DeepTimeline | null {
+  const key = DEEP_DEFS[def.id];
+  if (!key) return null;
+  const all: AnnualSeries[] = [];
+  for (const metro of metros) {
+    const series = seriesOf(metro, key);
+    if (series) all.push(series);
+  }
+  if (all.length === 0) return null;
+
+  const counts = new Map<number, number>();
+  const partials = new Set<number>();
+  const magnitudes: number[] = [];
+  let first = Infinity;
+  let last = -Infinity;
+  for (const series of all) {
+    if (typeof series.partial_year === "number") partials.add(series.partial_year);
+    const end = series.start + series.values.length - 1;
+    for (let year = series.start + 1; year <= end; year++) {
+      const growth = growthAt(series, year);
+      if (growth === null) continue;
+      counts.set(year, (counts.get(year) ?? 0) + 1);
+      magnitudes.push(Math.abs(growth));
+      if (year < first) first = year;
+      if (year > last) last = year;
+    }
+  }
+  if (magnitudes.length === 0) return null;
+
+  magnitudes.sort((a, b) => a - b);
+  const cap = Math.max(CAP_MIN, roundTo(quantileOf(magnitudes, CAP_QUANTILE), CAP_STEP));
+
+  const span = last - first;
+  const frames: DeepFrame[] = [];
+  for (let year = first; year <= last; year++) {
+    frames.push({
+      year,
+      t: span === 0 ? 0 : r4((year - first) / span),
+      count: counts.get(year) ?? 0,
+      partial: partials.has(year),
+    });
+  }
+  const quarters = new Set(all.map((s) => s.as_of).filter((q): q is string => typeof q === "string" && q.length > 0));
+  return { key, frames, total: metros.length, cap, asOf: quarters.size === 1 ? [...quarters][0] : null };
+}
+
+// the frame a year names, clamped into the run. a year the reader never chose
+// lands on the last frame, the newest the histories reach
+export function frameIndex(deep: DeepTimeline, year: number | null): number {
+  const n = deep.frames.length;
+  if (n === 0) return 0;
+  if (year === null || !Number.isFinite(year)) return n - 1;
+  return Math.min(n - 1, Math.max(0, Math.round(year - deep.frames[0].year)));
+}
+
+export function frameAt(deep: DeepTimeline, year: number | null): DeepFrame {
+  return deep.frames[frameIndex(deep, year)];
+}
+
+// the frame a run moves to next, -1 once the run has reached the end. a run
+// stops at the newest year rather than looping, so the map settles on the
+// figure a reader who walked away would want to be looking at
+export function nextFrame(index: number, count: number): number {
+  return index >= 0 && index + 1 < count ? index + 1 : -1;
+}
+
+// "1990", or "2026 so far" for a year that stops at the as of quarter
+export function frameName(frame: { year: number; partial: boolean }): string {
+  return frame.partial ? `${frame.year} so far` : String(frame.year);
+}
+
+// what the scrubber reports: the year, and how much of the country had an
+// index that year, since an early year is mostly blank map
+export function frameText(frame: DeepFrame, total: number): string {
+  return `${frameName(frame)}, ${frame.count} of ${total} metros`;
+}
+
+// a definition read at one year of its annual history. Metric carries no year,
+// and metrics.ts is not this module's to change, so this widens it instead
+export interface YearMetric extends Metric {
+  year: number;
+  partial: boolean;
+}
+
+export function isYearMetric(metric: Metric): metric is YearMetric {
+  return typeof (metric as YearMetric).year === "number";
+}
+
+// growth rather than the level, on a diverging ramp: a level map cannot show
+// a crash, because a rebased index barely dips, and the bases differ by metro
+export function yearMetric(def: MetricDef, deep: DeepTimeline, year: number | null): YearMetric {
+  const frame = frameAt(deep, year);
+  const key = deep.key;
+  return {
+    id: `${def.id}_y${frame.year}`,
+    def,
+    period: null,
+    year: frame.year,
+    partial: frame.partial,
+    label: `${def.label} growth, ${frame.year - 1} to ${frameName(frame)}`,
+    format: "rate",
+    kind: "diverging",
+    group: def.group,
+    source: def.source,
+    accessor: (m) => growthAt(seriesOf(m, key), frame.year),
+    dateOf: () => String(frame.year),
+  };
+}
+
+// the legend line under an animated year: where the number is from, the two
+// years it spans, and that the colours do not move when the year does
+export function deepCaption(def: MetricDef, deep: DeepTimeline, year: number | null): string {
+  const frame = frameAt(deep, year);
+  const to = frame.partial && deep.asOf ? deep.asOf : String(frame.year);
+  return `Source: ${SOURCE_LABEL[def.source]}, ${frame.year - 1} to ${to}. One colour scale for every year.`;
+}
+
 // the period a value on the map belongs to, in words: the year, the
 // metro's own latest date, or the years a change figure spans
 export function periodLabel(metric: Metric, metro: Metro): string {
+  // a year off an annual history names itself: it is not one of the panels
+  if (isYearMetric(metric)) return frameName(metric);
   if (!metric.period) {
     const span = changeSpan(metric.def);
     return span ? `${span.from} to ${span.to}` : "";

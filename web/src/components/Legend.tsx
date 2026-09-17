@@ -10,14 +10,26 @@ interface Props {
   onToggle?: () => void;
   // true when at least one metro on the map is showing its parent's number
   inherited?: boolean;
+  // true when the end classes take everything past them, so the reader is
+  // not told a bin ends where values plainly carry on
+  clipped?: boolean;
 }
 
 const BODY_ID = "legend-body";
 
 // the key rolls up to its title line. on a phone it would otherwise cover a
 // third of the map, so it starts rolled up there
-export function Legend({ scale, metric, caption, open = true, onToggle, inherited = false }: Props) {
+export function Legend({ scale, metric, caption, open = true, onToggle, inherited = false, clipped = false }: Props) {
   const signed = scale.kind === "diverging";
+  const last = scale.bins.length - 1;
+  const range = (bin: { from: number; to: number }, i: number) => {
+    const from = formatValue(bin.from, metric.format, signed);
+    const to = formatValue(bin.to, metric.format, signed);
+    if (!clipped) return `${from} to ${to}`;
+    if (i === 0) return `${to} or less`;
+    if (i === last) return `${from} or more`;
+    return `${from} to ${to}`;
+  };
   return (
     <div className={`legend${open ? "" : " closed"}`} role="group" aria-label="map legend">
       <div className="legend-head">
@@ -42,9 +54,7 @@ export function Legend({ scale, metric, caption, open = true, onToggle, inherite
         {scale.bins.map((bin, i) => (
           <div className="row" key={i}>
             <span className="sw" style={{ background: bin.color }} />
-            <span>
-              {formatValue(bin.from, metric.format, signed)} to {formatValue(bin.to, metric.format, signed)}
-            </span>
+            <span>{range(bin, i)}</span>
           </div>
         ))}
         <div className="row">

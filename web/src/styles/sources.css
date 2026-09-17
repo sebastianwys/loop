@@ -1,0 +1,98 @@
+/* ---- the sources view ----
+   a record of sixteen downloads. the page is mostly two tables, so the work
+   here is keeping a 64 character checksum and a 160 character url from
+   setting the width of everything else */
+.sources-page {
+  min-height: 0; overflow: auto; background: var(--plane);
+  padding: clamp(0.75rem, 2vw, 1.5rem);
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+}
+.sources-inner {
+  max-width: 72rem; margin: 0 auto; display: flex; flex-direction: column; gap: 0.9rem;
+}
+
+.sources-head h2 { font-size: 1.07rem; margin: 0 0 2px; }
+.sources-head h3 { font-size: 0.98rem; margin: 0.6rem 0 2px; }
+.sources-note { margin: 0; font-size: 0.86rem; color: var(--ink-2); max-width: 46rem; }
+.sources-foot { margin: 0; font-size: 0.78rem; color: var(--muted); max-width: 46rem; }
+.sources-empty {
+  margin: 0; padding: 1rem 0.875rem; color: var(--ink-2);
+  background: var(--surface); border: 1px dashed var(--baseline); border-radius: var(--radius);
+}
+
+.sources-stats {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-wrap: wrap; gap: 6px 1.25rem;
+  font-size: 0.86rem; color: var(--ink-2);
+}
+.sources-stats b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+.sources-controls { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.75rem; }
+/* always in the tree so a copy is announced, and always holding a line so the
+   table does not jump when the message arrives */
+.sources-status { margin: 0; font-size: 0.78rem; color: var(--muted); min-height: 1.1rem; }
+
+/* the download table cannot narrow past its url column, so on a phone it
+   scrolls sideways inside its own box rather than widening the page */
+.sources-scroll { overflow-x: auto; }
+
+.sources-table, .feeds-table {
+  width: 100%; border-collapse: collapse; font-size: 0.86rem;
+  background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius);
+}
+.sources-table { min-width: 52rem; }
+.feeds-table { min-width: 30rem; }
+.sources-table th, .sources-table td,
+.feeds-table th, .feeds-table td {
+  padding: 6px 8px; border-bottom: 1px solid var(--hairline); text-align: left; vertical-align: top;
+}
+.sources-table thead th, .feeds-table thead th { color: var(--muted); font-weight: 500; vertical-align: bottom; }
+.sources-table tbody tr:last-child th, .sources-table tbody tr:last-child td,
+.feeds-table tbody tr:last-child th, .feeds-table tbody tr:last-child td { border-bottom: 0; }
+.sources-table tbody th, .feeds-table tbody th { font-weight: 500; white-space: nowrap; }
+.sources-table .v, .feeds-table .v { text-align: right; font-variant-numeric: tabular-nums; }
+.sources-table .when { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.sources-table code, .feeds-table code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.92em;
+}
+.sources-table tbody th .who { display: block; font-weight: 400; font-size: 0.78rem; color: var(--muted); white-space: normal; max-width: 12rem; }
+
+/* the address is the longest thing on the page and the one a reader is most
+   likely to check, so it wraps anywhere rather than pushing the table out */
+.sources-table .url { display: inline-block; max-width: 22rem; overflow-wrap: anywhere; line-height: 1.35; }
+.sources-table .stripped { display: block; font-size: 0.72rem; color: var(--rise); }
+
+.sources-table .hash { white-space: nowrap; }
+.sources-table .file { display: block; color: var(--ink-2); }
+.sources-table .sha { display: inline-flex; align-items: baseline; gap: 6px; overflow-wrap: anywhere; white-space: normal; }
+.sources-table .copy {
+  border: 1px solid var(--baseline); border-radius: 4px; background: var(--surface);
+  color: var(--ink-2); font-size: 0.72rem; line-height: 1; padding: 3px 6px; flex: none;
+}
+.sources-table .copy:hover { background: var(--plane); color: var(--ink); }
+
+.metric-list { list-style: none; margin: 0; padding: 0; }
+.metric-list li { line-height: 1.45; }
+.metric-list li + li { border-top: 1px dotted var(--hairline); }
+.feeds-table .role { color: var(--ink-2); }
+
+.sources-model {
+  background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius);
+  padding: 0.75rem 0.875rem; display: flex; flex-direction: column; gap: 0.5rem;
+}
+.sources-model h3 { font-size: 0.98rem; margin: 0; }
+.sources-model p { margin: 0; font-size: 0.86rem; color: var(--ink-2); max-width: 46rem; }
+
+/* a phone narrows the url column to something a thumb can still scroll past
+   rather than letting one address own half the table */
+@media (max-width: 640px) {
+  .sources-inner { gap: 0.75rem; }
+  .sources-table .url { max-width: 14rem; }
+  .sources-table tbody th .who { max-width: 9rem; }
+}
+
+@media (pointer: coarse) {
+  .sources-table .copy { min-height: 32px; padding: 4px 10px; }
+}

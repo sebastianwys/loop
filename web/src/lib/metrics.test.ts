@@ -158,10 +158,17 @@ describe("house price index at latest", () => {
 
 describe("forecasts", () => {
   const ids = ["hpi_forecast_4q", "hpi_forecast_8q", "hpi_trend_5y", "hpi_yoy_latest", "hpi_surprise_4q"];
+  // the index error sits in the group because it qualifies the forecast above
+  // it, but it is fhfa's published number and not the model's, so it is
+  // credited to fhfa and is not one of the diverging model values
+  const alongside = "hpi_index_error";
 
   it("form the last group, from the model, read at latest only", () => {
     expect(GROUPS[GROUPS.length - 1]).toBe("Forecasts");
-    expect(DEFS.filter((d) => d.group === "Forecasts").map((d) => d.id)).toEqual(ids);
+    expect(DEFS.filter((d) => d.group === "Forecasts").map((d) => d.id)).toEqual([...ids, alongside]);
+    expect(def(alongside).source).toBe("fhfa");
+    expect(def(alongside).kind).toBe("sequential");
+    expect(def(alongside).periods).toEqual(["latest"]);
     for (const id of ids) {
       expect(def(id).source).toBe("forecast");
       expect(def(id).periods).toEqual(["latest"]);

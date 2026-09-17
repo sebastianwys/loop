@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { SAMPLE } from "./data";
 import {
-  CHART_H, CHART_PAD, CHART_W, DETAIL_ID, INDICATOR_GROUPS, MORTGAGE_ID, buildIndicatorChart, changeChip, chartTitle, displayFormat,
-  groupIndicators, groupId, indicatorSpark, indicatorValue, monthLabel, nationalIndicators, nearestChartPoint,
-  pointReadout, rangeLabel, readIndicator, showMortgageStat, sourceLine, tileId, tileReadout,
+  CHART_H, CHART_PAD, CHART_W, DETAIL_ID, INDICATOR_GROUPS, MORTGAGE_ID, activeRangeId, buildIndicatorChart, changeChip,
+  chartTitle, clipHistory, displayFormat, groupIndicators, groupId, historySpan, indicatorRanges, indicatorSpark,
+  indicatorValue, monthLabel, nationalIndicators, nearestChartPoint, pointReadout, rangeLabel, rangeMonths,
+  readIndicator, showMortgageStat, sourceLine, tileId, tileReadout,
 } from "./indicators";
 import type { Indicator, IndicatorPoint, MapData, MortgageRate } from "../types";
 
@@ -281,6 +282,118 @@ describe("a month the source never published", () => {
     expect(chart.points[3].x - chart.points[2].x).toBeCloseTo(step, 6);
     expect(chart.d.match(/M /g)).toHaveLength(2);
     expect(chart.d.match(/L /g)).toHaveLength(2);
+  });
+});
+
+describe("the span the chart shows", () => {
+  // three shapes the build can arrive in: a treasury series that runs for
+  // decades, a ppi one that starts in 2010, and the five years the current
+  // file carries. all three end in aug 2026
+  const deep = () => monthly("1996-01", 368);
+  const short = () => monthly("2010-11", 190);
+  const five = () => monthly("2021-09", 60);
+
+  it("counts the calendar months a history covers, not the points in it", () => {
+    expect(historySpan([])).toBe(0);
+    expect(historySpan(points([2.9]))).toBe(1);
+    expect(historySpan(five())).toBe(60);
+    // the month the source never published still takes up its place
+    expect(historySpan(monthly("2026-01", 5, ["2026-03"]))).toBe(5);
+  });
+
+  it("offers no span at all for a history too short to draw", () => {
+    expect(indicatorRanges([])).toEqual([]);
+    expect(indicatorRanges(points([2.9]))).toEqual([]);
+  });
+
+  it("offers a span only while the series reaches that far back", () => {
+    expect(indicatorRanges(deep()).map((r) => r.id)).toEqual(["1y", "5y", "10y", "25y", "max"]);
+    // sixteen years of ppi never gets a twenty five year button
+    expect(indicatorRanges(short()).map((r) => r.id)).toEqual(["1y", "5y", "10y", "max"]);
+  });
+
+  it("leaves out a span that would draw the whole history a second time", () => {
+    expect(indicatorRanges(five()).map((r) => r.id)).toEqual(["1y", "max"]);
+    expect(indicatorRanges(monthly("2025-09", 12)).map((r) => r.id)).toEqual(["max"]);
+  });
+
+  it("drops a span that a gap has left with one point in it", () => {
+    // dense through aug 2024, then nothing until one lone month in aug 2026
+    const gappy = [...monthly("2009-01", 188), { date: "2026-08", value: 9 }];
+    expect(historySpan(gappy)).toBe(212);
+    expect(clipHistory(gappy, 12)).toHaveLength(1);
+    expect(indicatorRanges(gappy).map((r) => r.id)).toEqual(["5y", "10y", "max"]);
+  });
+
+  it("names every span with the months it really draws", () => {
+    const ranges = indicatorRanges(short());
+    expect(ranges[0]).toMatchObject({ label: "1y", months: 12, readout: "1y, Sep 2025 to Aug 2026" });
+    expect(ranges[3]).toMatchObject({ label: "Max", months: null, readout: "Max, Nov 2010 to Aug 2026" });
+  });
+
+  it("keeps the last months of a history, counted on the calendar", () => {
+    const shown = clipHistory(monthly("2024-01", 32, ["2026-02"]), 12);
+    expect(shown[0].date).toBe("2025-09");
+    expect(shown[shown.length - 1].date).toBe("2026-08");
+    // twelve slots, one of which the source never published
+    expect(shown).toHaveLength(11);
+  });
+
+  it("gives back the whole history when the span is longer than the series", () => {
+    const history = five();
+    expect(clipHistory(history, null)).toBe(history);
+    expect(clipHistory(history, 600)).toEqual(history);
+    expect(clipHistory([], 12)).toEqual([]);
+    expect(clipHistory(points([2.9]), 12)).toEqual(points([2.9]));
+  });
+
+  it("counts points instead when a month cannot be read as a date", () => {
+    const odd = [{ date: "2026-13", value: 1 }, ...points([2.7, 2.9], 7)];
+    expect(clipHistory(odd, 2).map((p) => p.date)).toEqual(["2026-07", "2026-08"]);
+  });
+
+  it("opens at five years, or at the whole history when that is shorter", () => {
+    expect(activeRangeId(indicatorRanges(deep()), null)).toBe("5y");
+    expect(activeRangeId(indicatorRanges(short()), null)).toBe("5y");
+    expect(activeRangeId(indicatorRanges(five()), null)).toBe("max");
+    expect(activeRangeId([], null)).toBe("max");
+  });
+
+  it("drops a chosen span the next series cannot fill", () => {
+    expect(activeRangeId(indicatorRanges(deep()), "25y")).toBe("25y");
+    expect(activeRangeId(indicatorRanges(short()), "25y")).toBe("5y");
+    expect(activeRangeId(indicatorRanges(five()), "10y")).toBe("max");
+  });
+
+  it("reads the months behind a span, and the whole history for an unknown one", () => {
+    const ranges = indicatorRanges(deep());
+    expect(rangeMonths(ranges, "10y")).toBe(120);
+    expect(rangeMonths(ranges, "max")).toBeNull();
+    expect(rangeMonths(ranges, "50y")).toBeNull();
+    expect(rangeMonths([], "5y")).toBeNull();
+  });
+
+  it("draws the window across the whole width instead of a stretched history", () => {
+    const chart = buildIndicatorChart(clipHistory(deep(), 60), 400)!;
+    expect(chart.points).toHaveLength(60);
+    expect(chart.points[0].date).toBe("2021-09");
+    expect(chart.last.date).toBe("2026-08");
+    // sixty months means fifty nine steps across the drawable width, and a
+    // coordinate is rounded to a tenth, so the step is read at that precision
+    const step = (400 - 2 * CHART_PAD) / 59;
+    expect(chart.points[1].x - chart.points[0].x).toBeCloseTo(step, 1);
+    expect(chart.last.x - chart.points[0].x).toBeCloseTo(400 - 2 * CHART_PAD, 6);
+  });
+
+  it("names the window the chart draws, and the whole run everywhere else", () => {
+    const indicator = make({ history: deep() });
+    expect(chartTitle(indicator)).toBe("CPI, all items, monthly, Jan 1996 to Aug 2026");
+    expect(chartTitle(indicator, clipHistory(indicator.history, 60))).toBe("CPI, all items, monthly, Sep 2021 to Aug 2026");
+    // the tile is not part of the bargain: its figure and its sparkline
+    // still read the whole history, whatever the chart is showing
+    expect(indicatorSpark(indicator.history)!.points).toHaveLength(368);
+    expect(changeChip(indicator.change_12m).text).toBe("+0.4 pts");
+    expect(sourceLine(indicator)).toBe("BLS via FRED, monthly, Jan 1996 to Aug 2026");
   });
 });
 

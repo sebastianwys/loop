@@ -189,6 +189,10 @@ export const DEFS: MetricDef[] = [
   field("hpi_trend_5y", "HPI growth, 5 year annualized", "rate", "diverging", "Forecasts", "forecast", ["latest"]),
   field("hpi_yoy_latest", "HPI growth, last 4 quarters", "rate", "diverging", "Forecasts", "forecast", ["latest"]),
   field("hpi_surprise_4q", "Surprise, actual minus expected, last 4 quarters", "rate", "diverging", "Forecasts", "forecast", ["latest"]),
+  // fhfa publishes a standard error beside the expanded index. a thin market
+  // has fewer repeat sales, so its index is a looser measurement, and a wide
+  // error here is a reason to read the forecast above it loosely
+  field("hpi_index_error", "Index standard error", "rate", "sequential", "Forecasts", "fhfa", ["latest"]),
 ];
 
 export function defaultPeriod(def: MetricDef): Period | null {

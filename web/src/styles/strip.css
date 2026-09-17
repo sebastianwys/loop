@@ -1,0 +1,24 @@
+/* the span control over the national indicator chart. it lives beside the
+   component that renders it, because the chart is the only thing that owns
+   a span, and it borrows the shape of the sidebar's segmented control */
+
+.ind-chart-block { display: flex; flex-direction: column; min-width: 0; }
+
+.ind-range { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 2px; }
+.ind-range button {
+  padding: 0.1rem 0.5rem; font-size: 0.78rem; font-variant-numeric: tabular-nums;
+  border: 1px solid var(--baseline); border-radius: 4px; background: var(--surface); color: var(--ink-2);
+}
+.ind-range button:hover { color: var(--ink); }
+/* the fill, the darker border and the weight all carry the chosen span, so
+   it never reads by colour alone */
+.ind-range button[aria-pressed="true"] {
+  background: var(--plane); border-color: var(--ink-2); color: var(--ink); font-weight: 600;
+}
+.ind-range button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* the strip's own touch size, the one its close and play buttons take. px
+   on purpose, so the fluid root font cannot shrink the target */
+@media (pointer: coarse) {
+  .ind-range button { min-height: 36px; padding: 0.4rem 0.7rem; }
+}

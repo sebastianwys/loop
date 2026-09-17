@@ -28,7 +28,10 @@ export type EnrichmentKey =
   // each expected growth carries its 90 percent band as _lo and _hi
   | "hpi_forecast_4q" | "hpi_forecast_4q_lo" | "hpi_forecast_4q_hi"
   | "hpi_forecast_8q" | "hpi_forecast_8q_lo" | "hpi_forecast_8q_hi"
-  | "hpi_yoy_latest" | "hpi_trend_5y" | "hpi_surprise_4q";
+  | "hpi_yoy_latest" | "hpi_trend_5y" | "hpi_surprise_4q"
+  // fhfa's own standard error for the index, as a percent of it. it rides in
+  // the model's file because nothing else carries it, but it is fhfa's number
+  | "hpi_index_error";
 
 export type EnrichmentValues = { [K in EnrichmentKey]?: number | null };
 export type EnrichmentDates = { [K in EnrichmentKey as `${K}_date`]?: string | null };
@@ -148,6 +151,21 @@ export interface National {
   indicators?: Indicator[];
 }
 
+// one row per source folder the bot found, built from that folder's download
+// manifest. files and row_count cover the whole folder, sha256 belongs to the
+// one file filename names
+export interface Provenance {
+  source: string;
+  provider: string;
+  url: string;
+  version: string;
+  downloaded_at: string;
+  files: number;
+  row_count: number;
+  filename: string;
+  sha256: string;
+}
+
 // one version string per source folder the bot found, keyed by folder name
 export interface Sources {
   gazetteer: string;
@@ -161,6 +179,8 @@ export interface MapData {
   generated_at: string;
   years: number[];
   sources: Sources;
+  // absent from builds made before the block was added
+  provenance?: Provenance[];
   national: National;
   metros: Metro[];
 }

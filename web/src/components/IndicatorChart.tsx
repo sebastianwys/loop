@@ -1,9 +1,11 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, type ReactElement } from "react";
 import { formatValue } from "../lib/format";
 import {
-  CHART_W, buildIndicatorChart, chartTitle, displayFormat, nearestChartPoint, pointReadout, type ChartPoint,
+  CHART_W, activeRangeId, buildIndicatorChart, chartTitle, clipHistory, displayFormat, indicatorRanges,
+  nearestChartPoint, pointReadout, rangeMonths, type ChartPoint,
 } from "../lib/indicators";
 import type { Indicator } from "../types";
+import "../styles/strip.css";
 
 interface Props {
   indicator: Indicator;
@@ -12,17 +14,23 @@ interface Props {
 
 const TIP_H = 16;
 
-// the whole monthly history, no axes. a dashed rule marks where the series
-// stands today, and a crosshair follows the pointer or the arrow keys and
-// reads out the month under it
+// the monthly history, no axes. a dashed rule marks where the series stands
+// today, and a crosshair follows the pointer or the arrow keys and reads out
+// the month under it. the buttons above choose how far back it runs, and
+// only spans the series can fill are offered
 export function IndicatorChart({ indicator, width = CHART_W }: Props) {
-  const model = useMemo(() => buildIndicatorChart(indicator.history, width), [indicator.history, width]);
+  const [chosen, setChosen] = useState<string | null>(null);
   const [hover, setHover] = useState<ChartPoint | null>(null);
   const svg = useRef<SVGSVGElement>(null);
-  if (!model) return <p className="muted">no monthly history</p>;
+  const ranges = useMemo(() => indicatorRanges(indicator.history), [indicator.history]);
+  const active = activeRangeId(ranges, chosen);
+  const shown = useMemo(
+    () => clipHistory(indicator.history, rangeMonths(ranges, active)),
+    [indicator.history, ranges, active],
+  );
+  const model = useMemo(() => buildIndicatorChart(shown, width), [shown, width]);
 
-  const { last, height } = model;
-  const title = chartTitle(indicator);
+  const title = chartTitle(indicator, shown);
   const value = (v: number) => formatValue(v, displayFormat(indicator.format));
 
   const onMove = (e: React.MouseEvent<SVGSVGElement>) => {
@@ -32,7 +40,7 @@ export function IndicatorChart({ indicator, width = CHART_W }: Props) {
   };
 
   const onKeyDown = (e: React.KeyboardEvent<SVGSVGElement>) => {
-    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    if (!model || (e.key !== "ArrowLeft" && e.key !== "ArrowRight")) return;
     e.preventDefault();
     const step = e.key === "ArrowRight" ? 1 : -1;
     const i = hover ? model.points.findIndex((p) => p.date === hover.date) : -1;
@@ -40,12 +48,43 @@ export function IndicatorChart({ indicator, width = CHART_W }: Props) {
     setHover(model.points[next] ?? null);
   };
 
+  // a crosshair on a month of the old window means nothing in the new one
+  const pick = (id: string) => {
+    setChosen(id);
+    setHover(null);
+  };
+
+  // one span is no choice at all, so a series that fills none of them keeps
+  // the plain chart it has always had
+  const withRanges = (chart: ReactElement) =>
+    ranges.length < 2 ? chart : (
+      <div className="ind-chart-block">
+        <div className="ind-range" role="group" aria-label="how far back the chart runs">
+          {ranges.map((range) => (
+            <button
+              key={range.id}
+              type="button"
+              aria-pressed={range.id === active}
+              aria-label={range.readout}
+              onClick={() => pick(range.id)}
+            >
+              {range.label}
+            </button>
+          ))}
+        </div>
+        {chart}
+      </div>
+    );
+
+  if (!model) return withRanges(<p className="muted">no monthly history</p>);
+
+  const { last, height } = model;
   const text = hover ? pointReadout(hover, indicator.format) : "";
   const tipW = text.length * 5.4 + 12;
   const tipX = hover ? (hover.x + 8 + tipW > width ? hover.x - 8 - tipW : hover.x + 8) : 0;
   const anchor = last.x > width - 40 ? "end" : "middle";
 
-  return (
+  return withRanges(
     <svg
       ref={svg}
       className="ind-chart"
@@ -75,6 +114,6 @@ export function IndicatorChart({ indicator, width = CHART_W }: Props) {
           </g>
         </g>
       )}
-    </svg>
+    </svg>,
   );
 }

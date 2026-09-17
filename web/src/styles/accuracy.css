@@ -1,0 +1,99 @@
+/* ---- the accuracy view ----
+   one measure, the miss, drawn twice. it is a signed quantity, so it wears
+   the same diverging pair the map already colours hpi_surprise_4q with: the
+   cool arm for a metro that grew less than the model expected, the warm arm
+   for one that grew more. colour is never the only thing saying which is
+   which. position against the drawn zero line does it first, the two arms are
+   labelled in words under the plot, and every number is repeated in a table */
+.accuracy-page {
+  min-height: 0; overflow: auto; background: var(--plane);
+  padding: clamp(0.75rem, 2vw, 1.5rem);
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+}
+.accuracy-inner { max-width: 54rem; margin: 0 auto; display: flex; flex-direction: column; gap: 1.1rem; }
+
+.acc-head h2 { font-size: 1.07rem; margin: 0 0 4px; }
+.acc-note { margin: 0; font-size: 0.86rem; color: var(--ink-2); max-width: 46rem; }
+
+/* the four headline numbers. they are the answer, the sections under them are
+   the working, so they come first and stay first on a phone */
+.acc-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); gap: 0.5rem; }
+.acc-tile {
+  display: flex; flex-direction: column; gap: 1px;
+  background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius);
+  padding: 0.55rem 0.7rem;
+}
+.acc-tile .v { font-size: 1.32rem; font-variant-numeric: tabular-nums; line-height: 1.15; }
+.acc-tile .l { font-size: 0.82rem; color: var(--ink-2); }
+.acc-tile .n { font-size: 0.72rem; color: var(--muted); }
+
+.acc-block { display: flex; flex-direction: column; gap: 0.7rem; }
+.acc-block h3 { font-size: 0.95rem; margin: 0.4rem 0 0; }
+.acc-block p { margin: 0; font-size: 0.88rem; line-height: 1.55; color: var(--ink-2); max-width: 46rem; }
+.acc-foot { font-size: 0.78rem !important; color: var(--muted) !important; }
+.acc-empty {
+  padding: 1.25rem 0.875rem; text-align: center; color: var(--ink-2);
+  background: var(--surface); border: 1px dashed var(--baseline); border-radius: var(--radius);
+}
+
+.acc-figure { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.acc-figure figcaption { font-size: 0.78rem; color: var(--muted); max-width: 46rem; }
+
+.acc-chart {
+  display: block; width: 100%; max-width: 100%; height: auto;
+  background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius);
+}
+.acc-chart .grid { stroke: var(--hairline); stroke-width: 1; }
+.acc-chart .lbl { fill: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.acc-chart .side { fill: var(--ink-2); font-size: 10px; }
+.acc-chart:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* a 2px gutter is already cut into every bar's width, so two full bars never
+   read as one wide one */
+.acc-hist .bar { stroke: none; }
+.acc-hist .bar.over { fill: var(--fall); }
+.acc-hist .bar.under { fill: var(--rise); }
+.acc-hist .bar.on { stroke: var(--ink); stroke-width: 1.5; }
+.acc-hist .zero { stroke: var(--ink); stroke-width: 1.5; }
+.acc-hist .median line { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 3 3; }
+.acc-hist .median text { fill: var(--ink-2); }
+
+.acc-cloud .dot { fill: var(--accent); fill-opacity: 0.4; stroke: none; }
+.acc-cloud .dot.on { fill-opacity: 1; stroke: var(--surface); stroke-width: 1.5; r: 5; }
+/* dashed, because it is a line somebody fitted rather than anything measured */
+.acc-cloud .fit { fill: none; stroke: var(--ink-2); stroke-width: 1.5; stroke-dasharray: 6 4; }
+.acc-cloud .binmark rect { fill: var(--ink); stroke: var(--surface); stroke-width: 1.5; }
+.acc-cloud .binmark line { stroke: var(--ink); stroke-width: 1.5; }
+
+.acc-readout { margin: 0 !important; font-size: 0.82rem !important; min-height: 1.4rem; }
+.acc-readout .hint { color: var(--muted); }
+.acc-readout strong { font-variant-numeric: tabular-nums; }
+
+.acc-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); gap: 0.75rem; }
+
+.acc-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; background: var(--surface); }
+.acc-table caption { text-align: left; font-size: 0.78rem; color: var(--muted); padding-bottom: 3px; }
+.acc-table th, .acc-table td { padding: 4px 6px; border-bottom: 1px solid var(--hairline); text-align: left; }
+.acc-table thead th { color: var(--muted); font-weight: 500; vertical-align: bottom; }
+.acc-table tbody th { font-weight: 500; }
+.acc-table td { color: var(--ink-2); }
+.acc-table .v { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* the sign is already in the number, so the hue is a second reading of it */
+.acc-table td.over { color: var(--fall); }
+.acc-table td.under { color: var(--rise); }
+.acc-states { max-width: 22rem; }
+
+.acc-link {
+  border: 0; background: transparent; padding: 0; text-align: left;
+  color: var(--ink); font: inherit; text-decoration: underline; text-underline-offset: 2px;
+}
+.acc-link:hover { color: var(--accent); }
+.acc-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+
+/* the tables are the one thing here that cannot narrow further, so on a phone
+   they scroll sideways inside their own box rather than widening the page */
+.acc-scroll { overflow-x: auto; }
+
+@media (pointer: coarse) {
+  .acc-link { min-height: var(--tap); display: inline-flex; align-items: center; }
+}

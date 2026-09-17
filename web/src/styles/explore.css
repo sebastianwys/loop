@@ -1,0 +1,88 @@
+/* ---- the explore view ----
+   one dot per metro on a pair of axes. nothing here is carried by colour
+   alone: a plain metro is a filled dot, a division wearing its parent metro's
+   number is a hollow one, the open metro is a larger dot inside a ring with a
+   guide out to each axis, and the fitted line is a dash, so the plot still
+   reads in print, in grayscale and to a reader who sees the hues as one */
+.explore-page {
+  min-height: 0; overflow: auto; background: var(--plane);
+  padding: clamp(0.75rem, 2vw, 1.5rem);
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+}
+.explore-inner { max-width: 64rem; margin: 0 auto; display: flex; flex-direction: column; gap: 0.9rem; }
+
+.explore-head h2 { font-size: 1.07rem; margin: 0 0 2px; }
+.explore-note { margin: 0; font-size: 0.86rem; color: var(--ink-2); }
+
+.explore-controls { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; }
+.explore-axis { display: flex; flex-direction: column; gap: 4px; min-width: min(100%, 17rem); }
+.explore-axis label { font-size: 0.78rem; color: var(--muted); }
+.explore-axis select {
+  padding: 0.4rem 0.5rem; border: 1px solid var(--baseline); border-radius: 4px;
+  background: var(--surface); max-width: min(100%, 24rem);
+}
+.explore-axis .segmented { align-self: flex-start; }
+
+.explore-chart {
+  display: block; width: 100%; max-width: 100%; height: auto;
+  background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius);
+  touch-action: manipulation;
+}
+.explore-chart .field { fill: transparent; }
+.explore-chart .grid { stroke: var(--hairline); stroke-width: 1; }
+.explore-chart .lbl { fill: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+/* 410 dots overlap badly at full strength, so the fill is partial and the
+   stroke keeps a single dot from disappearing into the surface */
+.explore-chart .dot { fill: var(--ink-2); fill-opacity: 0.38; stroke: var(--surface); stroke-width: 0.5; }
+.explore-chart .dot.taken { fill: none; stroke: var(--ink-2); stroke-width: 1.1; stroke-opacity: 0.75; }
+.explore-chart .fit { fill: none; stroke: var(--trend); stroke-width: 1.75; stroke-dasharray: 7 4; }
+.explore-chart .spot .core { fill: var(--accent); stroke: var(--surface); stroke-width: 1; }
+.explore-chart .spot .ring { fill: none; stroke: var(--accent); stroke-width: 1.75; }
+.explore-chart .spot .guide { stroke: var(--accent); stroke-width: 1; stroke-dasharray: 2 3; }
+.explore-chart .cursor .halo { fill: none; stroke: var(--ink); stroke-width: 1.5; }
+.explore-chart .cursor .tag { fill: var(--ink); font-size: 11px; paint-order: stroke; stroke: var(--surface); stroke-width: 3; }
+
+.explore-readout { margin: 4px 0 0; font-size: 0.86rem; color: var(--ink-2); min-height: 2.6rem; display: flex; flex-wrap: wrap; gap: 2px 14px; }
+.explore-readout .who { font-weight: 600; flex-basis: 100%; }
+.explore-readout .read { display: inline-flex; align-items: baseline; gap: 6px; }
+.explore-readout .v { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink); }
+.explore-readout .note { color: var(--muted); }
+.explore-readout .hint { color: var(--muted); }
+
+.explore-key { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.78rem; color: var(--ink-2); }
+.explore-key li { display: inline-flex; align-items: center; gap: 6px; }
+.explore-key .swatch { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+.explore-key .swatch.dot { background: var(--ink-2); opacity: 0.45; }
+.explore-key .swatch.taken { border: 1.5px solid var(--ink-2); }
+.explore-key .swatch.spot { background: var(--accent); box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--accent); }
+.explore-key .swatch.fit { width: 16px; height: 0; border-top: 2px dashed var(--trend); border-radius: 0; }
+
+.explore-facts { display: flex; flex-direction: column; gap: 0.4rem; }
+.explore-facts p { margin: 0; font-size: 0.86rem; color: var(--ink-2); }
+.explore-caution {
+  border-left: 3px solid var(--baseline); padding: 0.1rem 0 0.1rem 0.6rem;
+}
+.explore-empty {
+  margin: 0; padding: 1.5rem 0.875rem; text-align: center; color: var(--ink-2);
+  background: var(--surface); border: 1px dashed var(--baseline); border-radius: var(--radius);
+}
+
+/* the table cannot narrow past its four columns, so on a phone it scrolls
+   sideways inside its own box rather than widening the page */
+.explore-scroll { overflow-x: auto; }
+.explore-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; background: var(--surface); }
+.explore-table caption { text-align: left; font-size: 0.78rem; color: var(--muted); padding-bottom: 4px; }
+.explore-table th, .explore-table td { padding: 5px 6px; border-bottom: 1px solid var(--hairline); text-align: left; }
+.explore-table thead th { color: var(--muted); font-weight: 500; }
+.explore-table tbody th { font-weight: 500; }
+.explore-table .end { color: var(--muted); white-space: nowrap; }
+.explore-table .v { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.explore-table tbody button { border: 0; background: transparent; padding: 0; text-align: left; color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.explore-table tbody button:hover { color: var(--accent); }
+.explore-table tr.open { background: var(--band); }
+.explore-foot { margin: 0; font-size: 0.78rem; color: var(--muted); }
+
+@media (pointer: coarse) {
+  .explore-axis select { font-size: max(16px, 1rem); min-height: var(--tap); }
+  .explore-table tbody button { min-height: var(--tap); }
+}

@@ -1,0 +1,100 @@
+/* ---- the model view ----
+   a reading column, not a dashboard: one measure of text, the figures at the
+   width of that column, and the leaderboard the only wide thing on the page.
+   every colour is a token from styles.css, so nothing here needs a dark block
+   of its own and nothing carries meaning by colour alone */
+.model-page {
+  min-height: 0; overflow: auto; background: var(--plane);
+  padding: clamp(0.75rem, 2vw, 1.5rem);
+  padding-bottom: calc(2rem + env(safe-area-inset-bottom));
+}
+.model-inner {
+  max-width: 46rem; margin: 0 auto; display: flex; flex-direction: column; gap: 1.25rem;
+}
+
+.model-head h2 { font-size: 1.07rem; margin: 0 0 4px; }
+.model-page .model-lead { font-size: 0.95rem; }
+.model-page p { font-size: 0.9rem; line-height: 1.6; margin: 0; color: var(--ink); }
+.model-page h3 { font-size: 1rem; margin: 0; }
+.model-page h4 { font-size: 0.9rem; margin: 0; color: var(--ink-2); }
+
+.model-section { min-width: 0; display: flex; flex-direction: column; gap: 0.7rem; }
+
+/* the three tiles are the shape of the argument in one line: two wins and
+   the miss. the miss is third on purpose, not hidden */
+.model-stats {
+  list-style: none; margin: 0.9rem 0 0; padding: 0;
+  display: flex; flex-wrap: wrap; gap: 0.6rem;
+}
+.model-stats li {
+  flex: 1 1 11rem; display: flex; flex-direction: column; gap: 1px;
+  background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius);
+  padding: 0.6rem 0.7rem;
+}
+.model-stats .value { font-size: 1.3rem; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.model-stats .label { font-size: 0.82rem; color: var(--ink-2); }
+.model-stats .note { font-size: 0.76rem; color: var(--muted); }
+
+.model-figure {
+  margin: 0.2rem 0 0; display: flex; flex-direction: column; gap: 6px;
+}
+.model-figure img {
+  display: block; width: 100%; height: auto;
+  background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius);
+}
+.model-figure figcaption { font-size: 0.8rem; line-height: 1.45; color: var(--muted); }
+/* a figure the build never copied still says what it was there to say */
+.model-figure.is-missing figcaption {
+  border: 1px dashed var(--baseline); border-radius: var(--radius); padding: 0.7rem 0.8rem;
+}
+.model-absent { display: block; margin-top: 4px; color: var(--ink-2); }
+
+/* the table is the one thing here that cannot narrow further, so on a phone
+   it scrolls sideways inside its own box rather than widening the page.
+   min-width 0 is what makes the box narrow: a flex item defaults to min-width
+   auto, which is its content width. contain paint is what keeps the table's
+   700px layout box from reaching the root: overflow-x clips it visually, and
+   the box still counted toward documentElement.scrollWidth, so the page itself
+   could be dragged sideways on a phone even though the table looked clipped */
+.model-scroll { overflow-x: auto; min-width: 0; max-width: 100%; contain: paint; }
+.model-table {
+  width: 100%; border-collapse: collapse; font-size: 0.86rem; background: var(--surface);
+}
+.model-table caption {
+  text-align: left; font-size: 0.8rem; line-height: 1.45; color: var(--muted); padding-bottom: 6px;
+}
+.model-table th, .model-table td {
+  padding: 6px 8px; border-bottom: 1px solid var(--hairline); text-align: left; vertical-align: top;
+}
+.model-table thead th { color: var(--muted); font-weight: 500; }
+.model-table tbody th { font-weight: 500; white-space: nowrap; }
+.model-table .v { text-align: right; font-variant-numeric: tabular-nums; }
+.model-table .mae { display: block; font-weight: 500; }
+/* weight and a rule, never colour: the lowest error in the column */
+.model-table .mae.best { font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.model-table .sub { display: block; font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
+.model-table .tag {
+  display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 10px;
+  border: 1px solid var(--baseline); font-size: 0.7rem; font-weight: 400; color: var(--ink-2);
+}
+.model-table.blocks td { color: var(--ink-2); }
+
+.model-readings { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.model-readings li { font-size: 0.9rem; line-height: 1.6; }
+
+/* the limits are the page, not an appendix, so they get the only frame on it */
+.model-limits {
+  background: var(--surface); border: 1px solid var(--hairline);
+  border-left: 3px solid var(--baseline); border-radius: var(--radius);
+  padding: 0.9rem 1rem;
+}
+.model-limits ul { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 0.6rem; }
+.model-limits li { font-size: 0.9rem; line-height: 1.6; }
+.model-limits strong { font-weight: 600; }
+
+/* scoped past .model-page p, which sets the reading colour for the body */
+.model-page .model-foot { font-size: 0.78rem; color: var(--muted); }
+
+@media (max-width: 639px) {
+  .model-stats li { flex-basis: 100%; }
+}

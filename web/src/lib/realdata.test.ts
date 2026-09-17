@@ -80,7 +80,9 @@ describe.skipIf(!present)("built metros.json", () => {
     for (const m of data!.metros) {
       const series = m.series?.hpi;
       if (!series) continue;
-      expect(Number.isInteger(series.start) && series.start >= 1990, m.cbsa).toBe(true);
+      // the builder floors at 1975, where fhfa's quarterly metro series begins,
+      // and each metro starts at its own first drawable year after that
+      expect(Number.isInteger(series.start) && series.start >= 1975, m.cbsa).toBe(true);
       expect(series.values.length, m.cbsa).toBeGreaterThan(0);
       for (const v of series.values) expect(v === null || Number.isFinite(v), m.cbsa).toBe(true);
       expect(typeof series.as_of === "string" && series.as_of.length > 0, m.cbsa).toBe(true);
@@ -100,7 +102,14 @@ describe.skipIf(!present)("built metros.json", () => {
       expect(INDICATOR_GROUPS, i.id).toContain(i.group);
       expect(["pct", "rate", "index"], i.id).toContain(i.format);
       expect(monthLabel(i.date), i.id).not.toBe("");
-      expect(i.history.length, i.id).toBeLessThanOrEqual(60);
+      // the trim used to be five years and is now the series' own length, so
+      // the useful guard is that the history is real and ends where the tile
+      // says it does, not that it is short
+      expect(i.history.length, i.id).toBeGreaterThan(0);
+      expect(i.history[i.history.length - 1].date, i.id).toBe(i.date);
+      const dates = i.history.map((p) => p.date);
+      expect([...dates].sort(), i.id).toEqual(dates);
+      expect(new Set(dates).size, i.id).toBe(dates.length);
       for (const p of i.history) expect(monthLabel(p.date), i.id).not.toBe("");
       const spark = indicatorSpark(i.history);
       if (spark) for (const p of spark.points) expect(Number.isFinite(p.x) && Number.isFinite(p.y), i.id).toBe(true);

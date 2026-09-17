@@ -1,0 +1,107 @@
+/* ---- the compare view ----
+   four line slots, each with a colour, a dash and an end mark. the colours
+   are the first four categorical slots of the documented chart palette,
+   stepped once for each surface rather than flipped; the dash and the mark
+   are what carry a line when the colour cannot, in print, in grayscale, and
+   for a reader who sees two of the four hues as one */
+.compare-page {
+  min-height: 0; overflow: auto; background: var(--plane);
+  padding: clamp(0.75rem, 2vw, 1.5rem);
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+}
+.compare-inner {
+  max-width: 64rem; margin: 0 auto; display: flex; flex-direction: column; gap: 0.9rem;
+  --series-0: #2a78d6;
+  --series-1: #eb6834;
+  --series-2: #1baf7a;
+  --series-3: #eda100;
+}
+@media (prefers-color-scheme: dark) {
+  .compare-inner {
+    --series-0: #3987e5;
+    --series-1: #d95926;
+    --series-2: #199e70;
+    --series-3: #c98500;
+  }
+}
+.compare-inner .series-0 { color: var(--series-0); }
+.compare-inner .series-1 { color: var(--series-1); }
+.compare-inner .series-2 { color: var(--series-2); }
+.compare-inner .series-3 { color: var(--series-3); }
+
+.compare-head h2 { font-size: 1.07rem; margin: 0 0 2px; }
+.compare-note { margin: 0; font-size: 0.86rem; color: var(--ink-2); }
+
+.compare-card { background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius); padding: 0.75rem 0.875rem; }
+.compare-pick label { display: block; font-size: 0.78rem; color: var(--muted); margin-bottom: 4px; }
+.compare-pick input {
+  width: 100%; max-width: 24rem; padding: 0.45rem 0.55rem;
+  border: 1px solid var(--baseline); border-radius: 4px; background: var(--surface);
+}
+.compare-pick .results { max-width: 24rem; }
+
+/* the chosen metros are the legend: the same key the chart and the table use */
+.compare-chips { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; }
+.compare-chips li {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid var(--baseline); border-radius: 999px; padding: 0.2rem 0.3rem 0.2rem 0.55rem;
+  background: var(--surface); font-size: 0.86rem;
+}
+.compare-chips .drop {
+  border: 0; background: transparent; color: var(--ink-2); line-height: 1;
+  width: 1.4rem; height: 1.4rem; border-radius: 50%;
+}
+.compare-chips .drop:hover { background: var(--plane); color: var(--ink); }
+
+.series-key { flex: none; overflow: visible; }
+.series-key .line { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.series-key .mark { fill: currentColor; stroke: var(--surface); stroke-width: 1; }
+
+.compare-chart {
+  display: block; width: 100%; max-width: 100%; height: auto;
+  background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius);
+}
+.compare-chart .grid { stroke: var(--hairline); stroke-width: 1; }
+.compare-chart .lbl { fill: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.compare-chart .line { fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.compare-chart .mark { fill: currentColor; stroke: var(--surface); stroke-width: 1.5; }
+.compare-chart .leader { fill: none; stroke: currentColor; stroke-width: 1; }
+/* the label is text, so it wears ink; the mark it points at carries the hue */
+.compare-chart .end { fill: var(--ink-2); font-size: 11px; }
+.compare-chart .crosshair { stroke: var(--ink-2); stroke-width: 1; }
+.compare-chart .ring { fill: none; stroke: currentColor; stroke-width: 2; }
+
+.compare-readout { margin: 4px 0 0; font-size: 0.86rem; color: var(--ink-2); min-height: 1.4rem; display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.compare-readout .when { font-weight: 600; }
+.compare-readout .read { display: inline-flex; align-items: center; gap: 5px; }
+.compare-readout .v { font-variant-numeric: tabular-nums; }
+.compare-readout .hint { color: var(--muted); }
+.compare-empty { margin: 0; padding: 1.5rem 0.875rem; text-align: center; color: var(--ink-2); background: var(--surface); border: 1px dashed var(--baseline); border-radius: var(--radius); }
+
+.compare-controls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.75rem; }
+.compare-controls label, .compare-controls .label { display: block; font-size: 0.78rem; color: var(--muted); margin-bottom: 4px; }
+.compare-controls select {
+  padding: 0.4rem 0.5rem; border: 1px solid var(--baseline); border-radius: 4px;
+  background: var(--surface); max-width: min(100%, 24rem);
+}
+
+.compare-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; background: var(--surface); }
+.compare-table caption { text-align: left; }
+.compare-table th, .compare-table td { padding: 5px 6px; border-bottom: 1px solid var(--hairline); text-align: left; }
+.compare-table thead th { color: var(--muted); font-weight: 500; vertical-align: bottom; }
+.compare-table tbody th { font-weight: 500; }
+.compare-table tbody th span.name { display: inline-flex; align-items: center; gap: 6px; }
+.compare-table .v { text-align: right; font-variant-numeric: tabular-nums; }
+.compare-table .date { display: block; font-size: 0.72rem; font-weight: 400; color: var(--muted); }
+.compare-table .taken { display: block; font-size: 0.72rem; font-weight: 400; color: var(--muted); }
+.compare-foot { margin: 0; font-size: 0.78rem; color: var(--muted); }
+
+/* the table is the one thing here that cannot narrow further, so on a phone
+   it scrolls sideways inside its own box rather than widening the page */
+.compare-scroll { overflow-x: auto; }
+
+@media (pointer: coarse) {
+  .compare-pick input { font-size: max(16px, 1rem); min-height: var(--tap); }
+  .compare-controls select { font-size: max(16px, 1rem); min-height: var(--tap); }
+  .compare-chips .drop { width: 2rem; height: 2rem; }
+}

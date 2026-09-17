@@ -4,7 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "predev": "node scripts/model-assets.mjs",
     "dev": "vite",
+    "prebuild": "node scripts/model-assets.mjs",
     "build": "tsc --noEmit && vite build",
     "predeploy": "node scripts/preflight-deploy.mjs",
     "deploy": "npm run build && npx wrangler deploy",
@@ -12,7 +14,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "boundaries": "node scripts/boundaries.mjs",
-    "probe": "node scripts/probe-devices.mjs"
+    "probe": "node scripts/probe-devices.mjs",
+    "probe:views": "node scripts/probe-views.mjs"
   },
   "dependencies": {
     "leaflet": "^1.9.4",

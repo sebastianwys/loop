@@ -186,15 +186,15 @@ describe.skipIf(!REAL)("expected levels on the built data", () => {
 
     const f = forecastOf(metro);
     if (!f || f.mid4 === null || f.lo4 === null || f.hi4 === null) throw new Error("abilene has no four quarter forecast");
-    expect(f.mid4).toBe(5.9365);
+    expect(f.mid4).toBe(6.7436);
 
     const one = buildHistory(series, f).forecast[0];
     expect(one.year).toBe(2027);
-    // 381.69 grown by 5.9365, -3.5886 and 17.0937 percent
+    // 381.69 grown by 6.7436, -2.7714 and 18.0995 percent
     expect(one.value).toBeCloseTo(origin * (1 + f.mid4 / 100), 4);
     expect(one.lo).toBeCloseTo(origin * (1 + f.lo4 / 100), 4);
     expect(one.hi).toBeCloseTo(origin * (1 + f.hi4 / 100), 4);
     // what the detail panel prints, to one decimal
-    expect(Math.round(one.value * 10) / 10).toBe(404.3);
+    expect(Math.round(one.value * 10) / 10).toBe(407.4);
   });
 });

@@ -1,0 +1,14 @@
+/* the view switch in the header. the same shape as the segmented controls in
+   the sidebar, at the size the header line can carry */
+.view-nav { flex: none; }
+.view-nav .tabs { display: inline-flex; border: 1px solid var(--baseline); border-radius: 4px; overflow: hidden; }
+.view-nav a {
+  padding: 0.3rem 0.7rem; line-height: 1.2; font-size: 0.86rem; text-decoration: none;
+  background: var(--surface); color: var(--ink-2); white-space: nowrap;
+}
+.view-nav a + a { border-left: 1px solid var(--baseline); }
+.view-nav a:hover { background: var(--plane); color: var(--ink); }
+.view-nav a[aria-current="page"] { background: var(--plane); color: var(--ink); font-weight: 600; }
+.view-nav a:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+/* a thumb needs a bigger target than a header line usually gives it */
+@media (pointer: coarse) { .view-nav a { min-height: 38px; display: inline-flex; align-items: center; } }

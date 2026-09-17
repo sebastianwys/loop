@@ -257,6 +257,85 @@ export function nearestChartPoint(chart: IndicatorChartModel | null, px: number)
   return best;
 }
 
+// the spans the chart can be read at, with the months each keeps. one year
+// is the window the tile's twelve month figure covers, five years is what
+// the strip has always drawn, and twenty five reaches past 2008 for the
+// series that go back that far. nothing longer is fixed, because the start
+// dates run from 1962 to 2010 and a named span that no series fills would
+// only promise months the sources never published
+const RANGE_STEPS = [
+  { id: "1y", label: "1y", months: 12 },
+  { id: "5y", label: "5y", months: 60 },
+  { id: "10y", label: "10y", months: 120 },
+  { id: "25y", label: "25y", months: 300 },
+];
+
+// the whole history, however deep the build turns out to be
+export const MAX_RANGE = "max";
+
+// the span the chart opens at, whenever the series is longer than it
+export const DEFAULT_RANGE = "5y";
+
+export interface IndicatorRange {
+  id: string;
+  label: string;
+  // the calendar months the chart keeps, null for the whole history
+  months: number | null;
+  // the label and the months it really draws, for the button's name
+  readout: string;
+}
+
+// the last months of a history, counted on the calendar so a month the
+// source never published still uses up its place. null keeps the whole run
+export function clipHistory(history: IndicatorPoint[], months: number | null): IndicatorPoint[] {
+  if (months === null || months < 1 || history.length === 0) return history;
+  const slots = history.map((p) => monthSlot(p.date));
+  // a month that cannot be read has no calendar place, so the count falls
+  // back to the points themselves, the way historyGrid does
+  if (slots.some((s) => s === null)) return history.slice(-months);
+  const last = Math.max(...(slots as number[]));
+  return history.filter((_, i) => (slots[i] as number) > last - months);
+}
+
+// the calendar months a history covers, counting the months it is missing,
+// so a span is offered only when the series really reaches back that far
+export function historySpan(history: IndicatorPoint[]): number {
+  return historyGrid(history).dates.length;
+}
+
+// the spans this history can be read at, shortest first and always ending
+// in the whole run. a span the series cannot fill is left out rather than
+// offered and quietly cut short, and one that matches the whole run is left
+// out too, so no two buttons draw the same chart
+export function indicatorRanges(history: IndicatorPoint[]): IndicatorRange[] {
+  const span = historySpan(history);
+  if (span < 2) return [];
+  const steps = RANGE_STEPS
+    .filter((step) => step.months < span)
+    .map((step) => ({ step, shown: clipHistory(history, step.months) }))
+    .filter(({ shown }) => shown.length > 1)
+    .map(({ step, shown }) => ({
+      id: step.id,
+      label: step.label,
+      months: step.months,
+      readout: `${step.label}, ${rangeLabel(shown)}`,
+    }));
+  return [...steps, { id: MAX_RANGE, label: "Max", months: null, readout: `Max, ${rangeLabel(history)}` }];
+}
+
+// the span a chart is showing. a chosen span that the series cannot fill
+// falls back to the default, so moving to a shorter series never leaves the
+// control with nothing pressed
+export function activeRangeId(ranges: IndicatorRange[], chosen: string | null): string {
+  if (chosen && ranges.some((r) => r.id === chosen)) return chosen;
+  return ranges.some((r) => r.id === DEFAULT_RANGE) ? DEFAULT_RANGE : MAX_RANGE;
+}
+
+// the months behind a span, and the whole history for anything unknown
+export function rangeMonths(ranges: IndicatorRange[], id: string): number | null {
+  return ranges.find((r) => r.id === id)?.months ?? null;
+}
+
 // the month and the value under the crosshair, "Aug 2026: 2.9%"
 export function pointReadout(point: ChartPoint, format: IndicatorFormat): string {
   return `${monthLabel(point.date)}: ${formatValue(point.value, displayFormat(format))}`;
@@ -269,13 +348,15 @@ export function tileReadout(indicator: Indicator): string {
   return `${indicator.label}, ${value}, ${changeChip(indicator.change_12m).label}`;
 }
 
-// the chart's own name, with the span it covers
-export function chartTitle(indicator: Indicator): string {
-  const range = rangeLabel(indicator.history);
+// the chart's own name, with the span it covers. that is the whole history
+// unless the chart has been narrowed to a window of it
+export function chartTitle(indicator: Indicator, shown: IndicatorPoint[] = indicator.history): string {
+  const range = rangeLabel(shown);
   return range ? `${indicator.label}, monthly, ${range}` : indicator.label;
 }
 
-// who publishes the series and the months shown, under the chart
+// who publishes the series and the whole run of months the build carries,
+// under the chart. the chart itself names the window it is drawing
 export function sourceLine(indicator: Indicator): string {
   const range = rangeLabel(indicator.history);
   const provider = indicator.provider || "source not named";

@@ -21,3 +21,6 @@ HANDOFF.md
 
 # the stack-audit record. kept locally, not published in a portfolio repo
 docs/audit-2026-09/
+
+# the model page's figures, copied out of ml/results by the web build
+web/public/figures/

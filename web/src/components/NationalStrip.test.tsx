@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { SAMPLE } from "../lib/data";
 import { nationalIndicators } from "../lib/indicators";
-import type { Indicator } from "../types";
+import type { Indicator, IndicatorPoint } from "../types";
 import { Header } from "./Header";
 import { IndicatorChart } from "./IndicatorChart";
 import { IndicatorDetail, NationalStrip } from "./NationalStrip";
@@ -20,6 +20,23 @@ const rate = SAMPLE.national.mortgage_rate;
 
 const one: Indicator = { ...cpi, id: "solo", label: "One month only", history: cpi.history.slice(-1) };
 const flat: Indicator = { ...cpi, id: "flat", label: "Held steady", change_12m: 0 };
+
+// a run of calendar months, for the deeper history the builder is raising
+// the strip to. the sample file still carries three years
+const monthly = (start: string, months: number): IndicatorPoint[] => {
+  const [year, month] = start.split("-").map(Number);
+  return Array.from({ length: months }, (_, k) => {
+    const slot = year * 12 + month - 1 + k;
+    return { date: `${Math.floor(slot / 12)}-${String((slot % 12) + 1).padStart(2, "0")}`, value: 2 + k / 10 };
+  });
+};
+
+// sixteen years, the span the two ppi series have, and the five years the
+// built file carries today
+const long: Indicator = { ...cpi, id: "long", label: "Long run", history: monthly("2010-11", 190) };
+const built: Indicator = { ...cpi, id: "built", label: "Five years", history: monthly("2021-09", 60) };
+const year: Indicator = { ...cpi, id: "year", label: "One year only", history: monthly("2025-09", 12) };
+const none: Indicator = { ...cpi, id: "none", label: "Nothing yet", history: [] };
 
 describe("the strip", () => {
   const markup = html(<NationalStrip indicators={indicators} />);
@@ -106,6 +123,64 @@ describe("the detail row", () => {
 
   it("says so instead of drawing a broken line for one point", () => {
     expect(html(<IndicatorChart indicator={one} />)).toBe('<p class="muted">no monthly history</p>');
+  });
+});
+
+describe("the span the chart is read at", () => {
+  const markup = html(<IndicatorChart indicator={long} width={600} />);
+
+  it("puts one group of span buttons above a chart with more history than a span", () => {
+    expect(markup).toContain('<div class="ind-range" role="group" aria-label="how far back the chart runs">');
+    expect(count(markup, "<button")).toBe(4);
+    expect(markup.indexOf("ind-range")).toBeLessThan(markup.indexOf("<svg"));
+  });
+
+  it("never offers a span the series cannot fill", () => {
+    expect(markup).toContain(">1y</button>");
+    expect(markup).toContain(">10y</button>");
+    expect(markup).toContain(">Max</button>");
+    expect(markup).not.toContain("25y");
+  });
+
+  it("names a span by the months it really draws, so a short series is not dressed up", () => {
+    expect(markup).toContain('aria-label="1y, Sep 2025 to Aug 2026"');
+    expect(markup).toContain('aria-label="Max, Nov 2010 to Aug 2026"');
+  });
+
+  it("presses exactly one span, and opens at five years", () => {
+    expect(count(markup, 'aria-pressed="true"')).toBe(1);
+    expect(markup).toContain('aria-pressed="true" aria-label="5y, Sep 2021 to Aug 2026">5y</button>');
+  });
+
+  it("titles the chart with the window it draws, not the whole history", () => {
+    expect(markup).toContain("<title>Long run, monthly, Sep 2021 to Aug 2026</title>");
+    expect(markup).toContain('aria-label="Long run, monthly, Sep 2021 to Aug 2026, arrow keys read out each month"');
+  });
+
+  it("offers the one year window against the five years the build carries today", () => {
+    const five = html(<IndicatorChart indicator={built} width={600} />);
+    expect(count(five, "<button")).toBe(2);
+    expect(five).toContain('aria-pressed="true" aria-label="Max, Sep 2021 to Aug 2026">Max</button>');
+    expect(five).toContain("<title>Five years, monthly, Sep 2021 to Aug 2026</title>");
+  });
+
+  it("leaves the chart exactly as it was when the history fills no span but its own", () => {
+    const plain = html(<IndicatorChart indicator={year} width={600} />);
+    expect(plain.startsWith("<svg")).toBe(true);
+    expect(plain).not.toContain("ind-range");
+    expect(plain).toContain('aria-label="One year only, monthly, Sep 2025 to Aug 2026, arrow keys read out each month"');
+  });
+
+  it("says so for an empty history and for a single month, with no span to choose", () => {
+    expect(html(<IndicatorChart indicator={none} />)).toBe('<p class="muted">no monthly history</p>');
+    expect(html(<IndicatorChart indicator={one} />)).toBe('<p class="muted">no monthly history</p>');
+  });
+
+  it("leaves the tile reading the whole history whatever the chart shows", () => {
+    const strip = html(<NationalStrip indicators={[long]} />);
+    expect(strip).toContain('aria-label="Long run, monthly, Nov 2010 to Aug 2026"');
+    expect(strip).toContain('<span class="chip down">-0.2 pts<span class="word">down</span></span>');
+    expect(strip).not.toContain("ind-range");
   });
 });
 

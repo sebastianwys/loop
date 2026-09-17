@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { showMortgageStat } from "../lib/indicators";
 import type { Indicator, MortgageRate } from "../types";
 import { NationalStrip } from "./NationalStrip";
@@ -11,6 +12,8 @@ interface Props {
   sidebarOpen?: boolean;
   drawer?: boolean;
   onToggleSidebar?: () => void;
+  // the view switch, composed by whoever knows which views there are
+  nav?: ReactNode;
 }
 
 // the subtitle names what the menu holds. the metro count comes from the
@@ -19,7 +22,7 @@ interface Props {
 // build carries no indicators
 export function Header({
   rate, sample, count = 0, indicators = [], updated = null,
-  sidebarOpen = true, drawer = false, onToggleSidebar,
+  sidebarOpen = true, drawer = false, onToggleSidebar, nav = null,
 }: Props) {
   const where = count > 0 ? `${count} U.S. metros` : "U.S. metros";
   const label = sidebarOpen ? "hide the controls" : "show the controls";
@@ -44,6 +47,7 @@ export function Header({
           Loop
           <span className="sub">housing, income, jobs and migration across {where}</span>
         </h1>
+        {nav}
         {rate && showMortgageStat(rate, indicators) && (
           <div className="stat" aria-label="national 30 year mortgage rate">
             <span className="label">30-year mortgage rate, national</span>

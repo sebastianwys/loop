@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { browserHost, csvFilename, downloadCsv, rankingCsv } from "../lib/csv";
 import { formatValue } from "../lib/format";
 import { GROUPS, SOURCE_LABEL, type Metric, type MetricDef } from "../lib/metrics";
 import { rankMetros, searchMetros } from "../lib/rank";
@@ -63,7 +64,11 @@ export function Sidebar({
   const [showAll, setShowAll] = useState(false);
 
   const results = useMemo(() => searchMetros(metros, query), [metros, query]);
-  const ranked = useMemo(() => rankMetros(metros, metric, showAll ? undefined : 15), [metros, metric, showAll]);
+  // the whole ranking is sorted once: the list shows a slice of it, and the
+  // export writes all of it, so the file is the ranking the reader is looking
+  // at rather than the fifteen rows that happen to be on screen
+  const all = useMemo(() => rankMetros(metros, metric), [metros, metric]);
+  const ranked = showAll ? all : all.slice(0, 15);
   const signed = metric.kind === "diverging";
   const present = new Set(Object.keys(sources).concat(["fhfa", "census"]));
   if (sources.zillow) present.add("zillow");
@@ -72,6 +77,15 @@ export function Sidebar({
     onSelect(metro.cbsa);
     setQuery("");
     setActive(0);
+  };
+
+  const exportCsv = () => {
+    const host = browserHost();
+    if (host === null) return;
+    // metric.period, not the route's: it is the period the values were read
+    // at, so the name cannot promise a panel the numbers did not come from
+    // the resolved label already carries the period, so it is not passed twice
+    downloadCsv(rankingCsv(all, metric), csvFilename(metric.label, null), host);
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -196,6 +210,21 @@ export function Sidebar({
         <button type="button" className="linkish" onClick={() => setShowAll((s) => !s)}>
           {showAll ? "show top 15" : condensed ? "show all" : "show all as a table"}
         </button>
+        {/* hidden rather than disabled: linkish has no disabled look, and a
+            metric nothing publishes has no ranking to hand over */}
+        {all.length > 0 && (
+          <>
+            {" "}
+            <button
+              type="button"
+              className="linkish"
+              aria-label={`download all ${all.length} metros ranked by ${metric.label.toLowerCase()} as a csv file`}
+              onClick={exportCsv}
+            >
+              download csv
+            </button>
+          </>
+        )}
       </div>
 
       <footer className="footer">
