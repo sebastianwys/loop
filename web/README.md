@@ -78,4 +78,6 @@ Cloudflare Workers flow: Workers and Pages, Create, import the repository.
 
 Run `npx wrangler deploy` from `web`, never from the repo root. A root run publishes the whole repo folder as a new Worker.
 
+By hand, run `npm run deploy` rather than wrangler on its own. It builds, and first runs `scripts/preflight-deploy.mjs`, which refuses to publish a checkout that is behind its upstream. Wrangler publishes the whole of `dist` as one manifest rather than a diff, and its "already uploaded" line means the content was already in the asset store, not that the file is unchanged, so a deploy from a stale tree quietly republishes old data over whatever the scheduled runs have since refreshed. That is how a national strip refresh got rolled back a day on 2026-09-16. Every build input except the gitignored Zillow csvs is tracked, so being level with the remote is the closest cheap test that the inputs are current. `LOOP_DEPLOY_FORCE=1 npm run deploy` publishes anyway. The workflows call wrangler directly from a fresh checkout and never reach the preflight.
+
 Tiles are OpenStreetMap. Attribution is in the map and the footer.

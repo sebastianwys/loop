@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "predeploy": "node scripts/preflight-deploy.mjs",
+    "deploy": "npm run build && npx wrangler deploy",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
