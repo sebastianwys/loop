@@ -25,6 +25,9 @@ interface Props {
   shapesStatus: ShapesStatus;
   onModeChange: (mode: MapMode) => void;
   drawer?: boolean;
+  // dragged narrow enough that the headings say the short thing. the css
+  // handles the spacing, this is only for the text that would otherwise wrap
+  condensed?: boolean;
   onClose?: () => void;
 }
 
@@ -46,14 +49,14 @@ const CREDITS: [string, string][] = [
   ["bls", "Unemployment: U.S. Bureau of Labor Statistics, LAUS."],
   ["fred", "Mortgage rates: FRED, Federal Reserve Bank of St. Louis."],
   ["bea", "Personal income: U.S. Bureau of Economic Analysis."],
-  ["hud", "Fair market rents and income limits: HUD User."],
+  ["hud", "Fair market rents and income limits: HUD User. HUD publishes for its own fmr areas, so a metro it has no area for is the population weighted mean of the areas its counties sit in."],
   ["forecast", "Forecasts: Loop model, fit on the sources above."],
 ];
 
 export function Sidebar({
   metros, defs, metric, period, available, scale, selectedCbsa, sources, generatedAt,
   onMetricChange, onPeriodChange, onSelect, mode, shapesStatus, onModeChange,
-  drawer = false, onClose,
+  drawer = false, condensed = false, onClose,
 }: Props) {
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
@@ -128,7 +131,7 @@ export function Sidebar({
         <input
           id="search"
           type="search"
-          placeholder="type a metro name"
+          placeholder={condensed ? "metro name" : "type a metro name"}
           value={query}
           autoComplete="off"
           onChange={(e) => { setQuery(e.target.value); setActive(0); }}
@@ -149,7 +152,10 @@ export function Sidebar({
       </div>
 
       <div className="rank">
-        <h2>{showAll ? `all ${ranked.length} metros` : "top 15"} by {metric.label.toLowerCase()}</h2>
+        <h2>
+          {showAll ? `all ${ranked.length} metros` : "top 15"}
+          {condensed ? "" : ` by ${metric.label.toLowerCase()}`}
+        </h2>
         {showAll ? (
           <div className="table-all">
             <table>
@@ -188,7 +194,7 @@ export function Sidebar({
           </ol>
         )}
         <button type="button" className="linkish" onClick={() => setShowAll((s) => !s)}>
-          {showAll ? "show top 15" : "show all as a table"}
+          {showAll ? "show top 15" : condensed ? "show all" : "show all as a table"}
         </button>
       </div>
 

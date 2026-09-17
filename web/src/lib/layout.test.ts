@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
-  BREAKPOINTS, closesOnSelect, layoutFor, legendStartsOpen, scrollEdges, sidebarIsDrawer, sidebarStartsOpen,
+  BREAKPOINTS, SIDEBAR, clampSidebarWidth, closesOnSelect, layoutFor, legendStartsOpen, readSidebarWidth,
+  scrollEdges, sidebarBounds, sidebarIsCondensed, sidebarIsDrawer, sidebarStartsOpen, sidebarWidthForKey,
+  writeSidebarWidth, type WidthStore,
 } from "./layout";
 
 describe("layoutFor", () => {
@@ -96,5 +98,102 @@ describe("scrollEdges", () => {
   it("survives a row that has not been measured", () => {
     expect(scrollEdges(0, 0, 0)).toEqual({ left: false, right: false });
     expect(scrollEdges(0, Number.NaN, 900)).toEqual({ left: false, right: false });
+  });
+});
+
+describe("the sidebar grip", () => {
+  const wide = 1600;
+
+  it("holds the drag between its stops", () => {
+    expect(clampSidebarWidth(300, wide)).toBe(300);
+    expect(clampSidebarWidth(40, wide)).toBe(SIDEBAR.min);
+    expect(clampSidebarWidth(9000, wide)).toBe(SIDEBAR.max);
+  });
+
+  // the panel exists to read the map, so it can never own half of it
+  it("lowers the ceiling on a narrow window", () => {
+    expect(sidebarBounds(900)).toEqual({ min: SIDEBAR.min, max: 450 });
+    expect(clampSidebarWidth(SIDEBAR.max, 900)).toBe(450);
+    expect(sidebarBounds(wide).max).toBe(SIDEBAR.max);
+  });
+
+  // a window narrower than twice the floor would otherwise invert the stops
+  it("keeps the floor under the ceiling in a tiny window", () => {
+    const bounds = sidebarBounds(300);
+    expect(bounds.max).toBe(150);
+    expect(bounds.min).toBeLessThanOrEqual(bounds.max);
+    expect(clampSidebarWidth(400, 300)).toBe(150);
+  });
+
+  it("falls back to the floor when the width is not a number", () => {
+    expect(clampSidebarWidth(Number.NaN, wide)).toBe(SIDEBAR.min);
+    expect(sidebarBounds(Number.NaN)).toEqual({ min: SIDEBAR.min, max: SIDEBAR.max });
+  });
+
+  it("condenses only below the threshold, and never before a drag", () => {
+    expect(sidebarIsCondensed(SIDEBAR.condense - 1)).toBe(true);
+    expect(sidebarIsCondensed(SIDEBAR.condense)).toBe(false);
+    expect(sidebarIsCondensed(360)).toBe(false);
+    expect(sidebarIsCondensed(null)).toBe(false);
+  });
+
+  it("answers the arrows, the pages and the stops, and nothing else", () => {
+    expect(sidebarWidthForKey("ArrowLeft", 300, wide)).toBe(300 - SIDEBAR.step);
+    expect(sidebarWidthForKey("ArrowRight", 300, wide)).toBe(300 + SIDEBAR.step);
+    expect(sidebarWidthForKey("PageDown", 300, wide)).toBe(300 - SIDEBAR.page);
+    expect(sidebarWidthForKey("PageUp", 300, wide)).toBe(300 + SIDEBAR.page);
+    expect(sidebarWidthForKey("Home", 300, wide)).toBe(SIDEBAR.min);
+    expect(sidebarWidthForKey("End", 300, wide)).toBe(SIDEBAR.max);
+    expect(sidebarWidthForKey("Enter", 300, wide)).toBeNull();
+    expect(sidebarWidthForKey("a", 300, wide)).toBeNull();
+  });
+
+  it("stops at the ends rather than walking past them", () => {
+    expect(sidebarWidthForKey("ArrowLeft", SIDEBAR.min, wide)).toBe(SIDEBAR.min);
+    expect(sidebarWidthForKey("ArrowRight", SIDEBAR.max, wide)).toBe(SIDEBAR.max);
+  });
+});
+
+describe("the stored width", () => {
+  const store = (value: string | null): WidthStore & { written: string | null } => {
+    let held = value;
+    return {
+      get written() { return held; },
+      getItem: () => held,
+      setItem: (_k: string, v: string) => { held = v; },
+      removeItem: () => { held = null; },
+    };
+  };
+
+  it("reads a width back and rounds what it writes", () => {
+    const s = store(null);
+    writeSidebarWidth(287.6, s);
+    expect(s.written).toBe("288");
+    expect(readSidebarWidth(s)).toBe(288);
+  });
+
+  it("clears the width when the grip is reset", () => {
+    const s = store("300");
+    writeSidebarWidth(null, s);
+    expect(readSidebarWidth(s)).toBeNull();
+  });
+
+  it("treats junk, zero and an absent store as never dragged", () => {
+    expect(readSidebarWidth(store("wide"))).toBeNull();
+    expect(readSidebarWidth(store("0"))).toBeNull();
+    expect(readSidebarWidth(store(null))).toBeNull();
+    expect(readSidebarWidth(null)).toBeNull();
+  });
+
+  // safari throws on storage in a blocked frame, which is not a reason to
+  // stop the app from rendering
+  it("survives a store that throws", () => {
+    const hostile: WidthStore = {
+      getItem: () => { throw new Error("blocked"); },
+      setItem: () => { throw new Error("blocked"); },
+      removeItem: () => { throw new Error("blocked"); },
+    };
+    expect(readSidebarWidth(hostile)).toBeNull();
+    expect(() => writeSidebarWidth(300, hostile)).not.toThrow();
   });
 });

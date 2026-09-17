@@ -37,6 +37,48 @@ export function closesOnSelect(mode: LayoutMode): boolean {
   return sidebarIsDrawer(mode);
 }
 
+// the docked sidebar can be dragged narrower by the grip on its inner edge.
+// css px, to match the grid column the drag writes. condense is the width the
+// panel gives up its roomy form at, which is a little under the 15rem the
+// stylesheet starts from
+export const SIDEBAR = { min: 176, max: 520, condense: 248, step: 16, page: 64 } as const;
+
+// a drag can never take more than half the window, or the map it is there to
+// read stops being a map. a narrow window lowers the ceiling before the floor
+export function sidebarBounds(viewportWidth: number): { min: number; max: number } {
+  if (!Number.isFinite(viewportWidth) || viewportWidth <= 0) return { min: SIDEBAR.min, max: SIDEBAR.max };
+  const max = Math.min(SIDEBAR.max, Math.round(viewportWidth / 2));
+  return { min: Math.min(SIDEBAR.min, max), max };
+}
+
+export function clampSidebarWidth(width: number, viewportWidth: number): number {
+  const { min, max } = sidebarBounds(viewportWidth);
+  if (!Number.isFinite(width)) return min;
+  return Math.round(Math.min(max, Math.max(min, width)));
+}
+
+// under this the sidebar wears its short form: tighter padding, no source
+// line, and headings that say the short thing
+export function sidebarIsCondensed(width: number | null): boolean {
+  return width !== null && Number.isFinite(width) && width < SIDEBAR.condense;
+}
+
+// the keyboard half of the grip. a separator is expected to answer the arrows,
+// and home and end take it to the stops. null means the key was not ours
+export function sidebarWidthForKey(key: string, width: number, viewportWidth: number): number | null {
+  const { min, max } = sidebarBounds(viewportWidth);
+  const to = (next: number) => clampSidebarWidth(next, viewportWidth);
+  switch (key) {
+    case "ArrowLeft": return to(width - SIDEBAR.step);
+    case "ArrowRight": return to(width + SIDEBAR.step);
+    case "PageDown": return to(width - SIDEBAR.page);
+    case "PageUp": return to(width + SIDEBAR.page);
+    case "Home": return min;
+    case "End": return max;
+    default: return null;
+  }
+}
+
 export interface ScrollEdges {
   left: boolean;
   right: boolean;
@@ -48,6 +90,44 @@ export function scrollEdges(scrollLeft: number, scrollWidth: number, clientWidth
   const max = scrollWidth - clientWidth;
   if (!Number.isFinite(max) || max <= 2) return { left: false, right: false };
   return { left: scrollLeft > 2, right: scrollLeft < max - 2 };
+}
+
+// a width the reader dragged outlives the tab. null means it was never
+// dragged, and the stylesheet's own fluid width stands
+const WIDTH_KEY = "loop.sidebar-width";
+
+export interface WidthStore {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+}
+
+function localStore(): WidthStore | null {
+  try {
+    return typeof window === "undefined" ? null : window.localStorage;
+  } catch {
+    // safari throws on localStorage in a blocked third party frame
+    return null;
+  }
+}
+
+export function readSidebarWidth(store: WidthStore | null = localStore()): number | null {
+  try {
+    const raw = store?.getItem(WIDTH_KEY);
+    const width = raw === null || raw === undefined ? NaN : Number(raw);
+    return Number.isFinite(width) && width > 0 ? width : null;
+  } catch {
+    return null;
+  }
+}
+
+export function writeSidebarWidth(width: number | null, store: WidthStore | null = localStore()): void {
+  try {
+    if (width === null) store?.removeItem(WIDTH_KEY);
+    else store?.setItem(WIDTH_KEY, String(Math.round(width)));
+  } catch {
+    // a full or disabled store is not a reason to stop resizing
+  }
 }
 
 export interface Viewport {
