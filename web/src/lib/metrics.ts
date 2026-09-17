@@ -280,6 +280,17 @@ export function nearestPeriod(wanted: Period | null, available: Period[]): Perio
 
 // "Source: Realtor.com, latest 2026-08". the latest date is the newest any
 // metro carries, the year periods name themselves
+// hud publishes fair market rents and income limits by fiscal year, so a bare
+// year from it is not a calendar year. the rule lives here because both the
+// legend caption below and the timeline's date labels have to say the same
+// thing about the same number
+const FISCAL: Source[] = ["hud"];
+
+export function yearLabel(year: string | number, source?: Source): string {
+  return source !== undefined && FISCAL.includes(source) ? `FY ${year}` : String(year);
+}
+
+
 export function metricCaption(metric: Metric, metros: Metro[]): string {
   const source = `Source: ${SOURCE_LABEL[metric.source]}`;
   if (!metric.period) return source;
@@ -289,5 +300,9 @@ export function metricCaption(metric: Metric, metros: Metro[]): string {
     const d = metric.dateOf(m);
     if (d && (!newest || d > newest)) newest = d;
   }
-  return newest ? `${source}, latest ${newest}` : `${source}, latest`;
+  if (!newest) return `${source}, latest`;
+  // a bare year is labelled the way its publisher counts years, so the legend
+  // and the detail panel do not call one value two different things
+  const when = /^\d{4}$/.test(newest) ? yearLabel(newest, metric.source) : newest;
+  return `${source}, latest ${when}`;
 }

@@ -2,8 +2,9 @@ import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   DEFS, GROUPS, METRICS, PERIODS, availablePeriods, defById, defaultPeriod, labelFor, metricById, metricCaption,
-  nearestPeriod, num, resolveMetric, visibleDefs,
+  nearestPeriod, num, resolveMetric, visibleDefs, yearLabel,
 } from "./metrics";
+import { dateLabel } from "./timeline";
 import type { MapData, Metro, Period } from "../types";
 import { SAMPLE } from "./data";
 
@@ -129,6 +130,18 @@ describe("captions and labels", () => {
     expect(metricCaption(resolveMetric(def("gross_rent"), "2019"), SAMPLE.metros)).toBe("Source: Census ACS, 2019");
     expect(metricCaption(resolveMetric(def("hpi_19_24"), null), SAMPLE.metros)).toBe("Source: FHFA");
     expect(metricCaption(resolveMetric(def("zhvf_forecast"), "latest"), [])).toBe("Source: Zillow, latest");
+  });
+
+  // hud counts by fiscal year, and the legend called a hud value 2027 while
+  // the detail panel beside it called the same value FY 2027
+  it("label a bare year the way its publisher counts years", () => {
+    const metros = [{ ...SAMPLE.metros[0], latest: { ...SAMPLE.metros[0].latest, fmr_2br: 1200, fmr_2br_date: "2027" } }] as Metro[];
+    expect(metricCaption(resolveMetric(def("fmr_2br"), "latest"), metros)).toBe("Source: HUD, latest FY 2027");
+    expect(dateLabel("2027", "hud")).toBe("FY 2027");
+    // and a month is a month, whoever published it
+    expect(yearLabel(2027, "hud")).toBe("FY 2027");
+    expect(yearLabel(2027, "zillow")).toBe("2027");
+    expect(yearLabel(2027)).toBe("2027");
   });
 
   it("map a field key to its label and pass unknown keys through", () => {

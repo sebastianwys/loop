@@ -198,3 +198,28 @@ describe.skipIf(!REAL)("expected levels on the built data", () => {
     expect(Math.round(one.value * 10) / 10).toBe(407.4);
   });
 });
+
+// 60: the price line joins adjacent years only, so a series whose present
+// years never sit next to each other has no line to draw. real fhfa series
+// are dense, and the chart is built to survive one that is not: it draws the
+// dot, the axes and the forecast, and leaves the line out rather than
+// bridging a decade it has no values for
+describe("a history with no two adjacent years", () => {
+  const series = { start: 2000, values: [1.0, null, 2.0, null, 3.0], as_of: "2004Q4", anchor: 3.0, partial_year: null };
+
+  it("keeps every point and draws no line", () => {
+    const model = buildHistory(series, null);
+    expect(model.points.map((p) => p.year)).toEqual([2000, 2002, 2004]);
+    expect(model.d).toBe("");
+    // the chart renders the line only when there is one, so this is a chart
+    // with dots and axes rather than an empty svg
+    expect(model.last?.year).toBe(2004);
+    expect(model.yTicks.length).toBeGreaterThan(1);
+  });
+
+  it("still grows the forecast from the anchor", () => {
+    const model = buildHistory(series, full);
+    expect(model.forecast.length).toBeGreaterThan(0);
+    expect(model.forecastD).not.toBe("");
+  });
+});

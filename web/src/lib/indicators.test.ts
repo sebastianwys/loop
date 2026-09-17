@@ -428,3 +428,35 @@ describe("the standalone mortgage stat", () => {
     expect(showMortgageStat(null, [])).toBe(false);
   });
 });
+
+// 81: the guard counted points, not the path. two months that are not
+// neighbours give two points and an empty path, and the tile then renders a
+// path element with no d, which is a sparkline the reader cannot see
+describe("a spark that cannot be drawn", () => {
+  const point = (date: string, value: number) => ({ date, value });
+
+  it("is null when the only two months are not neighbours", () => {
+    expect(indicatorSpark([point("2026-01", 1), point("2026-08", 2)])).toBeNull();
+  });
+
+  it("is a spark when the two months are neighbours", () => {
+    const spark = indicatorSpark([point("2026-07", 1), point("2026-08", 2)]);
+    expect(spark).not.toBeNull();
+    expect(spark!.d).not.toBe("");
+  });
+
+  // three months with the middle one missing is the same shape, and it is the
+  // shape the shutdown left in cpi and unemployment
+  it("is null when every present month is isolated", () => {
+    const history = [point("2026-01", 1), point("2026-03", 2), point("2026-05", 3)];
+    expect(indicatorSpark(history)).toBeNull();
+    expect(buildIndicatorChart(history)).toBeNull();
+  });
+
+  it("is a spark when a gap still leaves one pair of neighbours", () => {
+    const history = [point("2026-01", 1), point("2026-03", 2), point("2026-04", 3)];
+    const spark = indicatorSpark(history);
+    expect(spark).not.toBeNull();
+    expect(spark!.d).not.toBe("");
+  });
+});

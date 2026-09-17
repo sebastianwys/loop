@@ -46,6 +46,25 @@ class TestGeographyTags(unittest.TestCase):
         self.assertEqual(len(out), 0)
         self.assertIn("geo_code", out.columns)
 
+    # a vintage that carries both the old code and the new one maps two rows
+    # onto one join key, and the merge downstream then holds a metro twice with
+    # two different sets of numbers. neither row is wrong, the collapse is
+    def test_two_rows_landing_on_one_join_key_stop_the_pull(self):
+        df = pd.DataFrame({dc.MSA_COL: ["16980", "16980"], dc.DIV_COL: ["16974", "16984"]})
+        with self.assertRaises(ValueError) as caught:
+            dc.tag_geography(df, "division")
+        self.assertIn("16984", str(caught.exception))
+
+    # every entry has to do something. one that names a code the api stopped
+    # sending, or that is already the target, is dead weight the next reader
+    # has to check by hand
+    def test_each_crosswalk_entry_moves_the_code_it_names(self):
+        for old_code, new_code in dc.DIVISION_CROSSWALK.items():
+            df = pd.DataFrame({dc.MSA_COL: ["99999"], dc.DIV_COL: [old_code]})
+            out = dc.tag_geography(df, "division")
+            self.assertEqual(out.geo_code.tolist(), [new_code], old_code)
+            self.assertNotEqual(old_code, new_code)
+
     def test_parents_and_crosswalk_are_well_formed(self):
         self.assertEqual(len(dc.DIVISION_PARENTS), 13)
         self.assertEqual(len(set(dc.DIVISION_PARENTS)), 13)

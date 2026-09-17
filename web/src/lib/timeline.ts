@@ -1,6 +1,6 @@
 import type { AnnualSeries, Metro, MetroSeries, Period } from "../types";
 import {
-  PERIODS, SOURCE_LABEL, availablePeriods, dateAt, defDate, DEFS, num,
+  PERIODS, SOURCE_LABEL, availablePeriods, dateAt, defDate, DEFS, num, yearLabel,
   type Metric, type MetricDef, type Source,
 } from "./metrics";
 
@@ -49,7 +49,7 @@ export function dateToYear(date: string | null | undefined): number | null {
 export function dateLabel(date: string | null | undefined, source?: Source): string | null {
   const p = parts(date);
   if (!p) return typeof date === "string" && date.trim() ? date : null;
-  if (p.month === null) return source === "hud" ? `FY ${p.year}` : String(p.year);
+  if (p.month === null) return yearLabel(p.year, source);
   return `${MONTHS[p.month - 1]} ${p.year}`;
 }
 

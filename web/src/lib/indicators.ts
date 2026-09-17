@@ -203,7 +203,10 @@ export function historyGrid(history: IndicatorPoint[]): HistoryGrid {
 export function indicatorSpark(history: IndicatorPoint[], width = SPARK_W, height = SPARK_H, pad = SPARK_PAD): Spark | null {
   if (history.length < 2) return null;
   const spark = buildSparkline(historyGrid(history).values, width, height, pad);
-  return spark.points.length < 2 ? null : spark;
+  // counting points is not enough: two months that are not neighbours give two
+  // points and an empty path, because the line breaks at a gap rather than
+  // bridging it, and the tile then draws a path element with no d in it
+  return spark.points.length < 2 || spark.d === "" ? null : spark;
 }
 
 export interface ChartPoint {

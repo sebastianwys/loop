@@ -184,6 +184,12 @@ def tag_geography(df, level):
     else:
         df["geo_code"] = df[MSA_COL]
         df["parent_cbsa"] = ""
+    # geo_code is what the merge joins on, so it has to name one place. a
+    # vintage carrying both a renamed division's old code and its new one would
+    # land two rows on one key and put the metro in the merged csv twice
+    repeated = sorted(df.loc[df["geo_code"].duplicated(), "geo_code"].unique())
+    if repeated:
+        raise ValueError(f"{level} rows collapse onto one geo_code after the crosswalk: {repeated}")
     return df
 
 
