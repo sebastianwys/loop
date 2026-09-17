@@ -9,26 +9,25 @@
       "dataset": "Fair market rents, two bedroom, and income limits, median family income, by metro area and fiscal year"
     },
     "integrity": {
-      "sha256": "a6e81b6e960e282360820b234edf1b8184d20af270607ca9deab897c50c280ed",
-      "size_kb": 66.2,
-      "row_count": 2056
+      "sha256": "ed64c64b7b6472472c132f7601e4552f7342a874567c13fa81737a5e9e033214",
+      "size_kb": 79.1,
+      "row_count": 2452
     },
-    "version": "fmr through 2027, income limits through 2026",
-    "downloaded_at": "2026-09-15T19:53:39Z",
+    "version": "fmr through 2027, income limits through 2026, 66 metros built from hud fmr areas",
+    "downloaded_at": "2026-09-17T02:26:51Z",
     "notes": {
       "income_limits_endpoint": "https://www.huduser.gov/hudapi/public/il/data/{entityid}?year={year}",
       "metro_list": "https://www.huduser.gov/hudapi/public/fmr/listMetroAreas",
+      "state_data_endpoint": "https://www.huduser.gov/hudapi/public/fmr/statedata/{state}?year={year}",
       "entities": 344,
       "study_codes": 410,
       "years": {
         "fmr": [
-          2014,
           2019,
           2024,
           2027
         ],
         "il": [
-          2014,
           2019,
           2024,
           2026
@@ -38,9 +37,272 @@
         2014
       ],
       "responses_skipped": {
-        "400": 688,
         "404": 8
-      }
+      },
+      "rollup_method": "acs population weighted mean over the hud fmr areas the cbsa's counties sit in",
+      "rollup_weights": "acs 5 year 2024 B01003_001E, counties and new england towns",
+      "rollup_codes": 66,
+      "rollup_codes_weighted": 33,
+      "rollup_areas": {
+        "11200": [
+          "Amherst Town-Northampton, MA MSA"
+        ],
+        "11244": [
+          "Santa Ana-Anaheim-Irvine, CA HUD Metro FMR Area"
+        ],
+        "11694": [
+          "Culpeper County, VA HUD Metro FMR Area",
+          "Jefferson County, WV HUD Metro FMR Area",
+          "Rappahannock County, VA HUD Metro FMR Area",
+          "Warren County, VA HUD Metro FMR Area",
+          "Washington-Arlington-Alexandria, DC-VA-MD HUD Metro FMR Area"
+        ],
+        "12054": [
+          "Atlanta-Sandy Springs-Roswell, GA HUD Metro FMR Area",
+          "Butts County, GA HUD Metro FMR Area",
+          "Lumpkin County, GA HUD Metro FMR Area",
+          "Meriwether County, GA HUD Metro FMR Area",
+          "Morgan County, GA HUD Metro FMR Area"
+        ],
+        "12620": [
+          "Aroostook County, ME",
+          "Bangor, ME HUD Metro FMR Area",
+          "Penobscot County, ME (part) HUD Metro FMR Area"
+        ],
+        "13220": [
+          "Fayette County, WV HUD Metro FMR Area",
+          "Raleigh County, WV HUD Metro FMR Area"
+        ],
+        "14020": [
+          "Bloomington, IN HUD Metro FMR Area",
+          "Owen County, IN HUD Metro FMR Area"
+        ],
+        "14454": [
+          "Boston-Cambridge-Quincy, MA-NH HUD Metro FMR Area",
+          "Brockton, MA HUD Metro FMR Area"
+        ],
+        "14580": [
+          "Bozeman, MT MSA"
+        ],
+        "14860": [
+          "Bridgeport-Stamford-Danbury, CT MSA"
+        ],
+        "15764": [
+          "Boston-Cambridge-Quincy, MA-NH HUD Metro FMR Area",
+          "Lawrence, MA-NH HUD Metro FMR Area",
+          "Lowell, MA HUD Metro FMR Area"
+        ],
+        "15804": [
+          "Philadelphia-Camden-Wilmington, PA-NJ-DE-MD MSA"
+        ],
+        "16984": [
+          "Chicago-Joliet-Naperville, IL HUD Metro FMR Area",
+          "Grundy County, IL HUD Metro FMR Area"
+        ],
+        "17410": [
+          "Ashtabula County, OH HUD Metro FMR Area",
+          "Cleveland, OH HUD Metro FMR Area"
+        ],
+        "19124": [
+          "Dallas, TX HUD Metro FMR Area"
+        ],
+        "19804": [
+          "Detroit-Warren-Livonia, MI HUD Metro FMR Area"
+        ],
+        "20994": [
+          "Chicago-Joliet-Naperville, IL HUD Metro FMR Area",
+          "DeKalb County, IL HUD Metro FMR Area",
+          "Kendall County, IL HUD Metro FMR Area"
+        ],
+        "21794": [
+          "Seattle-Bellevue, WA HUD Metro FMR Area"
+        ],
+        "22744": [
+          "Fort Lauderdale, FL HUD Metro FMR Area"
+        ],
+        "23104": [
+          "Fort Worth-Arlington, TX HUD Metro FMR Area",
+          "Wise County, TX HUD Metro FMR Area"
+        ],
+        "23224": [
+          "Washington-Arlington-Alexandria, DC-VA-MD HUD Metro FMR Area"
+        ],
+        "24260": [
+          "Hall County, NE HUD Metro FMR Area",
+          "Howard County, NE HUD Metro FMR Area",
+          "Merrick County, NE HUD Metro FMR Area"
+        ],
+        "25180": [
+          "Hagerstown, MD HUD Metro FMR Area",
+          "Martinsburg, WV HUD Metro FMR Area",
+          "Morgan County, WV HUD Metro FMR Area"
+        ],
+        "25740": [
+          "Broadwater County, MT HUD Metro FMR Area",
+          "Jefferson County, MT HUD Metro FMR Area",
+          "Lewis and Clark County, MT HUD Metro FMR Area"
+        ],
+        "25940": [
+          "Beaufort County, SC HUD Metro FMR Area",
+          "Jasper County, SC HUD Metro FMR Area"
+        ],
+        "26980": [
+          "Iowa City, IA HUD Metro FMR Area",
+          "Washington County, IA HUD Metro FMR Area"
+        ],
+        "27860": [
+          "Jonesboro, AR HUD Metro FMR Area",
+          "Poinsett County, AR HUD Metro FMR Area"
+        ],
+        "28450": [
+          "Kenosha, WI MSA"
+        ],
+        "28880": [
+          "Kiryas Joel-Poughkeepsie-Newburgh, NY MSA"
+        ],
+        "29200": [
+          "Carroll County, IN HUD Metro FMR Area",
+          "Lafayette-West Lafayette, IN HUD Metro FMR Area",
+          "Warren County, IN HUD Metro FMR Area"
+        ],
+        "29404": [
+          "Chicago-Joliet-Naperville, IL HUD Metro FMR Area"
+        ],
+        "29414": [
+          "Gary, IN HUD Metro FMR Area",
+          "Jasper County, IN HUD Metro FMR Area"
+        ],
+        "29484": [
+          "Middlesex-Somerset-Hunterdon, NJ HUD Metro FMR Area",
+          "Monmouth-Ocean, NJ HUD Metro FMR Area"
+        ],
+        "30500": [
+          "Calvert County, MD HUD Metro FMR Area",
+          "St. Mary's County, MD HUD Metro FMR Area"
+        ],
+        "31084": [
+          "Los Angeles-Long Beach-Glendale, CA HUD Metro FMR Area"
+        ],
+        "31700": [
+          "Hillsborough County, NH (part) HUD Metro FMR Area",
+          "Manchester, NH HUD Metro FMR Area",
+          "Nashua, NH HUD Metro FMR Area"
+        ],
+        "31924": [
+          "Atlanta-Sandy Springs-Roswell, GA HUD Metro FMR Area",
+          "Haralson County, GA HUD Metro FMR Area"
+        ],
+        "33124": [
+          "Miami-Miami Beach-Kendall, FL HUD Metro FMR Area"
+        ],
+        "33500": [
+          "McHenry County, ND HUD Metro FMR Area",
+          "Renville County, ND HUD Metro FMR Area",
+          "Ward County, ND HUD Metro FMR Area"
+        ],
+        "33874": [
+          "Philadelphia-Camden-Wilmington, PA-NJ-DE-MD MSA"
+        ],
+        "35004": [
+          "Nassau-Suffolk, NY HUD Metro FMR Area"
+        ],
+        "35084": [
+          "Middlesex-Somerset-Hunterdon, NJ HUD Metro FMR Area",
+          "Newark, NJ HUD Metro FMR Area"
+        ],
+        "35300": [
+          "New Haven, CT MSA"
+        ],
+        "35614": [
+          "Bergen-Passaic, NJ HUD Metro FMR Area",
+          "Jersey City, NJ HUD Metro FMR Area",
+          "New York, NY HUD Metro FMR Area"
+        ],
+        "36084": [
+          "Oakland-Fremont, CA HUD Metro FMR Area"
+        ],
+        "37140": [
+          "Ballard County, KY HUD Metro FMR Area",
+          "Carlisle County, KY HUD Metro FMR Area",
+          "Livingston County, KY HUD Metro FMR Area",
+          "Massac County, IL HUD Metro FMR Area",
+          "McCracken County, KY HUD Metro FMR Area"
+        ],
+        "37964": [
+          "Philadelphia-Camden-Wilmington, PA-NJ-DE-MD MSA"
+        ],
+        "38240": [
+          "Pinehurst-Southern Pines, NC MSA"
+        ],
+        "38860": [
+          "Cumberland County, ME (part) HUD Metro FMR Area",
+          "Portland, ME HUD Metro FMR Area",
+          "Sagadahoc County, ME HUD Metro FMR Area",
+          "York County, ME (part) HUD Metro FMR Area",
+          "York-Kittery-South Berwick, ME HUD Metro FMR Area"
+        ],
+        "40484": [
+          "Boston-Cambridge-Quincy, MA-NH HUD Metro FMR Area",
+          "Lawrence, MA-NH HUD Metro FMR Area",
+          "Portsmouth-Rochester, NH HUD Metro FMR Area",
+          "Western Rockingham County, NH HUD Metro FMR Area"
+        ],
+        "41304": [
+          "Tampa-St. Petersburg-Clearwater, FL MSA"
+        ],
+        "41780": [
+          "Erie County, OH HUD Metro FMR Area",
+          "Ottawa County, OH HUD Metro FMR Area"
+        ],
+        "41884": [
+          "San Francisco, CA HUD Metro FMR Area"
+        ],
+        "42034": [
+          "San Francisco, CA HUD Metro FMR Area"
+        ],
+        "42644": [
+          "Seattle-Bellevue, WA HUD Metro FMR Area"
+        ],
+        "43640": [
+          "Slidell-Mandeville-Covington, LA MSA"
+        ],
+        "45104": [
+          "Tacoma, WA HUD Metro FMR Area"
+        ],
+        "45294": [
+          "Tampa-St. Petersburg-Clearwater, FL MSA"
+        ],
+        "45900": [
+          "Benzie County, MI HUD Metro FMR Area",
+          "Grand Traverse County, MI HUD Metro FMR Area",
+          "Kalkaska County, MI HUD Metro FMR Area",
+          "Leelanau County, MI HUD Metro FMR Area"
+        ],
+        "46300": [
+          "Jerome County, ID HUD Metro FMR Area",
+          "Twin Falls County, ID HUD Metro FMR Area"
+        ],
+        "47664": [
+          "Detroit-Warren-Livonia, MI HUD Metro FMR Area",
+          "Livingston County, MI HUD Metro FMR Area"
+        ],
+        "47764": [
+          "Washington-Arlington-Alexandria, DC-VA-MD HUD Metro FMR Area"
+        ],
+        "47930": [
+          "Waterbury-Shelton, CT MSA"
+        ],
+        "48424": [
+          "West Palm Beach-Boca Raton, FL HUD Metro FMR Area"
+        ],
+        "48680": [
+          "Wildwood-The Villages, FL MSA"
+        ],
+        "48864": [
+          "Philadelphia-Camden-Wilmington, PA-NJ-DE-MD MSA"
+        ]
+      },
+      "codes_without_a_value": []
     }
   },
   {
@@ -50,15 +312,15 @@
       "endpoint": "https://www.huduser.gov/hudapi/public",
       "provider": "U.S. Department of Housing and Urban Development, HUD User",
       "access_method": "Direct HTTP download",
-      "dataset": "raw fmr and il responses per metro entity for fiscal year 2019"
+      "dataset": "raw fmr, il and state responses per entity for fiscal year 2019"
     },
     "integrity": {
-      "sha256": "130a0149e513af6fd3f92ced5fdbcfc1339f0289fbbe100d27a4d5e24b78878b",
-      "size_kb": 556.9,
-      "row_count": 680
+      "sha256": "8dbead6047963cedb958ee22edbb8a44aaf52842460fa6a490653001bb8d1b92",
+      "size_kb": 1876.9,
+      "row_count": 826
     },
     "version": "2019",
-    "downloaded_at": "2026-09-15T19:53:39Z"
+    "downloaded_at": "2026-09-17T02:26:51Z"
   },
   {
     "filename": "hud_2024.json",
@@ -67,15 +329,15 @@
       "endpoint": "https://www.huduser.gov/hudapi/public",
       "provider": "U.S. Department of Housing and Urban Development, HUD User",
       "access_method": "Direct HTTP download",
-      "dataset": "raw fmr and il responses per metro entity for fiscal year 2024"
+      "dataset": "raw fmr, il and state responses per entity for fiscal year 2024"
     },
     "integrity": {
-      "sha256": "63313098814fc5ef7ddd340a28afa538f0ebdf73c93eab1d85fa2bf2154512eb",
-      "size_kb": 570.3,
-      "row_count": 688
+      "sha256": "53fdea69e80687d20fb6d7fc672a53f237cf47487e3aefe6762a17e45141afdd",
+      "size_kb": 1897.0,
+      "row_count": 834
     },
     "version": "2024",
-    "downloaded_at": "2026-09-15T19:53:39Z"
+    "downloaded_at": "2026-09-17T02:26:51Z"
   },
   {
     "filename": "hud_2026.json",
@@ -84,15 +346,15 @@
       "endpoint": "https://www.huduser.gov/hudapi/public",
       "provider": "U.S. Department of Housing and Urban Development, HUD User",
       "access_method": "Direct HTTP download",
-      "dataset": "raw fmr and il responses per metro entity for fiscal year 2026"
+      "dataset": "raw fmr, il and state responses per entity for fiscal year 2026"
     },
     "integrity": {
-      "sha256": "d037726fa19d2b801889e8f5b999f48db23032a118a55aebf1e533492f60ec95",
-      "size_kb": 258.1,
-      "row_count": 344
+      "sha256": "f9d9a283c07f588b19b85f4729c960e48b8ffcb93211e67832092d1c27aecb8e",
+      "size_kb": 1592.4,
+      "row_count": 491
     },
     "version": "2026",
-    "downloaded_at": "2026-09-15T19:53:39Z"
+    "downloaded_at": "2026-09-17T02:26:51Z"
   },
   {
     "filename": "hud_2027.json",
@@ -101,14 +363,14 @@
       "endpoint": "https://www.huduser.gov/hudapi/public",
       "provider": "U.S. Department of Housing and Urban Development, HUD User",
       "access_method": "Direct HTTP download",
-      "dataset": "raw fmr and il responses per metro entity for fiscal year 2027"
+      "dataset": "raw fmr, il and state responses per entity for fiscal year 2027"
     },
     "integrity": {
-      "sha256": "b696b21fd05ea4943508c304279ae7f0f29a89db6e6bc50ab4e36972c0c668f8",
-      "size_kb": 866.3,
-      "row_count": 344
+      "sha256": "d123ed83ce020d8e6e2f5f8fe06f6ca9769d06c509b8a2bbd0ad90807228add0",
+      "size_kb": 2114.7,
+      "row_count": 376
     },
     "version": "2027",
-    "downloaded_at": "2026-09-15T19:53:39Z"
+    "downloaded_at": "2026-09-17T02:26:51Z"
   }
 ]

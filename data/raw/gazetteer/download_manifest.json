@@ -14,11 +14,31 @@
       "row_count": 972
     },
     "version": "2024 Gazetteer",
-    "downloaded_at": "2026-09-15T19:03:48Z",
+    "downloaded_at": "2026-09-17T01:41:46Z",
     "notes": {
       "county_gazetteer": "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2024_Gazetteer/2024_Gaz_counties_national.zip",
       "delineation": "https://www2.census.gov/programs-surveys/metro-micro/geographies/reference-files/2023/delineation-files/list1_2023.xlsx",
       "divisions": 37
+    }
+  },
+  {
+    "filename": "cbsa_counties.csv",
+    "file_format": "CSV",
+    "source": {
+      "endpoint": "https://www2.census.gov/programs-surveys/metro-micro/geographies/reference-files/2023/delineation-files/list1_2023.xlsx",
+      "provider": "U.S. Office of Management and Budget, via the U.S. Census Bureau",
+      "access_method": "Direct HTTP download",
+      "dataset": "the counties of every cbsa and metropolitan division"
+    },
+    "integrity": {
+      "sha256": "4917eb47f57fa76df6cd83b75e1aa522df5542c413fbf3b907b277efd076f8c0",
+      "size_kb": 24.1,
+      "row_count": 2054
+    },
+    "version": "omb july 2023 delineation",
+    "downloaded_at": "2026-09-17T01:41:46Z",
+    "notes": {
+      "cbsas": 972
     }
   }
 ]
