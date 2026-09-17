@@ -60,7 +60,11 @@ RETIRED_TOWN_CODES = {
     "2501773440": "2501773405",  # watertown
     "2500901260": "2500901185",  # amesbury
     "2501519370": "2501519365",  # easthampton
-    "2501724925": "2501724960",  # framingham, fiscal 2019 only
+    # only in the fiscal 2019 data, which is old enough to predate the change
+    "2501724925": "2501724960",  # framingham
+    "2501501325": "2501501370",  # amherst
+    "2502155955": "2502156000",  # randolph
+    "2502308085": "2502308130",  # bridgewater
 }
 
 # how many counties of an fmr area to ask before writing the area off. one
