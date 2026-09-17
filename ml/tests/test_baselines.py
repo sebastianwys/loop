@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest import mock
 
 import numpy as np
+import pandas as pd
 from threadpoolctl import threadpool_limits
 
 from loop import backtest, baselines, charts, spec
@@ -147,3 +148,68 @@ class TestRidgeAlphasAreThisRunsOnly(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# a rule's median is its point forecast and the only number mae reads. the
+# three quantiles were sorted, so a band that crossed the median moved the
+# median instead of being pulled onto it
+class TestTheMedianSurvivesACrossedBand(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.data = backtest.dataset(synthetic_panel())
+
+    def test_a_crossed_band_is_pulled_onto_the_median_not_sorted_past_it(self):
+        frame = pd.DataFrame({"q10": [0.3, 0.0], "q50": [0.1, 0.1], "q90": [0.2, 0.05]})
+        out = backtest.order_quantiles(frame)
+        self.assertEqual(list(out.iloc[0]), [0.1, 0.1, 0.2])
+        self.assertEqual(list(out.iloc[1]), [0.0, 0.1, 0.1])
+        # the caller's frame is left alone, as it always was
+        self.assertEqual(list(frame.iloc[0]), [0.3, 0.1, 0.2])
+
+    # sorting pushes nan to the end, so a row with no band came back with its
+    # median relabelled as the tenth percentile and no median at all
+    def test_a_row_with_no_band_keeps_its_median(self):
+        frame = pd.DataFrame({"q10": [np.nan], "q50": [0.03], "q90": [np.nan]})
+        out = backtest.order_quantiles(frame)
+        self.assertEqual(out["q50"].iloc[0], 0.03)
+        self.assertTrue(np.isnan(out["q10"].iloc[0]))
+        self.assertTrue(np.isnan(out["q90"].iloc[0]))
+
+    # no_change forecasts zero by definition, which is what makes every other
+    # model's relative_mae read as error against saying prices stay flat. in an
+    # era whose train block has no downside the tenth percentile of train
+    # outcomes is positive, and the sort promoted it into the median: the
+    # benchmark quietly became a drift forecast and relative_mae stopped being 1
+    def test_no_change_stays_flat_when_the_train_era_has_no_downside(self):
+        data = self.data.copy()
+        train = (data["block"] == "train").to_numpy()
+        data.loc[train, "y"] = np.abs(data.loc[train, "y"].to_numpy()) + 0.01
+        preds, summary, _ = baselines.run_model("no_change", data)
+        self.assertTrue((preds["q50"] == 0).all())
+        self.assertTrue((preds["q10"] <= 0).all())
+        self.assertTrue((preds["q90"] >= 0).all())
+        self.assertTrue(np.allclose(summary["relative_mae"], 1.0))
+
+
+# every baseline is fitted on the train block, and five of them failed five
+# different ways on a block that held nothing, none of the messages saying so
+class TestABlockWithNothingInItSaysSo(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.data = backtest.dataset(synthetic_panel())
+
+    def test_a_horizon_with_no_train_rows_names_the_empty_block(self):
+        data = self.data[self.data["block"] != "train"].copy()
+        for name in baselines.MODELS:
+            with self.assertRaises(ValueError, msg=name) as caught:
+                with threadpool_limits(limits=THREADS):
+                    baselines.MODELS[name](data)
+            self.assertIn("no train rows", str(caught.exception), name)
+
+    # numpy collapses an empty quantile to a bare scalar, which the caller
+    # unpacks into two names and gets a TypeError for
+    def test_a_band_with_no_residuals_is_a_pair_of_nulls(self):
+        for residuals in (np.array([]), np.array([np.nan, np.nan])):
+            band = baselines._band(residuals)
+            self.assertEqual(len(band), 2)
+            self.assertTrue(np.isnan(band).all())

@@ -703,11 +703,15 @@ def feature_trends_figure(panel):
     return charts.save(fig, "03_feature_trends")
 
 
+# the strongest and the weakest metros of the newest quarter. the two ends may
+# not share a metro: under twice count they used to overlap, and the figure
+# named the same metro as both the strongest and the weakest
 def snapshot_table(panel, column="hpi_yoy", count=15):
     latest = panel["quarter"].max()
     rows = panel.loc[(panel["quarter"] == latest) & panel[column].notna(), ["cbsa_code", "name", column]]
     rows = rows.sort_values(column, ascending=False).reset_index(drop=True)
-    return latest, len(rows), rows.head(count), rows.tail(count)
+    take = min(count, len(rows) // 2)
+    return latest, len(rows), rows.head(take), rows.tail(take)
 
 
 def latest_snapshot_figure(panel):

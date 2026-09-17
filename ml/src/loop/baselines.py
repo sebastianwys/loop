@@ -25,22 +25,34 @@ GBM = dict(
 def _predictions(frame, q10, q50, q90, name):
     out = frame[backtest.SAMPLE_COLUMNS].copy()
     out["q10"], out["q50"], out["q90"] = q10, q50, q90
-    out = backtest.sort_quantiles(out)
+    out = backtest.order_quantiles(out)
     out["lo"], out["hi"] = out["q10"], out["q90"]
     out["model"] = name
     return out[backtest.PREDICTION_COLUMNS]
 
 
 # the band around a point rule is the 10th and 90th percentile of its train
-# residuals, so the interval says how wrong the rule was in the past
+# residuals, so the interval says how wrong the rule was in the past. numpy
+# collapses an empty array to a bare scalar here, which the caller unpacks into
+# two names, so a missing band is returned as the pair of nulls it is
 def _band(residuals):
+    residuals = np.asarray(residuals, dtype=float)
+    if residuals.size == 0 or np.isnan(residuals).all():
+        return np.array([np.nan, np.nan])
     return np.nanquantile(residuals, [0.1, 0.9])
 
 
+# every rule here is fitted on the train block, so a horizon with no train rows
+# cannot be fitted at all. the five models used to fail five different ways on
+# it, by unpacking a scalar, indexing an empty array or inside sklearn, and not
+# one of the messages said which block was empty
 def _per_horizon(data, fit):
     parts = []
     for h, group in data.groupby("horizon", sort=True):
-        parts.append(fit(int(h), group.reset_index(drop=True)))
+        group = group.reset_index(drop=True)
+        if not (group["block"] == "train").any():
+            raise ValueError(f"horizon {int(h)} has no train rows, so no baseline can be fitted on it")
+        parts.append(fit(int(h), group))
     return pd.concat(parts, ignore_index=True)
 
 

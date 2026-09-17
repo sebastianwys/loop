@@ -412,6 +412,50 @@ class TestTheTwoLossCurvesWeighTheSameWay(unittest.TestCase):
         self.assertNotAlmostEqual(by_cells, by_rows, places=6)
 
 
+# nothing to score is not a loss of zero. an empty validation set scored 0.0,
+# which beats every real loss, so early stopping kept epoch one and waited out
+# its patience, and the run read as a model that converged immediately
+class TestAnEmptyBlockIsNotALossOfZero(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.windows = nets.build_windows(tiny_panel())
+        table = train.splits(cls.windows.origins)
+        cls.y_fit = np.where(table == "fit", cls.windows.y, np.nan)
+
+    def test_scoring_nothing_raises_instead_of_returning_zero(self):
+        fitted = train.train_one("windowmlp", self.windows, self.y_fit, None, device="cpu",
+                                 epochs=1, verbose=False)
+        empty = torch.zeros(0, dtype=torch.int64)
+        y = torch.from_numpy(np.ascontiguousarray(self.y_fit, dtype=np.float32))
+        with self.assertRaises(ValueError) as caught:
+            train.batched_loss(fitted["model"], fitted["inputs"], y, empty, "cpu")
+        self.assertIn("no rows", str(caught.exception))
+
+    def test_rows_whose_outcomes_are_all_null_raise_too(self):
+        fitted = train.train_one("windowmlp", self.windows, self.y_fit, None, device="cpu",
+                                 epochs=1, verbose=False)
+        blank = np.full_like(self.y_fit, np.nan)
+        y = torch.from_numpy(np.ascontiguousarray(blank, dtype=np.float32))
+        idx = torch.arange(len(blank))
+        with self.assertRaises(ValueError) as caught:
+            train.batched_loss(fitted["model"], fitted["inputs"], y, idx, "cpu")
+        self.assertIn("null", str(caught.exception))
+
+    def test_a_validation_set_with_no_outcome_stops_the_fit(self):
+        blank = np.full_like(self.y_fit, np.nan)
+        with self.assertRaises(ValueError) as caught:
+            train.train_one("windowmlp", self.windows, self.y_fit, blank, device="cpu",
+                            epochs=1, verbose=False)
+        self.assertIn("validation", str(caught.exception))
+
+    def test_a_fitting_set_with_no_outcome_stops_the_fit(self):
+        blank = np.full_like(self.y_fit, np.nan)
+        with self.assertRaises(ValueError) as caught:
+            train.train_one("windowmlp", self.windows, blank, None, device="cpu",
+                            epochs=1, verbose=False)
+        self.assertIn("fitting", str(caught.exception))
+
+
 # a symmetric conformal margin targets 90 percent coverage for the band as a
 # whole, not the 0.1 and 0.9 marginals, so plotting its edges on a quantile
 # diagonal doubled the miscalibration the figure appeared to show

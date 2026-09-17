@@ -377,10 +377,11 @@ class TestCalibrate(unittest.TestCase):
 
 
 class TestHelpers(unittest.TestCase):
-    def test_sort_quantiles(self):
+    # the median stays where the model put it and the edges come to it
+    def test_order_quantiles(self):
         frame = pd.DataFrame({"q10": [0.3, 0.0], "q50": [0.1, 0.1], "q90": [0.2, 0.2]})
-        out = backtest.sort_quantiles(frame)
-        self.assertEqual(list(out.iloc[0]), [0.1, 0.2, 0.3])
+        out = backtest.order_quantiles(frame)
+        self.assertEqual(list(out.iloc[0]), [0.1, 0.1, 0.2])
         self.assertEqual(list(out.iloc[1]), [0.0, 0.1, 0.2])
         self.assertEqual(list(frame.iloc[0]), [0.3, 0.1, 0.2])
 

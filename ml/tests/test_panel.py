@@ -529,3 +529,31 @@ class TestRealFiles(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# the walkthrough figure that names the strongest and the weakest metros of the
+# newest quarter. with fewer than twice its count of metros the two ends
+# overlapped, so one metro was drawn at both ends of the same chart
+class TestTheTwoEndsOfTheSnapshotAreDisjoint(unittest.TestCase):
+    def frame(self, n):
+        return pd.DataFrame({
+            "quarter": ["2026Q2"] * n,
+            "cbsa_code": [f"1{i:04d}" for i in range(n)],
+            "name": [f"metro {i}" for i in range(n)],
+            "hpi_yoy": [0.01 * i for i in range(n)],
+        })
+
+    def test_no_metro_is_both_the_strongest_and_the_weakest(self):
+        for n in range(0, 40):
+            _, total, top, bottom = panel.snapshot_table(self.frame(n), count=15)
+            self.assertEqual(total, n)
+            shared = set(top["cbsa_code"]) & set(bottom["cbsa_code"])
+            self.assertEqual(shared, set(), f"{n} metros")
+            self.assertEqual(len(top), len(bottom), f"{n} metros")
+            self.assertLessEqual(len(top) + len(bottom), n, f"{n} metros")
+
+    def test_a_full_panel_still_takes_fifteen_each_way(self):
+        _, total, top, bottom = panel.snapshot_table(self.frame(410), count=15)
+        self.assertEqual((total, len(top), len(bottom)), (410, 15, 15))
+        self.assertEqual(top["hpi_yoy"].iloc[0], 4.09)
+        self.assertEqual(bottom["hpi_yoy"].iloc[-1], 0.0)

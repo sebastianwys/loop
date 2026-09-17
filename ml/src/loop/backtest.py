@@ -114,11 +114,20 @@ def assert_no_leakage(panel, features, horizon, builder=features_at_origin, n=5,
             raise AssertionError(f"features {bad} at {code} {origin} change when the panel stops at {origin}")
 
 
-# a model's three quantiles may cross, sort them so q10 <= q50 <= q90
-def sort_quantiles(predictions):
+# a model's three quantiles may cross, so the band edges are pulled onto the
+# median rather than sorted past it. the median is the model's point forecast
+# and the only number mae reads, and a sort moved it: no_change forecasts zero
+# by definition, and in an era whose train block held no downside its tenth
+# percentile of train outcomes was positive and the sort promoted that into the
+# median slot, so the benchmark every relative_mae is measured against became a
+# drift forecast without saying so. a row carrying a null is left alone, since
+# sorting sends nan to the end and relabels the surviving median as q10
+def order_quantiles(predictions):
     frame = predictions.copy()
-    q = np.sort(frame[["q10", "q50", "q90"]].to_numpy(dtype=float), axis=1)
-    frame["q10"], frame["q50"], frame["q90"] = q[:, 0], q[:, 1], q[:, 2]
+    q = frame[["q10", "q50", "q90"]].to_numpy(dtype=float)
+    whole = np.isfinite(q).all(axis=1)
+    frame["q10"] = np.where(whole, np.minimum(q[:, 0], q[:, 1]), q[:, 0])
+    frame["q90"] = np.where(whole, np.maximum(q[:, 2], q[:, 1]), q[:, 2])
     return frame
 
 

@@ -143,7 +143,7 @@ Mean absolute error of the median forecast, in percentage points of growth. Cove
 | momentum | 2.10 | 2.94 | 5.89 | 15.56 | 0.76 / 0.83 / 0.81 / 0.54 |
 | metro mean | 2.02 | 2.90 | 5.13 | 11.82 | 0.88 / 0.92 / 0.87 / 0.69 |
 | ridge | 1.82 | 2.47 | 4.47 | 10.41 | 0.76 / 0.88 / 0.86 / 0.64 |
-| gradient boosting | 1.86 | 2.75 | 4.49 | 10.22 | 0.77 / 0.83 / 0.90 / 0.73 |
+| gradient boosting | 1.86 | 2.75 | 4.49 | 10.25 | 0.77 / 0.83 / 0.90 / 0.73 |
 | window mlp | 2.18 | 3.39 | 6.58 | 15.28 | 0.82 / 0.91 / 0.92 / 0.69 |
 | sequence gru | 1.93 | 2.57 | 4.20 | 10.14 | 0.80 / 0.88 / 0.87 / 0.66 |
 
@@ -154,7 +154,7 @@ Every model on this table improved when the two FHFA columns joined, because eve
 Three honest readings of that table.
 
 - The GRU wins where the horizon is long, by 0.27 points over ridge at four quarters and 0.27 at eight, and ridge wins the short ones, by 0.11 at one quarter and 0.09 at two. A penalised linear model on the same features is hard to beat one quarter out, and that is worth saying out loud. The GRU does beat the metro's own fifty year average at every horizon, which is the rule that matters: a long mean is a good guess at a trend and a bad one across a boom, and it degrades from 5.13 to 11.82 as the horizon doubles while the GRU goes 4.20 to 10.14.
-- Gradient boosting is the closest rival at eight quarters, 10.22 against 10.14. Eight tenths of a percentage point of error over two years is not a gap anyone should bet on, and the GRU's case at that horizon rests on its band being narrower, not on those 0.08 points.
+- Gradient boosting is the closest rival at eight quarters, 10.25 against 10.14. A tenth of a percentage point of error over two years is not a gap anyone should bet on, and the GRU's case at that horizon rests on its band being narrower, not on those 0.11 points.
 - The GRU earns its place on the bands. At four quarters its band is 29 percent narrower than the long run average's, at 0.87 coverage against 0.87. At eight quarters it is 36 percent narrower for 0.66 against 0.69.
 - Every model under-covers at eight quarters, the GRU at 0.66 against a nominal 0.90. That is the honest cost of a fixed calibration window, and it is read out in The Limits below rather than smoothed over.
 

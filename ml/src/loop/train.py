@@ -78,7 +78,13 @@ def loss_weight(y):
     return int((~torch.isnan(y)).sum())
 
 
+# nothing to score is not a loss of zero. this used to divide by max(count, 1)
+# and hand back 0.0, which beats every real loss, so early stopping kept the
+# first epoch's weights and sat out its patience while the printed curve read
+# like a model that converged at once
 def batched_loss(model, inputs, y, idx, device):
+    if len(idx) == 0:
+        raise ValueError("batched_loss was given no rows to score")
     model.eval()
     total, count = 0.0, 0
     with torch.no_grad():
@@ -89,7 +95,9 @@ def batched_loss(model, inputs, y, idx, device):
             weight = loss_weight(batch_y)
             total += float(nets.pinball_loss(pred, batch_y)) * weight
             count += weight
-    return total / max(count, 1)
+    if count == 0:
+        raise ValueError(f"batched_loss was given {len(idx)} rows whose outcomes are all null")
+    return total / count
 
 
 # one fit. y_fit and y_val are (windows, horizons) arrays with nan outside
@@ -110,6 +118,8 @@ def train_one(model_name, windows, y_fit, y_val=None, device=None, max_epochs=MA
     # step 3: data to tensors. scaling statistics come from the fitting set
     # only, and the mini batches are shuffled within the fitting set only
     fit_mask = ~np.isnan(y_fit).all(axis=1)
+    if not fit_mask.any():
+        raise ValueError(f"{model_name} was given a fitting set with no realized outcome in it")
     stats = nets.feature_stats(windows, fit_mask)
     seq, static, metro, _ = nets.to_tensors(windows, stats)
     inputs = (seq, static, metro)
@@ -126,6 +136,10 @@ def train_one(model_name, windows, y_fit, y_val=None, device=None, max_epochs=MA
     if y_val is not None:
         y_val_t = torch.from_numpy(np.ascontiguousarray(y_val, dtype=np.float32))
         val_idx = torch.from_numpy(np.nonzero(~np.isnan(y_val).all(axis=1))[0])
+        # a validation set that is present but empty is worse than none: early
+        # stopping reads its loss, and a loss of nothing used to win
+        if len(val_idx) == 0:
+            raise ValueError(f"{model_name} was given a validation set with no realized outcome in it")
 
     # step 4: loss and optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
@@ -147,7 +161,7 @@ def train_one(model_name, windows, y_fit, y_val=None, device=None, max_epochs=MA
             weight = loss_weight(batch_y)
             total += loss.item() * weight
             count += weight
-        train_loss = total / max(count, 1)
+        train_loss = total / count
         val_loss = float("nan") if val_idx is None else batched_loss(model, inputs, y_val_t, val_idx, device)
         history.append({"epoch": epoch, "train_loss": train_loss, "val_loss": val_loss})
         if verbose:

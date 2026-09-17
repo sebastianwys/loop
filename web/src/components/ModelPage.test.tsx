@@ -111,7 +111,7 @@ describe("the model view", () => {
 
   it("names the nearest rival at eight quarters and how thin the win is", () => {
     expect(page).toContain("gradient boosting");
-    expect(page).toContain("0.08 points");
+    expect(page).toContain("0.11 points");
   });
 
   it("puts the coverage miss in the limits rather than in a footnote", () => {

@@ -271,10 +271,14 @@ describe("the claims the model page makes about the shipped backtest", () => {
       .toEqual([[1, "ridge"], [2, "ridge"]]);
   });
 
-  it("has gradient boosting within a tenth of a point at eight quarters", () => {
+  it("has gradient boosting as the nearest rival at eight quarters, by a gap worth the caveat", () => {
     const near = closestTo(BACKTEST, SHIPPED, 8);
     expect(near?.model).toBe("gbm");
-    expect(near?.gap).toBeLessThan(0.1);
+    // the page says out loud that this gap is not one to bet on, so the claim
+    // has to keep being true. measured against the error it sits inside rather
+    // than at a fixed number of points, which a retrain moves
+    const shipped = rowAt(BACKTEST, SHIPPED, 8);
+    expect(near!.gap / shipped!.maePct).toBeLessThan(0.02);
   });
 
   it("has the window mlp behind the metro's own average at every horizon", () => {

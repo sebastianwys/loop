@@ -7,8 +7,8 @@ import type { BacktestRow } from "./model";
 export const BACKTEST: BacktestRow[] = [
   { model: "gbm", horizon: 1, maePct: 1.8555, coverage: 0.7659, width: 0.0523, n: 7378 },
   { model: "gbm", horizon: 2, maePct: 2.7484, coverage: 0.8321, width: 0.0844, n: 7378 },
-  { model: "gbm", horizon: 4, maePct: 4.4891, coverage: 0.9049, width: 0.1635, n: 7378 },
-  { model: "gbm", horizon: 8, maePct: 10.2188, coverage: 0.7253, width: 0.2219, n: 7378 },
+  { model: "gbm", horizon: 4, maePct: 4.4902, coverage: 0.9049, width: 0.1635, n: 7378 },
+  { model: "gbm", horizon: 8, maePct: 10.2452, coverage: 0.7253, width: 0.2219, n: 7378 },
   { model: "metro_mean", horizon: 1, maePct: 2.0246, coverage: 0.8777, width: 0.0843, n: 7378 },
   { model: "metro_mean", horizon: 2, maePct: 2.9037, coverage: 0.9179, width: 0.1491, n: 7378 },
   { model: "metro_mean", horizon: 4, maePct: 5.1304, coverage: 0.8676, width: 0.2359, n: 7378 },
