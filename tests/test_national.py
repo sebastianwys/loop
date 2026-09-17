@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import pandas as pd
 
@@ -214,14 +215,29 @@ class TestRecord(NationalCase):
         rows = [("UNRATE", "2026-07-01", "4.2"), ("UNRATE", "2026-08-01", "4.3")]
         self.assertIsNone(self.record("unemployment", rows)["change_12m"])
 
-    def test_history_is_capped_at_sixty_oldest_first(self):
-        record = self.record("treasury_10y", self.rate_rows(count=70))
-        self.assertEqual(indicators.HISTORY_MONTHS, 60)
-        self.assertEqual(len(record["history"]), 60)
+    # the chart offers five, ten and twenty five year ranges and a max, so the
+    # collected history has to arrive whole. a sixty month trim left the site
+    # with five years and no way to draw the ranges it names
+    def test_history_carries_every_month_the_series_has_oldest_first(self):
+        record = self.record("treasury_10y", self.rate_rows(count=400))
+        self.assertEqual(len(record["history"]), 400)
         dates = [point["date"] for point in record["history"]]
         self.assertEqual(dates, sorted(dates))
-        self.assertEqual(dates[0], "2021-09")
+        self.assertEqual(dates[0], "1993-05")
         self.assertEqual(dates[-1], "2026-08")
+
+    # cpi and unemployment reach back to 1954, 872 months, so the cap has to
+    # clear them or max is not the max
+    def test_the_cap_clears_the_deepest_series_the_collector_carries(self):
+        self.assertGreaterEqual(indicators.HISTORY_MONTHS, 900)
+
+    # one knob, and it is the newest months that survive it
+    def test_history_is_capped_at_the_contract_months(self):
+        with mock.patch.object(indicators, "HISTORY_MONTHS", 6):
+            record = self.record("treasury_10y", self.rate_rows(count=70))
+        dates = [point["date"] for point in record["history"]]
+        self.assertEqual(len(dates), 6)
+        self.assertEqual((dates[0], dates[-1]), ("2026-03", "2026-08"))
 
     def test_history_is_shorter_when_the_series_is_shorter(self):
         record = self.record("treasury_10y", self.rate_rows(count=5))

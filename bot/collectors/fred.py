@@ -6,6 +6,10 @@ OUT_DIR = RAW_DIR / "fred"
 OUT_FILE = OUT_DIR / "mortgage30us.csv"
 ENDPOINT = "https://api.stlouisfed.org/fred/series/observations"
 SERIES = "MORTGAGE30US"  # freddie mac 30 year fixed, weekly, national
+# the series itself starts here. the panel reaches back to 1975 and the rate
+# is its only macro channel, so the forecasting block was fitting on half a
+# column until the start moved off an arbitrary 2000
+START = "1971-04-02"
 
 
 # fred marks missing weeks with a dot. columns are named up front so an
@@ -24,7 +28,7 @@ def collect():
     print(f"[fred] fetching {SERIES}")
     response = fetch(ENDPOINT, params={
         "series_id": SERIES, "api_key": key, "file_type": "json",
-        "observation_start": "2000-01-01",
+        "observation_start": START,
     })
     # never let the url, which carries the key, into an error message
     if not response.ok:

@@ -38,6 +38,18 @@ def primary_state(name):
     return name.split(",")[1].strip().split()[0].split("-")[0]
 
 
+# the laus metro series begin here, and the forecasting panel fits on outcomes
+# through 2017, so a pull that started at 2014 left unemployment blank in all
+# but a ninth of the fitting block
+FIRST_YEAR = 1990
+
+
+# [first, last] year pairs of at most span years, oldest first
+def year_windows(first_year, end_year, span):
+    edges = range(first_year, end_year + 1, span)
+    return [(start, min(start + span - 1, end_year)) for start in edges]
+
+
 # area type MT for a metropolitan statistical area, DV for a metropolitan division
 def series_id(cbsa_code, state_abbr, division=False):
     area_type = "DV" if division else "MT"
@@ -65,11 +77,14 @@ def collect():
     key = env_key("BLS_API_KEY")
     # keyless: 25 series per query, 25 queries a day, 10 years per query, and
     # bls silently drops the newest years past the cap. with a key: 50 series,
-    # 500 queries, 20 years. so keyless starts at the newest 10 year window,
-    # which keeps 2019 and 2024 but not 2014
+    # 500 queries, 20 years. so keyless takes the newest window only, which
+    # keeps 2019 and 2024 but not 2014, and a keyed run walks back to 1990 one
+    # window at a time
     end_year = date.today().year
     chunk = 50 if key else 25
-    start_year = 2014 if key else end_year - 9
+    span = 20 if key else 10
+    windows = year_windows(FIRST_YEAR, end_year, span) if key else [(end_year - span + 1, end_year)]
+    start_year = windows[0][0]
     if not key:
         print(f"[bls] no BLS_API_KEY, pulling {start_year} onward only")
 
@@ -85,21 +100,28 @@ def collect():
 
     frames, missing = [], []
     id_list = list(ids)
-    for i in range(0, len(id_list), chunk):
-        batch = id_list[i:i + chunk]
-        body = {"seriesid": batch, "startyear": str(start_year), "endyear": str(end_year),
-                "annualaverage": True}
-        if key:
-            body["registrationkey"] = key
-        print(f"[bls] query {i // chunk + 1}, {len(batch)} series")
-        response = fetch(API, json_body=body)
-        payload = response.json()
-        if payload.get("status") != "REQUEST_SUCCEEDED":
-            raise RuntimeError(f"bls: {payload.get('status')}: {payload.get('message')}")
-        missing += [m for m in payload.get("message", []) if "does not exist" in m]
-        frames.append(parse_series(payload["Results"]["series"]))
+    query = 0
+    for first, last in windows:
+        for i in range(0, len(id_list), chunk):
+            batch = id_list[i:i + chunk]
+            body = {"seriesid": batch, "startyear": str(first), "endyear": str(last),
+                    "annualaverage": True}
+            if key:
+                body["registrationkey"] = key
+            query += 1
+            print(f"[bls] query {query}, {len(batch)} series, {first} to {last}")
+            response = fetch(API, json_body=body)
+            payload = response.json()
+            if payload.get("status") != "REQUEST_SUCCEEDED":
+                raise RuntimeError(f"bls: {payload.get('status')}: {payload.get('message')}")
+            missing += [m for m in payload.get("message", []) if "does not exist" in m]
+            frames.append(parse_series(payload["Results"]["series"]))
 
+    # a series that answered in two windows cannot hand back the same month
+    # twice, and the newest window wins if it ever did
     df = pd.concat(frames, ignore_index=True)
+    df = df.drop_duplicates(["series_id", "year", "period"], keep="last")
+    df = df.sort_values(["series_id", "year", "period"]).reset_index(drop=True)
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     df.to_csv(OUT_FILE, index=False)

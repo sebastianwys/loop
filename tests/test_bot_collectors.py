@@ -72,6 +72,25 @@ class TestGazetteer(unittest.TestCase):
 
 
 class TestBls(unittest.TestCase):
+    # bls answers at most twenty years a query with a key and ten without, so
+    # a pull that reaches 1990 has to be cut into windows that tile the range
+    # with no year in two of them and no year missed
+    def test_year_windows_tile_the_range_without_overlap(self):
+        windows = bls.year_windows(1990, 2026, 20)
+        self.assertEqual(windows, [(1990, 2009), (2010, 2026)])
+        years = [y for first, last in windows for y in range(first, last + 1)]
+        self.assertEqual(years, list(range(1990, 2027)))
+
+    def test_year_windows_never_reach_past_the_end_year(self):
+        for span in (5, 10, 20):
+            windows = bls.year_windows(1990, 2026, span)
+            self.assertEqual(windows[0][0], 1990)
+            self.assertEqual(windows[-1][1], 2026)
+            self.assertTrue(all(last - first + 1 <= span for first, last in windows))
+
+    def test_a_single_year_range_is_one_window(self):
+        self.assertEqual(bls.year_windows(2026, 2026, 20), [(2026, 2026)])
+
     # verified live: these three ids return data
     def test_series_id_matches_bls_scheme(self):
         self.assertEqual(bls.series_id("10180", "TX"), "LAUMT481018000000003")

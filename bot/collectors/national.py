@@ -7,7 +7,10 @@ from bot.common import RAW_DIR, env_key, fetch, manifest_entry, write_manifest
 OUT_DIR = RAW_DIR / "national"
 OUT_FILE = OUT_DIR / "indicators.csv"
 ENDPOINT = "https://api.stlouisfed.org/fred/series/observations"
-START = "2000-01-01"
+# the strip shows five years and the forecasting panel reaches back to 1975,
+# so the pull takes each series from its own beginning. fred answers with
+# whatever it has, so a series that starts in 2009 still starts in 2009
+START = "1954-01-01"
 
 # a daily series is five thousand rows and the strip reads one number a month,
 # so these are cut to the last observation of each month before they are written

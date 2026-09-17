@@ -10,7 +10,12 @@
 # already has a key for. the conference board consumer confidence index is a
 # paid product and is not here; michigan sentiment is the free survey
 
-HISTORY_MONTHS = 60
+# how many months of each tile's own history the build writes into the map. the
+# chart offers five, ten and twenty five year ranges and a max, so the whole
+# collected history has to reach it: cpi and unemployment start in 1954, 872
+# months. the cap stays a guard at a century of months, so a series with a
+# deeper start than those cannot grow the payload on its own
+HISTORY_MONTHS = 1200
 
 INDICATORS = [
     {
