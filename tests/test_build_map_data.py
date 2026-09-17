@@ -51,7 +51,7 @@ ZILLOW_META = ["RegionID", "SizeRank", "RegionName", "RegionType", "StateName"]
 ZHVI = pd.DataFrame(
     [[102001, 0, "United States", "country", None, 1, 1, 1, 1, 1, 1],
      [394297, 1, "Chicago, IL", "msa", "IL", 200000, 202000, 240000, 300000, None, 310000],
-     [394299, 2, "Abilene, TX", "msa", "TX", 90000, 92000, 120000, 160000, None, 170000]],
+     [394299, 2, "Abilene, TX", "msa", "TX", 90000, 92000, 120000, 150000, 170000, 170000]],
     columns=ZILLOW_META + ["2014-01-31", "2014-02-28", "2019-01-31", "2024-01-31", "2024-02-29", "2026-07-31"],
 )
 
@@ -188,6 +188,9 @@ class TestBaseCases(BuildCase):
     def test_zillow_first_city_fallback(self):
         chicago = self.metro(self.build(), "16980")
         self.assertEqual(chicago["years"]["2014"]["zhvi"], 201000.0)
+        # chicago holds one of the two published months of 2024, so it has no
+        # annual mean rather than january's number wearing the year's name
+        self.assertIsNone(chicago["years"]["2024"]["zhvi"])
         self.assertEqual(chicago["latest"]["zhvi"], 310000.0)
 
     def test_bls_annual_versus_newest_month(self):
@@ -722,6 +725,111 @@ class TestProvenance(BuildCase):
         self.assertTrue(named.issubset(set(payload["sources"])), named - set(payload["sources"]))
         for name in ("fhfa", "census", "boundaries", "national"):
             self.assertEqual(payload["sources"][name], f"{name} vintage")
+
+
+# four from the audit pile, all in the readers that turn a source file into a
+# metro's numbers
+class TestTheReadersDoNotTrustFileOrder(BuildCase):
+    def zillow(self, months):
+        frame = pd.DataFrame([{"RegionName": "Abilene, TX", "RegionType": "msa", **months}])
+        path = Path(self.tmp.name) / "zillow_order.csv"
+        frame.to_csv(path, index=False)
+        return bm.load_zillow(path)
+
+    # a csv written newest first is the same data, and the newest month is the
+    # one with the largest date, not the one the file happens to end on
+    def test_the_newest_zillow_month_is_the_largest_date(self):
+        ascending = self.zillow({"2024-10-31": 1.0, "2024-11-30": 2.0, "2024-12-31": 3.0})
+        descending = self.zillow({"2024-12-31": 3.0, "2024-11-30": 2.0, "2024-10-31": 1.0})
+        self.assertEqual(bm.zillow_latest(ascending.loc["Abilene, TX"]), (3.0, "2024-12-31"))
+        self.assertEqual(bm.zillow_latest(descending.loc["Abilene, TX"]), (3.0, "2024-12-31"))
+
+    def test_the_newest_fred_row_is_the_largest_date(self):
+        path = Path(self.tmp.name) / "fred_order.csv"
+        rows = [("2026-09-11", 6.1), ("2026-09-04", 6.3), ("2026-08-28", 6.5)]
+        pd.DataFrame(rows, columns=["date", "value"]).to_csv(path, index=False)
+        frame = bm.load_fred(path)
+        self.assertEqual(bm.fred_latest(frame), (6.1, "2026-09-11"))
+        self.assertIn("2026-09-11", bm.fred_version(frame))
+
+
+# the metrics contract is keyed on cbsa_code, metric and period. a repeat was
+# resolved two different ways in one function: the year panel took the last row
+# and the latest tile took the first, so one metric read two numbers for one
+# period. and nothing stopped two folders claiming one metric name
+class TestTheMetricsContractIsAKey(BuildCase):
+    def source(self, name, body):
+        folder = Path(self.tmp.name) / name
+        folder.mkdir(exist_ok=True)
+        (folder / "metrics.csv").write_text("cbsa_code,metric,period,value\n" + body)
+        return folder
+
+    def test_a_repeated_key_is_refused_rather_than_resolved_twice(self):
+        self.source("permits", "10180,permits,2024,850\n10180,permits,2024,999\n")
+        with self.assertRaises(ValueError) as caught:
+            self.build()
+        self.assertIn("permits", str(caught.exception))
+        self.assertIn("2024", str(caught.exception))
+
+    def test_the_same_metric_at_two_periods_is_not_a_repeat(self):
+        self.source("permits", "10180,permits,2019,700\n10180,permits,2024,850\n")
+        abi = self.metro(self.build(), "10180")
+        self.assertEqual((abi["years"]["2019"]["permits"], abi["years"]["2024"]["permits"]), (700.0, 850.0))
+
+    # metric names are the payload's namespace, and folder order decided the
+    # winner. inventory is already owned by zillow_extras, so this is one
+    # collector away from being live
+    def test_two_folders_claiming_one_metric_name_stop_the_build(self):
+        self.source("aaa", "10180,inventory,2024,10\n")
+        self.source("zzz", "10180,inventory,2024,99\n")
+        with self.assertRaises(ValueError) as caught:
+            self.build()
+        message = str(caught.exception)
+        self.assertIn("inventory", message)
+        self.assertIn("aaa", message)
+        self.assertIn("zzz", message)
+
+
+# an annual mean is defined over a whole year. zillow publishes twelve months
+# of 2024 and 71 metros carry fewer than twelve of them in zori, twelve of
+# those on three months or fewer, and every one of those was drawn and ranked
+# beside a real twelve month mean
+class TestAnAnnualMeanNeedsTheWholeYear(BuildCase):
+    def row(self, months):
+        frame = pd.DataFrame([{"RegionName": "Abilene, TX", "RegionType": "msa", **months}])
+        path = Path(self.tmp.name) / "zillow_year.csv"
+        frame.to_csv(path, index=False)
+        return bm.load_zillow(path).loc["Abilene, TX"]
+
+    def months(self, year, values):
+        ends = ["31", "28", "31", "30", "31", "30", "31", "31", "30", "31", "30", "31"]
+        return {f"{year}-{i + 1:02d}-{ends[i]}": v for i, v in enumerate(values)}
+
+    def test_a_year_too_thin_to_be_a_year_has_no_mean(self):
+        full = self.row(self.months(2024, [10.0] * 12))
+        self.assertEqual(bm.zillow_annual(full, 2024), 10.0)
+        # paducah: one december reading wearing the year's name
+        one = self.row(self.months(2024, [None] * 11 + [1012.0]))
+        self.assertIsNone(bm.zillow_annual(one, 2024))
+        # san angelo's 2014 price index, four months of twelve
+        four = self.row(self.months(2024, [10.0] * 4 + [None] * 8))
+        self.assertIsNone(bm.zillow_annual(four, 2024))
+        # eight of twelve is still short of three quarters
+        self.assertIsNone(bm.zillow_annual(self.row(self.months(2024, [10.0] * 8 + [None] * 4)), 2024))
+
+    # ten and eleven months of twelve are annual means, and refusing them would
+    # throw away ten good cells on the shipped data to fix none
+    def test_a_year_missing_a_month_or_two_still_has_its_mean(self):
+        eleven = self.row(self.months(2024, [None] + [10.0] * 11))
+        self.assertEqual(bm.zillow_annual(eleven, 2024), 10.0)
+        nine = self.row(self.months(2024, [10.0] * 9 + [None] * 3))
+        self.assertEqual(bm.zillow_annual(nine, 2024), 10.0)
+
+    # a month nobody published is not a missing month, which is the half of
+    # this that finding 44 got right: zori publishes no 2014 at all
+    def test_a_year_the_file_does_not_publish_at_all_is_still_null(self):
+        row = self.row(self.months(2024, [10.0] * 12))
+        self.assertIsNone(bm.zillow_annual(row, 2014))
 
 
 # the shipped manifests, where the shapes really differ: fhfa writes source.url

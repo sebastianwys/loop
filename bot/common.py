@@ -36,6 +36,10 @@ def fetch(url, params=None, json_body=None, timeout=120, retries=3):
         except requests.RequestException as e:
             last_error = e
         time.sleep(2 ** attempt)
+    # with retries below one the loop never runs and there is no error to
+    # re-raise, so this used to raise None and fail about its own bookkeeping
+    if last_error is None:
+        raise RuntimeError(f"{url}: no attempt was made, retries={retries}")
     raise last_error
 
 

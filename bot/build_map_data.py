@@ -102,11 +102,14 @@ def load_centroids(path):
 
 
 # one row per metro indexed by zillow's own name, monthly columns only
+# the month columns are sorted here, so nothing downstream can be steered by
+# the order the file was written in: the newest month is the largest date and
+# not whichever column the header happens to end on
 def load_zillow(path):
     df = pd.read_csv(path)
     df = df[df["RegionType"] != "country"]
     df = df[~df["RegionName"].duplicated()].set_index("RegionName")
-    months = [c for c in df.columns if MONTH.match(c)]
+    months = sorted(c for c in df.columns if MONTH.match(c))
     return df[months].apply(pd.to_numeric, errors="coerce")
 
 
@@ -222,12 +225,29 @@ def match_zillow(place_name, frame):
     return None
 
 
-# mean of the non-null months in one year
+# mean of one year, over enough of it to be a year. the file's own columns are
+# the published calendar, so a year zillow does not publish at all is null for
+# everybody, and a metro needs this share of the months that were published.
+#
+# three quarters is where the measurement put it rather than where a round
+# number did. on the 410 metros the map carries, requiring every published
+# month would null ten cells that hold ten or eleven of twelve, which are
+# perfectly good annual means, and requiring three quarters nulls exactly the
+# seven that are not: paducah's single december rent, glens falls on two
+# months, gadsden on five, grand island on six, elmira and lima on seven, and
+# san angelo's 2014 price index on four. each of those was drawn and ranked
+# beside real twelve month means
+MIN_YEAR_SHARE = 0.75
+
+
 def zillow_annual(row, year):
     if row is None:
         return None
-    values = row[[c for c in row.index if c.startswith(f"{year}-")]].dropna()
-    return float(values.mean()) if len(values) else None
+    months = row[[c for c in row.index if c.startswith(f"{year}-")]]
+    values = months.dropna()
+    if not len(months) or len(values) < MIN_YEAR_SHARE * len(months):
+        return None
+    return float(values.mean())
 
 
 # last non-null month and its date
@@ -271,10 +291,12 @@ def fred_annual(frame, year):
     return float(values.mean()) if len(values) else None
 
 
+# the newest observation is the one with the largest date, not the last row the
+# file carries. a csv written newest first is the same data
 def fred_latest(frame):
     if frame is None:
         return None, None
-    rows = frame.dropna(subset=["value"])
+    rows = frame.dropna(subset=["value"]).sort_values("date")
     if not len(rows):
         return None, None
     last = rows.iloc[-1]
@@ -407,6 +429,16 @@ def load_enrichment(path):
         raise ValueError(f"{path.parent.name}/metrics.csv reuses core field names {clash}")
     df["value"] = pd.to_numeric(df["value"], errors="coerce")
     df = df.dropna(subset=["cbsa_code", "metric", "period", "value"])
+    # cbsa_code, metric and period are the key. a repeat used to be resolved
+    # twice over in one pass, the year panel taking the last row and the latest
+    # tile the first, so one metric showed two numbers for one period
+    repeated = df[df.duplicated(["cbsa_code", "metric", "period"], keep=False)]
+    if len(repeated):
+        first = repeated.iloc[0]
+        raise ValueError(
+            f"{path.parent.name}/metrics.csv repeats (cbsa_code, metric, period): "
+            f"{len(repeated)} rows, first at {first['cbsa_code']} {first['metric']} {first['period']}"
+        )
     return {
         "name": path.parent.name,
         "folder": path.parent,
@@ -420,7 +452,25 @@ def load_enrichment(path):
 def discover_enrichments(raw_dir, *folders):
     files = sorted(Path(raw_dir).glob(f"*/{ENRICHMENT_FILE}"))
     files += [Path(f) / ENRICHMENT_FILE for f in folders if (Path(f) / ENRICHMENT_FILE).exists()]
-    return [load_enrichment(p) for p in files]
+    # same folder, two ways of reaching it, one source
+    sources = [load_enrichment(p) for p in once(files)]
+    refuse_a_shared_metric_name(sources)
+    return sources
+
+
+# metric names are the payload's namespace, and two folders claiming one name
+# used to be settled by folder order, silently and in the loser's favour or the
+# winner's depending on which way the glob sorted. inventory is already owned by
+# zillow_extras, so this was one collector away from being live
+def refuse_a_shared_metric_name(sources):
+    owners = {}
+    for source in sources:
+        for metric in source["metrics"]:
+            owners.setdefault(metric, []).append(source["name"])
+    shared = {m: names for m, names in owners.items() if len(names) > 1}
+    if shared:
+        listed = "; ".join(f"{m} in {' and '.join(names)}" for m, names in sorted(shared.items()))
+        raise ValueError(f"two sources claim the same metric name: {listed}")
 
 
 # the version string from a source's manifest, for the sources block
@@ -437,13 +487,29 @@ def folder_version(entries):
     return ", ".join(distinct) if distinct else "present"
 
 
+# paths in order with the repeats dropped, matched by what they point at rather
+# than by how they are spelled, and each kept in the spelling it arrived with
+def once(paths):
+    seen, out = set(), []
+    for path in paths:
+        key = Path(path).resolve()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(path)
+    return out
+
+
 # every folder the build can prove a download out of: one per collector under
 # the raw directory, plus whatever folders are handed in, which is where the
 # model's export lives. that one is computed rather than downloaded, so it sits
 # outside data/raw and the glob alone cannot see it
 def source_folders(raw_dir, *folders):
     found = [m.parent for m in sorted(Path(raw_dir).glob(f"*/{MANIFEST_FILE}"))]
-    return found + [Path(f) for f in folders if (Path(f) / MANIFEST_FILE).exists()]
+    found += [Path(f) for f in folders if (Path(f) / MANIFEST_FILE).exists()]
+    # a folder handed in that also sits under the raw directory is one folder,
+    # reached two ways, not two sources
+    return once(found)
 
 
 # the vintage line, one entry per folder that carries a manifest. it used to be

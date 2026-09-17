@@ -1,8 +1,11 @@
 import unittest
+from unittest import mock
 
 import numpy as np
 import pandas as pd
+import requests
 
+from bot import common
 from bot.collectors import bls, fred, gazetteer
 
 GAZ_TEXT = (
@@ -342,3 +345,27 @@ class TestBlsDivisions(unittest.TestCase):
         df = bls.parse_series([{"seriesID": "LAUDV171698400000003", "data": [
             {"year": "2024", "period": "M13", "value": "5.1"}]}])
         self.assertEqual(df.cbsa_code.tolist(), ["16984"])
+
+
+# fetch is where every collector's timeout, retry and user agent policy lives.
+# it either hands back a response or raises something describing the request,
+# and never a type error about its own bookkeeping
+class TestFetchFailsAboutTheRequest(unittest.TestCase):
+    def test_no_attempts_raises_about_the_url_not_about_a_none(self):
+        for retries in (0, -1):
+            with self.assertRaises(RuntimeError, msg=retries) as caught:
+                common.fetch("https://example.invalid", retries=retries)
+            message = str(caught.exception)
+            self.assertIn("example.invalid", message)
+            self.assertIn(str(retries), message)
+
+    def test_a_real_failure_still_raises_the_request_error(self):
+        boom = requests.RequestException("connection refused")
+
+        def fail(*args, **kwargs):
+            raise boom
+
+        with mock.patch.object(common.requests, "get", fail), mock.patch.object(common.time, "sleep", lambda s: None):
+            with self.assertRaises(requests.RequestException) as caught:
+                common.fetch("https://example.invalid", retries=2)
+        self.assertIs(caught.exception, boom)
