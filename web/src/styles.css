@@ -426,11 +426,15 @@ svg { max-width: 100%; }
    it sits on the seam between the panel and the map, wider than the line it
    draws so the pointer can find it, and it only exists where the sidebar is
    docked. the drawer layout hides it below */
+/* biased toward the map rather than centred on the seam: the sidebar scrolls,
+   and a handle sitting square on the line covered the outer edge of its
+   scrollbar, so clicking the scroll track resized the panel instead */
 .sidebar-grip {
   position: absolute; top: 0; bottom: 0; left: var(--sidebar-w);
-  width: 11px; margin-left: -5px; z-index: 500;
+  width: 9px; margin-left: -2px; z-index: 500;
   display: flex; align-items: center; justify-content: center;
   cursor: col-resize; touch-action: none; background: transparent;
+  user-select: none; -webkit-user-select: none;
 }
 .sidebar-grip .bar {
   width: 3px; height: 32px; border-radius: 2px; background: var(--baseline);

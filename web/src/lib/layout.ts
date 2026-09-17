@@ -38,10 +38,14 @@ export function closesOnSelect(mode: LayoutMode): boolean {
 }
 
 // the docked sidebar can be dragged narrower by the grip on its inner edge.
-// css px, to match the grid column the drag writes. condense is the width the
-// panel gives up its roomy form at, which is a little under the 15rem the
-// stylesheet starts from
-export const SIDEBAR = { min: 176, max: 520, condense: 248, step: 16, page: 64 } as const;
+// css px, to match the grid column the drag writes.
+//
+// condense has to sit under the narrowest width the stylesheet itself hands
+// out, or dragging the panel wider would condense it. the default is
+// clamp(15rem, 22vw, 23.5rem) against a root font that is itself fluid, which
+// bottoms out near 213px at the 900px viewport where the sidebar is still
+// docked. 208 clears that with a little room
+export const SIDEBAR = { min: 160, max: 520, condense: 208, step: 16, page: 64 } as const;
 
 // a drag can never take more than half the window, or the map it is there to
 // read stops being a map. a narrow window lowers the ceiling before the floor

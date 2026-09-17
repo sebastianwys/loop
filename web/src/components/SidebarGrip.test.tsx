@@ -12,6 +12,7 @@ const grip = (width: number | null, viewportWidth = 1600, measured = 320) =>
       viewportWidth={viewportWidth}
       measure={() => measured}
       onResize={() => {}}
+      onCommit={() => {}}
       onReset={() => {}}
     />,
   );
@@ -34,9 +35,21 @@ describe("the sidebar grip", () => {
   });
 
   // before the first drag there is no width in state, only the one the
-  // stylesheet worked out, so the grip measures the panel instead
-  it("measures the panel when no width has been chosen yet", () => {
-    expect(grip(null, 1600, 336)).toContain('aria-valuenow="336"');
+  // stylesheet worked out. the grip measures the panel for that, but in a
+  // layout effect rather than during the render: measuring while rendering
+  // reads the dom as it was before this render was committed, which on the
+  // first render is a dom the sidebar is not in yet. this suite renders to a
+  // string, so no effect runs and no dom exists, and the honest markup is a
+  // separator with no value yet. in a browser the effect fills it before paint
+  it("reports no value until the panel has been measured", () => {
+    const markup = grip(null, 1600, 336);
+    expect(markup).not.toContain("aria-valuenow");
+    expect(markup).not.toContain("aria-valuetext");
+    expect(markup).toContain('role="separator"');
+  });
+
+  it("states the unit, so the number is not read as a percentage", () => {
+    expect(grip(300)).toContain('aria-valuetext="300 pixels"');
   });
 
   it("reports the narrower ceiling a small window imposes", () => {

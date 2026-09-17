@@ -43,7 +43,11 @@ export function App() {
   const sidebarWidth = storedWidth === null ? null : clampSidebarWidth(storedWidth, viewport.width);
   const condensed = !drawer && sidebarIsCondensed(sidebarWidth);
 
-  const resizeSidebar = useCallback((next: number) => {
+  // during a drag only the state moves. localStorage.setItem is synchronous
+  // and would run on every pointermove, alongside leaflet resizing the map
+  const resizeSidebar = useCallback((next: number) => setStoredWidth(next), []);
+
+  const commitSidebarWidth = useCallback((next: number) => {
     setStoredWidth(next);
     writeSidebarWidth(next);
   }, []);
@@ -186,6 +190,7 @@ export function App() {
             viewportWidth={viewport.width}
             measure={measureSidebar}
             onResize={resizeSidebar}
+            onCommit={commitSidebarWidth}
             onReset={resetSidebar}
           />
         )}
