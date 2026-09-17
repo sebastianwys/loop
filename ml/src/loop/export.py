@@ -203,8 +203,22 @@ def manifest_entry(path, metrics, model, origin, inputs=()):
     }
 
 
+# a rewrite that only moves the timestamp is not a change. the export runs on
+# every retrain and the map's own writers already refuse to rewrite themselves
+# for a stamp; this one did not, so an export that landed on the same numbers
+# still showed up as a commit and pulled a deploy behind it
 def write_manifest(entries, path=MANIFEST_PATH):
     path = Path(path)
+    if path.exists():
+        try:
+            previous = json.loads(path.read_text())
+        except ValueError:
+            previous = None
+        if isinstance(previous, list) and len(previous) == len(entries):
+            restamped = [{**new, "downloaded_at": old.get("downloaded_at", new.get("downloaded_at"))}
+                         for new, old in zip(entries, previous) if isinstance(old, dict)]
+            if restamped == previous:
+                return path
     path.write_text(json.dumps(entries, indent=2) + "\n")
     return path
 

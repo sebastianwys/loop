@@ -264,3 +264,36 @@ class TestBandTravelsWithThePoint(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# the export runs on every retrain, and a manifest rewritten only to move its
+# own timestamp is a commit and a deploy for nothing
+class TestTheManifestDoesNotMoveForItsOwnStamp(unittest.TestCase):
+    def entry(self, sha="abc", rows=4100, at="2026-09-17T04:55:53Z"):
+        return {"filename": "metrics.csv", "integrity": {"sha256": sha, "row_count": rows},
+                "version": "seqgru, origin 2026Q2", "downloaded_at": at}
+
+    def test_the_same_export_leaves_the_file_exactly_as_it_was(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "download_manifest.json"
+            export.write_manifest([self.entry()], path)
+            before = path.read_bytes()
+            export.write_manifest([self.entry(at="2026-09-18T09:00:00Z")], path)
+            self.assertEqual(path.read_bytes(), before)
+
+    def test_a_different_hash_or_row_count_is_written(self):
+        for changed in (self.entry(sha="def"), self.entry(rows=4101)):
+            with tempfile.TemporaryDirectory() as tmp:
+                path = Path(tmp) / "download_manifest.json"
+                export.write_manifest([self.entry()], path)
+                export.write_manifest([changed], path)
+                self.assertEqual(json.loads(path.read_text()), [changed])
+
+    def test_a_first_write_and_an_unreadable_file_both_land(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "download_manifest.json"
+            export.write_manifest([self.entry()], path)
+            self.assertEqual(json.loads(path.read_text()), [self.entry()])
+            path.write_text("{not json")
+            export.write_manifest([self.entry()], path)
+            self.assertEqual(json.loads(path.read_text()), [self.entry()])
