@@ -28,22 +28,22 @@ rule all:
         "results/visualizations/correlation_matrix.png"
 
 
-# pull fhfa files and write manifest
+# pull fhfa files and write manifest. a failed job deletes every output it
+# finds, and hpi_master.csv has no vintage parameter, so the archived copy is
+# the only copy of that vintage. the rule owns a marker and the collector writes
+# the archive beside it, which leaves the refusal to overwrite where it belongs
 rule download_fhfa:
     output:
-        "data/raw/fhfa/hpi_master.csv",
-        "data/raw/fhfa/hpi_exp_metro.txt",
-        "data/raw/fhfa/download_manifest.json"
+        touch("data/raw/fhfa/.download_complete")
     shell:
         f"{PYTHON} scripts/download_fhfa.py"
 
 
-# pull the pinned acs vintages, build combined csv, write manifest
+# pull the pinned acs vintages, build combined csv, write manifest. the archive
+# is a side effect here too, a retired end year cannot be fetched again either
 rule download_census:
     output:
-        expand("data/raw/census/acs_5yr_{year}.csv", year=CENSUS_YEARS),
-        "data/raw/census/acs_5yr_combined.csv",
-        "data/raw/census/download_manifest.json"
+        touch("data/raw/census/.download_complete")
     shell:
         f"{PYTHON} scripts/download_census.py"
 

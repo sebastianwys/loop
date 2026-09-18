@@ -4,6 +4,7 @@ import requests
 import pandas as pd
 import json
 import hashlib
+import tempfile
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -196,7 +197,15 @@ def tag_geography(df, level):
 # pull one vintage: every msa and micro, plus the divisions of the split msas
 def fetch_acs_data(year, api_key):
     print(f"Fetching ACS 5-year data for {year}...")
-    frames = [tag_geography(query_acs(year, api_key, f"{MSA_COL}:*"), "msa")]
+    msas = query_acs(year, api_key, f"{MSA_COL}:*")
+
+    # a parent with no divisions in a vintage is ordinary, a vintage with no
+    # msas at all is an outage. archiving it would publish a header and no
+    # observations over the year that is already on disk
+    if len(msas) < 1:
+        raise RuntimeError(f"ACS {year} carries a header and no observations")
+
+    frames = [tag_geography(msas, "msa")]
     for parent in DIVISION_PARENTS:
         divisions = query_acs(year, api_key, f"{DIV_COL}:*", within=f"{MSA_COL}:{parent}")
         frames.append(tag_geography(divisions, "division"))
@@ -260,69 +269,83 @@ def main():
     all_frames = []
     failed = []
 
-    # pull oldest first so the combined csv and the manifest stay in ascending
-    # year order. acs_batches returns newest first
-    for year in sorted(years):
-        try:
-            df = fetch_acs_data(year, api_key)
-            all_frames.append(df)
+    # every vintage is written to a staging folder first. one file landing on
+    # the archive before the run as a whole is known good leaves the folder
+    # half replaced under a manifest still describing the files it replaced
+    with tempfile.TemporaryDirectory(dir=RAW_DIR) as staging:
+        staging = Path(staging)
 
-            filename = f"acs_5yr_{year}.csv"
-            filepath = RAW_DIR / filename
-            df.to_csv(filepath, index=False)
+        # pull oldest first so the combined csv and the manifest stay in
+        # ascending year order. acs_batches returns newest first
+        for year in sorted(years):
+            try:
+                df = fetch_acs_data(year, api_key)
+                all_frames.append(df)
 
-            checksum = compute_sha256(filepath)
-            size_kb = filepath.stat().st_size / 1024
+                filename = f"acs_5yr_{year}.csv"
+                filepath = staging / filename
+                df.to_csv(filepath, index=False)
 
-            print(f"  Saved {filepath} ({len(df)} rows, {size_kb:.1f} KB)")
-            print(f"  SHA-256: {checksum}")
+                checksum = compute_sha256(filepath)
+                size_kb = filepath.stat().st_size / 1024
 
-            manifest.append({
-                "filename": filename,
-                "file_format": "CSV",
-                "source": {
-                    "endpoint": BASE_URL.format(year=year),  # bare, no key
-                    "provider": "U.S. Census Bureau",
-                    "access_method": "REST API",
-                    "dataset": "ACS 5-year estimates",
-                    "geography": f"{MSA_COL}:* plus {DIV_COL}:* within {len(DIVISION_PARENTS)} split msas",
-                    "variables": VARIABLES
-                },
-                "integrity": {
-                    "sha256": checksum,
-                    "size_kb": round(size_kb, 1),
-                    "row_count": len(df)
-                },
-                "version": f"ACS 5-year {year}",
-                "survey_window": list(window(year)),
-                "downloaded_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-            })
+                print(f"  Staged {filename} ({len(df)} rows, {size_kb:.1f} KB)")
+                print(f"  SHA-256: {checksum}")
 
-        except Exception as e:
-            failed.append(year)
-            # type(e).__name__ tells you what kind of failure
-            print(f"  ERROR {year}: {type(e).__name__}: {redact(str(e), api_key)}")
-            print(f"  Endpoint: {BASE_URL.format(year=year)}")
-            print(f"  Variables attempted: {VARIABLES}")
-            print(f"  This vintage may have different variable codes. Skipping.")
+                manifest.append({
+                    "filename": filename,
+                    "file_format": "CSV",
+                    "source": {
+                        "endpoint": BASE_URL.format(year=year),  # bare, no key
+                        "provider": "U.S. Census Bureau",
+                        "access_method": "REST API",
+                        "dataset": "ACS 5-year estimates",
+                        "geography": f"{MSA_COL}:* plus {DIV_COL}:* within {len(DIVISION_PARENTS)} split msas",
+                        "variables": VARIABLES
+                    },
+                    "integrity": {
+                        "sha256": checksum,
+                        "size_kb": round(size_kb, 1),
+                        "row_count": len(df)
+                    },
+                    "version": f"ACS 5-year {year}",
+                    "survey_window": list(window(year)),
+                    "downloaded_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+                })
 
-    if failed:
-        # a partial pull published over a complete one cannot be undone, so the
-        # combined csv and the manifest keep describing the last good run
-        sys.exit(
-            f"Census ACS download incomplete, vintages failed: {failed}. "
-            "The previous combined csv and manifest were left in place."
-        )
+            except Exception as e:
+                failed.append(year)
+                # type(e).__name__ tells you what kind of failure
+                print(f"  ERROR {year}: {type(e).__name__}: {redact(str(e), api_key)}")
+                print(f"  Endpoint: {BASE_URL.format(year=year)}")
+                print(f"  Variables attempted: {VARIABLES}")
+                print(f"  This vintage may have different variable codes. Skipping.")
 
-    combined = pd.concat(all_frames, ignore_index=True)
-    combined_path = RAW_DIR / "acs_5yr_combined.csv"
-    combined.to_csv(combined_path, index=False)
-    print(f"\nCombined file: {combined_path} ({len(combined)} total rows)")
+        if failed:
+            # a partial pull published over a complete one cannot be undone, so
+            # the archive, the combined csv and the manifest all keep describing
+            # the last good run. the staged folder goes with this exit
+            sys.exit(
+                f"Census ACS download incomplete, vintages failed: {failed}. "
+                "The previous combined csv and manifest were left in place."
+            )
 
-    manifest_path = RAW_DIR / "download_manifest.json"
-    with open(manifest_path, "w") as f:
-        json.dump(manifest, f, indent=2)
-    print(f"Manifest saved to {manifest_path}")
+        combined = pd.concat(all_frames, ignore_index=True)
+        combined.to_csv(staging / "acs_5yr_combined.csv", index=False)
+
+        # every vintage passed, so the per-year files, the combined csv and the
+        # manifest that describes them are published in one step
+        for entry in manifest:
+            os.replace(staging / entry["filename"], RAW_DIR / entry["filename"])
+
+        combined_path = RAW_DIR / "acs_5yr_combined.csv"
+        os.replace(staging / "acs_5yr_combined.csv", combined_path)
+        print(f"\nCombined file: {combined_path} ({len(combined)} total rows)")
+
+        manifest_path = RAW_DIR / "download_manifest.json"
+        with open(manifest_path, "w") as f:
+            json.dump(manifest, f, indent=2)
+        print(f"Manifest saved to {manifest_path}")
 
     # the pinned years changed, so per-year csvs off the study go now that their
     # replacements are on disk. a failed run above never reaches this

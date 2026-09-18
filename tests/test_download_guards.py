@@ -59,35 +59,52 @@ class TestFhfaArchiveSurvivesABadBody(unittest.TestCase):
                 return archive, before, error
             return archive, before, entry
 
+    # each guard is pinned by the message it rejects with, not merely by
+    # something being raised: an incidental pandas parse error would say
+    # something else, so deleting a guard cannot leave this suite green
+    def assert_rejected_with(self, outcome, message):
+        self.assertIsInstance(outcome, RuntimeError)
+        self.assertEqual(str(outcome), message)
+
     def test_html_maintenance_page_does_not_touch_the_archive(self):
         archive, before, outcome = self.run_download(
             MAINTENANCE_PAGE, "text/html; charset=utf-8"
         )
-        self.assertIsInstance(outcome, Exception)
+        self.assert_rejected_with(
+            outcome, "hpi_master.csv came back as html, usually an fhfa maintenance page"
+        )
         self.assertEqual(archive.read_bytes(), before)
 
     # an html body served with a csv content type is the same loss
     def test_html_body_mislabelled_as_csv_does_not_touch_the_archive(self):
         archive, before, outcome = self.run_download(MAINTENANCE_PAGE, "text/csv")
-        self.assertIsInstance(outcome, Exception)
+        self.assert_rejected_with(
+            outcome, "hpi_master.csv came back as html, usually an fhfa maintenance page"
+        )
         self.assertEqual(archive.read_bytes(), before)
 
     def test_empty_body_does_not_touch_the_archive(self):
         archive, before, outcome = self.run_download("")
-        self.assertIsInstance(outcome, Exception)
+        self.assert_rejected_with(outcome, "hpi_master.csv came back empty")
         self.assertEqual(archive.read_bytes(), before)
 
     # a header row with no observations under it is not a vintage either
     def test_header_only_body_does_not_touch_the_archive(self):
         header = MASTER_SLICE.splitlines()[0] + "\n"
         archive, before, outcome = self.run_download(header)
-        self.assertIsInstance(outcome, Exception)
+        self.assert_rejected_with(
+            outcome, "hpi_master.csv carries a header and no observations"
+        )
         self.assertEqual(archive.read_bytes(), before)
 
     # a parsable csv that is not this dataset, say a redirect landing page
     def test_wrong_columns_do_not_touch_the_archive(self):
         archive, before, outcome = self.run_download("a,b\n1,2\n")
-        self.assertIsInstance(outcome, Exception)
+        self.assert_rejected_with(
+            outcome,
+            "hpi_master.csv is missing columns ['hpi_type', 'hpi_flavor', "
+            "'frequency', 'level', 'place_id', 'yr', 'period', 'index_nsa']",
+        )
         self.assertEqual(archive.read_bytes(), before)
 
     # the guard must not block a real download

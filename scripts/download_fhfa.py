@@ -2,6 +2,7 @@ import os
 import requests
 import hashlib
 import json
+import tempfile
 import pandas as pd
 from pathlib import Path
 from datetime import datetime, timezone
@@ -91,14 +92,15 @@ def _validate(filepath, filename):
 
 
 # download one file, hash it, build the manifest entry. the body lands beside
-# the archive and is renamed over it only once it has passed, so a rejected or
-# half written body leaves the previous vintage untouched
-def download_file(filename, url):
+# its destination and is renamed over it only once it has passed, so a rejected
+# or half written body leaves the previous vintage untouched. dest_dir is read
+# at call time so main can hold the whole run in a staging folder
+def download_file(filename, url, dest_dir=None):
     print(f"Downloading file {filename}...")
     response = requests.get(url)
     response.raise_for_status()  # fail fast if fhfa is down
 
-    filepath = RAW_DIR / filename
+    filepath = (RAW_DIR if dest_dir is None else dest_dir) / filename
     staged = filepath.with_name(filename + ".part")
     try:
         with open(staged, "wb") as f:
@@ -136,13 +138,24 @@ def download_file(filename, url):
 # pull both files, write manifest
 def main():
     manifest = []
-    for filename, url in FILES.items():
-        info = download_file(filename, url)
-        manifest.append(info)
 
-    manifest_path = RAW_DIR / "download_manifest.json"
-    with open(manifest_path, "w") as f:
-        json.dump(manifest, f, indent=2)
+    # every file is downloaded to a staging folder first. one file landing on
+    # the archive before the run as a whole is known good leaves the folder half
+    # replaced under a manifest still describing the file it replaced
+    with tempfile.TemporaryDirectory(dir=RAW_DIR) as staging:
+        staging = Path(staging)
+        for filename, url in FILES.items():
+            info = download_file(filename, url, staging)
+            manifest.append(info)
+
+        # both files passed, so the archive and the manifest that describes it
+        # are published in one step
+        for filename in FILES:
+            os.replace(staging / filename, RAW_DIR / filename)
+
+        manifest_path = RAW_DIR / "download_manifest.json"
+        with open(manifest_path, "w") as f:
+            json.dump(manifest, f, indent=2)
 
     print(f"\nManifest saved to {manifest_path}")
     print("FHFA download complete.")
