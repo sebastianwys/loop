@@ -8,7 +8,7 @@ https://loop.macroviz.workers.dev
 
 It is public. No login, nothing to install.
 
-Dots or Census boundaries, colored by any of 48 metrics, for 2014, 2019, 2024 or the latest reading. A detail panel per metro, a calendar timeline, and thirteen national indicators across the top, refreshed from FRED every weekday after the close.
+Dots or Census boundaries, colored by any of 55 metrics, for 2014, 2019, 2024 or the latest reading. A detail panel per metro, a calendar timeline, and thirteen national indicators across the top, refreshed from FRED every weekday after the close.
 
 ## The Layout
 

@@ -51,11 +51,11 @@ Sixty months of pooled responses per vintage. Three non-overlapping windows, bec
 
 | vintage | window | role | rows |
 | --- | --- | --- | --- |
-| 2014 | 2010 to 2014 | post-recession baseline | 929 |
-| 2019 | 2015 to 2019 | pre-COVID peak | 938 |
-| 2024 | 2020 to 2024 | post-COVID | 935 |
+| 2014 | 2010 to 2014 | post-recession baseline | 960 |
+| 2019 | 2015 to 2019 | pre-COVID peak | 969 |
+| 2024 | 2020 to 2024 | post-COVID | 972 |
 
-Endpoint `https://api.census.gov/data/{year}/acs/acs5`, all metropolitan and micropolitan areas, manifest at `data/raw/census/download_manifest.json`.
+Endpoint `https://api.census.gov/data/{year}/acs/acs5`, all metropolitan and micropolitan areas, manifest at `data/raw/census/download_manifest.json`. Rows are what the committed files hold and what the manifest records: the metro and micro areas plus the 31, 31 and 37 metropolitan division rows problem 5 added. Earlier drafts published the metro rows alone.
 
 | original | renamed | description |
 | --- | --- | --- |
@@ -95,7 +95,7 @@ Endpoint `https://api.census.gov/data/{year}/acs/acs5`, all metropolitan and mic
             +-------------------------+
 ```
 
-`data/integrated/hpi_census_merged.csv`. 410 metros is 373 metropolitan statistical areas plus 37 metropolitan divisions. The theoretical maximum is 1,230 (410 x 3); the 33 missing rows are metros without FHFA data for every vintage year, usually newer MSA designations.
+`data/integrated/hpi_census_merged.csv`. 410 metros is 373 metropolitan statistical areas plus 37 metropolitan divisions. The theoretical maximum is 1,230 (410 x 3); the 33 missing rows are the Census side, not the FHFA side. All 33 are in the FHFA slice for their year and absent from the ACS vintage, 18 in 2014 and 15 in 2019, none in 2024. They are codes Census had not published yet at that vintage, newer designations and divisions, while FHFA carries its index back under the current definitions.
 
 ## The Five Problems
 
@@ -137,7 +137,9 @@ The top-15 inverted. The 2019 list was led by the Bay Area and Puget Sound: San 
 
 Seven of the 2024 top 15 are metropolitan divisions, so the list changed shape as well as order when the 37 divisions joined in commit c3af214. Bozeman was already eighth in 2019, so it climbed rather than appeared.
 
-Population did not decouple from price. On the 392 metros carrying all three vintages the correlation with HPI runs 0.28, 0.32, 0.28. It rose and came back. A Fisher z test on the 2019 to 2024 leg gives z = 0.64, p = 0.53, so the move is not distinguishable from sampling noise. Earlier drafts of this report claimed a drop from 0.40 to 0.23 and read a decoupling story into it. Neither endpoint reproduces on the committed data and there is no trend to read.
+Population did not decouple from price. On the 392 metros carrying all three vintages the correlation with HPI runs 0.28, 0.32, 0.28. It rose and came back. I first tested the 2019 to 2024 leg with an independent-sample Fisher z, z = 0.64, p = 0.52, and that is the wrong test here: it treats the two vintages as two separate samples of metros, and they are one sample of metros measured twice.
+
+Paired, the move is significant at the 5 percent level, and only just. Population correlates 0.998 across the two vintages and HPI 0.905, so nearly all of the sampling error is common to both correlations and cancels; the independent-sample test discards that cancellation, which is why its z comes out about three times too small. Steiger's Z2* gives z = 1.96, p = 0.0495, Dunn and Clark's variant z = 1.97, p = 0.0488, and a paired bootstrap over metros, 50,000 draws, puts the 2019 minus 2024 gap at 0.042 with a 95 percent interval of 0.001 to 0.076 and p = 0.047, between 0.045 and 0.048 across seven seeds. So there is a real wobble in the population correlation and it is small: about 0.04 up and 0.04 back, ending where it started. Earlier drafts of this report claimed a drop from 0.40 to 0.23 and read a decoupling story into it. Neither endpoint reproduces on the committed data, and a rise and return of 0.04 is not a decoupling.
 
 The correlation matrix at the 2024 vintage, Pearson r over all 410 metros and divisions, pairwise complete:
 
