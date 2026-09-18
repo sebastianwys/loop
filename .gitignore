@@ -5,6 +5,10 @@ data/raw/zillow/*.csv
 # snakemake run metadata and logs
 .snakemake/
 
+# the markers the download rules declare in place of the archive itself, so a
+# failed rule cannot take the vintage with it
+data/raw/*/.download_complete
+
 # boundary shapefiles are fetched by npm run boundaries, the topojson is committed
 data/raw/boundaries/*.zip
 data/raw/boundaries/trial_*.json
