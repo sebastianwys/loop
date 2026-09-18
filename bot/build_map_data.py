@@ -934,6 +934,25 @@ def fred_version(frame):
     return None if date is None else f"through {date}"
 
 
+# the gazetteer folder holds three files this build reads: the centroids every
+# metro's dot is placed at, and the two frozen vintage tables the decade growth
+# rates are decided by. the line was a constant in the module, so it named the
+# whole folder whatever the build had opened, and a run that found neither
+# vintage table still read "2024 Gazetteer" while the redraw test fell back to
+# the state list in the acs name and 72 metros published a decade rate the
+# delineation refuses
+def gazetteer_version(centroids, membership, county_population):
+    read = [name for name, frame in (("centroids", centroids),
+                                     ("county membership", membership),
+                                     ("county population", county_population))
+            if frame is not None and len(frame)]
+    if not read:
+        return None
+    if len(read) == 3:
+        return f"{GAZETTEER_YEAR} Gazetteer"
+    return f"{GAZETTEER_YEAR} Gazetteer, {' and '.join(read)} only"
+
+
 # the mortgage rate tile and the indicator strip share the block. either
 # input can be absent, and the block is dropped only when both are
 def national_block(fred_frame, national_frame=None):
@@ -1054,11 +1073,10 @@ def build(out_path=None, paths=None):
         "sources": {
             # every folder that carries a manifest, so the vintage line and the
             # provenance block below are two readings of one list rather than
-            # two lists that drift. the four below override it, because a
+            # two lists that drift. the ones below override it, because a
             # version read off the frame the build loaded beats one read off a
             # manifest describing a file the build may not have opened
             **manifest_versions(p["enrichment_dir"], p["forecast_dir"]),
-            "gazetteer": f"{GAZETTEER_YEAR} Gazetteer",
             "zillow": zillow_version(zhvi),
             "bls": bls_version(bls_frame),
             "fred": fred_version(fred_frame),
@@ -1074,7 +1092,8 @@ def build(out_path=None, paths=None):
     # provenance block still list one set of folders, but its version goes to
     # none rather than being borrowed off a file that was never opened
     for name, version in (("fhfa", fhfa_version(fhfa_series)),
-                          ("national", national_version(national_frame))):
+                          ("national", national_version(national_frame)),
+                          ("gazetteer", gazetteer_version(centroids, membership, county_population))):
         if version is not None:
             payload["sources"][name] = version
         elif name in payload["sources"]:
