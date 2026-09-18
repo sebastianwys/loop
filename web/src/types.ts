@@ -102,6 +102,9 @@ export interface Metro {
   // set when the decade rates are reported over a footprint that moved, as the
   // share of the metro's people that changed hands between the two vintages
   footprint_moved?: number;
+  // set instead when there were rates to report and the move was too far for
+  // them, so the blank cells say withheld rather than never measured
+  footprint_refused?: number;
   lat: number;
   lon: number;
   years: Record<YearKey, YearValues>;

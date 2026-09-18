@@ -1273,6 +1273,32 @@ class TestASmallBoundaryMoveIsNotARedraw(unittest.TestCase):
             self.assertIsNone(metro["growth"]["pop_14_24"], cbsa)
             self.assertNotIn("footprint_moved", metro, cbsa)
 
+    # a withheld rate and a rate nobody measured are different claims, and
+    # three blank cells cannot tell them apart on their own. salisbury had a
+    # population to divide at both vintages, so the blank is the rule's doing
+    # and the metro says the share it was refused over
+    def test_a_refused_rate_says_it_was_refused(self):
+        salisbury = self.metro("41540", self.population)
+        self.assertIsNone(salisbury["growth"]["pop_14_24"])
+        self.assertGreater(salisbury["footprint_refused"], bm.FOOTPRINT_TOLERANCE)
+        self.assertNotIn("footprint_moved", salisbury)
+
+    # the two are exclusive: one share covers all three acs rates, so a metro
+    # is either reporting them or refusing them, never both
+    def test_the_two_footprint_marks_never_appear_together(self):
+        metros, _, _ = bm.build_metros(self.merged, self.centroids, membership=self.membership,
+                                       county_population=self.population)
+        for metro in metros:
+            self.assertFalse("footprint_moved" in metro and "footprint_refused" in metro, metro["cbsa"])
+            if "footprint_refused" in metro:
+                self.assertIsNone(metro["growth"]["pop_14_24"], metro["cbsa"])
+
+    # a metro with no acs row to divide has nothing to withhold, so it stays
+    # blank and unexplained rather than blaming the footprint for missing data
+    def test_a_metro_with_no_rate_to_withhold_is_not_marked_refused(self):
+        abilene = self.metro("10180", self.population)
+        self.assertNotIn("footprint_refused", abilene)
+
     def test_a_metro_that_never_moved_carries_no_note(self):
         abilene = self.metro("10180", self.population)
         self.assertIsNotNone(abilene["growth"]["pop_14_24"])

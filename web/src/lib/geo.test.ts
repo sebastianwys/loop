@@ -68,4 +68,25 @@ describe("footprintNote", () => {
       expect(footprintNote({ ...base, footprint_moved: bad }), String(bad)).toBeNull();
     }
   });
+
+  // cleveland gained ashtabula, 4.5 percent of its people, so its decade rates
+  // are withheld. before this the three blank cells read exactly like a metro
+  // nobody had measured, which is a different claim
+  it("says withheld, not missing, when the move was too far for a rate", () => {
+    const note = footprintNote({ ...base, footprint_refused: 0.0447 });
+    expect(note).toContain("4.47 percent");
+    expect(note).toContain("withheld");
+    expect(note).not.toContain("close rather than identical");
+  });
+
+  it("prefers the withheld wording when a metro somehow carries both", () => {
+    const note = footprintNote({ ...base, footprint_moved: 0.001, footprint_refused: 0.05 });
+    expect(note).toContain("withheld");
+  });
+
+  it("ignores a refused value that is not a share", () => {
+    for (const bad of [Number.NaN, Number.POSITIVE_INFINITY, -1]) {
+      expect(footprintNote({ ...base, footprint_refused: bad }), String(bad)).toBeNull();
+    }
+  });
 });

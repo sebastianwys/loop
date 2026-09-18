@@ -25,15 +25,28 @@ export function parentMetricsNote(metro: Metro): string | null {
   return `From the parent metro: ${labels.join(", ")}.`;
 }
 
+function peopleShare(value: number): string {
+  return value < 0.0001 ? "under 0.01 percent" : `${(value * 100).toFixed(2)} percent`;
+}
+
 // omb tidies a metro's boundary far more often than it redraws one, and a
 // change too small to move the rate is reported rather than withheld. the note
 // is what keeps that from being a silent claim: the rates below are this
-// metro's, over a footprint that is not quite the same in both vintages
+// metro's, over a footprint that is not quite the same in both vintages.
+//
+// past the tolerance the rate is withheld instead, and then the note carries
+// the whole weight: without it the blank reads as a metro nobody measured
 export function footprintNote(metro: Metro): string | null {
+  const refused = metro.footprint_refused;
+  if (typeof refused === "number" && Number.isFinite(refused) && refused >= 0) {
+    return `The county lines of this metro were redrawn between the two vintages, carrying ${peopleShare(refused)} `
+      + "of its people, which is more than the two percent this map will report a change over, so the changes "
+      + "above are withheld rather than measured across two different places. The year figures are each their "
+      + "own vintage's and stand on their own.";
+  }
   const moved = metro.footprint_moved;
   if (typeof moved !== "number" || !Number.isFinite(moved) || moved < 0) return null;
-  const share = moved < 0.0001 ? "under 0.01 percent" : `${(moved * 100).toFixed(2)} percent`;
-  return `The county lines of this metro moved between the two vintages, carrying ${share} of its people, `
+  return `The county lines of this metro moved between the two vintages, carrying ${peopleShare(moved)} of its people, `
     + "so the changes above compare footprints that are close rather than identical. A metro redrawn by more "
     + "than two percent reports no change at all.";
 }

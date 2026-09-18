@@ -857,15 +857,21 @@ def build_metros(merged, centroids, zhvi=None, zori=None, bls_frame=None, enrich
             return 1.0 if share is None else share
 
         # the three acs rates all span the same pair of vintages, so one number
-        # describes all of them. it is set only when a rate was reported over a
-        # footprint that did move, which is seven of the 410 metros
-        moved = []
+        # describes all of them. moved is set when a rate was reported over a
+        # footprint that did move, which is seven of the 410 metros. refused is
+        # set when there was a rate to report and the move was too far for it,
+        # because a withheld number and a number nobody measured are different
+        # claims and a blank cell cannot tell them apart. the two are exclusive:
+        # one share covers all three rates
+        moved, refused = [], []
 
         def acs_growth(later_year, earlier_year, col):
             share = footprint_move(later_year, earlier_year)
-            if share is not None and share > FOOTPRINT_TOLERANCE:
-                return None
             rate = growth(value(later_year, col), value(earlier_year, col))
+            if share is not None and share > FOOTPRINT_TOLERANCE:
+                if rate is not None:
+                    refused.append(share)
+                return None
             if share is not None and rate is not None:
                 moved.append(share)
             return rate
@@ -915,6 +921,8 @@ def build_metros(merged, centroids, zhvi=None, zori=None, bls_frame=None, enrich
         # than presenting them as exact
         if moved:
             record["footprint_moved"] = rnd(max(moved), 4)
+        if refused:
+            record["footprint_refused"] = rnd(max(refused), 4)
         if hpi_series:
             record["series"] = {"hpi": hpi_series}
         metros.append(apply_enrichments(record, enrichments, parent["cbsa"] if parent else None))
@@ -1002,6 +1010,7 @@ def payload_counts(payload):
         # disk nothing can be weighed, and the decade rates the file withholds
         # would come back as numbers over two different places
         "footprint_moved": sum(1 for m in payload.get("metros") or [] if m.get("footprint_moved") is not None),
+        "footprint_refused": sum(1 for m in payload.get("metros") or [] if m.get("footprint_refused") is not None),
     }
     for metro in payload.get("metros") or []:
         for field, value in (metro.get("latest") or {}).items():
