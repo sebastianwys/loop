@@ -1,5 +1,5 @@
 import { formatValue } from "./format";
-import { SOURCE_LABEL, dateAt, fieldAt, labelFor } from "./metrics";
+import { SOURCE_LABEL, dateAt, defById, fieldAt, labelFor } from "./metrics";
 import type { Metro } from "../types";
 
 // the fields the detail panel lists, in reading order. the two expected
@@ -15,9 +15,11 @@ export interface ForecastLine {
   text: string;
 }
 
-// the export writes percent, signed like the map's other growth figures
-function pct(value: number | null): string {
-  return formatValue(value, "rate", true);
+// the unit is whatever the metric definition declares, so a field reads the
+// same here as it does on the map and on the accuracy page. the surprise is a
+// difference of two growth rates and carries points, not percent
+function show(id: ForecastField, value: number | null): string {
+  return formatValue(value, defById(id)?.def.format ?? "rate", true);
 }
 
 // "+3.1% (band -1.2% to +7.0%)". the band is left off when an edge is
@@ -27,12 +29,14 @@ export function bandLine(metro: Metro, field: Banded): string | null {
   if (point === null) return null;
   const lo = fieldAt(metro, "latest", `${field}_lo`);
   const hi = fieldAt(metro, "latest", `${field}_hi`);
-  return lo === null || hi === null ? pct(point) : `${pct(point)} (band ${pct(lo)} to ${pct(hi)})`;
+  return lo === null || hi === null
+    ? show(field, point)
+    : `${show(field, point)} (band ${show(field, lo)} to ${show(field, hi)})`;
 }
 
 function plainLine(metro: Metro, field: ForecastField): string | null {
   const value = fieldAt(metro, "latest", field);
-  return value === null ? null : pct(value);
+  return value === null ? null : show(field, value);
 }
 
 // one line per forecast field the metro carries, labelled like the menu

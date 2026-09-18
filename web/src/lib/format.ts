@@ -12,6 +12,9 @@ export function formatValue(value: number | null, format: ValueFormat, signed = 
       return `${sign}${(value * 100).toFixed(1)}%`;
     case "rate":
       return `${sign}${value.toFixed(1)}%`;
+    // a gap between two rates, which is points rather than percent
+    case "points":
+      return `${sign}${value.toFixed(1)} pp`;
     case "ratio":
       return `${value.toFixed(1)}x`;
     case "int":

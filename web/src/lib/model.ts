@@ -166,7 +166,9 @@ export function errorCut(rows: BacktestRow[], model: string, over: string, horiz
 export function bandCut(rows: BacktestRow[], model: string, over: string, horizon: number): number | null {
   const mine = rowAt(rows, model, horizon);
   const theirs = rowAt(rows, over, horizon);
-  if (!mine || !theirs || theirs.width === 0) return null;
+  // a width the backtest could not score is missing, and a missing width read
+  // as zero would claim a band 100 percent narrower than the one it is against
+  if (!mine || !theirs || !Number.isFinite(mine.width) || !Number.isFinite(theirs.width) || theirs.width === 0) return null;
   return round(1 - mine.width / theirs.width, 4);
 }
 

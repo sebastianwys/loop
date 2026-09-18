@@ -95,7 +95,10 @@ export function ShapeLayer({ shapes, metric, scale, selectedCbsa, onSelect }: Pr
     for (const [cbsa, path] of paths.current) {
       const metro = metroOf.get(cbsa);
       const value = metro ? metric.accessor(metro) : null;
-      path.setStyle(shapeStyle(value, scale, { selected: cbsa === selectedCbsa }));
+      path.setStyle(shapeStyle(value, scale, {
+        selected: cbsa === selectedCbsa,
+        inherited: !!metro && isInherited(metro, metric),
+      }));
       path.setTooltipContent(tooltipContent(metro, metric));
     }
     if (selectedCbsa) paths.current.get(selectedCbsa)?.bringToFront();

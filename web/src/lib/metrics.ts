@@ -1,7 +1,7 @@
 import type { Growth, Metro, Period, YearKey, YearValues } from "../types";
 
 export type ScaleKind = "sequential" | "diverging";
-export type ValueFormat = "pct" | "usd" | "usd_k" | "ratio" | "rate" | "int" | "index" | "days" | "minutes" | "per_1000";
+export type ValueFormat = "pct" | "usd" | "usd_k" | "ratio" | "rate" | "points" | "int" | "index" | "days" | "minutes" | "per_1000";
 export type Group = "House prices" | "Housing market" | "Rents and affordability" | "People and migration" | "Supply" | "Forecasts";
 export type Source = "fhfa" | "census" | "bls" | "zillow" | "fred" | "acs" | "pep" | "bps" | "irs" | "realtor" | "bea" | "hud" | "forecast";
 
@@ -102,17 +102,22 @@ function divide(numerator: number | null, denominator: number | null): number | 
   return numerator / denominator;
 }
 
+// the zillow series a division takes whole from its parent metro
+const ZILLOW_OWN = new Set<string>(["zhvi", "zori"]);
+
 // a division with no rows of its own for a metric takes the parent metro's and
 // lists the metric in parent_metrics. the number is real, it just belongs to a
 // bigger place, so it is shown with its provenance and kept out of rankings
 export function isInherited(metro: Metro, metric: Metric | MetricDef): boolean {
-  const keys = metro?.parent_metrics ?? [];
-  if (keys.length === 0) return false;
   // a resolved Metric's id carries its period, permits_units_latest, so the
   // field key comes off the definition. dateId names the field a derived
   // metric is built from
   const def = "def" in metric ? metric.def : metric;
-  return keys.includes(def.dateId ?? def.id);
+  const key = def.dateId ?? def.id;
+  // zillow publishes metros only, so a division's zhvi and zori are the parent
+  // metro's. that is marked by zillow_scope rather than by parent_metrics
+  if (metro?.zillow_scope === "parent metro" && ZILLOW_OWN.has(key)) return true;
+  return metro?.parent_metrics?.includes(key) ?? false;
 }
 
 // a ratio may only combine fields that describe the same geography. a division
@@ -188,7 +193,9 @@ export const DEFS: MetricDef[] = [
   field("hpi_forecast_8q", "Expected HPI growth, next 8 quarters", "rate", "diverging", "Forecasts", "forecast", ["latest"]),
   field("hpi_trend_5y", "HPI growth, 5 year annualized", "rate", "diverging", "Forecasts", "forecast", ["latest"]),
   field("hpi_yoy_latest", "HPI growth, last 4 quarters", "rate", "diverging", "Forecasts", "forecast", ["latest"]),
-  field("hpi_surprise_4q", "Surprise, actual minus expected, last 4 quarters", "rate", "diverging", "Forecasts", "forecast", ["latest"]),
+  // realized growth minus expected growth is a gap between two rates, so it
+  // is in percentage points, the way the accuracy page prints the same field
+  field("hpi_surprise_4q", "Surprise, actual minus expected, last 4 quarters", "points", "diverging", "Forecasts", "forecast", ["latest"]),
   // fhfa publishes a standard error beside the expanded index. a thin market
   // has fewer repeat sales, so its index is a looser measurement, and a wide
   // error here is a reason to read the forecast above it loosely

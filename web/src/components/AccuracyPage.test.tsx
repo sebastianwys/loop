@@ -32,12 +32,14 @@ function metro(cbsa: string, name: string, latest: Partial<Latest> = {}): Metro 
   };
 }
 
-// a scored metro with a live call behind it, the shape the real build carries
+// a scored metro with a live call behind it, the shape the real build carries.
+// the surprise is dated at the quarter the call was made, four quarters before
+// the live origin the rest of the latest block carries
 const scored = (cbsa: string, name: string, realized: number, surprise: number, error: number | null) =>
   metro(cbsa, name, {
     hpi_yoy_latest: realized,
     hpi_surprise_4q: surprise,
-    hpi_surprise_4q_date: "2026-06",
+    hpi_surprise_4q_date: "2025-06",
     hpi_forecast_4q: 5,
     hpi_forecast_4q_lo: -4,
     hpi_forecast_4q_hi: 15,
@@ -196,9 +198,10 @@ describe("the accuracy view", () => {
     expect(bare).toContain("That is a bias, not bad luck in a few places");
   });
 
-  it("names the origin the calls were scored at, and the source they are scored against", () => {
+  it("names the origin the calls were made at, and the source they are scored against", () => {
     expect(page).toContain("Source: Loop model");
-    expect(page).toContain("origin Jun 2026");
+    // the quarter the model published the call, not the quarter it landed in
+    expect(page).toContain("origin Jun 2025");
     expect(page).toContain("FHFA House Price Index");
   });
 

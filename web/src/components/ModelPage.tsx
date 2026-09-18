@@ -87,7 +87,7 @@ export function ModelPage({ data }: ViewProps) {
           <p>
             One row per metro per quarter: 410 metros, 1975Q1 to 2026Q2, 71,072 rows. The FHFA
             all-transactions index is the thing being forecast. Fourteen features feed the models and
-            seven more columns ride along for the figures without reaching one.
+            eight more columns ride along for the figures without reaching one.
           </p>
           <p>
             Nothing leaks. A monthly value is known in the month it covers. An annual value for year

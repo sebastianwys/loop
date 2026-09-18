@@ -29,7 +29,7 @@ describe("forecastLines", () => {
       { id: "hpi_forecast_8q", label: "Expected HPI growth, next 8 quarters", text: "+6.0% (band -2.5% to +14.2%)" },
       { id: "hpi_trend_5y", label: "HPI growth, 5 year annualized", text: "+5.4%" },
       { id: "hpi_yoy_latest", label: "HPI growth, last 4 quarters", text: "+2.0%" },
-      { id: "hpi_surprise_4q", label: "Surprise, actual minus expected, last 4 quarters", text: "-1.1%" },
+      { id: "hpi_surprise_4q", label: "Surprise, actual minus expected, last 4 quarters", text: "-1.1 pp" },
     ]);
   });
 

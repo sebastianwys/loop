@@ -59,12 +59,19 @@ export function testRows(text) {
   const out = [];
   for (const row of parseBacktest(text)) {
     if (row.block !== "test") continue;
-    const cell = { model: row.model, horizon: Number(row.horizon), n: Number(row.n) };
-    for (const [csv, key] of Object.entries(KEEP)) cell[key] = round(Number(row[csv]));
+    const cell = { model: row.model, horizon: cellNumber(row.horizon), n: cellNumber(row.n) };
+    for (const [csv, key] of Object.entries(KEEP)) cell[key] = round(cellNumber(row[csv]));
     if (!row.model || !Number.isFinite(cell.horizon)) continue;
     out.push(cell);
   }
   return out;
+}
+
+// pandas writes a nan as an empty field, and Number("") is 0, so a blank cell
+// is a metric the backtest could not score rather than a published zero
+function cellNumber(cell) {
+  const text = String(cell ?? "").trim();
+  return text === "" ? Number.NaN : Number(text);
 }
 
 // four places is finer than anything the page prints and keeps a retrain's
