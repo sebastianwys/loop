@@ -1,6 +1,6 @@
 {
   "parquet": "ml/data/panel.parquet",
-  "sha256": "2508ceddfc80924feca37ca68d3dfe2535995d98365c2d01290b223636d398fa",
+  "sha256": "e81889de6b0b236fafea15e11a5d26ca5c1903a476be6c818b72d1f79e0e447f",
   "rows": 71072,
   "metros": 410,
   "first_quarter": "1975Q1",
@@ -30,7 +30,7 @@
     "hpi_rstderr": 0.8146,
     "zori_yoy": 0.1925,
     "listing_price_yoy": 0.173,
-    "inventory_yoy": 0.148,
+    "inventory_yoy": 0.1483,
     "hpi_rstderr_rel": 0.8146,
     "hpi_yoy_rel": 0.9757,
     "cpi_yoy": 1.0,
