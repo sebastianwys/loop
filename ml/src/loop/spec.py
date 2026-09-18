@@ -62,7 +62,7 @@ FEATURES = [
     # it publishes with it. both reach back to 1991, which is where the fitting
     # block lives, unlike every covariate above: unemployment reaches 82 percent
     # of the fitting samples and the rest under 10. adding these cut the
-    # validation loss from 0.006564 to 0.006202
+    # validation loss from 0.006567 to 0.006204
     "hpi_exp_yoy",
     "hpi_rstderr",
 ]
@@ -74,13 +74,15 @@ SEQ_FEATURES = ["hpi_qoq", "hpi_yoy", "unemp", "mortgage", "zhvi_yoy", "hpi_exp_
 STATIC_FEATURES = ["permits_per_1000", "pop_growth", "domestic_migration_rate", "income_growth"]
 
 # columns the panel carries that no model reads. each was built for the same
-# reason as the two above, tried on the validation block and rejected there:
-# the calendar quarter 0.006565, the metro against the cross section 0.006565,
-# the four national series 0.006618, against a 0.006564 without them. a
-# national series is the same number in all 410 metros, so it teaches the
-# window which era it sits in and nothing about the place. they stay in the
-# panel because the figures and the map read them, and because a negative
-# result that is easy to re-run is worth more than one written down
+# reason as the two above, tried on the validation block and not kept: the four
+# national series cost 0.006617 against 0.006204 with the shipped set, which is
+# a real loss, because one number shared by all 410 metros teaches a window
+# which era it sits in and nothing about the place. the calendar quarter at
+# 0.006566 and the metro against the cross section at 0.006561 both land inside
+# the spread five seeds of one set produce, and a margin that thin is a coin,
+# so the simpler set stays. they are all in the panel because the figures and
+# the map read them, and because a negative result that is easy to re-run is
+# worth more than one written down
 #
 # rents, listing prices and inventory joined them on 2026-09-18. they had
 # never been through this gate at all: feature_stats takes its seen mask from

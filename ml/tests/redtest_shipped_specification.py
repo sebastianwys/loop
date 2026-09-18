@@ -9,23 +9,34 @@ import pandas as pd
 
 from loop import nets, spec, train
 
+# a feature the shipped refit reads and the scored backtest cannot: it starts
+# after the fitting slice ends. permits and income are the two left after the
+# 2026-09-18 admission run, and this is the one the control blanks
+LATE_COLUMN = "permits_per_1000"
+
 # nets.moments marks a feature unseen when the fitting slice holds under two
 # values, and encode() then blanks it in both the value and the presence
 # channel on every window, test block included. that rule is right: a fit must
 # not standardize by statistics it never saw.
 #
 # what follows from it is that the fitting slice decides the input
-# specification. the backtest fits on the train block, which ends in 2017, and
-# the shipped refit fits on every labelled window through 2026. a covariate
-# whose publisher started after the train block is therefore read by the model
-# that writes forecasts.csv and blanked in the model whose MAE and coverage the
-# accuracy page publishes
+# specification. the backtest fits on the part of the train block left after
+# the validation years are taken out, so outcomes through 2014Q4, while the
+# shipped refit fits on every labelled window through 2026. a covariate whose
+# publisher started after that is therefore read by the model that writes
+# forecasts.csv and blanked in the model whose MAE and coverage the accuracy
+# page publishes
+#
+# on 2026-09-18 this stopped naming five columns and started naming two. rents,
+# listing prices and inventory were measured by ml/admit.py and left the input
+# set; permits and income earned their place and are still in it, still unread
+# by the model that is scored
 
 
 # one row per metro and quarter. prices grow a percent a quarter from the start
 # and the late covariate carries values only from `late_start` onward, which is
-# what zillow, realtor and the permit series look like against a 1975 panel
-def panel_with_a_late_covariate(late_start, first="2005Q1", last="2026Q2", column="zori_yoy"):
+# what the permit and income series look like against a 1975 panel
+def panel_with_a_late_covariate(late_start, first="2005Q1", last="2026Q2", column=LATE_COLUMN):
     quarters = [str(p) for p in pd.period_range(first, last, freq="Q")]
     rows = []
     for code in ("10001", "10002", "10003"):
@@ -61,8 +72,8 @@ def masks(windows):
 
 class TestTheScoredModelAndTheShippedModelReadTheSameColumns(unittest.TestCase):
     def setUp(self):
-        # the publisher starts after the train block ends, which is the shape
-        # zillow rent, realtor listings and the permit series all have
+        # the publisher starts after the fitting slice ends, which is the
+        # shape the permit and income series both have
         self.panel = panel_with_a_late_covariate("2020Q1")
         self.windows = nets.build_windows(self.panel)
         self.fit, self.ship = masks(self.windows)
@@ -94,11 +105,11 @@ class TestTheScoredModelAndTheShippedModelReadTheSameColumns(unittest.TestCase):
     # saw is blanked in both channels rather than fed through as a real zero
     def test_a_feature_the_fit_never_saw_is_blanked_in_both_channels(self):
         _, _, back = seen_of(self.windows, self.fit)
-        i = nets.SEQ_FEATURES.index("zori_yoy")
-        self.assertFalse(bool(back["seq_seen"][i]))
-        seq = nets.encode(self.windows.seq, back["seq_mean"], back["seq_std"], back["seq_seen"])
-        self.assertEqual(np.count_nonzero(seq[:, :, i]), 0)
-        self.assertEqual(seq[:, :, len(nets.SEQ_FEATURES) + i].mean(), 0.0)
+        i = nets.STATIC_FEATURES.index(LATE_COLUMN)
+        self.assertFalse(bool(back["static_seen"][i]))
+        static = nets.encode(self.windows.static, back["static_mean"], back["static_std"], back["static_seen"])
+        self.assertEqual(np.count_nonzero(static[:, i]), 0)
+        self.assertEqual(static[:, len(nets.STATIC_FEATURES) + i].mean(), 0.0)
 
 
 # the same question against the panel the published numbers were made from.
