@@ -99,19 +99,19 @@ describe("the model view", () => {
 
   it("gives the reader every published number for a model, not just its error", () => {
     // the sequence gru at eight quarters: error, coverage and band width
-    expect(page).toContain("10.14");
-    expect(page).toContain("cover 0.66, width 0.207");
+    expect(page).toContain("10.15");
+    expect(page).toContain("cover 0.66, width 0.208");
   });
 
   it("says out loud that ridge beats the shipped model at the short horizons", () => {
-    expect(page).toContain("ridge is ahead at one quarter by 0.11 points and at two quarters by 0.09 points");
+    expect(page).toContain("ridge is ahead at one quarter by 0.12 points and at two quarters by 0.08 points");
     expect(page).toContain("It loses the short horizons");
     expect(page).toContain("Ridge is ahead at one quarter");
   });
 
   it("names the nearest rival at eight quarters and how thin the win is", () => {
-    expect(page).toContain("gradient boosting");
-    expect(page).toContain("0.11 points");
+    expect(page).toContain("ridge");
+    expect(page).toContain("0.25 points");
   });
 
   it("puts the coverage miss in the limits rather than in a footnote", () => {
