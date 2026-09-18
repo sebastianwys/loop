@@ -986,7 +986,6 @@ cbsa_code,metric,period,value
 14540,inventory,2018,1017.5
 14540,inventory,2019,1018.75
 14540,inventory,2020,783.4167
-14540,inventory,2021,616.25
 14540,inventory,2022,578.25
 14540,inventory,2023,606.4167
 14540,inventory,2024,714.6667
@@ -1580,7 +1579,6 @@ cbsa_code,metric,period,value
 17340,inventory,2025,481.75
 17340,inventory,2026,465.375
 17340,inventory,2026-08,512.0
-17380,inventory,2021,6.75
 17380,inventory,2022,13.8333
 17380,inventory,2023,21.1667
 17380,inventory,2024,62.0
@@ -3055,7 +3053,6 @@ cbsa_code,metric,period,value
 24140,inventory,2025,307.9167
 24140,inventory,2026,327.375
 24140,inventory,2026-08,359.0
-24180,inventory,2022,8.3333
 24180,inventory,2023,385.4545
 24180,inventory,2024,623.75
 24180,inventory,2025,753.75
@@ -4492,6 +4489,16 @@ cbsa_code,metric,period,value
 30460,inventory,2025,1489.25
 30460,inventory,2026,1684.75
 30460,inventory,2026-08,1872.0
+30500,inventory,2018,623.8
+30500,inventory,2019,543.25
+30500,inventory,2020,397.0
+30500,inventory,2021,316.9167
+30500,inventory,2022,297.4167
+30500,inventory,2023,232.8333
+30500,inventory,2024,240.0833
+30500,inventory,2025,270.8333
+30500,inventory,2026,270.625
+30500,inventory,2026-08,325.0
 30580,inventory,2018,95.7
 30580,inventory,2019,97.5833
 30580,inventory,2020,70.0833
@@ -7161,7 +7168,6 @@ cbsa_code,metric,period,value
 42740,inventory,2018,232.1
 42740,inventory,2019,211.3333
 42740,inventory,2020,174.9167
-42740,inventory,2021,264.0
 42740,inventory,2022,355.6667
 42740,inventory,2023,253.5
 42740,inventory,2024,159.4167
@@ -8772,7 +8778,6 @@ cbsa_code,metric,period,value
 10460,days_to_pending,2025,73.5833
 10460,days_to_pending,2026,86.25
 10460,days_to_pending,2026-08,72.0
-10500,days_to_pending,2024,61.2857
 10500,days_to_pending,2025,64.0833
 10500,days_to_pending,2026,64.75
 10500,days_to_pending,2026-08,61.0
@@ -8796,9 +8801,7 @@ cbsa_code,metric,period,value
 10580,days_to_pending,2025,30.6667
 10580,days_to_pending,2026,30.5
 10580,days_to_pending,2026-08,21.0
-10660,days_to_pending,2026,70.0
 10660,days_to_pending,2026-08,62.0
-10700,days_to_pending,2019,104.0
 10700,days_to_pending,2020,84.9167
 10700,days_to_pending,2021,38.25
 10700,days_to_pending,2022,31.9167
@@ -8841,9 +8844,7 @@ cbsa_code,metric,period,value
 10900,days_to_pending,2026-08,23.0
 10940,days_to_pending,2026,47.5
 10940,days_to_pending,2026-08,34.0
-10980,days_to_pending,2026,32.4
 10980,days_to_pending,2026-08,26.0
-11020,days_to_pending,2025,49.4
 11020,days_to_pending,2026,51.625
 11020,days_to_pending,2026-08,44.0
 11060,days_to_pending,2026,84.25
@@ -8904,7 +8905,6 @@ cbsa_code,metric,period,value
 11500,days_to_pending,2026-08,39.0
 11540,days_to_pending,2026,74.8571
 11540,days_to_pending,2026-08,43.0
-11620,days_to_pending,2020,53.0
 11620,days_to_pending,2021,39.0833
 11620,days_to_pending,2022,42.5
 11620,days_to_pending,2023,62.8333
@@ -8912,7 +8912,6 @@ cbsa_code,metric,period,value
 11620,days_to_pending,2025,88.3333
 11620,days_to_pending,2026,95.5
 11620,days_to_pending,2026-08,92.0
-11680,days_to_pending,2025,93.0
 11680,days_to_pending,2026,78.75
 11680,days_to_pending,2026-08,72.0
 11700,days_to_pending,2018,54.8
@@ -8932,9 +8931,7 @@ cbsa_code,metric,period,value
 11820,days_to_pending,2025,78.0
 11820,days_to_pending,2026,77.625
 11820,days_to_pending,2026-08,78.0
-11900,days_to_pending,2026,73.0
 11900,days_to_pending,2026-08,73.0
-11940,days_to_pending,2020,63.0
 11940,days_to_pending,2021,25.8333
 11940,days_to_pending,2022,26.9167
 11940,days_to_pending,2023,49.0833
@@ -8995,7 +8992,6 @@ cbsa_code,metric,period,value
 12180,days_to_pending,2025,38.75
 12180,days_to_pending,2026,57.875
 12180,days_to_pending,2026-08,52.0
-12220,days_to_pending,2020,62.0
 12220,days_to_pending,2021,34.6667
 12220,days_to_pending,2022,23.25
 12220,days_to_pending,2023,34.8333
@@ -9003,7 +8999,6 @@ cbsa_code,metric,period,value
 12220,days_to_pending,2025,55.0
 12220,days_to_pending,2026,57.875
 12220,days_to_pending,2026-08,59.0
-12260,days_to_pending,2018,61.3333
 12260,days_to_pending,2019,77.9167
 12260,days_to_pending,2020,53.8333
 12260,days_to_pending,2021,23.25
@@ -9013,7 +9008,6 @@ cbsa_code,metric,period,value
 12260,days_to_pending,2025,50.8333
 12260,days_to_pending,2026,63.625
 12260,days_to_pending,2026-08,59.0
-12300,days_to_pending,2020,55.8
 12300,days_to_pending,2021,32.9167
 12300,days_to_pending,2022,25.9167
 12300,days_to_pending,2023,31.3333
@@ -9053,7 +9047,6 @@ cbsa_code,metric,period,value
 12580,days_to_pending,2025,32.6667
 12580,days_to_pending,2026,36.375
 12580,days_to_pending,2026-08,32.0
-12620,days_to_pending,2018,94.0
 12620,days_to_pending,2019,81.5
 12620,days_to_pending,2020,68.4167
 12620,days_to_pending,2021,37.1667
@@ -9063,7 +9056,6 @@ cbsa_code,metric,period,value
 12620,days_to_pending,2025,55.6667
 12620,days_to_pending,2026,63.125
 12620,days_to_pending,2026-08,50.0
-12660,days_to_pending,2026,43.2
 12660,days_to_pending,2026-08,50.0
 12700,days_to_pending,2018,62.1
 12700,days_to_pending,2019,81.1667
@@ -9075,7 +9067,6 @@ cbsa_code,metric,period,value
 12700,days_to_pending,2025,52.4167
 12700,days_to_pending,2026,52.0
 12700,days_to_pending,2026-08,43.0
-12740,days_to_pending,2020,68.5
 12740,days_to_pending,2021,39.5
 12740,days_to_pending,2022,25.6667
 12740,days_to_pending,2023,28.0833
@@ -9099,7 +9090,6 @@ cbsa_code,metric,period,value
 12900,days_to_pending,2025,80.0
 12900,days_to_pending,2026,83.5
 12900,days_to_pending,2026-08,76.0
-12940,days_to_pending,2018,88.5
 12940,days_to_pending,2019,100.0
 12940,days_to_pending,2020,80.6667
 12940,days_to_pending,2021,44.5833
@@ -9131,7 +9121,6 @@ cbsa_code,metric,period,value
 13020,days_to_pending,2026-08,38.0
 13060,days_to_pending,2026,164.2857
 13060,days_to_pending,2026-08,148.0
-13100,days_to_pending,2026,54.0
 13100,days_to_pending,2026-08,53.0
 13140,days_to_pending,2018,45.7
 13140,days_to_pending,2019,62.3333
@@ -9164,7 +9153,6 @@ cbsa_code,metric,period,value
 13380,days_to_pending,2025,50.1667
 13380,days_to_pending,2026,53.0
 13380,days_to_pending,2026-08,43.0
-13420,days_to_pending,2026,66.4
 13420,days_to_pending,2026-08,72.0
 13460,days_to_pending,2018,56.1
 13460,days_to_pending,2019,67.75
@@ -9242,7 +9230,6 @@ cbsa_code,metric,period,value
 14010,days_to_pending,2026-08,21.0
 14020,days_to_pending,2026,78.875
 14020,days_to_pending,2026-08,71.0
-14100,days_to_pending,2021,40.4
 14100,days_to_pending,2022,34.3333
 14100,days_to_pending,2023,30.5
 14100,days_to_pending,2024,38.5833
@@ -9251,7 +9238,6 @@ cbsa_code,metric,period,value
 14100,days_to_pending,2026-08,33.0
 14140,days_to_pending,2026,62.75
 14140,days_to_pending,2026-08,55.0
-14180,days_to_pending,2026,57.0
 14180,days_to_pending,2026-08,57.0
 14260,days_to_pending,2018,31.1
 14260,days_to_pending,2019,40.4167
@@ -9316,7 +9302,6 @@ cbsa_code,metric,period,value
 14580,days_to_pending,2025,75.0
 14580,days_to_pending,2026,78.125
 14580,days_to_pending,2026-08,56.0
-14620,days_to_pending,2026,71.4
 14620,days_to_pending,2026-08,64.0
 14660,days_to_pending,2018,77.7
 14660,days_to_pending,2019,88.1667
@@ -9358,7 +9343,6 @@ cbsa_code,metric,period,value
 14740,days_to_pending,2025,36.25
 14740,days_to_pending,2026,36.375
 14740,days_to_pending,2026-08,33.0
-14780,days_to_pending,2025,99.6667
 14780,days_to_pending,2026,122.5
 14780,days_to_pending,2026-08,94.0
 14860,days_to_pending,2018,64.2
@@ -9371,7 +9355,6 @@ cbsa_code,metric,period,value
 14860,days_to_pending,2025,31.6667
 14860,days_to_pending,2026,32.25
 14860,days_to_pending,2026-08,30.0
-15060,days_to_pending,2026,119.25
 15060,days_to_pending,2026-08,116.0
 15100,days_to_pending,2026,51.5
 15100,days_to_pending,2026-08,43.0
@@ -9446,7 +9429,6 @@ cbsa_code,metric,period,value
 15580,days_to_pending,2026-08,43.0
 15620,days_to_pending,2026,48.5
 15620,days_to_pending,2026-08,45.0
-15660,days_to_pending,2024,66.0
 15660,days_to_pending,2025,68.0
 15660,days_to_pending,2026,70.375
 15660,days_to_pending,2026-08,58.0
@@ -9482,7 +9464,6 @@ cbsa_code,metric,period,value
 16020,days_to_pending,2025,50.5833
 16020,days_to_pending,2026,49.75
 16020,days_to_pending,2026-08,45.0
-16060,days_to_pending,2019,153.0
 16060,days_to_pending,2020,99.75
 16060,days_to_pending,2021,42.9167
 16060,days_to_pending,2022,41.1667
@@ -9502,10 +9483,8 @@ cbsa_code,metric,period,value
 16180,days_to_pending,2025,47.5
 16180,days_to_pending,2026,40.875
 16180,days_to_pending,2026-08,30.0
-16220,days_to_pending,2025,39.8
 16220,days_to_pending,2026,47.625
 16220,days_to_pending,2026-08,40.0
-16260,days_to_pending,2022,78.0
 16260,days_to_pending,2023,74.5833
 16260,days_to_pending,2024,80.3333
 16260,days_to_pending,2025,86.8333
@@ -9521,10 +9500,8 @@ cbsa_code,metric,period,value
 16300,days_to_pending,2025,48.0
 16300,days_to_pending,2026,46.125
 16300,days_to_pending,2026-08,31.0
-16340,days_to_pending,2025,65.0
 16340,days_to_pending,2026,74.625
 16340,days_to_pending,2026-08,63.0
-16380,days_to_pending,2026,31.0
 16380,days_to_pending,2026-08,29.0
 16460,days_to_pending,2026,61.5
 16460,days_to_pending,2026-08,52.0
@@ -9558,7 +9535,6 @@ cbsa_code,metric,period,value
 16580,days_to_pending,2025,29.9167
 16580,days_to_pending,2026,38.625
 16580,days_to_pending,2026-08,36.0
-16620,days_to_pending,2020,85.125
 16620,days_to_pending,2021,55.5
 16620,days_to_pending,2022,36.9167
 16620,days_to_pending,2023,39.8333
@@ -9645,7 +9621,6 @@ cbsa_code,metric,period,value
 17020,days_to_pending,2025,53.3333
 17020,days_to_pending,2026,59.375
 17020,days_to_pending,2026-08,50.0
-17060,days_to_pending,2020,35.25
 17060,days_to_pending,2021,25.9167
 17060,days_to_pending,2022,23.0833
 17060,days_to_pending,2023,28.6667
@@ -9722,7 +9697,6 @@ cbsa_code,metric,period,value
 17580,days_to_pending,2025,87.75
 17580,days_to_pending,2026,101.625
 17580,days_to_pending,2026-08,89.0
-17660,days_to_pending,2019,60.5714
 17660,days_to_pending,2020,40.0833
 17660,days_to_pending,2021,21.5
 17660,days_to_pending,2022,32.9167
@@ -9731,7 +9705,6 @@ cbsa_code,metric,period,value
 17660,days_to_pending,2025,67.3333
 17660,days_to_pending,2026,63.625
 17660,days_to_pending,2026-08,46.0
-17740,days_to_pending,2025,63.0
 17740,days_to_pending,2026,64.625
 17740,days_to_pending,2026-08,59.0
 17780,days_to_pending,2018,75.9
@@ -9788,7 +9761,6 @@ cbsa_code,metric,period,value
 18020,days_to_pending,2025,36.9167
 18020,days_to_pending,2026,43.375
 18020,days_to_pending,2026-08,36.0
-18060,days_to_pending,2025,57.4
 18060,days_to_pending,2026,69.125
 18060,days_to_pending,2026-08,65.0
 18100,days_to_pending,2026,66.8571
@@ -9813,7 +9785,6 @@ cbsa_code,metric,period,value
 18180,days_to_pending,2025,23.9167
 18180,days_to_pending,2026,30.0
 18180,days_to_pending,2026-08,25.0
-18220,days_to_pending,2026,49.0
 18220,days_to_pending,2026-08,47.0
 18260,days_to_pending,2020,55.1818
 18260,days_to_pending,2021,31.8333
@@ -9833,7 +9804,6 @@ cbsa_code,metric,period,value
 18300,days_to_pending,2025,64.5
 18300,days_to_pending,2026,72.125
 18300,days_to_pending,2026-08,70.0
-18420,days_to_pending,2026,93.0
 18420,days_to_pending,2026-08,93.0
 18460,days_to_pending,2018,65.4
 18460,days_to_pending,2019,77.25
@@ -9905,7 +9875,6 @@ cbsa_code,metric,period,value
 18900,days_to_pending,2025,91.0
 18900,days_to_pending,2026,101.625
 18900,days_to_pending,2026-08,108.0
-18980,days_to_pending,2019,120.0
 18980,days_to_pending,2020,105.0
 18980,days_to_pending,2021,53.4167
 18980,days_to_pending,2022,47.4167
@@ -9944,7 +9913,6 @@ cbsa_code,metric,period,value
 19140,days_to_pending,2025,63.4167
 19140,days_to_pending,2026,73.875
 19140,days_to_pending,2026-08,77.0
-19180,days_to_pending,2019,109.0
 19180,days_to_pending,2020,95.4167
 19180,days_to_pending,2021,57.0833
 19180,days_to_pending,2022,36.1667
@@ -9996,7 +9964,6 @@ cbsa_code,metric,period,value
 19430,days_to_pending,2025,29.5833
 19430,days_to_pending,2026,32.75
 19430,days_to_pending,2026-08,27.0
-19460,days_to_pending,2019,85.0
 19460,days_to_pending,2020,61.5833
 19460,days_to_pending,2021,25.75
 19460,days_to_pending,2022,26.5
@@ -10015,7 +9982,6 @@ cbsa_code,metric,period,value
 19500,days_to_pending,2025,31.25
 19500,days_to_pending,2026,35.75
 19500,days_to_pending,2026-08,24.0
-19540,days_to_pending,2026,33.5
 19540,days_to_pending,2026-08,34.0
 19580,days_to_pending,2026,35.5
 19580,days_to_pending,2026-08,22.0
@@ -10110,7 +10076,6 @@ cbsa_code,metric,period,value
 20260,days_to_pending,2025,40.25
 20260,days_to_pending,2026,43.625
 20260,days_to_pending,2026-08,37.0
-20340,days_to_pending,2024,55.0
 20340,days_to_pending,2025,62.8333
 20340,days_to_pending,2026,66.125
 20340,days_to_pending,2026-08,67.0
@@ -10124,7 +10089,6 @@ cbsa_code,metric,period,value
 20420,days_to_pending,2025,67.9167
 20420,days_to_pending,2026,73.625
 20420,days_to_pending,2026-08,61.0
-20460,days_to_pending,2025,123.0
 20460,days_to_pending,2026,103.75
 20460,days_to_pending,2026-08,106.0
 20500,days_to_pending,2018,32.7
@@ -10139,9 +10103,7 @@ cbsa_code,metric,period,value
 20500,days_to_pending,2026-08,54.0
 20540,days_to_pending,2026,66.1429
 20540,days_to_pending,2026-08,67.0
-20580,days_to_pending,2026,138.3333
 20580,days_to_pending,2026-08,173.0
-20660,days_to_pending,2020,109.25
 20660,days_to_pending,2021,51.25
 20660,days_to_pending,2022,43.9167
 20660,days_to_pending,2023,45.8333
@@ -10149,7 +10111,6 @@ cbsa_code,metric,period,value
 20660,days_to_pending,2025,64.4167
 20660,days_to_pending,2026,77.625
 20660,days_to_pending,2026-08,70.0
-20700,days_to_pending,2020,61.5
 20700,days_to_pending,2021,36.25
 20700,days_to_pending,2022,36.0
 20700,days_to_pending,2023,46.6667
@@ -10161,7 +10122,6 @@ cbsa_code,metric,period,value
 20740,days_to_pending,2025,57.8333
 20740,days_to_pending,2026,51.5
 20740,days_to_pending,2026-08,31.0
-20780,days_to_pending,2020,132.875
 20780,days_to_pending,2021,55.5
 20780,days_to_pending,2022,33.0
 20780,days_to_pending,2023,60.25
@@ -10169,7 +10129,6 @@ cbsa_code,metric,period,value
 20780,days_to_pending,2025,80.75
 20780,days_to_pending,2026,98.0
 20780,days_to_pending,2026-08,81.0
-20820,days_to_pending,2026,49.6
 20820,days_to_pending,2026-08,53.0
 20940,days_to_pending,2018,47.5
 20940,days_to_pending,2019,51.8333
@@ -10200,7 +10159,6 @@ cbsa_code,metric,period,value
 21060,days_to_pending,2025,65.9167
 21060,days_to_pending,2026,70.625
 21060,days_to_pending,2026-08,71.0
-21140,days_to_pending,2020,44.75
 21140,days_to_pending,2021,22.5833
 21140,days_to_pending,2022,17.25
 21140,days_to_pending,2023,27.0833
@@ -10208,7 +10166,6 @@ cbsa_code,metric,period,value
 21140,days_to_pending,2025,41.5
 21140,days_to_pending,2026,41.375
 21140,days_to_pending,2026-08,31.0
-21220,days_to_pending,2022,30.125
 21220,days_to_pending,2023,38.5833
 21220,days_to_pending,2024,53.6667
 21220,days_to_pending,2025,56.3333
@@ -10233,7 +10190,6 @@ cbsa_code,metric,period,value
 21340,days_to_pending,2026-08,73.0
 21380,days_to_pending,2026,60.2857
 21380,days_to_pending,2026-08,57.0
-21420,days_to_pending,2021,42.875
 21420,days_to_pending,2022,39.3333
 21420,days_to_pending,2023,42.3333
 21420,days_to_pending,2024,48.5833
@@ -10259,7 +10215,6 @@ cbsa_code,metric,period,value
 21500,days_to_pending,2025,29.4167
 21500,days_to_pending,2026,33.25
 21500,days_to_pending,2026-08,21.0
-21540,days_to_pending,2026,36.0
 21540,days_to_pending,2026-08,35.0
 21660,days_to_pending,2018,35.1
 21660,days_to_pending,2019,40.3333
@@ -10271,7 +10226,6 @@ cbsa_code,metric,period,value
 21660,days_to_pending,2025,50.0
 21660,days_to_pending,2026,49.0
 21660,days_to_pending,2026-08,43.0
-21700,days_to_pending,2025,85.8
 21700,days_to_pending,2026,82.75
 21700,days_to_pending,2026-08,52.0
 21780,days_to_pending,2018,47.1
@@ -10288,7 +10242,6 @@ cbsa_code,metric,period,value
 21820,days_to_pending,2025,41.5
 21820,days_to_pending,2026,39.5
 21820,days_to_pending,2026-08,25.0
-21860,days_to_pending,2026,86.6
 21860,days_to_pending,2026-08,71.0
 21900,days_to_pending,2026,32.2857
 21900,days_to_pending,2026-08,34.0
@@ -10297,7 +10250,6 @@ cbsa_code,metric,period,value
 22020,days_to_pending,2025,60.0833
 22020,days_to_pending,2026,62.375
 22020,days_to_pending,2026-08,46.0
-22060,days_to_pending,2018,45.0
 22060,days_to_pending,2019,59.8333
 22060,days_to_pending,2020,49.3333
 22060,days_to_pending,2021,25.1667
@@ -10317,7 +10269,6 @@ cbsa_code,metric,period,value
 22100,days_to_pending,2025,46.75
 22100,days_to_pending,2026,46.75
 22100,days_to_pending,2026-08,38.0
-22140,days_to_pending,2022,32.0
 22140,days_to_pending,2023,34.3333
 22140,days_to_pending,2024,48.75
 22140,days_to_pending,2025,55.5
@@ -10333,7 +10284,6 @@ cbsa_code,metric,period,value
 22180,days_to_pending,2025,49.5
 22180,days_to_pending,2026,58.875
 22180,days_to_pending,2026-08,52.0
-22220,days_to_pending,2025,80.5
 22220,days_to_pending,2026,63.25
 22220,days_to_pending,2026-08,64.0
 22260,days_to_pending,2026,74.5
@@ -10368,7 +10318,6 @@ cbsa_code,metric,period,value
 22420,days_to_pending,2025,39.9167
 22420,days_to_pending,2026,42.375
 22420,days_to_pending,2026-08,34.0
-22500,days_to_pending,2020,74.0
 22500,days_to_pending,2021,36.25
 22500,days_to_pending,2022,27.4167
 22500,days_to_pending,2023,38.8333
@@ -10376,15 +10325,12 @@ cbsa_code,metric,period,value
 22500,days_to_pending,2025,56.75
 22500,days_to_pending,2026,65.25
 22500,days_to_pending,2026-08,58.0
-22520,days_to_pending,2022,38.6667
 22520,days_to_pending,2023,44.75
 22520,days_to_pending,2024,50.0833
 22520,days_to_pending,2025,64.6667
 22520,days_to_pending,2026,74.75
 22520,days_to_pending,2026-08,77.0
-22540,days_to_pending,2026,66.0
 22540,days_to_pending,2026-08,47.0
-22580,days_to_pending,2026,95.0
 22580,days_to_pending,2026-08,95.0
 22660,days_to_pending,2018,41.4
 22660,days_to_pending,2019,55.5
@@ -10430,7 +10376,6 @@ cbsa_code,metric,period,value
 22900,days_to_pending,2025,67.75
 22900,days_to_pending,2026,85.5
 22900,days_to_pending,2026-08,85.0
-23060,days_to_pending,2020,29.0
 23060,days_to_pending,2021,14.5
 23060,days_to_pending,2022,13.0833
 23060,days_to_pending,2023,19.1667
@@ -10438,7 +10383,6 @@ cbsa_code,metric,period,value
 23060,days_to_pending,2025,34.3333
 23060,days_to_pending,2026,38.125
 23060,days_to_pending,2026-08,27.0
-23140,days_to_pending,2026,48.0
 23140,days_to_pending,2026-08,48.0
 23180,days_to_pending,2018,49.4
 23180,days_to_pending,2019,56.0833
@@ -10457,7 +10401,6 @@ cbsa_code,metric,period,value
 23300,days_to_pending,2025,41.6667
 23300,days_to_pending,2026,49.25
 23300,days_to_pending,2026-08,36.0
-23340,days_to_pending,2025,56.0
 23340,days_to_pending,2026,52.875
 23340,days_to_pending,2026-08,43.0
 23380,days_to_pending,2018,47.4
@@ -10480,7 +10423,6 @@ cbsa_code,metric,period,value
 23420,days_to_pending,2025,43.5833
 23420,days_to_pending,2026,47.5
 23420,days_to_pending,2026-08,43.0
-23460,days_to_pending,2020,59.0
 23460,days_to_pending,2021,46.5833
 23460,days_to_pending,2022,33.5833
 23460,days_to_pending,2023,47.0833
@@ -10541,7 +10483,6 @@ cbsa_code,metric,period,value
 23900,days_to_pending,2025,32.0
 23900,days_to_pending,2026,38.0
 23900,days_to_pending,2026-08,34.0
-23940,days_to_pending,2025,66.0
 23940,days_to_pending,2026,64.5
 23940,days_to_pending,2026-08,41.0
 23980,days_to_pending,2026,80.0
@@ -10601,7 +10542,6 @@ cbsa_code,metric,period,value
 24300,days_to_pending,2025,52.6667
 24300,days_to_pending,2026,62.25
 24300,days_to_pending,2026-08,60.0
-24330,days_to_pending,2026,55.75
 24330,days_to_pending,2026-08,55.0
 24340,days_to_pending,2018,30.9
 24340,days_to_pending,2019,37.8333
@@ -10662,7 +10602,6 @@ cbsa_code,metric,period,value
 24660,days_to_pending,2025,43.5833
 24660,days_to_pending,2026,49.75
 24660,days_to_pending,2026-08,44.0
-24700,days_to_pending,2026,43.5
 24700,days_to_pending,2026-08,41.0
 24780,days_to_pending,2018,52.4
 24780,days_to_pending,2019,49.6667
@@ -10687,11 +10626,9 @@ cbsa_code,metric,period,value
 24860,days_to_pending,2025,50.0833
 24860,days_to_pending,2026,59.375
 24860,days_to_pending,2026-08,57.0
-24940,days_to_pending,2024,52.0
 24940,days_to_pending,2025,66.9167
 24940,days_to_pending,2026,78.75
 24940,days_to_pending,2026-08,69.0
-25060,days_to_pending,2021,44.8333
 25060,days_to_pending,2022,30.6667
 25060,days_to_pending,2023,43.25
 25060,days_to_pending,2024,60.8333
@@ -10722,7 +10659,6 @@ cbsa_code,metric,period,value
 25220,days_to_pending,2025,78.75
 25220,days_to_pending,2026,84.75
 25220,days_to_pending,2026-08,74.0
-25260,days_to_pending,2018,62.0
 25260,days_to_pending,2019,55.25
 25260,days_to_pending,2020,35.9167
 25260,days_to_pending,2021,22.5
@@ -10788,7 +10724,6 @@ cbsa_code,metric,period,value
 25720,days_to_pending,2025,78.6667
 25720,days_to_pending,2026,89.375
 25720,days_to_pending,2026-08,80.0
-25780,days_to_pending,2026,73.0
 25780,days_to_pending,2026-08,73.0
 25840,days_to_pending,2018,61.8
 25840,days_to_pending,2019,63.25
@@ -10868,7 +10803,6 @@ cbsa_code,metric,period,value
 26140,days_to_pending,2025,86.3333
 26140,days_to_pending,2026,98.5
 26140,days_to_pending,2026-08,98.0
-26300,days_to_pending,2021,29.7143
 26300,days_to_pending,2022,35.6667
 26300,days_to_pending,2023,46.5
 26300,days_to_pending,2024,68.6667
@@ -10938,18 +10872,15 @@ cbsa_code,metric,period,value
 26660,days_to_pending,2025,109.6667
 26660,days_to_pending,2026,107.375
 26660,days_to_pending,2026-08,101.0
-26740,days_to_pending,2024,48.5
 26740,days_to_pending,2025,39.4167
 26740,days_to_pending,2026,43.5
 26740,days_to_pending,2026-08,35.0
 26780,days_to_pending,2026,45.8333
 26780,days_to_pending,2026-08,41.0
-26820,days_to_pending,2023,53.2
 26820,days_to_pending,2024,53.5
 26820,days_to_pending,2025,60.5833
 26820,days_to_pending,2026,62.5
 26820,days_to_pending,2026-08,54.0
-26860,days_to_pending,2020,123.375
 26860,days_to_pending,2021,78.8333
 26860,days_to_pending,2022,52.0
 26860,days_to_pending,2023,43.5833
@@ -11007,14 +10938,12 @@ cbsa_code,metric,period,value
 27140,days_to_pending,2025,59.25
 27140,days_to_pending,2026,62.75
 27140,days_to_pending,2026-08,57.0
-27180,days_to_pending,2021,27.375
 27180,days_to_pending,2022,34.0
 27180,days_to_pending,2023,46.25
 27180,days_to_pending,2024,49.3333
 27180,days_to_pending,2025,64.6667
 27180,days_to_pending,2026,76.625
 27180,days_to_pending,2026-08,67.0
-27220,days_to_pending,2024,101.0
 27220,days_to_pending,2025,98.25
 27220,days_to_pending,2026,112.125
 27220,days_to_pending,2026-08,110.0
@@ -11043,7 +10972,6 @@ cbsa_code,metric,period,value
 27340,days_to_pending,2026-08,45.0
 27380,days_to_pending,2026,121.875
 27380,days_to_pending,2026-08,138.0
-27420,days_to_pending,2026,38.0
 27420,days_to_pending,2026-08,38.0
 27460,days_to_pending,2018,86.8
 27460,days_to_pending,2019,105.0
@@ -11176,7 +11104,6 @@ cbsa_code,metric,period,value
 28180,days_to_pending,2026-08,102.0
 28260,days_to_pending,2026,32.8571
 28260,days_to_pending,2026-08,28.0
-28300,days_to_pending,2020,57.0
 28300,days_to_pending,2021,26.5
 28300,days_to_pending,2022,22.0833
 28300,days_to_pending,2023,23.3333
@@ -11200,7 +11127,6 @@ cbsa_code,metric,period,value
 28500,days_to_pending,2025,113.75
 28500,days_to_pending,2026,126.625
 28500,days_to_pending,2026-08,117.0
-28580,days_to_pending,2018,137.6
 28580,days_to_pending,2019,167.1667
 28580,days_to_pending,2020,198.6667
 28580,days_to_pending,2021,85.4167
@@ -11286,7 +11212,6 @@ cbsa_code,metric,period,value
 29020,days_to_pending,2025,34.5833
 29020,days_to_pending,2026,49.5
 29020,days_to_pending,2026-08,37.0
-29060,days_to_pending,2020,41.125
 29060,days_to_pending,2021,21.0
 29060,days_to_pending,2022,22.4167
 29060,days_to_pending,2023,30.0
@@ -11311,7 +11236,6 @@ cbsa_code,metric,period,value
 29180,days_to_pending,2025,72.5833
 29180,days_to_pending,2026,76.875
 29180,days_to_pending,2026-08,74.0
-29200,days_to_pending,2020,29.25
 29200,days_to_pending,2021,17.75
 29200,days_to_pending,2022,18.6667
 29200,days_to_pending,2023,22.5
@@ -11339,7 +11263,6 @@ cbsa_code,metric,period,value
 29340,days_to_pending,2025,114.4167
 29340,days_to_pending,2026,112.125
 29340,days_to_pending,2026-08,109.0
-29380,days_to_pending,2023,59.0
 29380,days_to_pending,2024,84.0833
 29380,days_to_pending,2025,86.6667
 29380,days_to_pending,2026,97.25
@@ -11427,7 +11350,6 @@ cbsa_code,metric,period,value
 29940,days_to_pending,2026-08,32.0
 29980,days_to_pending,2026,89.875
 29980,days_to_pending,2026-08,79.0
-30020,days_to_pending,2022,32.25
 30020,days_to_pending,2023,36.5
 30020,days_to_pending,2024,43.6667
 30020,days_to_pending,2025,50.6667
@@ -11487,6 +11409,16 @@ cbsa_code,metric,period,value
 30460,days_to_pending,2025,37.3333
 30460,days_to_pending,2026,44.375
 30460,days_to_pending,2026-08,39.0
+30500,days_to_pending,2018,67.1
+30500,days_to_pending,2019,61.8333
+30500,days_to_pending,2020,39.5833
+30500,days_to_pending,2021,18.9167
+30500,days_to_pending,2022,21.75
+30500,days_to_pending,2023,28.5833
+30500,days_to_pending,2024,25.6667
+30500,days_to_pending,2025,31.0
+30500,days_to_pending,2026,33.875
+30500,days_to_pending,2026-08,34.0
 30620,days_to_pending,2020,56.2
 30620,days_to_pending,2021,30.0
 30620,days_to_pending,2022,32.5
@@ -11515,7 +11447,6 @@ cbsa_code,metric,period,value
 30780,days_to_pending,2025,66.1667
 30780,days_to_pending,2026,75.0
 30780,days_to_pending,2026-08,67.0
-30820,days_to_pending,2026,47.6
 30820,days_to_pending,2026-08,43.0
 30860,days_to_pending,2021,27.1667
 30860,days_to_pending,2022,33.5833
@@ -11541,7 +11472,6 @@ cbsa_code,metric,period,value
 31020,days_to_pending,2025,52.5833
 31020,days_to_pending,2026,57.25
 31020,days_to_pending,2026-08,51.0
-31060,days_to_pending,2026,44.4
 31060,days_to_pending,2026-08,39.0
 31080,days_to_pending,2018,37.9
 31080,days_to_pending,2019,49.9167
@@ -11563,7 +11493,6 @@ cbsa_code,metric,period,value
 31140,days_to_pending,2025,36.5833
 31140,days_to_pending,2026,42.5
 31140,days_to_pending,2026-08,37.0
-31180,days_to_pending,2020,43.5
 31180,days_to_pending,2021,29.0
 31180,days_to_pending,2022,22.0
 31180,days_to_pending,2023,39.0
@@ -11583,12 +11512,10 @@ cbsa_code,metric,period,value
 31260,days_to_pending,2025,87.1667
 31260,days_to_pending,2026,102.875
 31260,days_to_pending,2026-08,111.0
-31300,days_to_pending,2023,45.0
 31300,days_to_pending,2024,51.0833
 31300,days_to_pending,2025,59.8333
 31300,days_to_pending,2026,90.0
 31300,days_to_pending,2026-08,89.0
-31340,days_to_pending,2018,86.5
 31340,days_to_pending,2019,91.0833
 31340,days_to_pending,2020,74.8333
 31340,days_to_pending,2021,29.5
@@ -11635,12 +11562,10 @@ cbsa_code,metric,period,value
 31740,days_to_pending,2025,40.1667
 31740,days_to_pending,2026,43.375
 31740,days_to_pending,2026-08,37.0
-31820,days_to_pending,2026,34.0
 31820,days_to_pending,2026-08,34.0
 31860,days_to_pending,2025,48.4545
 31860,days_to_pending,2026,56.375
 31860,days_to_pending,2026-08,50.0
-31900,days_to_pending,2022,28.0
 31900,days_to_pending,2023,25.0
 31900,days_to_pending,2024,27.9167
 31900,days_to_pending,2025,32.6667
@@ -11661,7 +11586,6 @@ cbsa_code,metric,period,value
 32020,days_to_pending,2026-08,31.0
 32100,days_to_pending,2026,67.5
 32100,days_to_pending,2026-08,56.0
-32180,days_to_pending,2026,64.0
 32180,days_to_pending,2026-08,64.0
 32260,days_to_pending,2026,41.3333
 32260,days_to_pending,2026-08,49.0
@@ -11687,7 +11611,6 @@ cbsa_code,metric,period,value
 32390,days_to_pending,2025,76.6667
 32390,days_to_pending,2026,104.5
 32390,days_to_pending,2026-08,68.0
-32460,days_to_pending,2026,67.0
 32460,days_to_pending,2026-08,66.0
 32540,days_to_pending,2019,132.0
 32540,days_to_pending,2020,112.3333
@@ -11708,7 +11631,6 @@ cbsa_code,metric,period,value
 32580,days_to_pending,2025,113.0833
 32580,days_to_pending,2026,127.75
 32580,days_to_pending,2026-08,130.0
-32620,days_to_pending,2026,115.0
 32620,days_to_pending,2026-08,115.0
 32660,days_to_pending,2026,92.0
 32660,days_to_pending,2026-08,78.0
@@ -11749,7 +11671,6 @@ cbsa_code,metric,period,value
 32900,days_to_pending,2025,47.4167
 32900,days_to_pending,2026,52.25
 32900,days_to_pending,2026-08,50.0
-32940,days_to_pending,2023,57.0
 32940,days_to_pending,2024,62.0
 32940,days_to_pending,2025,58.5
 32940,days_to_pending,2026,75.5
@@ -11827,11 +11748,8 @@ cbsa_code,metric,period,value
 33500,days_to_pending,2025,40.5833
 33500,days_to_pending,2026,41.25
 33500,days_to_pending,2026-08,24.0
-33580,days_to_pending,2026,57.0
 33580,days_to_pending,2026-08,50.0
-33620,days_to_pending,2026,37.25
 33620,days_to_pending,2026-08,33.0
-33660,days_to_pending,2020,59.5
 33660,days_to_pending,2021,34.5833
 33660,days_to_pending,2022,33.5
 33660,days_to_pending,2023,39.9167
@@ -11849,7 +11767,6 @@ cbsa_code,metric,period,value
 33700,days_to_pending,2025,41.6667
 33700,days_to_pending,2026,41.75
 33700,days_to_pending,2026-08,37.0
-33740,days_to_pending,2023,54.5
 33740,days_to_pending,2024,56.6667
 33740,days_to_pending,2025,71.1667
 33740,days_to_pending,2026,64.75
@@ -11894,7 +11811,6 @@ cbsa_code,metric,period,value
 33980,days_to_pending,2025,72.25
 33980,days_to_pending,2026,82.625
 33980,days_to_pending,2026-08,78.0
-34020,days_to_pending,2026,122.0
 34020,days_to_pending,2026-08,122.0
 34060,days_to_pending,2023,46.25
 34060,days_to_pending,2024,43.75
@@ -11933,7 +11849,6 @@ cbsa_code,metric,period,value
 34340,days_to_pending,2025,62.8333
 34340,days_to_pending,2026,63.125
 34340,days_to_pending,2026-08,55.0
-34380,days_to_pending,2020,82.2857
 34380,days_to_pending,2021,42.0833
 34380,days_to_pending,2022,43.5
 34380,days_to_pending,2023,61.0
@@ -11959,7 +11874,6 @@ cbsa_code,metric,period,value
 34580,days_to_pending,2025,43.1667
 34580,days_to_pending,2026,47.75
 34580,days_to_pending,2026-08,39.0
-34620,days_to_pending,2018,66.0
 34620,days_to_pending,2019,72.0833
 34620,days_to_pending,2020,56.9167
 34620,days_to_pending,2021,30.3333
@@ -11969,7 +11883,6 @@ cbsa_code,metric,period,value
 34620,days_to_pending,2025,35.3333
 34620,days_to_pending,2026,45.5
 34620,days_to_pending,2026-08,37.0
-34660,days_to_pending,2026,74.5
 34660,days_to_pending,2026-08,67.0
 34700,days_to_pending,2026,44.875
 34700,days_to_pending,2026-08,29.0
@@ -12020,7 +11933,6 @@ cbsa_code,metric,period,value
 34940,days_to_pending,2018,95.2
 34940,days_to_pending,2019,119.8333
 34940,days_to_pending,2020,114.5
-34940,days_to_pending,2021,39.875
 34940,days_to_pending,2022,31.6667
 34940,days_to_pending,2023,58.9167
 34940,days_to_pending,2024,86.3333
@@ -12037,7 +11949,6 @@ cbsa_code,metric,period,value
 34980,days_to_pending,2025,59.4167
 34980,days_to_pending,2026,66.375
 34980,days_to_pending,2026-08,60.0
-35020,days_to_pending,2026,124.0
 35020,days_to_pending,2026-08,124.0
 35100,days_to_pending,2018,71.8
 35100,days_to_pending,2019,58.5
@@ -12097,9 +12008,7 @@ cbsa_code,metric,period,value
 35440,days_to_pending,2025,95.6667
 35440,days_to_pending,2026,99.875
 35440,days_to_pending,2026-08,91.0
-35460,days_to_pending,2026,96.6667
 35460,days_to_pending,2026-08,98.0
-35580,days_to_pending,2026,53.2
 35580,days_to_pending,2026-08,38.0
 35620,days_to_pending,2018,73.6
 35620,days_to_pending,2019,92.0
@@ -12111,7 +12020,6 @@ cbsa_code,metric,period,value
 35620,days_to_pending,2025,59.5833
 35620,days_to_pending,2026,61.75
 35620,days_to_pending,2026-08,55.0
-35660,days_to_pending,2020,85.25
 35660,days_to_pending,2021,49.0833
 35660,days_to_pending,2022,38.5833
 35660,days_to_pending,2023,40.0833
@@ -12119,7 +12027,6 @@ cbsa_code,metric,period,value
 35660,days_to_pending,2025,47.75
 35660,days_to_pending,2026,42.0
 35660,days_to_pending,2026-08,34.0
-35700,days_to_pending,2025,104.3333
 35700,days_to_pending,2026,101.25
 35700,days_to_pending,2026-08,122.0
 35740,days_to_pending,2024,49.7273
@@ -12196,7 +12103,6 @@ cbsa_code,metric,period,value
 36260,days_to_pending,2026-08,46.0
 36340,days_to_pending,2026,72.8333
 36340,days_to_pending,2026-08,80.0
-36380,days_to_pending,2026,119.0
 36380,days_to_pending,2026-08,119.0
 36420,days_to_pending,2018,60.5
 36420,days_to_pending,2019,63.5833
@@ -12244,7 +12150,6 @@ cbsa_code,metric,period,value
 36620,days_to_pending,2025,80.7273
 36620,days_to_pending,2026,71.875
 36620,days_to_pending,2026-08,69.0
-36660,days_to_pending,2025,83.0
 36660,days_to_pending,2026,93.625
 36660,days_to_pending,2026-08,97.0
 36700,days_to_pending,2026,88.3333
@@ -12273,7 +12178,6 @@ cbsa_code,metric,period,value
 36837,days_to_pending,2026-08,40.0
 36840,days_to_pending,2026,41.6667
 36840,days_to_pending,2026-08,40.0
-36900,days_to_pending,2026,79.4
 36900,days_to_pending,2026-08,71.0
 36940,days_to_pending,2026,63.25
 36940,days_to_pending,2026-08,38.0
@@ -12315,7 +12219,6 @@ cbsa_code,metric,period,value
 37220,days_to_pending,2026-08,112.0
 37260,days_to_pending,2026,99.375
 37260,days_to_pending,2026-08,92.0
-37300,days_to_pending,2025,92.0
 37300,days_to_pending,2026,95.875
 37300,days_to_pending,2026-08,106.0
 37340,days_to_pending,2018,52.3
@@ -12338,7 +12241,6 @@ cbsa_code,metric,period,value
 37460,days_to_pending,2025,108.4167
 37460,days_to_pending,2026,119.125
 37460,days_to_pending,2026-08,113.0
-37500,days_to_pending,2025,72.0
 37500,days_to_pending,2026,72.375
 37500,days_to_pending,2026-08,76.0
 37540,days_to_pending,2026,94.5
@@ -12418,7 +12320,6 @@ cbsa_code,metric,period,value
 38100,days_to_pending,2025,91.0
 38100,days_to_pending,2026,81.75
 38100,days_to_pending,2026-08,85.0
-38220,days_to_pending,2026,90.6667
 38220,days_to_pending,2026-08,88.0
 38240,days_to_pending,2018,70.6
 38240,days_to_pending,2019,79.25
@@ -12452,7 +12353,6 @@ cbsa_code,metric,period,value
 38340,days_to_pending,2025,64.9167
 38340,days_to_pending,2026,69.25
 38340,days_to_pending,2026-08,57.0
-38420,days_to_pending,2026,45.4
 38420,days_to_pending,2026-08,39.0
 38460,days_to_pending,2018,73.7
 38460,days_to_pending,2019,73.9167
@@ -12524,7 +12424,6 @@ cbsa_code,metric,period,value
 38900,days_to_pending,2025,49.9167
 38900,days_to_pending,2026,52.375
 38900,days_to_pending,2026-08,45.0
-38920,days_to_pending,2026,171.0
 38920,days_to_pending,2026-08,171.0
 38940,days_to_pending,2018,68.5
 38940,days_to_pending,2019,84.5833
@@ -12540,7 +12439,6 @@ cbsa_code,metric,period,value
 39020,days_to_pending,2025,54.0833
 39020,days_to_pending,2026,61.25
 39020,days_to_pending,2026-08,48.0
-39060,days_to_pending,2020,57.375
 39060,days_to_pending,2021,30.6667
 39060,days_to_pending,2022,27.8333
 39060,days_to_pending,2023,33.0833
@@ -12558,7 +12456,6 @@ cbsa_code,metric,period,value
 39150,days_to_pending,2025,73.3333
 39150,days_to_pending,2026,82.875
 39150,days_to_pending,2026-08,75.0
-39220,days_to_pending,2026,87.0
 39220,days_to_pending,2026-08,87.0
 39300,days_to_pending,2018,48.0
 39300,days_to_pending,2019,58.5
@@ -12580,7 +12477,6 @@ cbsa_code,metric,period,value
 39340,days_to_pending,2025,52.8333
 39340,days_to_pending,2026,57.25
 39340,days_to_pending,2026-08,52.0
-39380,days_to_pending,2020,38.5
 39380,days_to_pending,2021,23.3333
 39380,days_to_pending,2022,32.0
 39380,days_to_pending,2023,56.25
@@ -12600,14 +12496,12 @@ cbsa_code,metric,period,value
 39460,days_to_pending,2025,104.0
 39460,days_to_pending,2026,112.75
 39460,days_to_pending,2026-08,114.0
-39500,days_to_pending,2021,39.25
 39500,days_to_pending,2022,26.8333
 39500,days_to_pending,2023,32.9167
 39500,days_to_pending,2024,35.4167
 39500,days_to_pending,2025,38.4167
 39500,days_to_pending,2026,38.25
 39500,days_to_pending,2026-08,33.0
-39540,days_to_pending,2021,36.125
 39540,days_to_pending,2022,35.5833
 39540,days_to_pending,2023,32.5833
 39540,days_to_pending,2024,34.0833
@@ -12647,7 +12541,6 @@ cbsa_code,metric,period,value
 39780,days_to_pending,2025,71.3333
 39780,days_to_pending,2026,75.5
 39780,days_to_pending,2026-08,71.0
-39820,days_to_pending,2023,67.0
 39820,days_to_pending,2024,51.5833
 39820,days_to_pending,2025,58.5
 39820,days_to_pending,2026,57.625
@@ -12669,7 +12562,6 @@ cbsa_code,metric,period,value
 39900,days_to_pending,2026-08,40.0
 39940,days_to_pending,2026,86.6667
 39940,days_to_pending,2026-08,70.0
-39980,days_to_pending,2024,59.0
 39980,days_to_pending,2025,46.4167
 39980,days_to_pending,2026,58.875
 39980,days_to_pending,2026-08,46.0
@@ -12703,9 +12595,7 @@ cbsa_code,metric,period,value
 40140,days_to_pending,2025,59.6667
 40140,days_to_pending,2026,62.5
 40140,days_to_pending,2026-08,58.0
-40180,days_to_pending,2026,107.2
 40180,days_to_pending,2026-08,109.0
-40220,days_to_pending,2018,94.5
 40220,days_to_pending,2019,74.1667
 40220,days_to_pending,2020,58.9167
 40220,days_to_pending,2021,26.0
@@ -12769,7 +12659,6 @@ cbsa_code,metric,period,value
 40580,days_to_pending,2025,60.25
 40580,days_to_pending,2026,71.375
 40580,days_to_pending,2026-08,71.0
-40620,days_to_pending,2025,78.0
 40620,days_to_pending,2026,56.375
 40620,days_to_pending,2026-08,44.0
 40660,days_to_pending,2018,58.9
@@ -12796,9 +12685,7 @@ cbsa_code,metric,period,value
 40740,days_to_pending,2025,67.0
 40740,days_to_pending,2026,69.75
 40740,days_to_pending,2026-08,76.0
-40760,days_to_pending,2026,147.6
 40760,days_to_pending,2026-08,173.0
-40860,days_to_pending,2020,116.0
 40860,days_to_pending,2021,55.0833
 40860,days_to_pending,2022,38.5833
 40860,days_to_pending,2023,39.6667
@@ -12866,7 +12753,6 @@ cbsa_code,metric,period,value
 41180,days_to_pending,2025,28.3333
 41180,days_to_pending,2026,30.875
 41180,days_to_pending,2026-08,26.0
-41260,days_to_pending,2026,63.0
 41260,days_to_pending,2026-08,63.0
 41400,days_to_pending,2018,94.7
 41400,days_to_pending,2019,101.8333
@@ -12888,7 +12774,6 @@ cbsa_code,metric,period,value
 41420,days_to_pending,2025,51.3333
 41420,days_to_pending,2026,59.375
 41420,days_to_pending,2026-08,50.0
-41460,days_to_pending,2021,39.75
 41460,days_to_pending,2022,24.9167
 41460,days_to_pending,2023,35.3333
 41460,days_to_pending,2024,34.9167
@@ -13045,7 +12930,6 @@ cbsa_code,metric,period,value
 42220,days_to_pending,2025,47.5
 42220,days_to_pending,2026,49.625
 42220,days_to_pending,2026-08,45.0
-42300,days_to_pending,2026,76.6667
 42300,days_to_pending,2026-08,68.0
 42340,days_to_pending,2018,58.9
 42340,days_to_pending,2019,67.25
@@ -13059,7 +12943,6 @@ cbsa_code,metric,period,value
 42340,days_to_pending,2026-08,73.0
 42420,days_to_pending,2026,66.625
 42420,days_to_pending,2026-08,66.0
-42460,days_to_pending,2025,88.0
 42460,days_to_pending,2026,84.25
 42460,days_to_pending,2026-08,86.0
 42540,days_to_pending,2018,86.3
@@ -13072,7 +12955,6 @@ cbsa_code,metric,period,value
 42540,days_to_pending,2025,47.9167
 42540,days_to_pending,2026,45.5
 42540,days_to_pending,2026-08,37.0
-42620,days_to_pending,2021,30.1429
 42620,days_to_pending,2022,35.25
 42620,days_to_pending,2023,42.5833
 42620,days_to_pending,2024,47.1667
@@ -13127,7 +13009,6 @@ cbsa_code,metric,period,value
 42860,days_to_pending,2025,69.5
 42860,days_to_pending,2026,80.5
 42860,days_to_pending,2026-08,74.0
-42900,days_to_pending,2026,41.75
 42900,days_to_pending,2026-08,24.0
 42940,days_to_pending,2018,67.5
 42940,days_to_pending,2019,66.0833
@@ -13142,7 +13023,6 @@ cbsa_code,metric,period,value
 42980,days_to_pending,2025,46.2727
 42980,days_to_pending,2026,51.0
 42980,days_to_pending,2026-08,48.0
-43020,days_to_pending,2026,63.0
 43020,days_to_pending,2026-08,63.0
 43060,days_to_pending,2018,78.1111
 43060,days_to_pending,2019,75.1667
@@ -13154,7 +13034,6 @@ cbsa_code,metric,period,value
 43060,days_to_pending,2025,70.4167
 43060,days_to_pending,2026,82.0
 43060,days_to_pending,2026-08,69.0
-43100,days_to_pending,2026,39.25
 43100,days_to_pending,2026-08,36.0
 43180,days_to_pending,2021,52.6667
 43180,days_to_pending,2022,33.5833
@@ -13173,9 +13052,7 @@ cbsa_code,metric,period,value
 43220,days_to_pending,2025,51.4167
 43220,days_to_pending,2026,59.0
 43220,days_to_pending,2026-08,56.0
-43260,days_to_pending,2026,57.6667
 43260,days_to_pending,2026-08,57.0
-43300,days_to_pending,2018,46.8333
 43300,days_to_pending,2019,70.5833
 43300,days_to_pending,2020,74.0
 43300,days_to_pending,2021,41.25
@@ -13215,9 +13092,7 @@ cbsa_code,metric,period,value
 43420,days_to_pending,2025,66.0833
 43420,days_to_pending,2026,79.75
 43420,days_to_pending,2026-08,70.0
-43460,days_to_pending,2026,45.75
 43460,days_to_pending,2026-08,41.0
-43500,days_to_pending,2026,107.0
 43500,days_to_pending,2026-08,95.0
 43580,days_to_pending,2020,69.6364
 43580,days_to_pending,2021,34.1667
@@ -13227,10 +13102,8 @@ cbsa_code,metric,period,value
 43580,days_to_pending,2025,49.3333
 43580,days_to_pending,2026,46.25
 43580,days_to_pending,2026-08,45.0
-43620,days_to_pending,2025,65.5
 43620,days_to_pending,2026,61.875
 43620,days_to_pending,2026-08,66.0
-43700,days_to_pending,2018,85.5
 43700,days_to_pending,2019,106.5
 43700,days_to_pending,2020,101.5833
 43700,days_to_pending,2021,45.5833
@@ -13240,7 +13113,6 @@ cbsa_code,metric,period,value
 43700,days_to_pending,2025,83.6667
 43700,days_to_pending,2026,88.125
 43700,days_to_pending,2026-08,80.0
-43740,days_to_pending,2020,123.625
 43740,days_to_pending,2021,49.1667
 43740,days_to_pending,2022,44.4167
 43740,days_to_pending,2023,44.9167
@@ -13248,9 +13120,7 @@ cbsa_code,metric,period,value
 43740,days_to_pending,2025,58.1667
 43740,days_to_pending,2026,52.875
 43740,days_to_pending,2026-08,44.0
-43760,days_to_pending,2026,49.0
 43760,days_to_pending,2026-08,49.0
-43780,days_to_pending,2020,58.125
 43780,days_to_pending,2021,26.6667
 43780,days_to_pending,2022,19.8333
 43780,days_to_pending,2023,25.6667
@@ -13270,7 +13140,6 @@ cbsa_code,metric,period,value
 43900,days_to_pending,2026-08,66.0
 43940,days_to_pending,2026,91.25
 43940,days_to_pending,2026-08,80.0
-44020,days_to_pending,2026,101.0
 44020,days_to_pending,2026-08,106.0
 44060,days_to_pending,2018,47.2
 44060,days_to_pending,2019,49.4167
@@ -13325,7 +13194,6 @@ cbsa_code,metric,period,value
 44260,days_to_pending,2025,100.6364
 44260,days_to_pending,2026,77.625
 44260,days_to_pending,2026-08,77.0
-44300,days_to_pending,2020,46.625
 44300,days_to_pending,2021,35.9167
 44300,days_to_pending,2022,23.3333
 44300,days_to_pending,2023,27.0
@@ -13357,11 +13225,9 @@ cbsa_code,metric,period,value
 44460,days_to_pending,2025,77.0
 44460,days_to_pending,2026,102.125
 44460,days_to_pending,2026-08,93.0
-44500,days_to_pending,2024,90.0
 44500,days_to_pending,2025,90.5833
 44500,days_to_pending,2026,90.25
 44500,days_to_pending,2026-08,84.0
-44540,days_to_pending,2026,83.0
 44540,days_to_pending,2026-08,83.0
 44580,days_to_pending,2018,74.5
 44580,days_to_pending,2019,85.5833
@@ -13393,7 +13259,6 @@ cbsa_code,metric,period,value
 44700,days_to_pending,2025,46.6667
 44700,days_to_pending,2026,51.375
 44700,days_to_pending,2026-08,44.0
-44780,days_to_pending,2020,63.25
 44780,days_to_pending,2021,29.75
 44780,days_to_pending,2022,35.25
 44780,days_to_pending,2023,35.3333
@@ -13411,14 +13276,12 @@ cbsa_code,metric,period,value
 44940,days_to_pending,2025,62.4167
 44940,days_to_pending,2026,69.375
 44940,days_to_pending,2026-08,61.0
-44980,days_to_pending,2021,43.5714
 44980,days_to_pending,2022,35.5833
 44980,days_to_pending,2023,40.4167
 44980,days_to_pending,2024,41.8333
 44980,days_to_pending,2025,42.0833
 44980,days_to_pending,2026,55.25
 44980,days_to_pending,2026-08,48.0
-45000,days_to_pending,2026,79.0
 45000,days_to_pending,2026-08,79.0
 45060,days_to_pending,2018,69.1
 45060,days_to_pending,2019,70.25
@@ -13489,9 +13352,7 @@ cbsa_code,metric,period,value
 45500,days_to_pending,2025,90.5
 45500,days_to_pending,2026,98.625
 45500,days_to_pending,2026-08,85.0
-45580,days_to_pending,2026,83.5
 45580,days_to_pending,2026-08,78.0
-45620,days_to_pending,2019,93.0
 45620,days_to_pending,2020,74.3333
 45620,days_to_pending,2021,61.0
 45620,days_to_pending,2022,44.6667
@@ -13502,7 +13363,6 @@ cbsa_code,metric,period,value
 45620,days_to_pending,2026-08,83.0
 45660,days_to_pending,2026,34.5714
 45660,days_to_pending,2026-08,21.0
-45740,days_to_pending,2026,90.5
 45740,days_to_pending,2026-08,85.0
 45780,days_to_pending,2018,50.0
 45780,days_to_pending,2019,54.5
@@ -13591,7 +13451,6 @@ cbsa_code,metric,period,value
 46140,days_to_pending,2025,55.9167
 46140,days_to_pending,2026,61.5
 46140,days_to_pending,2026-08,54.0
-46180,days_to_pending,2026,67.6667
 46180,days_to_pending,2026-08,79.0
 46220,days_to_pending,2018,59.8
 46220,days_to_pending,2019,68.0833
@@ -13630,7 +13489,6 @@ cbsa_code,metric,period,value
 46380,days_to_pending,2025,90.3333
 46380,days_to_pending,2026,98.0
 46380,days_to_pending,2026-08,84.0
-46500,days_to_pending,2025,27.0
 46500,days_to_pending,2026,32.5
 46500,days_to_pending,2026-08,29.0
 46520,days_to_pending,2021,45.9167
@@ -13650,7 +13508,6 @@ cbsa_code,metric,period,value
 46540,days_to_pending,2025,45.6667
 46540,days_to_pending,2026,57.875
 46540,days_to_pending,2026-08,41.0
-46660,days_to_pending,2024,61.0
 46660,days_to_pending,2025,61.0833
 46660,days_to_pending,2026,64.125
 46660,days_to_pending,2026-08,71.0
@@ -13666,7 +13523,6 @@ cbsa_code,metric,period,value
 46700,days_to_pending,2026-08,42.0
 46860,days_to_pending,2026,77.1429
 46860,days_to_pending,2026-08,65.0
-46980,days_to_pending,2026,83.0
 46980,days_to_pending,2026-08,83.0
 47020,days_to_pending,2018,65.7
 47020,days_to_pending,2019,73.5
@@ -13690,7 +13546,6 @@ cbsa_code,metric,period,value
 47220,days_to_pending,2025,54.4167
 47220,days_to_pending,2026,57.625
 47220,days_to_pending,2026-08,46.0
-47240,days_to_pending,2026,97.6
 47240,days_to_pending,2026-08,89.0
 47260,days_to_pending,2018,78.0
 47260,days_to_pending,2019,85.1667
@@ -13712,7 +13567,6 @@ cbsa_code,metric,period,value
 47300,days_to_pending,2025,46.4167
 47300,days_to_pending,2026,48.25
 47300,days_to_pending,2026-08,47.0
-47340,days_to_pending,2026,41.0
 47340,days_to_pending,2026-08,41.0
 47380,days_to_pending,2018,51.3
 47380,days_to_pending,2019,55.3333
@@ -13740,7 +13594,6 @@ cbsa_code,metric,period,value
 47580,days_to_pending,2025,42.9167
 47580,days_to_pending,2026,52.875
 47580,days_to_pending,2026-08,51.0
-47620,days_to_pending,2026,34.0
 47620,days_to_pending,2026-08,37.0
 47660,days_to_pending,2018,51.5
 47660,days_to_pending,2019,53.0
@@ -13754,7 +13607,6 @@ cbsa_code,metric,period,value
 47660,days_to_pending,2026-08,45.0
 47700,days_to_pending,2026,48.3333
 47700,days_to_pending,2026-08,53.0
-47780,days_to_pending,2026,71.5
 47780,days_to_pending,2026-08,62.0
 47820,days_to_pending,2025,70.1667
 47820,days_to_pending,2026,71.25
@@ -13771,7 +13623,6 @@ cbsa_code,metric,period,value
 47900,days_to_pending,2026-08,35.0
 47920,days_to_pending,2026,46.4286
 47920,days_to_pending,2026-08,32.0
-47940,days_to_pending,2018,79.0
 47940,days_to_pending,2019,73.5833
 47940,days_to_pending,2020,62.1667
 47940,days_to_pending,2021,35.8333
@@ -13845,7 +13696,6 @@ cbsa_code,metric,period,value
 48620,days_to_pending,2025,45.25
 48620,days_to_pending,2026,51.125
 48620,days_to_pending,2026-08,42.0
-48660,days_to_pending,2020,67.0
 48660,days_to_pending,2021,39.4167
 48660,days_to_pending,2022,41.8333
 48660,days_to_pending,2023,60.0833
@@ -13863,11 +13713,9 @@ cbsa_code,metric,period,value
 48680,days_to_pending,2025,75.6667
 48680,days_to_pending,2026,75.125
 48680,days_to_pending,2026-08,69.0
-48700,days_to_pending,2024,59.375
 48700,days_to_pending,2025,44.0833
 48700,days_to_pending,2026,41.625
 48700,days_to_pending,2026-08,36.0
-48780,days_to_pending,2025,47.0
 48780,days_to_pending,2026,46.25
 48780,days_to_pending,2026-08,36.0
 48820,days_to_pending,2026,66.0
@@ -13976,7 +13824,6 @@ cbsa_code,metric,period,value
 49700,days_to_pending,2025,53.3333
 49700,days_to_pending,2026,50.375
 49700,days_to_pending,2026-08,46.0
-49740,days_to_pending,2020,35.25
 49740,days_to_pending,2021,23.0
 49740,days_to_pending,2022,26.75
 49740,days_to_pending,2023,41.25
@@ -15545,7 +15392,6 @@ cbsa_code,metric,period,value
 17220,price_cut_share,2025,0.252
 17220,price_cut_share,2026,0.2393
 17220,price_cut_share,2026-08,0.2835
-17260,price_cut_share,2023,0.1587
 17260,price_cut_share,2024,0.1541
 17260,price_cut_share,2025,0.1696
 17260,price_cut_share,2026,0.1423
@@ -15570,7 +15416,6 @@ cbsa_code,metric,period,value
 17340,price_cut_share,2025,0.2096
 17340,price_cut_share,2026,0.191
 17340,price_cut_share,2026-08,0.2285
-17380,price_cut_share,2023,0.1098
 17380,price_cut_share,2024,0.1431
 17380,price_cut_share,2025,0.1705
 17380,price_cut_share,2026,0.1616
@@ -17255,7 +17100,6 @@ cbsa_code,metric,period,value
 25060,price_cut_share,2025,0.244
 25060,price_cut_share,2026,0.2418
 25060,price_cut_share,2026-08,0.2634
-25100,price_cut_share,2022,0.1267
 25100,price_cut_share,2023,0.1509
 25100,price_cut_share,2024,0.1569
 25100,price_cut_share,2025,0.1419
@@ -17411,7 +17255,6 @@ cbsa_code,metric,period,value
 25780,price_cut_share,2025,0.2569
 25780,price_cut_share,2026,0.2763
 25780,price_cut_share,2026-08,0.353
-25820,price_cut_share,2020,0.1045
 25820,price_cut_share,2021,0.0979
 25820,price_cut_share,2022,0.1188
 25820,price_cut_share,2023,0.0691
@@ -18476,6 +18319,16 @@ cbsa_code,metric,period,value
 30460,price_cut_share,2025,0.2371
 30460,price_cut_share,2026,0.2302
 30460,price_cut_share,2026-08,0.2843
+30500,price_cut_share,2018,0.2042
+30500,price_cut_share,2019,0.2021
+30500,price_cut_share,2020,0.1554
+30500,price_cut_share,2021,0.1673
+30500,price_cut_share,2022,0.191
+30500,price_cut_share,2023,0.1906
+30500,price_cut_share,2024,0.2036
+30500,price_cut_share,2025,0.2356
+30500,price_cut_share,2026,0.2135
+30500,price_cut_share,2026-08,0.2673
 30580,price_cut_share,2018,0.1612
 30580,price_cut_share,2019,0.1359
 30580,price_cut_share,2020,0.1145
@@ -22097,7 +21950,6 @@ cbsa_code,metric,period,value
 46860,price_cut_share,2025,0.202
 46860,price_cut_share,2026,0.2302
 46860,price_cut_share,2026-08,0.2669
-46900,price_cut_share,2021,0.1082
 46900,price_cut_share,2022,0.1499
 46900,price_cut_share,2023,0.1257
 46900,price_cut_share,2024,0.1483
@@ -22684,7 +22536,6 @@ cbsa_code,metric,period,value
 49780,price_cut_share,2025,0.2892
 49780,price_cut_share,2026,0.2675
 49780,price_cut_share,2026-08,0.2764
-49820,price_cut_share,2020,0.0563
 49820,price_cut_share,2021,0.0941
 49820,price_cut_share,2022,0.0819
 49820,price_cut_share,2023,0.0645
@@ -23132,6 +22983,7 @@ cbsa_code,metric,period,value
 30380,zhvf_forecast,2026-08,4.8
 30420,zhvf_forecast,2026-08,1.6
 30460,zhvf_forecast,2026-08,3.0
+30500,zhvf_forecast,2026-08,2.0
 30580,zhvf_forecast,2026-08,2.2
 30620,zhvf_forecast,2026-08,3.1
 30660,zhvf_forecast,2026-08,3.1

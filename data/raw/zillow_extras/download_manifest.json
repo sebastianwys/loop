@@ -9,12 +9,12 @@
       "dataset": "Metro inventory, days to pending, price cut share and one year ZHVF growth, annual means plus the newest month"
     },
     "integrity": {
-      "sha256": "b5091797fad5076c9963e8b7370796129e70f6e6aa5539a3f2c1d0b71db1a41f",
-      "size_kb": 740.3,
-      "row_count": 23550
+      "sha256": "e7e65e82dfb900c2cd963fd2ed89cde94234fd533fb6714814e8a9ed6877e112",
+      "size_kb": 735.5,
+      "row_count": 23402
     },
     "version": "through 2026-08-31",
-    "downloaded_at": "2026-09-17T04:43:58Z",
+    "downloaded_at": "2026-09-18T05:57:06Z",
     "notes": {
       "attribution": "Data provided by Zillow Research (zillow.com/research/data). Zillow terms of use apply.",
       "processing": "raw csvs read in memory and not kept, names mapped to cbsa codes through the gazetteer",
@@ -56,9 +56,9 @@
       "skipped": [],
       "forecast_horizon_months": 12,
       "gazetteer_metros": 935,
-      "gazetteer_metros_matched": 877,
+      "gazetteer_metros_matched": 878,
       "zillow_metros": 927,
-      "zillow_metros_unmatched": 50
+      "zillow_metros_unmatched": 49
     }
   }
 ]
