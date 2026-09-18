@@ -75,16 +75,6 @@ COMBINED = {
 # code of the region that succeeded it, the one holding most of its towns.
 # the two sides never carry a value in the same year: bea writes 0 for the
 # side it did not estimate and parse_counties drops it
-CONNECTICUT = {
-    "09001": "09190",  # fairfield, western connecticut
-    "09003": "09110",  # hartford, capitol
-    "09005": "09160",  # litchfield, northwest hills
-    "09007": "09130",  # middlesex, lower connecticut river valley
-    "09009": "09170",  # new haven, south central connecticut
-    "09011": "09180",  # new london, southeastern connecticut
-    "09013": "09110",  # tolland, capitol
-    "09015": "09150",  # windham, northeastern connecticut
-}
 
 
 # an error block bea sent inside a 200, with its code kept for the year probe
@@ -347,20 +337,12 @@ def _download(url):
 # succeeded it carries. a region the delineation does not name adds nothing,
 # and a delineation that names the county itself keeps its own row, since two
 # rows for one county would count it twice
-def add_connecticut(crosswalk):
-    codes_of = {}
-    for fips, code in zip(crosswalk["county_fips"], crosswalk["cbsa_code"]):
-        codes_of.setdefault(fips, set()).add(code)
-    extra = [{"county_fips": county, "cbsa_code": code}
-             for county, region in sorted(CONNECTICUT.items()) if county not in codes_of
-             for code in sorted(codes_of.get(region, ()))]
-    return pd.concat([crosswalk, pd.DataFrame(extra)], ignore_index=True) if extra else crosswalk
 
 
 # the county to code mapping: the delineation workbook, bea's combined areas
 # and connecticut's counties
 def load_crosswalk():
-    return add_connecticut(extend_crosswalk(irs.parse_crosswalk(_download(irs.DELINEATION_URL))))
+    return irs.add_connecticut(extend_crosswalk(irs.parse_crosswalk(_download(irs.DELINEATION_URL))))
 
 
 def line_params(line, years):
@@ -460,7 +442,7 @@ def collect():
             "combined_areas": sorted(COMBINED),
             # a connecticut county, which bea publishes through 2023, counts
             # in the cbsa of the planning region that succeeded it
-            "connecticut_counties": CONNECTICUT,
+            "connecticut_counties": irs.CONNECTICUT,
             "delineation": irs.DELINEATION_URL,
             "years": f"{used[0]} through {newest}",
             "next_year_probed": f"{year} not published",

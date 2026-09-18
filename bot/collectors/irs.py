@@ -97,6 +97,31 @@ def county_net(inflow, outflow):
 # one row per county and code it belongs to. every county row carries its
 # cbsa, and a county inside a metropolitan division carries that code too.
 # the sheet has two title rows above the header and note rows at the bottom
+# connecticut replaced its counties with planning regions in 2023. a source
+# still reporting a county has to reach the cbsa that county's region belongs
+# to, or every filing year before the change joins nothing
+CONNECTICUT = {
+    "09001": "09190",  # fairfield, western connecticut
+    "09003": "09110",  # hartford, capitol
+    "09005": "09160",  # litchfield, northwest hills
+    "09007": "09130",  # middlesex, lower connecticut river valley
+    "09009": "09170",  # new haven, south central connecticut
+    "09011": "09180",  # new london, southeastern connecticut
+    "09013": "09110",  # tolland, capitol
+    "09015": "09150",  # windham, northeastern connecticut
+}
+
+
+def add_connecticut(crosswalk):
+    codes_of = {}
+    for fips, code in zip(crosswalk["county_fips"], crosswalk["cbsa_code"]):
+        codes_of.setdefault(fips, set()).add(code)
+    extra = [{"county_fips": county, "cbsa_code": code}
+             for county, region in sorted(CONNECTICUT.items()) if county not in codes_of
+             for code in sorted(codes_of.get(region, ()))]
+    return pd.concat([crosswalk, pd.DataFrame(extra)], ignore_index=True) if extra else crosswalk
+
+
 def parse_crosswalk(content):
     df = pd.read_excel(io.BytesIO(content), header=2, dtype=str)
     df = df[df["FIPS State Code"].notna() & df["FIPS County Code"].notna()]
@@ -165,7 +190,7 @@ def collect():
     content = _download(DELINEATION_URL)
     if content is None:
         raise RuntimeError("the 2023 delineation workbook is missing")
-    crosswalk = parse_crosswalk(content)
+    crosswalk = add_connecticut(parse_crosswalk(content))
     delineated = set(crosswalk["county_fips"])
 
     frames, files = [], []
