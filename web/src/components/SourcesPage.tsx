@@ -168,7 +168,10 @@ export function SourcesPage({ data, go }: ViewProps) {
                         <span className="who">{row.entry.provider}</span>
                       </th>
                       <td><Address url={row.entry.url} /></td>
-                      <td>{row.entry.version}</td>
+                      <td>
+                        {row.entry.version}
+                        {row.read === false && <span className="unread">not read by this build</span>}
+                      </td>
                       <td className="when">{stamp(row.entry.downloaded_at)}</td>
                       <td className="v">{count(row.entry.files)}</td>
                       <td className="v">{count(row.entry.row_count)}</td>

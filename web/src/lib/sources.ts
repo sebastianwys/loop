@@ -27,6 +27,11 @@ const SECRET = /key|token|secret|password|auth|userid|user_id|credential|registr
 export interface SourceRow {
   // the manifest row, verbatim, because the point of the page is the download
   entry: Provenance;
+  // whether this build read the folder the row describes. the row above is
+  // evidence the bytes landed, which is not the same claim, and a page that
+  // prints one without the other leaves a reader deciding which to believe.
+  // null when the build cannot support either claim
+  read: boolean | null;
   source: Source | null;
   label: string | null;
   metrics: MetricDef[];
@@ -63,6 +68,16 @@ export function metricsOf(folder: string, defs: MetricDef[]): MetricDef[] {
   return mine;
 }
 
+// the vintage line beside a provenance row. sources is what the build read and
+// goes null where it read nothing, so it is what says whether the landing
+// record describes a file this build opened. a build old enough to carry no
+// vintage line, or one that does not name the folder, supports neither claim
+function wasRead(sources: MapData["sources"] | undefined, folder: string): boolean | null {
+  if (!sources || !Object.prototype.hasOwnProperty.call(sources, folder)) return null;
+  return (sources as Record<string, string | null>)[folder] !== null;
+}
+
+
 // the whole page in one object. an older build with no provenance block comes
 // back with no rows rather than with a claim it cannot support
 export function buildSources(data: MapData | null | undefined): SourceReport {
@@ -75,6 +90,7 @@ export function buildSources(data: MapData | null | undefined): SourceReport {
       const metrics = metricsOf(entry.source, defs);
       return {
         entry,
+        read: wasRead(data?.sources, entry.source),
         source,
         label: source === null ? null : SOURCE_LABEL[source],
         metrics,
