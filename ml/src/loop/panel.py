@@ -577,7 +577,8 @@ def coverage_figure(panel):
     latest, metros = panel["quarter"].max(), panel["cbsa_code"].nunique()
     fig, ax = charts.figure(
         "Where the panel has data",
-        f"share of the {metros} metros with a value in each year, one row per source series, as of {latest}",
+        f"share of the {metros} metros with a value in each year, one row per source series, as of {latest}; "
+        f"left of the rule is the block the model fits on, so coverage right of it teaches nothing",
         size=(11, 6))
     years = table.columns.to_numpy(dtype=float)
     x = np.append(years, years[-1] + 1) - 0.5
@@ -585,6 +586,11 @@ def coverage_figure(panel):
     mesh = ax.pcolormesh(x, y, table.to_numpy(), cmap=charts.sequential_cmap(), vmin=0, vmax=100,
                          edgecolors=charts.SURFACE, linewidth=0.6)
     ax.invert_yaxis()
+    # the fitting block ends inside a year, so the rule sits on the cell edge
+    fit_year = int(spec.FIT_END[:4])
+    ax.axvline(fit_year + 0.5, color=charts.INK2, linewidth=1.0, zorder=5)
+    ax.text(fit_year + 0.35, len(table) + 0.55, "fits through here", ha="right", va="top",
+            fontsize=8, color=charts.INK2)
     ax.set_yticks(y[:-1] + 0.5, table.index)
     ticks = [int(v) for v in years if v % 5 == 0]
     ax.set_xticks(ticks, [str(v) for v in ticks])
@@ -685,13 +691,19 @@ def feature_trends_figure(panel):
     fig, axes = charts.figure(
         "How each feature moved across metros",
         f"median across metros as the line, interquartile range as the band, quarters with at least 50 metros, "
-        f"through {latest}; growth features in percent",
+        f"through {latest}; one shared axis, and the shaded years are the block the model fits on",
         size=(11, 2.9 * rows), rows=rows, cols=cols, gridspec_kw={"hspace": 0.62, "wspace": 0.32})
     fig.subplots_adjust(top=0.9)
     for ax in axes.ravel()[len(spec.FEATURES):]:
         ax.set_visible(False)
+    # one axis for every panel, and the fitting block shaded on each. with a
+    # free axis per feature every series filled its panel and the whole point,
+    # that a covariate arrives long after prices do, was invisible
+    span = (panel["date"].min(), panel["date"].max())
+    fit_end = spec.quarter_end(spec.FIT_END)
     for ax, column in zip(axes.ravel(), spec.FEATURES):
         stats = feature_bands(panel, column)
+        ax.axvspan(span[0], fit_end, color=charts.GRID, alpha=0.55, linewidth=0, zorder=0)
         scale = spec.pct if column in GROWTH else (lambda v: np.asarray(v, dtype=float))
         ax.fill_between(stats.index, scale(stats["lo"]), scale(stats["hi"]), color=charts.BAND, linewidth=0)
         ax.plot(stats.index, scale(stats["mid"]), color=charts.SERIES[0], linewidth=1.3)
@@ -699,9 +711,8 @@ def feature_trends_figure(panel):
         if column in GROWTH or column in RATES:
             ticks = ax.get_yticks()
             charts.pct_axis(ax, decimals=0 if np.allclose(ticks, np.round(ticks)) else 1)
-        if len(stats):
-            years = (stats.index[-1] - stats.index[0]).days / 365.25
-            ax.xaxis.set_major_locator(mdates.YearLocator(10 if years > 30 else 5 if years > 12 else 2))
+        ax.set_xlim(span)
+        ax.xaxis.set_major_locator(mdates.YearLocator(20))
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
     return charts.save(fig, "03_feature_trends")
 

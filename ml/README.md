@@ -44,7 +44,7 @@ One row per metro per quarter. 410 metros, 1975Q1 to 2026Q2, 71,072 rows. FHFA a
 
 ![where the panel has data](results/figures/01_coverage.png)
 
-Coverage over the whole panel is the wrong measure. A feature is teachable only where the model is fitted, and the fitting block ends 2014Q4, not 2017Q4: `train.VAL_START` carves 2015 to 2017 out of the train block for validation. A column with no value in that block fails the `seen` test in `nets.moments`, and `encode` then zeroes both its value and its presence channel in every window, the test block included.
+The rule in that figure is `spec.FIT_END`, and it is the only date that matters: the train block runs to 2017Q4 but its last three years are held out for validation, so a model fits on outcomes through 2014Q4. A column with no value left of the rule fails the `seen` test in `nets.moments`, and `encode` then zeroes both its value and its presence channel in every window, the test block included.
 
 Fourteen columns are declared as features. Nine survive that test. Eight further columns ride along for the figures and the map without reaching a model, and why is in The Models.
 

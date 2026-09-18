@@ -32,6 +32,12 @@ SEED = 20260915
 # different horizons, which is the horizon moving the outcome. nothing realized
 # after 2021 reaches a model that is judged on 2022 onward
 TRAIN_END = "2017Q4"
+# the tail of the train block is held out to choose epochs and inputs, so the
+# block a model actually FITS on ends the quarter before this. that is the
+# boundary that decides whether a feature can be learned at all, and it lives
+# here rather than in train.py because the panel figures draw it too
+VAL_START = "2015Q1"
+FIT_END = "2014Q4"
 CAL_START = "2018Q1"
 CAL_END = "2021Q4"
 TEST_START = "2022Q1"

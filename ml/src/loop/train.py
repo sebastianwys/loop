@@ -16,7 +16,7 @@ from loop import backtest as shared
 from loop import charts, nets, spec
 
 # the validation set is the tail of the train block by outcome quarter
-VAL_START = "2015Q1"
+VAL_START = spec.VAL_START
 MODELS = {"windowmlp": nets.WindowMLP, "seqgru": nets.SeqGRU}
 BATCH = 256
 EVAL_BATCH = 4096

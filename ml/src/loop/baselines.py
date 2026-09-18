@@ -247,7 +247,8 @@ def _label_points(ax, points, gap, dx=6):
 def design_chart(data_date="2026Q2", start="2005Q1"):
     fig, ax = charts.figure(
         "How the backtest is split",
-        f"forecast origins by horizon and block; a line from the last origin of a block ends where its outcome lands; panel through {data_date}",
+        f"forecast origins by horizon and block; a line from the last origin of a block ends where its outcome lands; "
+        f"the train block reaches back to the panel start and the axis is cut at {spec.to_period(start).year}; panel through {data_date}",
         size=(10, 4.6),
     )
     colors = dict(zip(backtest.BLOCKS, charts.SERIES))
@@ -274,6 +275,15 @@ def design_chart(data_date="2026Q2", start="2005Q1"):
             outcome = spec.shift_quarter(q, h)
             ax.plot([_x(q), _x(outcome)], [y + 0.3, y + 0.3], color=colors[b], linewidth=0.8)
             ax.plot([_x(outcome)], [y + 0.3], marker="o", markersize=3, color=colors[b])
+    # the tail of the train block is the validation set, and the block a model
+    # fits on ends before it. that line decides what a feature can be taught,
+    # so it belongs on the figure that defines the split
+    ax.vlines(_x(spec.VAL_START) - 0.5, top - 1.7 - len(spec.HORIZONS) + 1, top + 0.3,
+              color=charts.INK2, linewidth=0.9, linestyle=(0, (4, 3)), zorder=4)
+    ax.text(_x(spec.VAL_START) - 0.8, top + 0.55, "fits to here", ha="right", va="center",
+            fontsize=8, color=charts.INK2)
+    ax.text(_x(spec.VAL_START) + 0.8, top + 0.55, "validation", ha="left", va="center",
+            fontsize=8, color=charts.INK2)
     gap_row = top - len(spec.HORIZONS)
     ax.annotate(
         "no origin here: the outcome would land in the next block",
@@ -287,8 +297,8 @@ def design_chart(data_date="2026Q2", start="2005Q1"):
     years = list(range(spec.to_period(start).year, end.year + 1, 3))
     ax.set_xticks(years)
     ax.set_xticklabels([str(v) for v in years])
-    ax.set_xlim(_x(start) - 0.3, _x(data_date) + 0.6)
-    ax.set_ylim(gap_row - 1.2, top + 0.9)
+    ax.set_xlim(_x(start) - 0.3, _x(data_date) + 2.2)
+    ax.set_ylim(gap_row - 1.2, top + 1.0)
     ax.grid(False)
     ax.spines["left"].set_visible(False)
     return charts.save(fig, "05_backtest_design")
