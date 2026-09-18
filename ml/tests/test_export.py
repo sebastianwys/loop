@@ -111,9 +111,17 @@ class TestBuildMetrics(ExportCase):
         self.assertIn("99999", set(self.metrics["cbsa_code"]))
 
     def test_period_is_the_last_month_of_the_origin_quarter(self):
-        self.assertEqual(set(self.metrics["period"]), {"2026-06"})
+        live = self.metrics[self.metrics["metric"] != export.SURPRISE_METRIC]
+        self.assertEqual(set(live["period"]), {"2026-06"})
         self.assertEqual(export.period_of("2025Q4"), "2025-12")
         self.assertEqual(export.period_of("2024Q1"), "2024-03")
+
+    # the surprise scores the call published four quarters before the origin,
+    # so it is dated at the origin that call was made at. dating it at the
+    # live origin put the map's date a year after the forecast it describes
+    def test_the_surprise_is_dated_at_the_origin_the_call_was_made_at(self):
+        rows = self.metrics[self.metrics["metric"] == export.SURPRISE_METRIC]
+        self.assertEqual(list(rows["period"]), ["2025-06"])
 
     def test_forecast_metrics_read_the_percent_columns_at_their_horizon(self):
         for code in FORECAST_METROS:
@@ -207,6 +215,7 @@ class TestFiles(unittest.TestCase):
             self.assertTrue(text.isascii())
             self.assertTrue(text.startswith("cbsa_code,metric,period,value\n"))
             self.assertIn("\n00420,hpi_forecast_4q,2026-06,", text)
+            self.assertIn("\n10180,hpi_surprise_4q,2025-06,", text)
             back = pd.read_csv(path, dtype={"cbsa_code": str})
             self.assertEqual(sorted(back["cbsa_code"].unique()), ["00420", "10180", "99999"])
             entry = export.manifest_entry(path, metrics, "gru", ORIGIN)

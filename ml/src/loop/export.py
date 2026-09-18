@@ -121,11 +121,10 @@ def realized_values(panel, origin):
 
 
 # realized four quarter growth to the origin minus the median the model gave
-# for that window four quarters earlier, in percentage points. positive means
-# the metro grew more than expected. only test block rows count, so the miss
-# is out of sample
-def surprise_values(predictions, origin, realized):
-    made = shift_quarter(origin, -4)
+# for that window at made, the origin four quarters earlier, in percentage
+# points. positive means the metro grew more than expected. only test block
+# rows count, so the miss is out of sample
+def surprise_values(predictions, made, realized):
     rows = predictions[
         (predictions["quarter"] == made) & (predictions["horizon"].astype(int) == 4) & (predictions["block"] == "test")
     ]
@@ -144,10 +143,17 @@ def build_metrics(forecasts, panel, predictions=None):
     period = period_of(origin)
     values = forecast_values(forecasts, origin)
     values.update(realized_values(panel, origin))
+    # every metric above is measured at the live origin. the surprise scores a
+    # call the model published four quarters earlier, so it carries the origin
+    # that call was made at, not the one its outcome landed in
+    periods = {}
     if predictions is not None:
         predictions = predictions.assign(cbsa_code=codes(predictions["cbsa_code"]))
-        values[SURPRISE_METRIC] = surprise_values(predictions, origin, values["hpi_yoy_latest"])
-    out = pd.concat([_rows(series, metric, period) for metric, series in values.items()], ignore_index=True)
+        made = shift_quarter(origin, -4)
+        values[SURPRISE_METRIC] = surprise_values(predictions, made, values["hpi_yoy_latest"])
+        periods[SURPRISE_METRIC] = period_of(made)
+    out = pd.concat([_rows(series, metric, periods.get(metric, period)) for metric, series in values.items()],
+                    ignore_index=True)
     out["value"] = out["value"].astype(float).round(4)
     return out.sort_values(["cbsa_code", "metric"], kind="stable").reset_index(drop=True)
 
