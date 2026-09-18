@@ -362,11 +362,26 @@ def bls_latest(frame, cbsa):
 
 # --- fred ---
 
+# a fred csv names no frequency, so the calendar has to come out of the file.
+# the months a year carries say it where a row count cannot: a whole year of a
+# daily, weekly or monthly series fills twelve months, a quarterly one fills
+# four and an annual one fills one, so the fullest year in the file is this
+# series' own calendar whatever its cadence, and a sparse file measures against
+# a sparse calendar instead of withholding everything. a year has to carry
+# MIN_YEAR_SHARE of that calendar, the share an annual mean needs everywhere
+# else, and no new number is decided here. a truncated download looks exactly
+# like a short year, which is the case this withholds
 def fred_annual(frame, year):
     if frame is None:
         return None
-    values = frame[frame["date"].str.startswith(str(year))]["value"].dropna()
-    return float(values.mean()) if len(values) else None
+    dated = frame.dropna(subset=["value"])
+    rows = dated[dated["date"].str.startswith(str(year))]
+    if rows.empty:
+        return None
+    months = dated["date"].str[5:7].groupby(dated["date"].str[:4]).nunique()
+    if rows["date"].str[5:7].nunique() < months.max() * MIN_YEAR_SHARE:
+        return None
+    return float(rows["value"].mean())
 
 
 # the newest observation is the one with the largest date, not the last row the

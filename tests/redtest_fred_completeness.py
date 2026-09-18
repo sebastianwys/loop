@@ -1,9 +1,13 @@
-# a red test for the audit's fred_annual finding. OPEN, not fixed: the rule is
-# the 0.75 already settled, but a fred series carries no published calendar, so what
-# counts as a whole year has to be decided. deriving it from the fullest year in
-# the file withholds a legitimate year on a small frame, which is why this is a
-# question rather than a patch. run it deliberately, it is not discovered by
-# run_tests.py:
+# a red test for the audit's fred_annual finding. CLOSED 2026-09-18, and the
+# question it was left open on is answered rather than dodged. the calendar is
+# the fullest year in the file counted in MONTHS, not rows: a daily, weekly or
+# monthly series fills twelve months of a whole year, a quarterly one four, an
+# annual one one, so one denominator reads every cadence and a sparse file gets
+# a sparse calendar instead of losing every year to a two row one. the share is
+# the 0.75 already settled and no new number was decided. the only caller is the
+# national mortgage rate at 2014, 2019 and 2024, each holding all twelve
+# months, so no published value moved. run it deliberately, it is not
+# discovered by run_tests.py:
 #   ml/.venv/bin/python -m unittest tests.redtest_fred_completeness -v
 
 import unittest
