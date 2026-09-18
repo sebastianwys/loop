@@ -476,3 +476,27 @@ class TestTheCalibrationFigureOnlyPlotsQuantiles(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# the batch order reads spec.SEED at call time, so if the weight init does not,
+# reassigning the seed moves one and not the other and a "reseeded" run is only
+# half reseeded. this is the same default-argument trap nets._widths had
+class TestTheSeedIsReadWhenItIsUsed(unittest.TestCase):
+    def draw(self):
+        train.seed_everything()
+        return float(torch.rand(1)), float(np.random.rand())
+
+    def test_reassigning_spec_seed_moves_the_weights_too(self):
+        first = self.draw()
+        with mock.patch.object(spec, "SEED", spec.SEED + 1):
+            moved = self.draw()
+        self.assertNotEqual(first, moved, "seed_everything ignored a reassigned spec.SEED")
+
+    def drawn(self, seed):
+        train.seed_everything(seed)
+        return float(torch.rand(1)), float(np.random.rand())
+
+    def test_the_same_seed_still_repeats_exactly(self):
+        self.assertEqual(self.draw(), self.draw())
+        self.assertEqual(self.drawn(7), self.drawn(7))
+        self.assertNotEqual(self.drawn(7), self.drawn(8))

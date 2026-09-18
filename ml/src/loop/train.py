@@ -61,7 +61,13 @@ def pick_device(name=None):
     return torch.device("cpu")
 
 
-def seed_everything(seed=spec.SEED):
+# the seed is read at call time, not captured in the default. bound there it
+# went stale the moment anything reassigned spec.SEED, and since the batch
+# order below DOES read it at call time, a reseeded run got new batches over
+# the old weight init: half reproducible, which is worse than neither. same
+# trap as the input widths in nets._widths
+def seed_everything(seed=None):
+    seed = spec.SEED if seed is None else seed
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)

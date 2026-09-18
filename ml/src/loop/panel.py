@@ -537,8 +537,40 @@ def manifest(panel, path, have):
     }
 
 
-def write(panel, path=spec.PANEL_PATH, manifest_path=spec.PANEL_MANIFEST, have=None):
+# what a rebuild changed about the panel already on disk, as a line per column.
+# the parquet is gitignored, so the panel every published number came off exists
+# nowhere but here, and a rebuild replaces it in place. this does not stop that,
+# it says out loud what moved, which is the part that was silent: a collector fix
+# landed on 2026-09-17 and the panel sat stale against it until a diff found it
+def compare(fresh, path):
+    if not path.exists():
+        return ["panel: new, nothing on disk to compare against"]
+    old = pd.read_parquet(path)
+    if list(old.columns) != list(fresh.columns) or len(old) != len(fresh):
+        return [f"panel: shape {old.shape} -> {fresh.shape}, columns "
+                f"{'same' if set(old.columns) == set(fresh.columns) else 'differ'}"]
+    a = old.sort_values(spec.KEY).reset_index(drop=True)
+    b = fresh.sort_values(spec.KEY).reset_index(drop=True)
+    lines = []
+    for column in fresh.columns:
+        x, y = a[column], b[column]
+        if x.dtype.kind in "fc" and y.dtype.kind in "fc":
+            same = np.isclose(x.to_numpy(float), y.to_numpy(float), equal_nan=True)
+        else:
+            same = (x.isna() & y.isna()) | (x.astype("string") == y.astype("string"))
+        moved = int((~same).sum())
+        if moved:
+            gained = int((x.isna() & y.notna()).sum())
+            lost = int((x.notna() & y.isna()).sum())
+            lines.append(f"panel: {column} {moved} cells changed, {gained} gained, {lost} lost")
+    return lines or ["panel: identical to the one on disk"]
+
+
+def write(panel, path=spec.PANEL_PATH, manifest_path=spec.PANEL_MANIFEST, have=None, verbose=True):
     path.parent.mkdir(parents=True, exist_ok=True)
+    for line in compare(panel, path):
+        if verbose:
+            print(line, flush=True)
     panel.to_parquet(path, index=False)
     info = manifest(panel, path, have if have is not None else sources())
     manifest_path.parent.mkdir(parents=True, exist_ok=True)

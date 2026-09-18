@@ -557,3 +557,55 @@ class TestTheTwoEndsOfTheSnapshotAreDisjoint(unittest.TestCase):
         self.assertEqual((total, len(top), len(bottom)), (410, 15, 15))
         self.assertEqual(top["hpi_yoy"].iloc[0], 4.09)
         self.assertEqual(bottom["hpi_yoy"].iloc[-1], 0.0)
+
+
+# the parquet is gitignored, so the panel a published number came off exists
+# nowhere but on disk and a rebuild replaces it in place. write() cannot stop
+# that, but it has to say what moved. a collector fix landed on 2026-09-17 and
+# the panel sat stale against it until a hand diff found one metro's zillow
+# history had been missing all along
+class TestARebuildSaysWhatItReplaced(unittest.TestCase):
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.path = Path(self.dir.name) / "panel.parquet"
+        self.addCleanup(self.dir.cleanup)
+        quarters = [str(q) for q in pd.period_range("2010Q1", "2012Q4", freq="Q")]
+        codes = ["10180", "10420", "10500"]
+        rows = [(c, q) for c in codes for q in quarters]
+        self.frame = pd.DataFrame({
+            "cbsa_code": [c for c, _ in rows],
+            "quarter": [q for _, q in rows],
+            "hpi": np.linspace(100.0, 180.0, len(rows)),
+            # a real panel arrives ragged, and the gaps are what a rebuild fills
+            "unemp": [np.nan if i % 3 else 4.0 + i / 100 for i in range(len(rows))],
+        })
+        self.frame.to_parquet(self.path, index=False)
+
+    def test_an_unchanged_rebuild_says_so(self):
+        self.assertEqual(panel.compare(self.frame, self.path), ["panel: identical to the one on disk"])
+
+    def test_a_missing_file_is_not_a_silent_pass(self):
+        lines = panel.compare(self.frame, self.path.with_name("absent.parquet"))
+        self.assertIn("nothing on disk", lines[0])
+
+    def test_a_cell_that_gained_a_value_is_counted_and_named(self):
+        fresh = self.frame.copy()
+        column = "unemp"
+        was_null = fresh[column].isna()
+        self.assertTrue(was_null.any(), "the fixture has no gap to fill, so this proves nothing")
+        fresh.loc[was_null.to_numpy().nonzero()[0][:3], column] = 5.0
+        lines = panel.compare(fresh, self.path)
+        self.assertEqual(len(lines), 1, lines)
+        self.assertIn(f"{column} 3 cells changed, 3 gained, 0 lost", lines[0])
+
+    def test_a_cell_that_lost_its_value_is_counted_as_lost(self):
+        fresh = self.frame.copy()
+        filled = fresh["hpi"].notna().to_numpy().nonzero()[0][:2]
+        fresh.loc[filled, "hpi"] = np.nan
+        lines = panel.compare(fresh, self.path)
+        self.assertTrue(any("hpi 2 cells changed, 0 gained, 2 lost" in line for line in lines), lines)
+
+    def test_a_different_shape_is_reported_rather_than_compared_cell_by_cell(self):
+        lines = panel.compare(self.frame.iloc[:-5], self.path)
+        self.assertEqual(len(lines), 1)
+        self.assertIn("shape", lines[0])
