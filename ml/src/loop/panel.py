@@ -590,6 +590,23 @@ GROWTH = ["hpi_qoq", "hpi_yoy", "zhvi_yoy", "zori_yoy", "pop_growth", "income_gr
           "inventory_yoy", "hpi_exp_yoy", "hpi_yoy_rel", "cpi_yoy"]
 RATES = ["unemp", "mortgage", "treasury_10y", "term_spread", "natl_unemp"]
 
+# what each panel of figure 03 is called and what its axis counts. the columns
+# fed by an annual source are held flat across their year, so they draw as
+# steps, and saying "annual" is cheaper than explaining the staircase
+FEATURE_LABELS = {
+    "hpi_qoq": "price growth, quarterly",
+    "hpi_yoy": "price growth, yearly",
+    "unemp": "unemployment rate",
+    "mortgage": "mortgage rate, 30 year",
+    "zhvi_yoy": "Zillow home value growth",
+    "permits_per_1000": "permits per 1,000, annual",
+    "pop_growth": "population growth, annual",
+    "domestic_migration_rate": "net migration per 1,000, annual",
+    "income_growth": "income growth, annual",
+    "hpi_exp_yoy": "expanded index growth",
+    "hpi_rstderr": "index standard error, points",
+}
+
 
 # share of metros with a value in each year, one row per source series
 def coverage_table(panel):
@@ -739,7 +756,7 @@ def feature_trends_figure(panel):
         scale = spec.pct if column in GROWTH else (lambda v: np.asarray(v, dtype=float))
         ax.fill_between(stats.index, scale(stats["lo"]), scale(stats["hi"]), color=charts.BAND, linewidth=0)
         ax.plot(stats.index, scale(stats["mid"]), color=charts.SERIES[0], linewidth=1.3)
-        ax.set_title(column)
+        ax.set_title(FEATURE_LABELS.get(column, column))
         if column in GROWTH or column in RATES:
             ticks = ax.get_yticks()
             charts.pct_axis(ax, decimals=0 if np.allclose(ticks, np.round(ticks)) else 1)
