@@ -12,17 +12,20 @@ import pandas as pd
 
 from loop import nets, spec, train
 
-BASE = ["hpi_qoq", "hpi_yoy", "unemp", "mortgage", "zhvi_yoy", "zori_yoy", "listing_price_yoy", "inventory_yoy"]
+# rents, listing prices and inventory left this list on 2026-09-18: they were
+# never visible in the fitting block, so every row below scored them as zeros.
+# admit.py is the gate that can see them
+BASE = ["hpi_qoq", "hpi_yoy", "unemp", "mortgage", "zhvi_yoy"]
 STATIC = ["permits_per_1000", "pop_growth", "domestic_migration_rate", "income_growth"]
 
 # the shipped set first, then what was tried against it. the order is the order
 # the readme's table reads in
 SETS = {
-    "ten series, the shipped set": BASE + ["hpi_exp_yoy", "hpi_rstderr"],
+    "seven series, the shipped set": BASE + ["hpi_exp_yoy", "hpi_rstderr"],
     "plus both forms of the index error": BASE + ["hpi_exp_yoy", "hpi_rstderr", "hpi_rstderr_rel"],
     "expanded index, no error": BASE + ["hpi_exp_yoy"],
     "the error as a percent of the index": BASE + ["hpi_exp_yoy", "hpi_rstderr_rel"],
-    "eight series, no expanded index": BASE,
+    "five series, no expanded index": BASE,
     "plus the metro against the cross section": BASE + ["hpi_yoy_rel"],
     "plus the calendar quarter": BASE + ["quarter_sin", "quarter_cos"],
     "plus the national series": BASE + ["cpi_yoy", "treasury_10y", "term_spread", "natl_unemp"],

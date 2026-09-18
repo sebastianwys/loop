@@ -1,0 +1,16 @@
+arm,series,seed,validation loss,epoch,mae 1q,mae 2q,mae 4q,mae 8q,scored,fitted
+"nine, what the shipped gate could see",9,20260915,0.012593,7,1.66,3.007,4.81,6.234,13120,222150
+"nine, what the shipped gate could see",9,20260916,0.012624,7,1.663,3.015,4.822,6.244,13120,222150
+"nine, what the shipped gate could see",9,20260917,0.0126,7,1.661,3.012,4.814,6.235,13120,222150
+"nine, what the shipped gate could see",9,20260918,0.012588,7,1.66,3.008,4.807,6.237,13120,222150
+"nine, what the shipped gate could see",9,20260919,0.012601,7,1.661,3.008,4.814,6.232,13120,222150
+"thirteen, plus rents listings permits income",13,20260915,0.01246,7,1.641,2.975,4.777,6.14,13120,222150
+"thirteen, plus rents listings permits income",13,20260916,0.012493,7,1.644,2.979,4.782,6.157,13120,222150
+"thirteen, plus rents listings permits income",13,20260917,0.012471,7,1.642,2.979,4.777,6.142,13120,222150
+"thirteen, plus rents listings permits income",13,20260918,0.012444,7,1.64,2.973,4.773,6.132,13120,222150
+"thirteen, plus rents listings permits income",13,20260919,0.012459,7,1.641,2.976,4.775,6.136,13120,222150
+"fourteen, the shipped set",14,20260915,0.012451,7,1.641,2.974,4.77,6.143,13120,222150
+"fourteen, the shipped set",14,20260916,0.012487,7,1.644,2.979,4.783,6.154,13120,222150
+"fourteen, the shipped set",14,20260917,0.012472,7,1.642,2.981,4.779,6.142,13120,222150
+"fourteen, the shipped set",14,20260918,0.012449,7,1.639,2.97,4.772,6.142,13120,222150
+"fourteen, the shipped set",14,20260919,0.012463,7,1.642,2.977,4.78,6.137,13120,222150

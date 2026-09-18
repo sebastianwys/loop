@@ -13,8 +13,7 @@ from loop import spec
 
 # quarterly features read as a sequence over the window, annual ones read once
 # at the origin. hpi_qoq comes first because it decides whether a window counts
-SEQ_FEATURES = ["hpi_qoq", "hpi_yoy", "unemp", "mortgage", "zhvi_yoy", "zori_yoy", "listing_price_yoy",
-                "inventory_yoy", "hpi_exp_yoy", "hpi_rstderr"]
+SEQ_FEATURES = ["hpi_qoq", "hpi_yoy", "unemp", "mortgage", "zhvi_yoy", "hpi_exp_yoy", "hpi_rstderr"]
 STATIC_FEATURES = ["permits_per_1000", "pop_growth", "domestic_migration_rate", "income_growth"]
 MIN_HISTORY = 8
 CLIP = 6.0

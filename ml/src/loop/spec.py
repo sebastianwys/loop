@@ -48,17 +48,14 @@ FEATURES = [
     "unemp",
     "mortgage",
     "zhvi_yoy",
-    "zori_yoy",
     "permits_per_1000",
     "pop_growth",
     "domestic_migration_rate",
     "income_growth",
-    "listing_price_yoy",
-    "inventory_yoy",
     # fhfa's second estimate of the same metro quarter and the standard error
     # it publishes with it. both reach back to 1991, which is where the fitting
-    # block lives, unlike every covariate above: unemployment reaches 79 percent
-    # of the fitting samples and the rest under 15. adding these cut the
+    # block lives, unlike every covariate above: unemployment reaches 82 percent
+    # of the fitting samples and the rest under 10. adding these cut the
     # validation loss from 0.006564 to 0.006202
     "hpi_exp_yoy",
     "hpi_rstderr",
@@ -72,7 +69,21 @@ FEATURES = [
 # window which era it sits in and nothing about the place. they stay in the
 # panel because the figures and the map read them, and because a negative
 # result that is easy to re-run is worth more than one written down
+#
+# rents, listing prices and inventory joined them on 2026-09-18. they had
+# never been through this gate at all: feature_stats takes its seen mask from
+# the FITTING block, which ends 2014Q4, and to_tensors then blanks an unseen
+# feature in every window including the one that would score it, so both arms
+# of an ablation saw the same zeros. ml/admit.py measures them at a boundary
+# where they are visible, fitting through 2019Q4 and scoring on 2020 and 2021.
+# adding permits and income to the nine recovers the whole gain; adding rents
+# and listings recovers a thirtieth of it, inside the seed spread. inventory
+# starts 2020Q1, so no fitting window can see it without eating the block that
+# would score it, and it is dropped as unmeasurable rather than kept unmeasured
 CONTEXT = [
+    "zori_yoy",
+    "listing_price_yoy",
+    "inventory_yoy",
     "hpi_rstderr_rel",
     "hpi_yoy_rel",
     "cpi_yoy",
