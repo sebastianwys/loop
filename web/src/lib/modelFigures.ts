@@ -20,26 +20,30 @@ export interface ModelFigure {
 export const FIGURES: Record<FigureId, ModelFigure> = {
   coverage: {
     file: "01_coverage.png",
-    width: 1752,
-    height: 971,
+    width: 1873,
+    height: 994,
     alt: "A grid of thirteen source series against the years 1975 to 2026, each cell shaded by the"
-      + " share of the 410 metros that have a value. House prices, the mortgage rate and national"
-      + " macro are dark from 1990, the expanded index and its error from 1991, unemployment from"
-      + " 1990, Zillow home values from 2000, rents from 2015, permits and income from the middle"
-      + " 2010s, and listings and inventory only from the end of that decade.",
-    caption: "Every covariate starts later than the price it is meant to explain, and the model is"
-      + " fitted on the left of this picture.",
+      + " share of the 410 metros that have a value, with a vertical rule at the end of 2014 marked"
+      + " as the last year the model fits on. House prices, the mortgage rate and national macro"
+      + " are dark from 1990, the expanded index and its error from 1991, unemployment from 1990,"
+      + " Zillow home values from 2000, rents from 2015. Permits, income, listings and inventory"
+      + " are empty everywhere left of the rule.",
+    caption: "Everything right of the rule is coverage the model is scored on and never taught."
+      + " Four series have nothing at all on the left of it.",
   },
   design: {
     file: "05_backtest_design.png",
-    width: 1520,
+    width: 2139,
     height: 780,
     alt: "Four rows, one per horizon, with a tick at every forecast origin. Ticks are coloured by"
       + " the block the outcome falls in: train through 2017Q4, calibration through 2021Q4, test"
-      + " from 2022Q1. The longer the horizon, the earlier its ticks change colour, and a callout"
-      + " marks the origins left out because their outcome would land in the next block.",
+      + " from 2022Q1. A dashed line at the start of 2015 splits the train block into the part the"
+      + " model fits on and the part held back for validation. The longer the horizon, the earlier"
+      + " its ticks change colour, and a callout marks the origins left out because their outcome"
+      + " would land in the next block.",
     caption: "Read down a column: the longer the horizon, the earlier an origin has to stop being"
-      + " something the model is allowed to learn from.",
+      + " something the model is allowed to learn from. The dashed line is the one that decides"
+      + " what a feature can be taught at all.",
   },
   training: {
     file: "09_training_curves.png",
