@@ -112,6 +112,8 @@ describe("the model view", () => {
   it("names the nearest rival at eight quarters and how thin the win is", () => {
     expect(page).toContain("ridge");
     expect(page).toContain("0.25 points");
+    // the size is given against the error rather than called thin or fat
+    expect(page).toContain("percent of the error it sits inside");
   });
 
   it("puts the coverage miss in the limits rather than in a footnote", () => {

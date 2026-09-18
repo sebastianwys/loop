@@ -50,6 +50,9 @@ export function ModelPage({ data }: ViewProps) {
   const origin = near?.origin ?? far?.origin ?? null;
 
   const lossText = lossSentence(losses);
+  // how big the nearest rival gap is against the error it sits inside, which is
+  // the only scale on which a tenth of a point means anything
+  const gapShare8 = closest8 && shipped8 ? asPercent(closest8.gap / shipped8.maePct) : null;
 
   return (
     <main className="model-page">
@@ -281,7 +284,7 @@ export function ModelPage({ data }: ViewProps) {
             </li>
             <li>
               {closest8
-                ? `At eight quarters the nearest rival is ${modelLabel(closest8.model)}, ${points(closest8.gap)} points away. Two years out, that is not a gap anyone should bet on. The GRU's case at that horizon rests on its band being ${band8 ?? "-"} percent narrower than the long run average's, not on those ${points(closest8.gap)} points.`
+                ? `At eight quarters the nearest rival is ${modelLabel(closest8.model)}, ${points(closest8.gap)} points away, which is ${gapShare8 ?? "-"} percent of the error it sits inside. The GRU's case at that horizon rests as much on its band being ${band8 ?? "-"} percent narrower than the long run average's as on those points.`
                 : "At eight quarters the field is too thin in this build to name a rival."}
             </li>
           </ul>
@@ -360,17 +363,15 @@ export function ModelPage({ data }: ViewProps) {
             <li>
               <strong>The long horizon win is thin.</strong>{" "}
               {closest8
-                ? `The nearest rival, ${modelLabel(closest8.model)}, is ${points(closest8.gap)} points behind at eight quarters, ${points(rowAt(rows, closest8.model, 8)?.maePct)} against ${points(shipped8?.maePct)}. A gap that size over two years is inside the noise, and anyone reading this table as a ranking of ideas rather than of runs is reading too much into it.`
+                ? `The nearest rival, ${modelLabel(closest8.model)}, is ${points(closest8.gap)} points behind at eight quarters, ${points(rowAt(rows, closest8.model, 8)?.maePct)} against ${points(shipped8?.maePct)}. That is wider than a rerun moves it, so it is a gap rather than a rounding, but it separates two runs and not two ideas, and this table ranks runs.`
                 : ""}
             </li>
             <li>
-              <strong>Some features are thin exactly where they are taught.</strong> Rents reach 2015
-              and Zillow values 2000, so both are sparse in the fitting block. Listings and inventory
-              exist only as annual means, and keeping their monthly history would sharpen what the
-              model is handed at forecast time without teaching it anything: those series are 0.00 of
-              the fitting block at any sampling rate. The fix is a later fitting era, not a better
-              collector, and a later fitting era buys fewer years to learn from. That trade has not
-              been made here.
+              <strong>Some features are thin exactly where they are taught.</strong> Zillow values
+              reach 2000 and cover 0.38 of the fitting block. Rents, listing prices and inventory
+              cover none of it, so they ride in the panel and on the map but out of reach of every
+              model. Keeping their monthly history would not change that: the fix is a later fitting
+              era, not a better collector, and a later fitting era buys fewer years to learn from.
             </li>
             <li>
               <strong>The index error is fitted in the wrong units.</strong> It enters the model as
