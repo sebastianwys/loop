@@ -158,7 +158,9 @@ export function sentenceCase(text: string): string {
 export function errorCut(rows: BacktestRow[], model: string, over: string, horizon: number): number | null {
   const mine = rowAt(rows, model, horizon);
   const theirs = rowAt(rows, over, horizon);
-  if (!mine || !theirs || theirs.maePct === 0) return null;
+  // an mae the backtest could not score is missing, and a missing one read as
+  // zero claims either the strongest possible result or an infinite loss
+  if (!mine || !theirs || !Number.isFinite(mine.maePct) || !Number.isFinite(theirs.maePct) || theirs.maePct === 0) return null;
   return round(1 - mine.maePct / theirs.maePct, 4);
 }
 
