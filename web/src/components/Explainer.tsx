@@ -33,7 +33,7 @@ export function Explainer({ label, children }: { label: string; children: React.
         aria-controls={id}
         onClick={() => setOpen((was) => !was)}
       >
-        ?
+        <span className="explainer-dot" aria-hidden="true">?</span>
       </button>
       {open && (
         <span className="explainer-bubble" id={id} role="note">

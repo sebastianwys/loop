@@ -597,15 +597,33 @@ svg { max-width: 100%; }
 /* the bubble is anchored to the heading, not to the question mark, so it spans
    the panel column instead of running off its right edge and being clipped */
 .detail h3, .detail summary, .sidebar label { position: relative; }
+/* the ring is the inner span, not the button, so the button can grow into a
+   tap target on a touch pointer without the circle growing with it */
 .explainer-open {
-  width: 1.05rem; height: 1.05rem; padding: 0; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.05rem; height: 1.05rem; padding: 0;
+  border: 0; background: none; border-radius: 50%; cursor: pointer;
+}
+.explainer-dot {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.05rem; height: 1.05rem; line-height: 1;
   border: 1px solid var(--baseline); border-radius: 50%;
   background: var(--surface); color: var(--muted);
-  font-size: 0.7rem; font-weight: 600; cursor: pointer;
+  font-size: 0.7rem; font-weight: 600;
 }
-.explainer-open:hover { color: var(--ink); border-color: var(--ink-2); }
+.explainer-open:hover .explainer-dot { color: var(--ink); border-color: var(--ink-2); }
 .explainer-open:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.explainer-open[aria-expanded="true"] { background: var(--plane); color: var(--ink); border-color: var(--ink-2); }
+.explainer-open[aria-expanded="true"] .explainer-dot {
+  background: var(--plane); color: var(--ink); border-color: var(--ink-2);
+}
+
+/* a finger needs 30 css pixels and the ring reads at 17. on a touch pointer
+   the button grows around the ring and overflows the wrapper, which keeps the
+   ring's own box, so the heading it sits in does not move */
+@media (pointer: coarse) {
+  .explainer { width: 1.05rem; height: 1.05rem; align-items: center; justify-content: center; }
+  .explainer-open { flex: none; width: 30px; height: 30px; }
+}
 .explainer-bubble {
   position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 30;
   width: auto; padding: 8px 10px;
