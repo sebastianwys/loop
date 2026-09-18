@@ -118,9 +118,32 @@ def unchanged_but_for_stamps(path, payload, keys=STAMP_KEYS):
     return _restamp(payload, previous, keys) == previous
 
 
+# every raw file under data/raw is the only copy the pipeline has of a vintage
+# its publisher does not keep, so a write that dies partway has to cost the new
+# file rather than the old one. the body lands beside its destination and is
+# renamed over it, which os.replace does atomically inside one filesystem, and a
+# name beside the destination always is one. a run killed mid-write then leaves
+# the previous archive whole, and nothing half written for the next run to read
+def replace_atomically(path, write):
+    path = Path(path)
+    staged = path.with_name(path.name + ".part")
+    try:
+        write(staged)
+        os.replace(staged, path)
+    except BaseException:
+        staged.unlink(missing_ok=True)
+        raise
+    return path
+
+
+# the common case, a collector's table. index=False everywhere, since every
+# archive under data/raw is a plain table
+def write_csv(frame, path, **kwargs):
+    return replace_atomically(path, lambda staged: frame.to_csv(staged, index=False, **kwargs))
+
+
 def write_manifest(folder, entries):
     path = folder / "download_manifest.json"
     if unchanged_but_for_stamps(path, entries):
         return path
-    path.write_text(json.dumps(entries, indent=2) + "\n")
-    return path
+    return replace_atomically(path, lambda staged: staged.write_text(json.dumps(entries, indent=2) + "\n"))

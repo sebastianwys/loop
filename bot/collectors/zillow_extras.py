@@ -6,7 +6,7 @@ import pandas as pd
 
 from bot.build_map_data import MIN_YEAR_SHARE, zillow_candidates
 from bot.collectors.gazetteer import OUT_FILE as CENTROIDS
-from bot.common import RAW_DIR, fetch, looks_like_csv, manifest_entry, write_manifest
+from bot.common import RAW_DIR, fetch, looks_like_csv, manifest_entry, write_csv, write_manifest
 
 OUT_DIR = RAW_DIR / "zillow_extras"
 OUT_FILE = OUT_DIR / "metrics.csv"
@@ -205,7 +205,7 @@ def collect():
         )
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    df.to_csv(OUT_FILE, index=False)
+    write_csv(df, OUT_FILE)
     write_manifest(OUT_DIR, [manifest_entry(
         OUT_FILE, CATALOG, "Zillow Research",
         "Metro inventory, days to pending, price cut share and one year ZHVF growth, annual means plus the newest month",

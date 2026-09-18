@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from bot.common import RAW_DIR, STUDY_YEARS, fetch, manifest_entry, write_manifest
+from bot.common import RAW_DIR, STUDY_YEARS, fetch, manifest_entry, replace_atomically, write_csv, write_manifest
 
 OUT_DIR = RAW_DIR / "bps"
 OUT_FILE = OUT_DIR / "metrics.csv"
@@ -121,7 +121,7 @@ def collect(out_dir=OUT_DIR):
         response.raise_for_status()
 
         path = out_dir / name
-        path.write_bytes(response.content)
+        replace_atomically(path, lambda staged: staged.write_bytes(response.content))
         frame = parse_annual(response.content.decode("latin-1"))
         stray = stray_years(frame, year)
         if stray:
@@ -133,7 +133,7 @@ def collect(out_dir=OUT_DIR):
 
     parsed = pd.concat(frames, ignore_index=True)
     metrics = annual_metrics(parsed)
-    metrics.to_csv(out_file, index=False)
+    write_csv(metrics, out_file)
 
     last_year = year - 1
     version = f"{FIRST_YEAR} to {last_year} annual"

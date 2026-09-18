@@ -3,7 +3,7 @@ import unicodedata
 
 import pandas as pd
 
-from bot.common import BASE_DIR, RAW_DIR, STUDY_YEARS, env_key, fetch, manifest_entry, write_manifest
+from bot.common import BASE_DIR, RAW_DIR, STUDY_YEARS, env_key, fetch, manifest_entry, write_csv, write_manifest
 
 # scripts/ is not a package, so put it on the path before importing the
 # pipeline's geography constants and the division tagging it already tests
@@ -202,7 +202,7 @@ def collect():
         print(f"[acs] fetching {year}: every msa and micro plus the divisions of {len(DIVISION_PARENTS)} parents")
         raw = fetch_vintage(year, key, codes)
         path = OUT_DIR / f"acs_extra_{year}.csv"
-        raw.to_csv(path, index=False)
+        write_csv(raw, path)
         rows = metric_rows(raw, year)
         frames.append(rows)
         entries.append(manifest_entry(
@@ -216,7 +216,7 @@ def collect():
               f"{rows['metric'].nunique()} metrics -> {path.name}")
 
     metrics = combine(frames)
-    metrics.to_csv(OUT_FILE, index=False)
+    write_csv(metrics, OUT_FILE)
     entries.insert(0, manifest_entry(
         OUT_FILE, BASE_URL.format(year=VINTAGES[-1]), PROVIDER,
         "metro metrics derived from ACS 5-year estimates, one row per cbsa, metric and vintage",

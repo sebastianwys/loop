@@ -18,7 +18,8 @@ import pandas as pd
 import requests
 
 from bot.common import (
-    INTEGRATED, RAW_DIR, STUDY_YEARS, USER_AGENT, env_key, fetch, manifest_entry, write_manifest,
+    INTEGRATED, RAW_DIR, STUDY_YEARS, USER_AGENT, env_key, fetch, manifest_entry,
+    replace_atomically, write_csv, write_manifest
 )
 
 OUT_DIR = RAW_DIR / "hud"
@@ -650,11 +651,11 @@ def collect():
         count = len(captured["fmr"]) + len(captured["il"]) + len(captured["states"])
         if count:
             path = OUT_DIR / f"hud_{year}.json"
-            path.write_text(json.dumps(captured) + "\n")
+            replace_atomically(path, lambda staged: staged.write_text(json.dumps(captured) + "\n"))
             raw_files.append((path, year, count))
 
     df = build_rows(records)
-    df.to_csv(OUT_FILE, index=False)
+    write_csv(df, OUT_FILE)
 
     all_years = sorted(set(requested["fmr"]) | set(requested["il"]))
     have = set(df["period"])

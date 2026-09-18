@@ -2,7 +2,7 @@ import io
 
 import pandas as pd
 
-from bot.common import RAW_DIR, fetch, manifest_entry, write_manifest
+from bot.common import RAW_DIR, fetch, manifest_entry, replace_atomically, write_csv, write_manifest
 
 OUT_DIR = RAW_DIR / "pep"
 OUT_FILE = OUT_DIR / "metrics.csv"
@@ -133,7 +133,7 @@ def merge_vintages(frames):
 
 # counts stay whole numbers on disk, the rate keeps its decimals
 def write_metrics(df, path):
-    df[COLUMNS].to_csv(path, index=False, float_format="%.10g")
+    write_csv(df[COLUMNS], path, float_format="%.10g")
     return path
 
 
@@ -177,7 +177,7 @@ def collect():
     for vintage in sorted(files, reverse=True):
         url, content = files[vintage]
         raw = OUT_DIR / _filename(url)
-        raw.write_bytes(content)
+        replace_atomically(raw, lambda staged: staged.write_bytes(content))
         frames[vintage] = parse_vintage(content)
         years = sorted(frames[vintage]["period"].unique())
         entries.append(manifest_entry(

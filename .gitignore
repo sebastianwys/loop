@@ -9,6 +9,10 @@ data/raw/zillow/*.csv
 # failed rule cannot take the vintage with it
 data/raw/*/.download_complete
 
+# a body on its way to an archive, named beside the file it will be renamed
+# over. a run that dies mid-write cleans it up, a run that is killed cannot
+data/raw/*/*.part
+
 # boundary shapefiles are fetched by npm run boundaries, the topojson is committed
 data/raw/boundaries/*.zip
 data/raw/boundaries/trial_*.json

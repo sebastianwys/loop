@@ -1,4 +1,4 @@
-from bot.common import RAW_DIR, fetch, looks_like_csv, manifest_entry, write_manifest
+from bot.common import RAW_DIR, fetch, looks_like_csv, manifest_entry, replace_atomically, write_manifest
 
 OUT_DIR = RAW_DIR / "zillow"
 BASE = "https://files.zillowstatic.com/research/public_csvs"
@@ -37,7 +37,7 @@ def collect():
     entries = []
     for filename, url, dataset, content in downloads:
         path = OUT_DIR / filename
-        path.write_bytes(content)
+        replace_atomically(path, lambda staged: staged.write_bytes(content))
 
         # last column header is the newest month, which is the file's version
         header = content.split(b"\n", 1)[0].decode()

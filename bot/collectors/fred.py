@@ -1,6 +1,6 @@
 import pandas as pd
 
-from bot.common import RAW_DIR, env_key, fetch, manifest_entry, write_manifest
+from bot.common import RAW_DIR, env_key, fetch, manifest_entry, write_csv, write_manifest
 
 OUT_DIR = RAW_DIR / "fred"
 OUT_FILE = OUT_DIR / "mortgage30us.csv"
@@ -37,7 +37,7 @@ def collect():
     df = parse_observations(response.json()["observations"])
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    df.to_csv(OUT_FILE, index=False)
+    write_csv(df, OUT_FILE)
     write_manifest(OUT_DIR, [manifest_entry(
         OUT_FILE, f"{ENDPOINT}?series_id={SERIES}", "Federal Reserve Bank of St. Louis, FRED",
         "30-year fixed rate mortgage average in the United States, weekly",

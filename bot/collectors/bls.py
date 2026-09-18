@@ -2,7 +2,7 @@ from datetime import date
 
 import pandas as pd
 
-from bot.common import INTEGRATED, RAW_DIR, env_key, fetch, manifest_entry, write_manifest
+from bot.common import INTEGRATED, RAW_DIR, env_key, fetch, manifest_entry, write_csv, write_manifest
 from bot.collectors.gazetteer import OUT_FILE as CENTROIDS
 
 OUT_DIR = RAW_DIR / "bls"
@@ -124,7 +124,7 @@ def collect():
     df = df.sort_values(["series_id", "year", "period"]).reset_index(drop=True)
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    df.to_csv(OUT_FILE, index=False)
+    write_csv(df, OUT_FILE)
     write_manifest(OUT_DIR, [manifest_entry(
         OUT_FILE, API, "U.S. Bureau of Labor Statistics",
         "Local Area Unemployment Statistics, metropolitan area unemployment rate, not seasonally adjusted",

@@ -3,7 +3,7 @@ import io
 
 import pandas as pd
 
-from bot.common import RAW_DIR, fetch, manifest_entry, write_manifest
+from bot.common import RAW_DIR, fetch, manifest_entry, write_csv, write_manifest
 
 OUT_DIR = RAW_DIR / "realtor"
 OUT_FILE = OUT_DIR / "metrics.csv"
@@ -91,7 +91,7 @@ def collect():
 
     # the raw file is not kept, so its fingerprint travels in the notes
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    metrics.to_csv(OUT_FILE, index=False)
+    write_csv(metrics, OUT_FILE)
     write_manifest(OUT_DIR, [manifest_entry(
         OUT_FILE, URL, "Realtor.com Economic Research",
         "Inventory core metrics, metro history: monthly listing price, active listings, "

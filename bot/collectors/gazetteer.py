@@ -3,7 +3,7 @@ import zipfile
 
 import pandas as pd
 
-from bot.common import RAW_DIR, env_key, fetch, manifest_entry, write_manifest
+from bot.common import RAW_DIR, env_key, fetch, manifest_entry, write_csv, write_manifest
 
 YEAR = 2024
 GAZ = f"https://www2.census.gov/geo/docs/maps-data/data/gazetteer/{YEAR}_Gazetteer/{YEAR}_Gaz_"
@@ -228,11 +228,11 @@ def collect():
     df = pd.concat([cbsa[COLUMNS], divisions], ignore_index=True)
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    df.to_csv(OUT_FILE, index=False)
-    membership.to_csv(MEMBERSHIP_FILE, index=False)
-    by_vintage.to_csv(VINTAGE_MEMBERSHIP_FILE, index=False)
+    write_csv(df, OUT_FILE)
+    write_csv(membership, MEMBERSHIP_FILE)
+    write_csv(by_vintage, VINTAGE_MEMBERSHIP_FILE)
     if population is not None:
-        population.to_csv(COUNTY_POPULATION_FILE, index=False)
+        write_csv(population, COUNTY_POPULATION_FILE)
     write_manifest(OUT_DIR, [
         manifest_entry(
             OUT_FILE, URL, "U.S. Census Bureau",

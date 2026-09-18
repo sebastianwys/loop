@@ -8,7 +8,7 @@ import time
 import pandas as pd
 
 from bot.collectors import irs
-from bot.common import RAW_DIR, env_key, fetch, manifest_entry, write_manifest
+from bot.common import RAW_DIR, env_key, fetch, manifest_entry, replace_atomically, write_csv, write_manifest
 
 OUT_DIR = RAW_DIR / "bea"
 ENDPOINT = "https://apps.bea.gov/api/data"
@@ -290,7 +290,7 @@ def trim_payload(payload, years):
 def write_metrics(df, path):
     out = df[COLUMNS].copy()
     out["value"] = out["value"].astype(int)
-    out.to_csv(path, index=False)
+    write_csv(out, path)
     return path
 
 
@@ -318,7 +318,8 @@ def _get(key, params):
 
 # raw responses are committed, so the request echo must not carry the key
 def _save(path, payload, key):
-    path.write_text(redact(json.dumps(payload, separators=(",", ":")), key) + "\n")
+    replace_atomically(path, lambda staged: staged.write_text(
+        redact(json.dumps(payload, separators=(",", ":")), key) + "\n"))
     return path
 
 

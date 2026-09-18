@@ -2,7 +2,7 @@ import pandas as pd
 
 from bot import indicators
 from bot.collectors.fred import parse_observations
-from bot.common import RAW_DIR, env_key, fetch, manifest_entry, write_manifest
+from bot.common import RAW_DIR, env_key, fetch, manifest_entry, write_csv, write_manifest
 
 OUT_DIR = RAW_DIR / "national"
 OUT_FILE = OUT_DIR / "indicators.csv"
@@ -59,7 +59,7 @@ def collect():
     out = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=COLUMNS)
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    out.to_csv(OUT_FILE, index=False)
+    write_csv(out, OUT_FILE)
     write_manifest(OUT_DIR, [manifest_entry(
         OUT_FILE, ENDPOINT, "Federal Reserve Bank of St. Louis, FRED",
         "national indicators for the map's dashboard strip, one row per series and observation",
