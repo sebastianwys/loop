@@ -6,7 +6,7 @@ cbsa_code,metric,period,value
 10180,hpi_forecast_8q_hi,2026-06,39.9924
 10180,hpi_forecast_8q_lo,2026-06,-4.8278
 10180,hpi_index_error,2026-06,0.8685
-10180,hpi_surprise_4q,2026-06,5.9396
+10180,hpi_surprise_4q,2025-06,5.9396
 10180,hpi_trend_5y,2026-06,7.9106
 10180,hpi_yoy_latest,2026-06,8.9516
 10420,hpi_forecast_4q,2026-06,5.6231
@@ -16,7 +16,7 @@ cbsa_code,metric,period,value
 10420,hpi_forecast_8q_hi,2026-06,36.5239
 10420,hpi_forecast_8q_lo,2026-06,-5.8374
 10420,hpi_index_error,2026-06,0.3706
-10420,hpi_surprise_4q,2026-06,-2.5516
+10420,hpi_surprise_4q,2025-06,-2.5516
 10420,hpi_trend_5y,2026-06,7.8998
 10420,hpi_yoy_latest,2026-06,3.2297
 10500,hpi_forecast_4q,2026-06,4.869
@@ -26,7 +26,7 @@ cbsa_code,metric,period,value
 10500,hpi_forecast_8q_hi,2026-06,34.332
 10500,hpi_forecast_8q_lo,2026-06,-6.9762
 10500,hpi_index_error,2026-06,3.0822
-10500,hpi_surprise_4q,2026-06,-4.6858
+10500,hpi_surprise_4q,2025-06,-4.6858
 10500,hpi_trend_5y,2026-06,8.1822
 10500,hpi_yoy_latest,2026-06,0.5512
 10540,hpi_forecast_4q,2026-06,3.6982
@@ -36,7 +36,7 @@ cbsa_code,metric,period,value
 10540,hpi_forecast_8q_hi,2026-06,31.5484
 10540,hpi_forecast_8q_lo,2026-06,-8.7275
 10540,hpi_index_error,2026-06,0.6519
-10540,hpi_surprise_4q,2026-06,-4.2999
+10540,hpi_surprise_4q,2025-06,-4.2999
 10540,hpi_trend_5y,2026-06,5.2423
 10540,hpi_yoy_latest,2026-06,-0.8086
 10580,hpi_forecast_4q,2026-06,6.4536
@@ -46,7 +46,7 @@ cbsa_code,metric,period,value
 10580,hpi_forecast_8q_hi,2026-06,38.9873
 10580,hpi_forecast_8q_lo,2026-06,-4.9055
 10580,hpi_index_error,2026-06,0.5428
-10580,hpi_surprise_4q,2026-06,0.9779
+10580,hpi_surprise_4q,2025-06,0.9779
 10580,hpi_trend_5y,2026-06,8.5983
 10580,hpi_yoy_latest,2026-06,6.9633
 10740,hpi_forecast_4q,2026-06,4.1959
@@ -56,7 +56,7 @@ cbsa_code,metric,period,value
 10740,hpi_forecast_8q_hi,2026-06,32.644
 10740,hpi_forecast_8q_lo,2026-06,-8.4104
 10740,hpi_index_error,2026-06,0.2604
-10740,hpi_surprise_4q,2026-06,-2.7192
+10740,hpi_surprise_4q,2025-06,-2.7192
 10740,hpi_trend_5y,2026-06,7.6623
 10740,hpi_yoy_latest,2026-06,2.1774
 10780,hpi_forecast_4q,2026-06,4.6289
@@ -66,7 +66,7 @@ cbsa_code,metric,period,value
 10780,hpi_forecast_8q_hi,2026-06,33.8076
 10780,hpi_forecast_8q_lo,2026-06,-7.4315
 10780,hpi_index_error,2026-06,1.8339
-10780,hpi_surprise_4q,2026-06,1.6189
+10780,hpi_surprise_4q,2025-06,1.6189
 10780,hpi_trend_5y,2026-06,5.0071
 10780,hpi_yoy_latest,2026-06,4.8313
 10900,hpi_forecast_4q,2026-06,6.5867
@@ -76,7 +76,7 @@ cbsa_code,metric,period,value
 10900,hpi_forecast_8q_hi,2026-06,39.3341
 10900,hpi_forecast_8q_lo,2026-06,-4.3675
 10900,hpi_index_error,2026-06,0.3381
-10900,hpi_surprise_4q,2026-06,-1.1813
+10900,hpi_surprise_4q,2025-06,-1.1813
 10900,hpi_trend_5y,2026-06,8.9551
 10900,hpi_yoy_latest,2026-06,4.9478
 11020,hpi_forecast_4q,2026-06,6.2718
@@ -86,7 +86,7 @@ cbsa_code,metric,period,value
 11020,hpi_forecast_8q_hi,2026-06,38.0928
 11020,hpi_forecast_8q_lo,2026-06,-4.714
 11020,hpi_index_error,2026-06,1.5812
-11020,hpi_surprise_4q,2026-06,4.4016
+11020,hpi_surprise_4q,2025-06,4.4016
 11020,hpi_trend_5y,2026-06,6.6543
 11020,hpi_yoy_latest,2026-06,8.0701
 11100,hpi_forecast_4q,2026-06,5.1132
@@ -96,7 +96,7 @@ cbsa_code,metric,period,value
 11100,hpi_forecast_8q_hi,2026-06,35.4959
 11100,hpi_forecast_8q_lo,2026-06,-6.8184
 11100,hpi_index_error,2026-06,0.4693
-11100,hpi_surprise_4q,2026-06,-0.1064
+11100,hpi_surprise_4q,2025-06,-0.1064
 11100,hpi_trend_5y,2026-06,6.0237
 11100,hpi_yoy_latest,2026-06,3.1042
 11180,hpi_forecast_4q,2026-06,5.4291
@@ -106,7 +106,7 @@ cbsa_code,metric,period,value
 11180,hpi_forecast_8q_hi,2026-06,35.8629
 11180,hpi_forecast_8q_lo,2026-06,-6.0182
 11180,hpi_index_error,2026-06,1.1335
-11180,hpi_surprise_4q,2026-06,2.5336
+11180,hpi_surprise_4q,2025-06,2.5336
 11180,hpi_trend_5y,2026-06,6.5658
 11180,hpi_yoy_latest,2026-06,5.5783
 11200,hpi_forecast_4q,2026-06,5.0062
@@ -116,7 +116,7 @@ cbsa_code,metric,period,value
 11200,hpi_forecast_8q_hi,2026-06,34.7156
 11200,hpi_forecast_8q_lo,2026-06,-6.7453
 11200,hpi_index_error,2026-06,0.8586
-11200,hpi_surprise_4q,2026-06,-3.1181
+11200,hpi_surprise_4q,2025-06,-3.1181
 11200,hpi_trend_5y,2026-06,7.8071
 11200,hpi_yoy_latest,2026-06,2.3919
 11244,hpi_forecast_4q,2026-06,5.7822
@@ -126,7 +126,7 @@ cbsa_code,metric,period,value
 11244,hpi_forecast_8q_hi,2026-06,36.5466
 11244,hpi_forecast_8q_lo,2026-06,-5.7627
 11244,hpi_index_error,2026-06,0.1164
-11244,hpi_surprise_4q,2026-06,-1.4145
+11244,hpi_surprise_4q,2025-06,-1.4145
 11244,hpi_trend_5y,2026-06,7.7856
 11244,hpi_yoy_latest,2026-06,3.3451
 11260,hpi_forecast_4q,2026-06,6.8372
@@ -136,7 +136,7 @@ cbsa_code,metric,period,value
 11260,hpi_forecast_8q_hi,2026-06,39.4428
 11260,hpi_forecast_8q_lo,2026-06,-4.0642
 11260,hpi_index_error,2026-06,0.4587
-11260,hpi_surprise_4q,2026-06,-0.0967
+11260,hpi_surprise_4q,2025-06,-0.0967
 11260,hpi_trend_5y,2026-06,6.6658
 11260,hpi_yoy_latest,2026-06,4.5273
 11460,hpi_forecast_4q,2026-06,5.2624
@@ -146,7 +146,7 @@ cbsa_code,metric,period,value
 11460,hpi_forecast_8q_hi,2026-06,35.3267
 11460,hpi_forecast_8q_lo,2026-06,-6.4326
 11460,hpi_index_error,2026-06,0.4215
-11460,hpi_surprise_4q,2026-06,-1.4568
+11460,hpi_surprise_4q,2025-06,-1.4568
 11460,hpi_trend_5y,2026-06,7.0109
 11460,hpi_yoy_latest,2026-06,3.3501
 11500,hpi_forecast_4q,2026-06,6.0414
@@ -156,7 +156,7 @@ cbsa_code,metric,period,value
 11500,hpi_forecast_8q_hi,2026-06,37.6867
 11500,hpi_forecast_8q_lo,2026-06,-5.4226
 11500,hpi_index_error,2026-06,3.3961
-11500,hpi_surprise_4q,2026-06,9.0573
+11500,hpi_surprise_4q,2025-06,9.0573
 11500,hpi_trend_5y,2026-06,8.6509
 11500,hpi_yoy_latest,2026-06,12.0001
 11540,hpi_forecast_4q,2026-06,6.5043
@@ -166,7 +166,7 @@ cbsa_code,metric,period,value
 11540,hpi_forecast_8q_hi,2026-06,38.9116
 11540,hpi_forecast_8q_lo,2026-06,-5.0263
 11540,hpi_index_error,2026-06,0.5888
-11540,hpi_surprise_4q,2026-06,-1.2202
+11540,hpi_surprise_4q,2025-06,-1.2202
 11540,hpi_trend_5y,2026-06,9.4121
 11540,hpi_yoy_latest,2026-06,5.0746
 11694,hpi_forecast_4q,2026-06,5.2087
@@ -176,7 +176,7 @@ cbsa_code,metric,period,value
 11694,hpi_forecast_8q_hi,2026-06,35.516
 11694,hpi_forecast_8q_lo,2026-06,-6.6738
 11694,hpi_index_error,2026-06,0.0868
-11694,hpi_surprise_4q,2026-06,-2.185
+11694,hpi_surprise_4q,2025-06,-2.185
 11694,hpi_trend_5y,2026-06,6.0115
 11694,hpi_yoy_latest,2026-06,2.6268
 11700,hpi_forecast_4q,2026-06,2.6316
@@ -186,7 +186,7 @@ cbsa_code,metric,period,value
 11700,hpi_forecast_8q_hi,2026-06,28.5565
 11700,hpi_forecast_8q_lo,2026-06,-11.2004
 11700,hpi_index_error,2026-06,0.2611
-11700,hpi_surprise_4q,2026-06,-2.9189
+11700,hpi_surprise_4q,2025-06,-2.9189
 11700,hpi_trend_5y,2026-06,7.7547
 11700,hpi_yoy_latest,2026-06,1.3603
 12020,hpi_forecast_4q,2026-06,3.8921
@@ -196,7 +196,7 @@ cbsa_code,metric,period,value
 12020,hpi_forecast_8q_hi,2026-06,31.4528
 12020,hpi_forecast_8q_lo,2026-06,-9.2605
 12020,hpi_index_error,2026-06,0.4251
-12020,hpi_surprise_4q,2026-06,-4.3905
+12020,hpi_surprise_4q,2025-06,-4.3905
 12020,hpi_trend_5y,2026-06,9.1388
 12020,hpi_yoy_latest,2026-06,1.012
 12054,hpi_forecast_4q,2026-06,3.3187
@@ -206,7 +206,7 @@ cbsa_code,metric,period,value
 12054,hpi_forecast_8q_hi,2026-06,30.4182
 12054,hpi_forecast_8q_lo,2026-06,-9.7199
 12054,hpi_index_error,2026-06,0.0964
-12054,hpi_surprise_4q,2026-06,-2.3375
+12054,hpi_surprise_4q,2025-06,-2.3375
 12054,hpi_trend_5y,2026-06,7.3649
 12054,hpi_yoy_latest,2026-06,1.0387
 12100,hpi_forecast_4q,2026-06,7.1932
@@ -216,7 +216,7 @@ cbsa_code,metric,period,value
 12100,hpi_forecast_8q_hi,2026-06,40.6292
 12100,hpi_forecast_8q_lo,2026-06,-3.993
 12100,hpi_index_error,2026-06,0.3456
-12100,hpi_surprise_4q,2026-06,-0.9871
+12100,hpi_surprise_4q,2025-06,-0.9871
 12100,hpi_trend_5y,2026-06,11.0535
 12100,hpi_yoy_latest,2026-06,6.1596
 12220,hpi_forecast_4q,2026-06,4.9931
@@ -226,7 +226,7 @@ cbsa_code,metric,period,value
 12220,hpi_forecast_8q_hi,2026-06,34.9647
 12220,hpi_forecast_8q_lo,2026-06,-7.5963
 12220,hpi_index_error,2026-06,0.8744
-12220,hpi_surprise_4q,2026-06,-6.0019
+12220,hpi_surprise_4q,2025-06,-6.0019
 12220,hpi_trend_5y,2026-06,7.7888
 12220,hpi_yoy_latest,2026-06,1.2545
 12260,hpi_forecast_4q,2026-06,5.1969
@@ -236,7 +236,7 @@ cbsa_code,metric,period,value
 12260,hpi_forecast_8q_hi,2026-06,35.6987
 12260,hpi_forecast_8q_lo,2026-06,-7.0916
 12260,hpi_index_error,2026-06,0.3678
-12260,hpi_surprise_4q,2026-06,0.3543
+12260,hpi_surprise_4q,2025-06,0.3543
 12260,hpi_trend_5y,2026-06,8.3274
 12260,hpi_yoy_latest,2026-06,5.01
 12420,hpi_forecast_4q,2026-06,1.4265
@@ -246,7 +246,7 @@ cbsa_code,metric,period,value
 12420,hpi_forecast_8q_hi,2026-06,25.6241
 12420,hpi_forecast_8q_lo,2026-06,-13.0044
 12420,hpi_index_error,2026-06,0.1702
-12420,hpi_surprise_4q,2026-06,-0.2987
+12420,hpi_surprise_4q,2025-06,-0.2987
 12420,hpi_trend_5y,2026-06,2.8786
 12420,hpi_yoy_latest,2026-06,0.3369
 12540,hpi_forecast_4q,2026-06,3.7331
@@ -256,7 +256,7 @@ cbsa_code,metric,period,value
 12540,hpi_forecast_8q_hi,2026-06,31.0291
 12540,hpi_forecast_8q_lo,2026-06,-9.202
 12540,hpi_index_error,2026-06,0.3265
-12540,hpi_surprise_4q,2026-06,-3.5597
+12540,hpi_surprise_4q,2025-06,-3.5597
 12540,hpi_trend_5y,2026-06,6.309
 12540,hpi_yoy_latest,2026-06,0.4684
 12580,hpi_forecast_4q,2026-06,4.2727
@@ -266,7 +266,7 @@ cbsa_code,metric,period,value
 12580,hpi_forecast_8q_hi,2026-06,32.7553
 12580,hpi_forecast_8q_lo,2026-06,-8.0758
 12580,hpi_index_error,2026-06,0.1721
-12580,hpi_surprise_4q,2026-06,-1.6579
+12580,hpi_surprise_4q,2025-06,-1.6579
 12580,hpi_trend_5y,2026-06,5.6722
 12580,hpi_yoy_latest,2026-06,2.7251
 12620,hpi_forecast_4q,2026-06,3.2703
@@ -276,7 +276,7 @@ cbsa_code,metric,period,value
 12620,hpi_forecast_8q_hi,2026-06,30.4774
 12620,hpi_forecast_8q_lo,2026-06,-9.7857
 12620,hpi_index_error,2026-06,1.1869
-12620,hpi_surprise_4q,2026-06,-7.3999
+12620,hpi_surprise_4q,2025-06,-7.3999
 12620,hpi_trend_5y,2026-06,9.2483
 12620,hpi_yoy_latest,2026-06,-0.5402
 12700,hpi_forecast_4q,2026-06,5.547
@@ -286,7 +286,7 @@ cbsa_code,metric,period,value
 12700,hpi_forecast_8q_hi,2026-06,36.2556
 12700,hpi_forecast_8q_lo,2026-06,-6.467
 12700,hpi_index_error,2026-06,0.27
-12700,hpi_surprise_4q,2026-06,-0.4334
+12700,hpi_surprise_4q,2025-06,-0.4334
 12700,hpi_trend_5y,2026-06,8.9123
 12700,hpi_yoy_latest,2026-06,4.326
 12940,hpi_forecast_4q,2026-06,4.5743
@@ -296,7 +296,7 @@ cbsa_code,metric,period,value
 12940,hpi_forecast_8q_hi,2026-06,33.6385
 12940,hpi_forecast_8q_lo,2026-06,-8.1202
 12940,hpi_index_error,2026-06,0.5128
-12940,hpi_surprise_4q,2026-06,-0.3845
+12940,hpi_surprise_4q,2025-06,-0.3845
 12940,hpi_trend_5y,2026-06,4.4648
 12940,hpi_yoy_latest,2026-06,2.8196
 12980,hpi_forecast_4q,2026-06,6.6777
@@ -306,7 +306,7 @@ cbsa_code,metric,period,value
 12980,hpi_forecast_8q_hi,2026-06,39.2615
 12980,hpi_forecast_8q_lo,2026-06,-4.236
 12980,hpi_index_error,2026-06,1.3234
-12980,hpi_surprise_4q,2026-06,4.1324
+12980,hpi_surprise_4q,2025-06,4.1324
 12980,hpi_trend_5y,2026-06,8.2528
 12980,hpi_yoy_latest,2026-06,8.8812
 13020,hpi_forecast_4q,2026-06,5.8644
@@ -316,7 +316,7 @@ cbsa_code,metric,period,value
 13020,hpi_forecast_8q_hi,2026-06,37.0116
 13020,hpi_forecast_8q_lo,2026-06,-5.4745
 13020,hpi_index_error,2026-06,2.0182
-13020,hpi_surprise_4q,2026-06,0.1614
+13020,hpi_surprise_4q,2025-06,0.1614
 13020,hpi_trend_5y,2026-06,8.5898
 13020,hpi_yoy_latest,2026-06,5.1374
 13140,hpi_forecast_4q,2026-06,5.0416
@@ -326,7 +326,7 @@ cbsa_code,metric,period,value
 13140,hpi_forecast_8q_hi,2026-06,34.5224
 13140,hpi_forecast_8q_lo,2026-06,-7.0149
 13140,hpi_index_error,2026-06,0.5651
-13140,hpi_surprise_4q,2026-06,-1.24
+13140,hpi_surprise_4q,2025-06,-1.24
 13140,hpi_trend_5y,2026-06,5.9129
 13140,hpi_yoy_latest,2026-06,3.3584
 13220,hpi_forecast_4q,2026-06,5.5647
@@ -336,7 +336,7 @@ cbsa_code,metric,period,value
 13220,hpi_forecast_8q_hi,2026-06,36.1609
 13220,hpi_forecast_8q_lo,2026-06,-6.0
 13220,hpi_index_error,2026-06,2.5205
-13220,hpi_surprise_4q,2026-06,5.2404
+13220,hpi_surprise_4q,2025-06,5.2404
 13220,hpi_trend_5y,2026-06,8.8521
 13220,hpi_yoy_latest,2026-06,9.9882
 13380,hpi_forecast_4q,2026-06,4.2921
@@ -346,7 +346,7 @@ cbsa_code,metric,period,value
 13380,hpi_forecast_8q_hi,2026-06,33.3536
 13380,hpi_forecast_8q_lo,2026-06,-8.3143
 13380,hpi_index_error,2026-06,0.2555
-13380,hpi_surprise_4q,2026-06,-3.9323
+13380,hpi_surprise_4q,2025-06,-3.9323
 13380,hpi_trend_5y,2026-06,6.0837
 13380,hpi_yoy_latest,2026-06,0.4857
 13460,hpi_forecast_4q,2026-06,2.3802
@@ -356,7 +356,7 @@ cbsa_code,metric,period,value
 13460,hpi_forecast_8q_hi,2026-06,28.3224
 13460,hpi_forecast_8q_lo,2026-06,-12.2822
 13460,hpi_index_error,2026-06,0.1539
-13460,hpi_surprise_4q,2026-06,-2.2842
+13460,hpi_surprise_4q,2025-06,-2.2842
 13460,hpi_trend_5y,2026-06,5.2639
 13460,hpi_yoy_latest,2026-06,0.6511
 13740,hpi_forecast_4q,2026-06,5.2313
@@ -366,7 +366,7 @@ cbsa_code,metric,period,value
 13740,hpi_forecast_8q_hi,2026-06,35.8233
 13740,hpi_forecast_8q_lo,2026-06,-7.071
 13740,hpi_index_error,2026-06,0.5107
-13740,hpi_surprise_4q,2026-06,1.8578
+13740,hpi_surprise_4q,2025-06,1.8578
 13740,hpi_trend_5y,2026-06,7.0947
 13740,hpi_yoy_latest,2026-06,4.4085
 13780,hpi_forecast_4q,2026-06,4.9498
@@ -376,7 +376,7 @@ cbsa_code,metric,period,value
 13780,hpi_forecast_8q_hi,2026-06,34.6168
 13780,hpi_forecast_8q_lo,2026-06,-7.0552
 13780,hpi_index_error,2026-06,1.8679
-13780,hpi_surprise_4q,2026-06,-5.5028
+13780,hpi_surprise_4q,2025-06,-5.5028
 13780,hpi_trend_5y,2026-06,8.5792
 13780,hpi_yoy_latest,2026-06,1.7879
 13820,hpi_forecast_4q,2026-06,4.8224
@@ -386,7 +386,7 @@ cbsa_code,metric,period,value
 13820,hpi_forecast_8q_hi,2026-06,34.3036
 13820,hpi_forecast_8q_lo,2026-06,-7.3045
 13820,hpi_index_error,2026-06,0.3308
-13820,hpi_surprise_4q,2026-06,-0.6304
+13820,hpi_surprise_4q,2025-06,-0.6304
 13820,hpi_trend_5y,2026-06,6.7867
 13820,hpi_yoy_latest,2026-06,3.4135
 13900,hpi_forecast_4q,2026-06,5.9277
@@ -396,7 +396,7 @@ cbsa_code,metric,period,value
 13900,hpi_forecast_8q_hi,2026-06,37.5439
 13900,hpi_forecast_8q_lo,2026-06,-5.3651
 13900,hpi_index_error,2026-06,0.681
-13900,hpi_surprise_4q,2026-06,1.5479
+13900,hpi_surprise_4q,2025-06,1.5479
 13900,hpi_trend_5y,2026-06,5.9957
 13900,hpi_yoy_latest,2026-06,6.1511
 13980,hpi_forecast_4q,2026-06,5.6064
@@ -406,7 +406,7 @@ cbsa_code,metric,period,value
 13980,hpi_forecast_8q_hi,2026-06,36.466
 13980,hpi_forecast_8q_lo,2026-06,-6.03
 13980,hpi_index_error,2026-06,1.103
-13980,hpi_surprise_4q,2026-06,0.9653
+13980,hpi_surprise_4q,2025-06,0.9653
 13980,hpi_trend_5y,2026-06,7.8044
 13980,hpi_yoy_latest,2026-06,5.6536
 14010,hpi_forecast_4q,2026-06,7.4589
@@ -416,7 +416,7 @@ cbsa_code,metric,period,value
 14010,hpi_forecast_8q_hi,2026-06,41.1027
 14010,hpi_forecast_8q_lo,2026-06,-3.0049
 14010,hpi_index_error,2026-06,0.3564
-14010,hpi_surprise_4q,2026-06,3.6909
+14010,hpi_surprise_4q,2025-06,3.6909
 14010,hpi_trend_5y,2026-06,8.7564
 14010,hpi_yoy_latest,2026-06,8.7138
 14020,hpi_forecast_4q,2026-06,2.7541
@@ -426,7 +426,7 @@ cbsa_code,metric,period,value
 14020,hpi_forecast_8q_hi,2026-06,29.0009
 14020,hpi_forecast_8q_lo,2026-06,-10.8464
 14020,hpi_index_error,2026-06,0.9223
-14020,hpi_surprise_4q,2026-06,-4.2875
+14020,hpi_surprise_4q,2025-06,-4.2875
 14020,hpi_trend_5y,2026-06,6.0016
 14020,hpi_yoy_latest,2026-06,0.4009
 14260,hpi_forecast_4q,2026-06,4.1294
@@ -436,7 +436,7 @@ cbsa_code,metric,period,value
 14260,hpi_forecast_8q_hi,2026-06,33.1782
 14260,hpi_forecast_8q_lo,2026-06,-9.6087
 14260,hpi_index_error,2026-06,0.1759
-14260,hpi_surprise_4q,2026-06,-0.1777
+14260,hpi_surprise_4q,2025-06,-0.1777
 14260,hpi_trend_5y,2026-06,4.6774
 14260,hpi_yoy_latest,2026-06,3.6516
 14454,hpi_forecast_4q,2026-06,5.7483
@@ -446,7 +446,7 @@ cbsa_code,metric,period,value
 14454,hpi_forecast_8q_hi,2026-06,36.4592
 14454,hpi_forecast_8q_lo,2026-06,-5.5815
 14454,hpi_index_error,2026-06,0.1828
-14454,hpi_surprise_4q,2026-06,-1.7687
+14454,hpi_surprise_4q,2025-06,-1.7687
 14454,hpi_trend_5y,2026-06,6.9208
 14454,hpi_yoy_latest,2026-06,3.2043
 14500,hpi_forecast_4q,2026-06,3.1279
@@ -456,7 +456,7 @@ cbsa_code,metric,period,value
 14500,hpi_forecast_8q_hi,2026-06,29.789
 14500,hpi_forecast_8q_lo,2026-06,-10.0635
 14500,hpi_index_error,2026-06,0.153
-14500,hpi_surprise_4q,2026-06,-5.1953
+14500,hpi_surprise_4q,2025-06,-5.1953
 14500,hpi_trend_5y,2026-06,4.1441
 14500,hpi_yoy_latest,2026-06,-2.2589
 14540,hpi_forecast_4q,2026-06,4.4033
@@ -466,7 +466,7 @@ cbsa_code,metric,period,value
 14540,hpi_forecast_8q_hi,2026-06,33.6505
 14540,hpi_forecast_8q_lo,2026-06,-8.3259
 14540,hpi_index_error,2026-06,1.5659
-14540,hpi_surprise_4q,2026-06,-1.5646
+14540,hpi_surprise_4q,2025-06,-1.5646
 14540,hpi_trend_5y,2026-06,7.735
 14540,hpi_yoy_latest,2026-06,2.8287
 14580,hpi_forecast_4q,2026-06,3.8147
@@ -476,7 +476,7 @@ cbsa_code,metric,period,value
 14580,hpi_forecast_8q_hi,2026-06,31.6606
 14580,hpi_forecast_8q_lo,2026-06,-9.947
 14580,hpi_index_error,2026-06,0.6007
-14580,hpi_surprise_4q,2026-06,1.4846
+14580,hpi_surprise_4q,2025-06,1.4846
 14580,hpi_trend_5y,2026-06,7.3128
 14580,hpi_yoy_latest,2026-06,4.1267
 14740,hpi_forecast_4q,2026-06,3.7097
@@ -486,7 +486,7 @@ cbsa_code,metric,period,value
 14740,hpi_forecast_8q_hi,2026-06,31.6861
 14740,hpi_forecast_8q_lo,2026-06,-9.4826
 14740,hpi_index_error,2026-06,0.2257
-14740,hpi_surprise_4q,2026-06,-3.9195
+14740,hpi_surprise_4q,2025-06,-3.9195
 14740,hpi_trend_5y,2026-06,4.6886
 14740,hpi_yoy_latest,2026-06,0.1262
 14860,hpi_forecast_4q,2026-06,7.5423
@@ -496,7 +496,7 @@ cbsa_code,metric,period,value
 14860,hpi_forecast_8q_hi,2026-06,40.571
 14860,hpi_forecast_8q_lo,2026-06,-3.7004
 14860,hpi_index_error,2026-06,0.3393
-14860,hpi_surprise_4q,2026-06,-1.8088
+14860,hpi_surprise_4q,2025-06,-1.8088
 14860,hpi_trend_5y,2026-06,8.9173
 14860,hpi_yoy_latest,2026-06,5.1482
 15180,hpi_forecast_4q,2026-06,3.8607
@@ -506,7 +506,7 @@ cbsa_code,metric,period,value
 15180,hpi_forecast_8q_hi,2026-06,31.7629
 15180,hpi_forecast_8q_lo,2026-06,-8.8443
 15180,hpi_index_error,2026-06,1.2215
-15180,hpi_surprise_4q,2026-06,1.9348
+15180,hpi_surprise_4q,2025-06,1.9348
 15180,hpi_trend_5y,2026-06,8.1126
 15180,hpi_yoy_latest,2026-06,4.3653
 15260,hpi_forecast_4q,2026-06,3.0928
@@ -516,7 +516,7 @@ cbsa_code,metric,period,value
 15260,hpi_forecast_8q_hi,2026-06,29.9782
 15260,hpi_forecast_8q_lo,2026-06,-10.2762
 15260,hpi_index_error,2026-06,1.0296
-15260,hpi_surprise_4q,2026-06,-10.7977
+15260,hpi_surprise_4q,2025-06,-10.7977
 15260,hpi_trend_5y,2026-06,8.2131
 15260,hpi_yoy_latest,2026-06,-4.9023
 15380,hpi_forecast_4q,2026-06,7.0936
@@ -526,7 +526,7 @@ cbsa_code,metric,period,value
 15380,hpi_forecast_8q_hi,2026-06,40.3038
 15380,hpi_forecast_8q_lo,2026-06,-3.6122
 15380,hpi_index_error,2026-06,0.4143
-15380,hpi_surprise_4q,2026-06,-1.7473
+15380,hpi_surprise_4q,2025-06,-1.7473
 15380,hpi_trend_5y,2026-06,8.5585
 15380,hpi_yoy_latest,2026-06,4.3613
 15500,hpi_forecast_4q,2026-06,4.6957
@@ -536,7 +536,7 @@ cbsa_code,metric,period,value
 15500,hpi_forecast_8q_hi,2026-06,34.5415
 15500,hpi_forecast_8q_lo,2026-06,-8.6494
 15500,hpi_index_error,2026-06,1.0191
-15500,hpi_surprise_4q,2026-06,1.9829
+15500,hpi_surprise_4q,2025-06,1.9829
 15500,hpi_trend_5y,2026-06,9.5611
 15500,hpi_yoy_latest,2026-06,5.4011
 15540,hpi_forecast_4q,2026-06,3.5831
@@ -546,7 +546,7 @@ cbsa_code,metric,period,value
 15540,hpi_forecast_8q_hi,2026-06,30.9844
 15540,hpi_forecast_8q_lo,2026-06,-9.3868
 15540,hpi_index_error,2026-06,0.5397
-15540,hpi_surprise_4q,2026-06,-3.6934
+15540,hpi_surprise_4q,2025-06,-3.6934
 15540,hpi_trend_5y,2026-06,8.2855
 15540,hpi_yoy_latest,2026-06,0.8423
 15764,hpi_forecast_4q,2026-06,5.2102
@@ -556,7 +556,7 @@ cbsa_code,metric,period,value
 15764,hpi_forecast_8q_hi,2026-06,35.1207
 15764,hpi_forecast_8q_lo,2026-06,-6.4826
 15764,hpi_index_error,2026-06,0.1553
-15764,hpi_surprise_4q,2026-06,-2.5076
+15764,hpi_surprise_4q,2025-06,-2.5076
 15764,hpi_trend_5y,2026-06,6.9084
 15764,hpi_yoy_latest,2026-06,2.8464
 15804,hpi_forecast_4q,2026-06,6.6003
@@ -566,7 +566,7 @@ cbsa_code,metric,period,value
 15804,hpi_forecast_8q_hi,2026-06,39.2087
 15804,hpi_forecast_8q_lo,2026-06,-4.4565
 15804,hpi_index_error,2026-06,0.2305
-15804,hpi_surprise_4q,2026-06,-1.9574
+15804,hpi_surprise_4q,2025-06,-1.9574
 15804,hpi_trend_5y,2026-06,10.31
 15804,hpi_yoy_latest,2026-06,4.6534
 15940,hpi_forecast_4q,2026-06,7.145
@@ -576,7 +576,7 @@ cbsa_code,metric,period,value
 15940,hpi_forecast_8q_hi,2026-06,40.7138
 15940,hpi_forecast_8q_lo,2026-06,-3.7446
 15940,hpi_index_error,2026-06,0.4351
-15940,hpi_surprise_4q,2026-06,0.991
+15940,hpi_surprise_4q,2025-06,0.991
 15940,hpi_trend_5y,2026-06,8.3101
 15940,hpi_yoy_latest,2026-06,6.8387
 15980,hpi_forecast_4q,2026-06,0.9769
@@ -586,7 +586,7 @@ cbsa_code,metric,period,value
 15980,hpi_forecast_8q_hi,2026-06,24.8007
 15980,hpi_forecast_8q_lo,2026-06,-14.1893
 15980,hpi_index_error,2026-06,0.1724
-15980,hpi_surprise_4q,2026-06,0.445
+15980,hpi_surprise_4q,2025-06,0.445
 15980,hpi_trend_5y,2026-06,5.0325
 15980,hpi_yoy_latest,2026-06,-0.8971
 16020,hpi_forecast_4q,2026-06,5.5797
@@ -596,7 +596,7 @@ cbsa_code,metric,period,value
 16020,hpi_forecast_8q_hi,2026-06,36.7611
 16020,hpi_forecast_8q_lo,2026-06,-5.4886
 16020,hpi_index_error,2026-06,1.2628
-16020,hpi_surprise_4q,2026-06,-0.2897
+16020,hpi_surprise_4q,2025-06,-0.2897
 16020,hpi_trend_5y,2026-06,6.8031
 16020,hpi_yoy_latest,2026-06,4.7053
 16180,hpi_forecast_4q,2026-06,3.9179
@@ -606,7 +606,7 @@ cbsa_code,metric,period,value
 16180,hpi_forecast_8q_hi,2026-06,32.2558
 16180,hpi_forecast_8q_lo,2026-06,-9.6663
 16180,hpi_index_error,2026-06,0.7601
-16180,hpi_surprise_4q,2026-06,-0.8173
+16180,hpi_surprise_4q,2025-06,-0.8173
 16180,hpi_trend_5y,2026-06,5.0154
 16180,hpi_yoy_latest,2026-06,2.2402
 16220,hpi_forecast_4q,2026-06,4.3437
@@ -616,7 +616,7 @@ cbsa_code,metric,period,value
 16220,hpi_forecast_8q_hi,2026-06,33.4927
 16220,hpi_forecast_8q_lo,2026-06,-7.885
 16220,hpi_index_error,2026-06,0.4163
-16220,hpi_surprise_4q,2026-06,-4.301
+16220,hpi_surprise_4q,2025-06,-4.301
 16220,hpi_trend_5y,2026-06,6.8849
 16220,hpi_yoy_latest,2026-06,0.9819
 16300,hpi_forecast_4q,2026-06,6.3225
@@ -626,7 +626,7 @@ cbsa_code,metric,period,value
 16300,hpi_forecast_8q_hi,2026-06,38.5642
 16300,hpi_forecast_8q_lo,2026-06,-4.8971
 16300,hpi_index_error,2026-06,0.4969
-16300,hpi_surprise_4q,2026-06,1.1055
+16300,hpi_surprise_4q,2025-06,1.1055
 16300,hpi_trend_5y,2026-06,6.202
 16300,hpi_yoy_latest,2026-06,4.8526
 16540,hpi_forecast_4q,2026-06,4.6367
@@ -636,7 +636,7 @@ cbsa_code,metric,period,value
 16540,hpi_forecast_8q_hi,2026-06,34.0919
 16540,hpi_forecast_8q_lo,2026-06,-7.9859
 16540,hpi_index_error,2026-06,1.2756
-16540,hpi_surprise_4q,2026-06,-2.0037
+16540,hpi_surprise_4q,2025-06,-2.0037
 16540,hpi_trend_5y,2026-06,7.5585
 16540,hpi_yoy_latest,2026-06,3.3577
 16580,hpi_forecast_4q,2026-06,7.6133
@@ -646,7 +646,7 @@ cbsa_code,metric,period,value
 16580,hpi_forecast_8q_hi,2026-06,41.7027
 16580,hpi_forecast_8q_lo,2026-06,-2.8556
 16580,hpi_index_error,2026-06,0.8212
-16580,hpi_surprise_4q,2026-06,-0.8158
+16580,hpi_surprise_4q,2025-06,-0.8158
 16580,hpi_trend_5y,2026-06,8.0786
 16580,hpi_yoy_latest,2026-06,5.3864
 16620,hpi_forecast_4q,2026-06,5.2752
@@ -656,7 +656,7 @@ cbsa_code,metric,period,value
 16620,hpi_forecast_8q_hi,2026-06,35.625
 16620,hpi_forecast_8q_lo,2026-06,-6.4163
 16620,hpi_index_error,2026-06,1.5238
-16620,hpi_surprise_4q,2026-06,6.2196
+16620,hpi_surprise_4q,2025-06,6.2196
 16620,hpi_trend_5y,2026-06,6.9823
 16620,hpi_yoy_latest,2026-06,10.5361
 16700,hpi_forecast_4q,2026-06,4.8479
@@ -666,7 +666,7 @@ cbsa_code,metric,period,value
 16700,hpi_forecast_8q_hi,2026-06,34.9755
 16700,hpi_forecast_8q_lo,2026-06,-8.0487
 16700,hpi_index_error,2026-06,0.1717
-16700,hpi_surprise_4q,2026-06,-0.1198
+16700,hpi_surprise_4q,2025-06,-0.1198
 16700,hpi_trend_5y,2026-06,10.0797
 16700,hpi_yoy_latest,2026-06,4.7309
 16740,hpi_forecast_4q,2026-06,3.9672
@@ -676,7 +676,7 @@ cbsa_code,metric,period,value
 16740,hpi_forecast_8q_hi,2026-06,32.6033
 16740,hpi_forecast_8q_lo,2026-06,-9.2167
 16740,hpi_index_error,2026-06,0.1315
-16740,hpi_surprise_4q,2026-06,-2.9666
+16740,hpi_surprise_4q,2025-06,-2.9666
 16740,hpi_trend_5y,2026-06,8.4382
 16740,hpi_yoy_latest,2026-06,1.4513
 16820,hpi_forecast_4q,2026-06,4.6328
@@ -686,7 +686,7 @@ cbsa_code,metric,period,value
 16820,hpi_forecast_8q_hi,2026-06,34.0389
 16820,hpi_forecast_8q_lo,2026-06,-8.3842
 16820,hpi_index_error,2026-06,0.4396
-16820,hpi_surprise_4q,2026-06,-2.0929
+16820,hpi_surprise_4q,2025-06,-2.0929
 16820,hpi_trend_5y,2026-06,8.0008
 16820,hpi_yoy_latest,2026-06,3.0499
 16860,hpi_forecast_4q,2026-06,4.152
@@ -696,7 +696,7 @@ cbsa_code,metric,period,value
 16860,hpi_forecast_8q_hi,2026-06,32.9184
 16860,hpi_forecast_8q_lo,2026-06,-8.4757
 16860,hpi_index_error,2026-06,0.2302
-16860,hpi_surprise_4q,2026-06,-2.5708
+16860,hpi_surprise_4q,2025-06,-2.5708
 16860,hpi_trend_5y,2026-06,8.6645
 16860,hpi_yoy_latest,2026-06,1.9167
 16940,hpi_forecast_4q,2026-06,6.5994
@@ -706,7 +706,7 @@ cbsa_code,metric,period,value
 16940,hpi_forecast_8q_hi,2026-06,39.8847
 16940,hpi_forecast_8q_lo,2026-06,-4.9215
 16940,hpi_index_error,2026-06,0.4653
-16940,hpi_surprise_4q,2026-06,0.3419
+16940,hpi_surprise_4q,2025-06,0.3419
 16940,hpi_trend_5y,2026-06,6.6014
 16940,hpi_yoy_latest,2026-06,5.1567
 16984,hpi_forecast_4q,2026-06,7.1957
@@ -716,7 +716,7 @@ cbsa_code,metric,period,value
 16984,hpi_forecast_8q_hi,2026-06,40.7429
 16984,hpi_forecast_8q_lo,2026-06,-3.431
 16984,hpi_index_error,2026-06,0.1183
-16984,hpi_surprise_4q,2026-06,0.1255
+16984,hpi_surprise_4q,2025-06,0.1255
 16984,hpi_trend_5y,2026-06,7.7865
 16984,hpi_yoy_latest,2026-06,6.2027
 17020,hpi_forecast_4q,2026-06,2.4167
@@ -726,7 +726,7 @@ cbsa_code,metric,period,value
 17020,hpi_forecast_8q_hi,2026-06,28.1632
 17020,hpi_forecast_8q_lo,2026-06,-11.5314
 17020,hpi_index_error,2026-06,1.1696
-17020,hpi_surprise_4q,2026-06,-4.0875
+17020,hpi_surprise_4q,2025-06,-4.0875
 17020,hpi_trend_5y,2026-06,2.4941
 17020,hpi_yoy_latest,2026-06,-2.0926
 17140,hpi_forecast_4q,2026-06,5.8271
@@ -736,7 +736,7 @@ cbsa_code,metric,period,value
 17140,hpi_forecast_8q_hi,2026-06,37.1597
 17140,hpi_forecast_8q_lo,2026-06,-5.5319
 17140,hpi_index_error,2026-06,0.1534
-17140,hpi_surprise_4q,2026-06,-1.8261
+17140,hpi_surprise_4q,2025-06,-1.8261
 17140,hpi_trend_5y,2026-06,8.4332
 17140,hpi_yoy_latest,2026-06,3.768
 17300,hpi_forecast_4q,2026-06,4.0094
@@ -746,7 +746,7 @@ cbsa_code,metric,period,value
 17300,hpi_forecast_8q_hi,2026-06,32.1887
 17300,hpi_forecast_8q_lo,2026-06,-8.9902
 17300,hpi_index_error,2026-06,0.859
-17300,hpi_surprise_4q,2026-06,-2.0338
+17300,hpi_surprise_4q,2025-06,-2.0338
 17300,hpi_trend_5y,2026-06,8.3531
 17300,hpi_yoy_latest,2026-06,2.1333
 17410,hpi_forecast_4q,2026-06,6.4279
@@ -756,7 +756,7 @@ cbsa_code,metric,period,value
 17410,hpi_forecast_8q_hi,2026-06,38.6608
 17410,hpi_forecast_8q_lo,2026-06,-4.7969
 17410,hpi_index_error,2026-06,0.225
-17410,hpi_surprise_4q,2026-06,-1.9532
+17410,hpi_surprise_4q,2025-06,-1.9532
 17410,hpi_trend_5y,2026-06,8.1655
 17410,hpi_yoy_latest,2026-06,4.3502
 17420,hpi_forecast_4q,2026-06,4.6828
@@ -766,7 +766,7 @@ cbsa_code,metric,period,value
 17420,hpi_forecast_8q_hi,2026-06,34.5126
 17420,hpi_forecast_8q_lo,2026-06,-8.1137
 17420,hpi_index_error,2026-06,0.5606
-17420,hpi_surprise_4q,2026-06,1.1138
+17420,hpi_surprise_4q,2025-06,1.1138
 17420,hpi_trend_5y,2026-06,9.1679
 17420,hpi_yoy_latest,2026-06,5.3209
 17660,hpi_forecast_4q,2026-06,5.0685
@@ -776,7 +776,7 @@ cbsa_code,metric,period,value
 17660,hpi_forecast_8q_hi,2026-06,35.8316
 17660,hpi_forecast_8q_lo,2026-06,-7.8243
 17660,hpi_index_error,2026-06,0.405
-17660,hpi_surprise_4q,2026-06,-1.6164
+17660,hpi_surprise_4q,2025-06,-1.6164
 17660,hpi_trend_5y,2026-06,5.92
 17660,hpi_yoy_latest,2026-06,3.4508
 17780,hpi_forecast_4q,2026-06,3.5786
@@ -786,7 +786,7 @@ cbsa_code,metric,period,value
 17780,hpi_forecast_8q_hi,2026-06,30.9074
 17780,hpi_forecast_8q_lo,2026-06,-9.7554
 17780,hpi_index_error,2026-06,0.703
-17780,hpi_surprise_4q,2026-06,-6.7051
+17780,hpi_surprise_4q,2025-06,-6.7051
 17780,hpi_trend_5y,2026-06,7.3205
 17780,hpi_yoy_latest,2026-06,-2.229
 17820,hpi_forecast_4q,2026-06,2.7175
@@ -796,7 +796,7 @@ cbsa_code,metric,period,value
 17820,hpi_forecast_8q_hi,2026-06,28.8975
 17820,hpi_forecast_8q_lo,2026-06,-10.7924
 17820,hpi_index_error,2026-06,0.1021
-17820,hpi_surprise_4q,2026-06,-2.4152
+17820,hpi_surprise_4q,2025-06,-2.4152
 17820,hpi_trend_5y,2026-06,4.1938
 17820,hpi_yoy_latest,2026-06,0.1175
 17860,hpi_forecast_4q,2026-06,5.352
@@ -806,7 +806,7 @@ cbsa_code,metric,period,value
 17860,hpi_forecast_8q_hi,2026-06,35.6703
 17860,hpi_forecast_8q_lo,2026-06,-6.5465
 17860,hpi_index_error,2026-06,0.43
-17860,hpi_surprise_4q,2026-06,-2.0399
+17860,hpi_surprise_4q,2025-06,-2.0399
 17860,hpi_trend_5y,2026-06,7.8553
 17860,hpi_yoy_latest,2026-06,3.2642
 17900,hpi_forecast_4q,2026-06,5.167
@@ -816,7 +816,7 @@ cbsa_code,metric,period,value
 17900,hpi_forecast_8q_hi,2026-06,35.3618
 17900,hpi_forecast_8q_lo,2026-06,-7.5814
 17900,hpi_index_error,2026-06,0.2775
-17900,hpi_surprise_4q,2026-06,-1.4309
+17900,hpi_surprise_4q,2025-06,-1.4309
 17900,hpi_trend_5y,2026-06,8.6804
 17900,hpi_yoy_latest,2026-06,3.5699
 17980,hpi_forecast_4q,2026-06,4.7904
@@ -826,7 +826,7 @@ cbsa_code,metric,period,value
 17980,hpi_forecast_8q_hi,2026-06,34.0207
 17980,hpi_forecast_8q_lo,2026-06,-7.2696
 17980,hpi_index_error,2026-06,1.2124
-17980,hpi_surprise_4q,2026-06,-3.8529
+17980,hpi_surprise_4q,2025-06,-3.8529
 17980,hpi_trend_5y,2026-06,7.334
 17980,hpi_yoy_latest,2026-06,1.4323
 18020,hpi_forecast_4q,2026-06,6.4938
@@ -836,7 +836,7 @@ cbsa_code,metric,period,value
 18020,hpi_forecast_8q_hi,2026-06,38.956
 18020,hpi_forecast_8q_lo,2026-06,-4.8044
 18020,hpi_index_error,2026-06,0.7956
-18020,hpi_surprise_4q,2026-06,-1.5007
+18020,hpi_surprise_4q,2025-06,-1.5007
 18020,hpi_trend_5y,2026-06,7.3978
 18020,hpi_yoy_latest,2026-06,3.6227
 18140,hpi_forecast_4q,2026-06,5.3981
@@ -846,7 +846,7 @@ cbsa_code,metric,period,value
 18140,hpi_forecast_8q_hi,2026-06,36.0129
 18140,hpi_forecast_8q_lo,2026-06,-6.9053
 18140,hpi_index_error,2026-06,0.1456
-18140,hpi_surprise_4q,2026-06,-1.7942
+18140,hpi_surprise_4q,2025-06,-1.7942
 18140,hpi_trend_5y,2026-06,7.8802
 18140,hpi_yoy_latest,2026-06,3.3433
 18580,hpi_forecast_4q,2026-06,3.1147
@@ -856,7 +856,7 @@ cbsa_code,metric,period,value
 18580,hpi_forecast_8q_hi,2026-06,29.863
 18580,hpi_forecast_8q_lo,2026-06,-9.8233
 18580,hpi_index_error,2026-06,0.5679
-18580,hpi_surprise_4q,2026-06,-0.1299
+18580,hpi_surprise_4q,2025-06,-0.1299
 18580,hpi_trend_5y,2026-06,5.0881
 18580,hpi_yoy_latest,2026-06,1.397
 18700,hpi_forecast_4q,2026-06,3.8044
@@ -866,7 +866,7 @@ cbsa_code,metric,period,value
 18700,hpi_forecast_8q_hi,2026-06,31.5926
 18700,hpi_forecast_8q_lo,2026-06,-9.0725
 18700,hpi_index_error,2026-06,0.4037
-18700,hpi_surprise_4q,2026-06,1.5559
+18700,hpi_surprise_4q,2025-06,1.5559
 18700,hpi_trend_5y,2026-06,6.357
 18700,hpi_yoy_latest,2026-06,5.077
 18880,hpi_forecast_4q,2026-06,4.6067
@@ -876,7 +876,7 @@ cbsa_code,metric,period,value
 18880,hpi_forecast_8q_hi,2026-06,34.2915
 18880,hpi_forecast_8q_lo,2026-06,-8.6085
 18880,hpi_index_error,2026-06,0.2918
-18880,hpi_surprise_4q,2026-06,3.0706
+18880,hpi_surprise_4q,2025-06,3.0706
 18880,hpi_trend_5y,2026-06,7.196
 18880,hpi_yoy_latest,2026-06,5.9435
 19124,hpi_forecast_4q,2026-06,2.8991
@@ -886,7 +886,7 @@ cbsa_code,metric,period,value
 19124,hpi_forecast_8q_hi,2026-06,29.671
 19124,hpi_forecast_8q_lo,2026-06,-10.3984
 19124,hpi_index_error,2026-06,0.1406
-19124,hpi_surprise_4q,2026-06,-1.6358
+19124,hpi_surprise_4q,2025-06,-1.6358
 19124,hpi_trend_5y,2026-06,6.2525
 19124,hpi_yoy_latest,2026-06,0.5257
 19140,hpi_forecast_4q,2026-06,4.7193
@@ -896,7 +896,7 @@ cbsa_code,metric,period,value
 19140,hpi_forecast_8q_hi,2026-06,34.3187
 19140,hpi_forecast_8q_lo,2026-06,-7.463
 19140,hpi_index_error,2026-06,1.0839
-19140,hpi_surprise_4q,2026-06,0.245
+19140,hpi_surprise_4q,2025-06,0.245
 19140,hpi_trend_5y,2026-06,8.9219
 19140,hpi_yoy_latest,2026-06,4.1645
 19300,hpi_forecast_4q,2026-06,4.9664
@@ -906,7 +906,7 @@ cbsa_code,metric,period,value
 19300,hpi_forecast_8q_hi,2026-06,35.9178
 19300,hpi_forecast_8q_lo,2026-06,-7.9985
 19300,hpi_index_error,2026-06,1.398
-19300,hpi_surprise_4q,2026-06,1.9932
+19300,hpi_surprise_4q,2025-06,1.9932
 19300,hpi_trend_5y,2026-06,8.8798
 19300,hpi_yoy_latest,2026-06,6.8221
 19340,hpi_forecast_4q,2026-06,5.833
@@ -916,7 +916,7 @@ cbsa_code,metric,period,value
 19340,hpi_forecast_8q_hi,2026-06,37.0711
 19340,hpi_forecast_8q_lo,2026-06,-5.5453
 19340,hpi_index_error,2026-06,0.6527
-19340,hpi_surprise_4q,2026-06,-0.8089
+19340,hpi_surprise_4q,2025-06,-0.8089
 19340,hpi_trend_5y,2026-06,6.3436
 19340,hpi_yoy_latest,2026-06,4.1281
 19430,hpi_forecast_4q,2026-06,6.6533
@@ -926,7 +926,7 @@ cbsa_code,metric,period,value
 19430,hpi_forecast_8q_hi,2026-06,39.5654
 19430,hpi_forecast_8q_lo,2026-06,-4.4968
 19430,hpi_index_error,2026-06,0.3145
-19430,hpi_surprise_4q,2026-06,-1.0142
+19430,hpi_surprise_4q,2025-06,-1.0142
 19430,hpi_trend_5y,2026-06,8.3999
 19430,hpi_yoy_latest,2026-06,5.2601
 19460,hpi_forecast_4q,2026-06,4.9739
@@ -936,7 +936,7 @@ cbsa_code,metric,period,value
 19460,hpi_forecast_8q_hi,2026-06,34.7652
 19460,hpi_forecast_8q_lo,2026-06,-7.0716
 19460,hpi_index_error,2026-06,1.8102
-19460,hpi_surprise_4q,2026-06,-1.7455
+19460,hpi_surprise_4q,2025-06,-1.7455
 19460,hpi_trend_5y,2026-06,8.2606
 19460,hpi_yoy_latest,2026-06,1.9582
 19500,hpi_forecast_4q,2026-06,7.0025
@@ -946,7 +946,7 @@ cbsa_code,metric,period,value
 19500,hpi_forecast_8q_hi,2026-06,40.226
 19500,hpi_forecast_8q_lo,2026-06,-3.2239
 19500,hpi_index_error,2026-06,2.1443
-19500,hpi_surprise_4q,2026-06,-2.0602
+19500,hpi_surprise_4q,2025-06,-2.0602
 19500,hpi_trend_5y,2026-06,7.6525
 19500,hpi_yoy_latest,2026-06,3.5069
 19660,hpi_forecast_4q,2026-06,3.0473
@@ -956,7 +956,7 @@ cbsa_code,metric,period,value
 19660,hpi_forecast_8q_hi,2026-06,30.4124
 19660,hpi_forecast_8q_lo,2026-06,-10.4524
 19660,hpi_index_error,2026-06,0.1757
-19660,hpi_surprise_4q,2026-06,-2.5746
+19660,hpi_surprise_4q,2025-06,-2.5746
 19660,hpi_trend_5y,2026-06,6.753
 19660,hpi_yoy_latest,2026-06,-0.1654
 19740,hpi_forecast_4q,2026-06,3.1017
@@ -966,7 +966,7 @@ cbsa_code,metric,period,value
 19740,hpi_forecast_8q_hi,2026-06,29.8112
 19740,hpi_forecast_8q_lo,2026-06,-9.7733
 19740,hpi_index_error,2026-06,0.0496
-19740,hpi_surprise_4q,2026-06,-2.7494
+19740,hpi_surprise_4q,2025-06,-2.7494
 19740,hpi_trend_5y,2026-06,3.9609
 19740,hpi_yoy_latest,2026-06,-0.4588
 19780,hpi_forecast_4q,2026-06,4.4344
@@ -976,7 +976,7 @@ cbsa_code,metric,period,value
 19780,hpi_forecast_8q_hi,2026-06,33.5088
 19780,hpi_forecast_8q_lo,2026-06,-8.3089
 19780,hpi_index_error,2026-06,0.3235
-19780,hpi_surprise_4q,2026-06,-2.0123
+19780,hpi_surprise_4q,2025-06,-2.0123
 19780,hpi_trend_5y,2026-06,6.214
 19780,hpi_yoy_latest,2026-06,2.3315
 19804,hpi_forecast_4q,2026-06,6.7438
@@ -986,7 +986,7 @@ cbsa_code,metric,period,value
 19804,hpi_forecast_8q_hi,2026-06,39.3565
 19804,hpi_forecast_8q_lo,2026-06,-4.3922
 19804,hpi_index_error,2026-06,0.3482
-19804,hpi_surprise_4q,2026-06,-0.6548
+19804,hpi_surprise_4q,2025-06,-0.6548
 19804,hpi_trend_5y,2026-06,7.5431
 19804,hpi_yoy_latest,2026-06,5.2275
 20020,hpi_forecast_4q,2026-06,4.8688
@@ -996,7 +996,7 @@ cbsa_code,metric,period,value
 20020,hpi_forecast_8q_hi,2026-06,34.8824
 20020,hpi_forecast_8q_lo,2026-06,-7.3589
 20020,hpi_index_error,2026-06,2.0463
-20020,hpi_surprise_4q,2026-06,-6.5769
+20020,hpi_surprise_4q,2025-06,-6.5769
 20020,hpi_trend_5y,2026-06,7.3396
 20020,hpi_yoy_latest,2026-06,-0.9911
 20100,hpi_forecast_4q,2026-06,5.0841
@@ -1006,7 +1006,7 @@ cbsa_code,metric,period,value
 20100,hpi_forecast_8q_hi,2026-06,35.3108
 20100,hpi_forecast_8q_lo,2026-06,-7.4654
 20100,hpi_index_error,2026-06,0.7736
-20100,hpi_surprise_4q,2026-06,-0.7731
+20100,hpi_surprise_4q,2025-06,-0.7731
 20100,hpi_trend_5y,2026-06,6.846
 20100,hpi_yoy_latest,2026-06,3.6898
 20220,hpi_forecast_4q,2026-06,5.2435
@@ -1016,7 +1016,7 @@ cbsa_code,metric,period,value
 20220,hpi_forecast_8q_hi,2026-06,35.6772
 20220,hpi_forecast_8q_lo,2026-06,-6.6448
 20220,hpi_index_error,2026-06,0.8296
-20220,hpi_surprise_4q,2026-06,1.0714
+20220,hpi_surprise_4q,2025-06,1.0714
 20220,hpi_trend_5y,2026-06,7.1392
 20220,hpi_yoy_latest,2026-06,5.2234
 20260,hpi_forecast_4q,2026-06,7.0373
@@ -1026,7 +1026,7 @@ cbsa_code,metric,period,value
 20260,hpi_forecast_8q_hi,2026-06,40.4743
 20260,hpi_forecast_8q_lo,2026-06,-4.0342
 20260,hpi_index_error,2026-06,0.8689
-20260,hpi_surprise_4q,2026-06,-2.1655
+20260,hpi_surprise_4q,2025-06,-2.1655
 20260,hpi_trend_5y,2026-06,8.2657
 20260,hpi_yoy_latest,2026-06,4.0027
 20500,hpi_forecast_4q,2026-06,3.6282
@@ -1036,7 +1036,7 @@ cbsa_code,metric,period,value
 20500,hpi_forecast_8q_hi,2026-06,31.3319
 20500,hpi_forecast_8q_lo,2026-06,-10.0529
 20500,hpi_index_error,2026-06,0.2916
-20500,hpi_surprise_4q,2026-06,-1.5317
+20500,hpi_surprise_4q,2025-06,-1.5317
 20500,hpi_trend_5y,2026-06,8.0915
 20500,hpi_yoy_latest,2026-06,1.7686
 20740,hpi_forecast_4q,2026-06,5.062
@@ -1046,7 +1046,7 @@ cbsa_code,metric,period,value
 20740,hpi_forecast_8q_hi,2026-06,35.2608
 20740,hpi_forecast_8q_lo,2026-06,-7.1778
 20740,hpi_index_error,2026-06,0.4881
-20740,hpi_surprise_4q,2026-06,-2.875
+20740,hpi_surprise_4q,2025-06,-2.875
 20740,hpi_trend_5y,2026-06,7.9734
 20740,hpi_yoy_latest,2026-06,2.3063
 20940,hpi_forecast_4q,2026-06,6.4166
@@ -1056,7 +1056,7 @@ cbsa_code,metric,period,value
 20940,hpi_forecast_8q_hi,2026-06,37.6308
 20940,hpi_forecast_8q_lo,2026-06,-5.2558
 20940,hpi_index_error,2026-06,0.7729
-20940,hpi_surprise_4q,2026-06,-1.9263
+20940,hpi_surprise_4q,2025-06,-1.9263
 20940,hpi_trend_5y,2026-06,8.0024
 20940,hpi_yoy_latest,2026-06,3.789
 20994,hpi_forecast_4q,2026-06,6.9005
@@ -1066,7 +1066,7 @@ cbsa_code,metric,period,value
 20994,hpi_forecast_8q_hi,2026-06,40.2705
 20994,hpi_forecast_8q_lo,2026-06,-3.8582
 20994,hpi_index_error,2026-06,0.2589
-20994,hpi_surprise_4q,2026-06,-0.7701
+20994,hpi_surprise_4q,2025-06,-0.7701
 20994,hpi_trend_5y,2026-06,8.8727
 20994,hpi_yoy_latest,2026-06,6.0041
 21060,hpi_forecast_4q,2026-06,4.1745
@@ -1076,7 +1076,7 @@ cbsa_code,metric,period,value
 21060,hpi_forecast_8q_hi,2026-06,32.8011
 21060,hpi_forecast_8q_lo,2026-06,-8.5
 21060,hpi_index_error,2026-06,2.537
-21060,hpi_surprise_4q,2026-06,-3.6141
+21060,hpi_surprise_4q,2025-06,-3.6141
 21060,hpi_trend_5y,2026-06,7.8142
 21060,hpi_yoy_latest,2026-06,1.0472
 21140,hpi_forecast_4q,2026-06,5.9792
@@ -1086,7 +1086,7 @@ cbsa_code,metric,period,value
 21140,hpi_forecast_8q_hi,2026-06,37.3126
 21140,hpi_forecast_8q_lo,2026-06,-5.6205
 21140,hpi_index_error,2026-06,0.805
-21140,hpi_surprise_4q,2026-06,-0.2891
+21140,hpi_surprise_4q,2025-06,-0.2891
 21140,hpi_trend_5y,2026-06,8.0443
 21140,hpi_yoy_latest,2026-06,5.2754
 21300,hpi_forecast_4q,2026-06,9.919
@@ -1096,7 +1096,7 @@ cbsa_code,metric,period,value
 21300,hpi_forecast_8q_hi,2026-06,48.2997
 21300,hpi_forecast_8q_lo,2026-06,0.4816
 21300,hpi_index_error,2026-06,2.2187
-21300,hpi_surprise_4q,2026-06,-2.4264
+21300,hpi_surprise_4q,2025-06,-2.4264
 21300,hpi_trend_5y,2026-06,7.1485
 21300,hpi_yoy_latest,2026-06,2.9829
 21340,hpi_forecast_4q,2026-06,4.805
@@ -1106,7 +1106,7 @@ cbsa_code,metric,period,value
 21340,hpi_forecast_8q_hi,2026-06,34.0052
 21340,hpi_forecast_8q_lo,2026-06,-7.2179
 21340,hpi_index_error,2026-06,0.4067
-21340,hpi_surprise_4q,2026-06,-1.1607
+21340,hpi_surprise_4q,2025-06,-1.1607
 21340,hpi_trend_5y,2026-06,8.1548
 21340,hpi_yoy_latest,2026-06,2.2478
 21420,hpi_forecast_4q,2026-06,6.6795
@@ -1116,7 +1116,7 @@ cbsa_code,metric,period,value
 21420,hpi_forecast_8q_hi,2026-06,39.2535
 21420,hpi_forecast_8q_lo,2026-06,-4.0214
 21420,hpi_index_error,2026-06,1.9825
-21420,hpi_surprise_4q,2026-06,4.8022
+21420,hpi_surprise_4q,2025-06,4.8022
 21420,hpi_trend_5y,2026-06,5.5879
 21420,hpi_yoy_latest,2026-06,8.3223
 21500,hpi_forecast_4q,2026-06,8.0824
@@ -1126,7 +1126,7 @@ cbsa_code,metric,period,value
 21500,hpi_forecast_8q_hi,2026-06,43.0895
 21500,hpi_forecast_8q_lo,2026-06,-2.2
 21500,hpi_index_error,2026-06,0.6448
-21500,hpi_surprise_4q,2026-06,1.8247
+21500,hpi_surprise_4q,2025-06,1.8247
 21500,hpi_trend_5y,2026-06,9.6678
 21500,hpi_yoy_latest,2026-06,8.0038
 21660,hpi_forecast_4q,2026-06,4.5183
@@ -1136,7 +1136,7 @@ cbsa_code,metric,period,value
 21660,hpi_forecast_8q_hi,2026-06,33.6528
 21660,hpi_forecast_8q_lo,2026-06,-8.1803
 21660,hpi_index_error,2026-06,0.1987
-21660,hpi_surprise_4q,2026-06,1.1708
+21660,hpi_surprise_4q,2025-06,1.1708
 21660,hpi_trend_5y,2026-06,5.1619
 21660,hpi_yoy_latest,2026-06,3.9543
 21780,hpi_forecast_4q,2026-06,5.6537
@@ -1146,7 +1146,7 @@ cbsa_code,metric,period,value
 21780,hpi_forecast_8q_hi,2026-06,36.7737
 21780,hpi_forecast_8q_lo,2026-06,-6.0394
 21780,hpi_index_error,2026-06,0.5944
-21780,hpi_surprise_4q,2026-06,-3.1575
+21780,hpi_surprise_4q,2025-06,-3.1575
 21780,hpi_trend_5y,2026-06,6.733
 21780,hpi_yoy_latest,2026-06,2.3602
 21794,hpi_forecast_4q,2026-06,3.0128
@@ -1156,7 +1156,7 @@ cbsa_code,metric,period,value
 21794,hpi_forecast_8q_hi,2026-06,29.6345
 21794,hpi_forecast_8q_lo,2026-06,-10.0056
 21794,hpi_index_error,2026-06,0.1437
-21794,hpi_surprise_4q,2026-06,-4.5288
+21794,hpi_surprise_4q,2025-06,-4.5288
 21794,hpi_trend_5y,2026-06,5.6506
 21794,hpi_yoy_latest,2026-06,-0.4784
 21820,hpi_forecast_4q,2026-06,5.4156
@@ -1166,7 +1166,7 @@ cbsa_code,metric,period,value
 21820,hpi_forecast_8q_hi,2026-06,34.9816
 21820,hpi_forecast_8q_lo,2026-06,-6.5817
 21820,hpi_index_error,2026-06,1.6354
-21820,hpi_surprise_4q,2026-06,-1.186
+21820,hpi_surprise_4q,2025-06,-1.186
 21820,hpi_trend_5y,2026-06,5.789
 21820,hpi_yoy_latest,2026-06,2.819
 22020,hpi_forecast_4q,2026-06,5.4907
@@ -1176,7 +1176,7 @@ cbsa_code,metric,period,value
 22020,hpi_forecast_8q_hi,2026-06,36.2532
 22020,hpi_forecast_8q_lo,2026-06,-6.2443
 22020,hpi_index_error,2026-06,0.7323
-22020,hpi_surprise_4q,2026-06,-0.8023
+22020,hpi_surprise_4q,2025-06,-0.8023
 22020,hpi_trend_5y,2026-06,6.2857
 22020,hpi_yoy_latest,2026-06,4.2388
 22140,hpi_forecast_4q,2026-06,6.2628
@@ -1186,7 +1186,7 @@ cbsa_code,metric,period,value
 22140,hpi_forecast_8q_hi,2026-06,38.2875
 22140,hpi_forecast_8q_lo,2026-06,-4.8559
 22140,hpi_index_error,2026-06,0.7037
-22140,hpi_surprise_4q,2026-06,1.8671
+22140,hpi_surprise_4q,2025-06,1.8671
 22140,hpi_trend_5y,2026-06,8.7327
 22140,hpi_yoy_latest,2026-06,7.8152
 22180,hpi_forecast_4q,2026-06,4.5375
@@ -1196,7 +1196,7 @@ cbsa_code,metric,period,value
 22180,hpi_forecast_8q_hi,2026-06,33.2109
 22180,hpi_forecast_8q_lo,2026-06,-8.309
 22180,hpi_index_error,2026-06,0.4106
-22180,hpi_surprise_4q,2026-06,-1.8856
+22180,hpi_surprise_4q,2025-06,-1.8856
 22180,hpi_trend_5y,2026-06,9.4487
 22180,hpi_yoy_latest,2026-06,2.6293
 22220,hpi_forecast_4q,2026-06,4.9847
@@ -1206,7 +1206,7 @@ cbsa_code,metric,period,value
 22220,hpi_forecast_8q_hi,2026-06,35.459
 22220,hpi_forecast_8q_lo,2026-06,-8.5229
 22220,hpi_index_error,2026-06,0.1825
-22220,hpi_surprise_4q,2026-06,-1.8829
+22220,hpi_surprise_4q,2025-06,-1.8829
 22220,hpi_trend_5y,2026-06,9.5951
 22220,hpi_yoy_latest,2026-06,3.6633
 22380,hpi_forecast_4q,2026-06,5.9241
@@ -1216,7 +1216,7 @@ cbsa_code,metric,period,value
 22380,hpi_forecast_8q_hi,2026-06,37.362
 22380,hpi_forecast_8q_lo,2026-06,-5.5201
 22380,hpi_index_error,2026-06,0.3229
-22380,hpi_surprise_4q,2026-06,-0.6649
+22380,hpi_surprise_4q,2025-06,-0.6649
 22380,hpi_trend_5y,2026-06,7.9632
 22380,hpi_yoy_latest,2026-06,2.8902
 22420,hpi_forecast_4q,2026-06,6.5236
@@ -1226,7 +1226,7 @@ cbsa_code,metric,period,value
 22420,hpi_forecast_8q_hi,2026-06,39.4591
 22420,hpi_forecast_8q_lo,2026-06,-4.1302
 22420,hpi_index_error,2026-06,1.1757
-22420,hpi_surprise_4q,2026-06,-1.0081
+22420,hpi_surprise_4q,2025-06,-1.0081
 22420,hpi_trend_5y,2026-06,7.0634
 22420,hpi_yoy_latest,2026-06,3.8373
 22500,hpi_forecast_4q,2026-06,5.0453
@@ -1236,7 +1236,7 @@ cbsa_code,metric,period,value
 22500,hpi_forecast_8q_hi,2026-06,35.2371
 22500,hpi_forecast_8q_lo,2026-06,-7.2688
 22500,hpi_index_error,2026-06,0.824
-22500,hpi_surprise_4q,2026-06,2.5321
+22500,hpi_surprise_4q,2025-06,2.5321
 22500,hpi_trend_5y,2026-06,7.7894
 22500,hpi_yoy_latest,2026-06,7.0294
 22520,hpi_forecast_4q,2026-06,5.9331
@@ -1246,7 +1246,7 @@ cbsa_code,metric,period,value
 22520,hpi_forecast_8q_hi,2026-06,37.4306
 22520,hpi_forecast_8q_lo,2026-06,-5.5598
 22520,hpi_index_error,2026-06,1.7503
-22520,hpi_surprise_4q,2026-06,2.4471
+22520,hpi_surprise_4q,2025-06,2.4471
 22520,hpi_trend_5y,2026-06,9.0536
 22520,hpi_yoy_latest,2026-06,6.6582
 22540,hpi_forecast_4q,2026-06,7.9281
@@ -1256,7 +1256,7 @@ cbsa_code,metric,period,value
 22540,hpi_forecast_8q_hi,2026-06,42.8438
 22540,hpi_forecast_8q_lo,2026-06,-2.341
 22540,hpi_index_error,2026-06,1.2471
-22540,hpi_surprise_4q,2026-06,-0.8749
+22540,hpi_surprise_4q,2025-06,-0.8749
 22540,hpi_trend_5y,2026-06,10.2124
 22540,hpi_yoy_latest,2026-06,5.8108
 22660,hpi_forecast_4q,2026-06,3.2433
@@ -1266,7 +1266,7 @@ cbsa_code,metric,period,value
 22660,hpi_forecast_8q_hi,2026-06,30.5574
 22660,hpi_forecast_8q_lo,2026-06,-9.8232
 22660,hpi_index_error,2026-06,0.1778
-22660,hpi_surprise_4q,2026-06,-2.4895
+22660,hpi_surprise_4q,2025-06,-2.4895
 22660,hpi_trend_5y,2026-06,5.2788
 22660,hpi_yoy_latest,2026-06,0.2231
 22744,hpi_forecast_4q,2026-06,4.1398
@@ -1276,7 +1276,7 @@ cbsa_code,metric,period,value
 22744,hpi_forecast_8q_hi,2026-06,32.1207
 22744,hpi_forecast_8q_lo,2026-06,-8.1828
 22744,hpi_index_error,2026-06,0.1025
-22744,hpi_surprise_4q,2026-06,-2.3059
+22744,hpi_surprise_4q,2025-06,-2.3059
 22744,hpi_trend_5y,2026-06,8.4213
 22744,hpi_yoy_latest,2026-06,0.7748
 22900,hpi_forecast_4q,2026-06,5.2779
@@ -1286,7 +1286,7 @@ cbsa_code,metric,period,value
 22900,hpi_forecast_8q_hi,2026-06,35.8125
 22900,hpi_forecast_8q_lo,2026-06,-6.5668
 22900,hpi_index_error,2026-06,0.6456
-22900,hpi_surprise_4q,2026-06,-1.8265
+22900,hpi_surprise_4q,2025-06,-1.8265
 22900,hpi_trend_5y,2026-06,8.1179
 22900,hpi_yoy_latest,2026-06,3.2151
 23060,hpi_forecast_4q,2026-06,6.0152
@@ -1296,7 +1296,7 @@ cbsa_code,metric,period,value
 23060,hpi_forecast_8q_hi,2026-06,37.8591
 23060,hpi_forecast_8q_lo,2026-06,-5.4561
 23060,hpi_index_error,2026-06,0.4887
-23060,hpi_surprise_4q,2026-06,-1.3578
+23060,hpi_surprise_4q,2025-06,-1.3578
 23060,hpi_trend_5y,2026-06,9.051
 23060,hpi_yoy_latest,2026-06,4.3361
 23104,hpi_forecast_4q,2026-06,2.8242
@@ -1306,7 +1306,7 @@ cbsa_code,metric,period,value
 23104,hpi_forecast_8q_hi,2026-06,29.4699
 23104,hpi_forecast_8q_lo,2026-06,-10.5459
 23104,hpi_index_error,2026-06,0.1954
-23104,hpi_surprise_4q,2026-06,-1.7075
+23104,hpi_surprise_4q,2025-06,-1.7075
 23104,hpi_trend_5y,2026-06,6.098
 23104,hpi_yoy_latest,2026-06,0.6688
 23224,hpi_forecast_4q,2026-06,4.258
@@ -1316,7 +1316,7 @@ cbsa_code,metric,period,value
 23224,hpi_forecast_8q_hi,2026-06,32.7536
 23224,hpi_forecast_8q_lo,2026-06,-8.067
 23224,hpi_index_error,2026-06,0.1844
-23224,hpi_surprise_4q,2026-06,-2.3216
+23224,hpi_surprise_4q,2025-06,-2.3216
 23224,hpi_trend_5y,2026-06,5.2896
 23224,hpi_yoy_latest,2026-06,1.319
 23420,hpi_forecast_4q,2026-06,4.906
@@ -1326,7 +1326,7 @@ cbsa_code,metric,period,value
 23420,hpi_forecast_8q_hi,2026-06,34.1223
 23420,hpi_forecast_8q_lo,2026-06,-7.7025
 23420,hpi_index_error,2026-06,0.2175
-23420,hpi_surprise_4q,2026-06,-1.7662
+23420,hpi_surprise_4q,2025-06,-1.7662
 23420,hpi_trend_5y,2026-06,6.2613
 23420,hpi_yoy_latest,2026-06,2.0454
 23460,hpi_forecast_4q,2026-06,4.9933
@@ -1336,7 +1336,7 @@ cbsa_code,metric,period,value
 23460,hpi_forecast_8q_hi,2026-06,35.0102
 23460,hpi_forecast_8q_lo,2026-06,-7.003
 23460,hpi_index_error,2026-06,1.8646
-23460,hpi_surprise_4q,2026-06,-3.617
+23460,hpi_surprise_4q,2025-06,-3.617
 23460,hpi_trend_5y,2026-06,7.8627
 23460,hpi_yoy_latest,2026-06,0.9156
 23540,hpi_forecast_4q,2026-06,3.541
@@ -1346,7 +1346,7 @@ cbsa_code,metric,period,value
 23540,hpi_forecast_8q_hi,2026-06,31.1503
 23540,hpi_forecast_8q_lo,2026-06,-9.935
 23540,hpi_index_error,2026-06,0.3386
-23540,hpi_surprise_4q,2026-06,-1.7549
+23540,hpi_surprise_4q,2025-06,-1.7549
 23540,hpi_trend_5y,2026-06,7.3682
 23540,hpi_yoy_latest,2026-06,1.2156
 23580,hpi_forecast_4q,2026-06,3.6894
@@ -1356,7 +1356,7 @@ cbsa_code,metric,period,value
 23580,hpi_forecast_8q_hi,2026-06,31.492
 23580,hpi_forecast_8q_lo,2026-06,-9.5719
 23580,hpi_index_error,2026-06,0.4538
-23580,hpi_surprise_4q,2026-06,-2.0578
+23580,hpi_surprise_4q,2025-06,-2.0578
 23580,hpi_trend_5y,2026-06,9.8344
 23580,hpi_yoy_latest,2026-06,2.7428
 23900,hpi_forecast_4q,2026-06,5.7485
@@ -1366,7 +1366,7 @@ cbsa_code,metric,period,value
 23900,hpi_forecast_8q_hi,2026-06,37.2003
 23900,hpi_forecast_8q_lo,2026-06,-5.9488
 23900,hpi_index_error,2026-06,1.5859
-23900,hpi_surprise_4q,2026-06,-0.5897
+23900,hpi_surprise_4q,2025-06,-0.5897
 23900,hpi_trend_5y,2026-06,7.1021
 23900,hpi_yoy_latest,2026-06,4.4294
 24020,hpi_forecast_4q,2026-06,5.0442
@@ -1376,7 +1376,7 @@ cbsa_code,metric,period,value
 24020,hpi_forecast_8q_hi,2026-06,34.8082
 24020,hpi_forecast_8q_lo,2026-06,-6.8984
 24020,hpi_index_error,2026-06,2.2767
-24020,hpi_surprise_4q,2026-06,2.2194
+24020,hpi_surprise_4q,2025-06,2.2194
 24020,hpi_trend_5y,2026-06,8.651
 24020,hpi_yoy_latest,2026-06,8.0611
 24140,hpi_forecast_4q,2026-06,3.8757
@@ -1386,7 +1386,7 @@ cbsa_code,metric,period,value
 24140,hpi_forecast_8q_hi,2026-06,31.5805
 24140,hpi_forecast_8q_lo,2026-06,-9.8259
 24140,hpi_index_error,2026-06,2.2907
-24140,hpi_surprise_4q,2026-06,-2.8256
+24140,hpi_surprise_4q,2025-06,-2.8256
 24140,hpi_trend_5y,2026-06,8.6005
 24140,hpi_yoy_latest,2026-06,0.7996
 24220,hpi_forecast_4q,2026-06,6.4445
@@ -1396,7 +1396,7 @@ cbsa_code,metric,period,value
 24220,hpi_forecast_8q_hi,2026-06,38.8451
 24220,hpi_forecast_8q_lo,2026-06,-4.286
 24220,hpi_index_error,2026-06,1.1764
-24220,hpi_surprise_4q,2026-06,3.0761
+24220,hpi_surprise_4q,2025-06,3.0761
 24220,hpi_trend_5y,2026-06,6.1925
 24220,hpi_yoy_latest,2026-06,7.1734
 24260,hpi_forecast_4q,2026-06,5.1098
@@ -1406,7 +1406,7 @@ cbsa_code,metric,period,value
 24260,hpi_forecast_8q_hi,2026-06,34.7282
 24260,hpi_forecast_8q_lo,2026-06,-6.441
 24260,hpi_index_error,2026-06,1.7209
-24260,hpi_surprise_4q,2026-06,-5.3728
+24260,hpi_surprise_4q,2025-06,-5.3728
 24260,hpi_trend_5y,2026-06,7.6844
 24260,hpi_yoy_latest,2026-06,-0.384
 24300,hpi_forecast_4q,2026-06,5.8842
@@ -1416,7 +1416,7 @@ cbsa_code,metric,period,value
 24300,hpi_forecast_8q_hi,2026-06,37.6489
 24300,hpi_forecast_8q_lo,2026-06,-6.0373
 24300,hpi_index_error,2026-06,0.2077
-24300,hpi_surprise_4q,2026-06,4.2064
+24300,hpi_surprise_4q,2025-06,4.2064
 24300,hpi_trend_5y,2026-06,7.7372
 24300,hpi_yoy_latest,2026-06,8.7816
 24340,hpi_forecast_4q,2026-06,6.131
@@ -1426,7 +1426,7 @@ cbsa_code,metric,period,value
 24340,hpi_forecast_8q_hi,2026-06,38.0099
 24340,hpi_forecast_8q_lo,2026-06,-5.3428
 24340,hpi_index_error,2026-06,0.268
-24340,hpi_surprise_4q,2026-06,-0.8697
+24340,hpi_surprise_4q,2025-06,-0.8697
 24340,hpi_trend_5y,2026-06,8.4111
 24340,hpi_yoy_latest,2026-06,4.4872
 24420,hpi_forecast_4q,2026-06,2.5577
@@ -1436,7 +1436,7 @@ cbsa_code,metric,period,value
 24420,hpi_forecast_8q_hi,2026-06,28.3943
 24420,hpi_forecast_8q_lo,2026-06,-10.9332
 24420,hpi_index_error,2026-06,0.6621
-24420,hpi_surprise_4q,2026-06,-9.2179
+24420,hpi_surprise_4q,2025-06,-9.2179
 24420,hpi_trend_5y,2026-06,2.8806
 24420,hpi_yoy_latest,2026-06,-5.1987
 24500,hpi_forecast_4q,2026-06,4.5475
@@ -1446,7 +1446,7 @@ cbsa_code,metric,period,value
 24500,hpi_forecast_8q_hi,2026-06,33.6346
 24500,hpi_forecast_8q_lo,2026-06,-8.0303
 24500,hpi_index_error,2026-06,1.1203
-24500,hpi_surprise_4q,2026-06,2.3567
+24500,hpi_surprise_4q,2025-06,2.3567
 24500,hpi_trend_5y,2026-06,9.0834
 24500,hpi_yoy_latest,2026-06,5.9984
 24540,hpi_forecast_4q,2026-06,2.6789
@@ -1456,7 +1456,7 @@ cbsa_code,metric,period,value
 24540,hpi_forecast_8q_hi,2026-06,29.3284
 24540,hpi_forecast_8q_lo,2026-06,-10.9247
 24540,hpi_index_error,2026-06,0.3577
-24540,hpi_surprise_4q,2026-06,-2.8021
+24540,hpi_surprise_4q,2025-06,-2.8021
 24540,hpi_trend_5y,2026-06,4.6034
 24540,hpi_yoy_latest,2026-06,0.458
 24580,hpi_forecast_4q,2026-06,6.3188
@@ -1466,7 +1466,7 @@ cbsa_code,metric,period,value
 24580,hpi_forecast_8q_hi,2026-06,38.5229
 24580,hpi_forecast_8q_lo,2026-06,-5.4926
 24580,hpi_index_error,2026-06,0.5259
-24580,hpi_surprise_4q,2026-06,-1.312
+24580,hpi_surprise_4q,2025-06,-1.312
 24580,hpi_trend_5y,2026-06,9.8133
 24580,hpi_yoy_latest,2026-06,4.9794
 24660,hpi_forecast_4q,2026-06,5.1482
@@ -1476,7 +1476,7 @@ cbsa_code,metric,period,value
 24660,hpi_forecast_8q_hi,2026-06,35.3747
 24660,hpi_forecast_8q_lo,2026-06,-7.2029
 24660,hpi_index_error,2026-06,0.3522
-24660,hpi_surprise_4q,2026-06,0.2185
+24660,hpi_surprise_4q,2025-06,0.2185
 24660,hpi_trend_5y,2026-06,9.171
 24660,hpi_yoy_latest,2026-06,4.9075
 24780,hpi_forecast_4q,2026-06,4.1777
@@ -1486,7 +1486,7 @@ cbsa_code,metric,period,value
 24780,hpi_forecast_8q_hi,2026-06,32.7619
 24780,hpi_forecast_8q_lo,2026-06,-9.1535
 24780,hpi_index_error,2026-06,1.145
-24780,hpi_surprise_4q,2026-06,-0.3471
+24780,hpi_surprise_4q,2025-06,-0.3471
 24780,hpi_trend_5y,2026-06,7.689
 24780,hpi_yoy_latest,2026-06,2.9538
 24860,hpi_forecast_4q,2026-06,4.8484
@@ -1496,7 +1496,7 @@ cbsa_code,metric,period,value
 24860,hpi_forecast_8q_hi,2026-06,35.0272
 24860,hpi_forecast_8q_lo,2026-06,-8.0742
 24860,hpi_index_error,2026-06,0.2181
-24860,hpi_surprise_4q,2026-06,-1.9999
+24860,hpi_surprise_4q,2025-06,-1.9999
 24860,hpi_trend_5y,2026-06,9.2913
 24860,hpi_yoy_latest,2026-06,3.284
 25060,hpi_forecast_4q,2026-06,5.335
@@ -1506,7 +1506,7 @@ cbsa_code,metric,period,value
 25060,hpi_forecast_8q_hi,2026-06,36.1016
 25060,hpi_forecast_8q_lo,2026-06,-7.08
 25060,hpi_index_error,2026-06,0.8211
-25060,hpi_surprise_4q,2026-06,-0.2584
+25060,hpi_surprise_4q,2025-06,-0.2584
 25060,hpi_trend_5y,2026-06,7.3338
 25060,hpi_yoy_latest,2026-06,3.5449
 25180,hpi_forecast_4q,2026-06,4.174
@@ -1516,7 +1516,7 @@ cbsa_code,metric,period,value
 25180,hpi_forecast_8q_hi,2026-06,33.2466
 25180,hpi_forecast_8q_lo,2026-06,-8.7079
 25180,hpi_index_error,2026-06,0.5853
-25180,hpi_surprise_4q,2026-06,-5.1141
+25180,hpi_surprise_4q,2025-06,-5.1141
 25180,hpi_trend_5y,2026-06,7.0619
 25180,hpi_yoy_latest,2026-06,0.9227
 25220,hpi_forecast_4q,2026-06,3.6715
@@ -1526,7 +1526,7 @@ cbsa_code,metric,period,value
 25220,hpi_forecast_8q_hi,2026-06,31.716
 25220,hpi_forecast_8q_lo,2026-06,-9.6068
 25220,hpi_index_error,2026-06,1.9533
-25220,hpi_surprise_4q,2026-06,-2.7183
+25220,hpi_surprise_4q,2025-06,-2.7183
 25220,hpi_trend_5y,2026-06,4.5716
 25220,hpi_yoy_latest,2026-06,0.6142
 25260,hpi_forecast_4q,2026-06,5.1718
@@ -1536,7 +1536,7 @@ cbsa_code,metric,period,value
 25260,hpi_forecast_8q_hi,2026-06,34.71
 25260,hpi_forecast_8q_lo,2026-06,-7.368
 25260,hpi_index_error,2026-06,0.6671
-25260,hpi_surprise_4q,2026-06,-4.0434
+25260,hpi_surprise_4q,2025-06,-4.0434
 25260,hpi_trend_5y,2026-06,6.5193
 25260,hpi_yoy_latest,2026-06,0.6687
 25420,hpi_forecast_4q,2026-06,5.9792
@@ -1546,7 +1546,7 @@ cbsa_code,metric,period,value
 25420,hpi_forecast_8q_hi,2026-06,37.6214
 25420,hpi_forecast_8q_lo,2026-06,-5.2958
 25420,hpi_index_error,2026-06,0.3481
-25420,hpi_surprise_4q,2026-06,-1.3064
+25420,hpi_surprise_4q,2025-06,-1.3064
 25420,hpi_trend_5y,2026-06,8.2378
 25420,hpi_yoy_latest,2026-06,4.7671
 25500,hpi_forecast_4q,2026-06,4.8908
@@ -1556,7 +1556,7 @@ cbsa_code,metric,period,value
 25500,hpi_forecast_8q_hi,2026-06,34.6663
 25500,hpi_forecast_8q_lo,2026-06,-7.4737
 25500,hpi_index_error,2026-06,1.3412
-25500,hpi_surprise_4q,2026-06,-0.2314
+25500,hpi_surprise_4q,2025-06,-0.2314
 25500,hpi_trend_5y,2026-06,7.9412
 25500,hpi_yoy_latest,2026-06,4.4523
 25540,hpi_forecast_4q,2026-06,6.7732
@@ -1566,7 +1566,7 @@ cbsa_code,metric,period,value
 25540,hpi_forecast_8q_hi,2026-06,38.7519
 25540,hpi_forecast_8q_lo,2026-06,-4.4971
 25540,hpi_index_error,2026-06,0.3439
-25540,hpi_surprise_4q,2026-06,-1.3442
+25540,hpi_surprise_4q,2025-06,-1.3442
 25540,hpi_trend_5y,2026-06,9.5337
 25540,hpi_yoy_latest,2026-06,5.7572
 25620,hpi_forecast_4q,2026-06,5.5623
@@ -1576,7 +1576,7 @@ cbsa_code,metric,period,value
 25620,hpi_forecast_8q_hi,2026-06,36.2224
 25620,hpi_forecast_8q_lo,2026-06,-5.9159
 25620,hpi_index_error,2026-06,0.9217
-25620,hpi_surprise_4q,2026-06,0.4187
+25620,hpi_surprise_4q,2025-06,0.4187
 25620,hpi_trend_5y,2026-06,6.9877
 25620,hpi_yoy_latest,2026-06,4.6939
 25740,hpi_forecast_4q,2026-06,2.5395
@@ -1586,7 +1586,7 @@ cbsa_code,metric,period,value
 25740,hpi_forecast_8q_hi,2026-06,28.6423
 25740,hpi_forecast_8q_lo,2026-06,-10.7059
 25740,hpi_index_error,2026-06,0.8845
-25740,hpi_surprise_4q,2026-06,-5.6404
+25740,hpi_surprise_4q,2025-06,-5.6404
 25740,hpi_trend_5y,2026-06,7.8157
 25740,hpi_yoy_latest,2026-06,-1.1992
 25860,hpi_forecast_4q,2026-06,4.4619
@@ -1596,7 +1596,7 @@ cbsa_code,metric,period,value
 25860,hpi_forecast_8q_hi,2026-06,33.7634
 25860,hpi_forecast_8q_lo,2026-06,-8.6402
 25860,hpi_index_error,2026-06,0.8148
-25860,hpi_surprise_4q,2026-06,-1.9807
+25860,hpi_surprise_4q,2025-06,-1.9807
 25860,hpi_trend_5y,2026-06,9.0524
 25860,hpi_yoy_latest,2026-06,2.7648
 25940,hpi_forecast_4q,2026-06,4.2736
@@ -1606,7 +1606,7 @@ cbsa_code,metric,period,value
 25940,hpi_forecast_8q_hi,2026-06,33.5352
 25940,hpi_forecast_8q_lo,2026-06,-9.2678
 25940,hpi_index_error,2026-06,0.2422
-25940,hpi_surprise_4q,2026-06,-2.8547
+25940,hpi_surprise_4q,2025-06,-2.8547
 25940,hpi_trend_5y,2026-06,10.3682
 25940,hpi_yoy_latest,2026-06,2.6584
 25980,hpi_forecast_4q,2026-06,3.9754
@@ -1616,7 +1616,7 @@ cbsa_code,metric,period,value
 25980,hpi_forecast_8q_hi,2026-06,32.262
 25980,hpi_forecast_8q_lo,2026-06,-9.4005
 25980,hpi_index_error,2026-06,3.7423
-25980,hpi_surprise_4q,2026-06,-3.1829
+25980,hpi_surprise_4q,2025-06,-3.1829
 25980,hpi_trend_5y,2026-06,10.7551
 25980,hpi_yoy_latest,2026-06,2.4294
 26140,hpi_forecast_4q,2026-06,4.8041
@@ -1626,7 +1626,7 @@ cbsa_code,metric,period,value
 26140,hpi_forecast_8q_hi,2026-06,35.2367
 26140,hpi_forecast_8q_lo,2026-06,-8.6517
 26140,hpi_index_error,2026-06,0.3377
-26140,hpi_surprise_4q,2026-06,3.1247
+26140,hpi_surprise_4q,2025-06,3.1247
 26140,hpi_trend_5y,2026-06,9.0173
 26140,hpi_yoy_latest,2026-06,5.4039
 26300,hpi_forecast_4q,2026-06,3.2695
@@ -1636,7 +1636,7 @@ cbsa_code,metric,period,value
 26300,hpi_forecast_8q_hi,2026-06,30.4666
 26300,hpi_forecast_8q_lo,2026-06,-9.5568
 26300,hpi_index_error,2026-06,0.6451
-26300,hpi_surprise_4q,2026-06,-5.056
+26300,hpi_surprise_4q,2025-06,-5.056
 26300,hpi_trend_5y,2026-06,6.9497
 26300,hpi_yoy_latest,2026-06,-1.3096
 26380,hpi_forecast_4q,2026-06,2.7668
@@ -1646,7 +1646,7 @@ cbsa_code,metric,period,value
 26380,hpi_forecast_8q_hi,2026-06,28.8776
 26380,hpi_forecast_8q_lo,2026-06,-10.1918
 26380,hpi_index_error,2026-06,1.5518
-26380,hpi_surprise_4q,2026-06,-2.8845
+26380,hpi_surprise_4q,2025-06,-2.8845
 26380,hpi_trend_5y,2026-06,3.1613
 26380,hpi_yoy_latest,2026-06,-0.7829
 26420,hpi_forecast_4q,2026-06,3.295
@@ -1656,7 +1656,7 @@ cbsa_code,metric,period,value
 26420,hpi_forecast_8q_hi,2026-06,30.4654
 26420,hpi_forecast_8q_lo,2026-06,-9.7643
 26420,hpi_index_error,2026-06,0.1816
-26420,hpi_surprise_4q,2026-06,0.6281
+26420,hpi_surprise_4q,2025-06,0.6281
 26420,hpi_trend_5y,2026-06,5.8267
 26420,hpi_yoy_latest,2026-06,3.3976
 26580,hpi_forecast_4q,2026-06,6.2121
@@ -1666,7 +1666,7 @@ cbsa_code,metric,period,value
 26580,hpi_forecast_8q_hi,2026-06,38.102
 26580,hpi_forecast_8q_lo,2026-06,-5.1138
 26580,hpi_index_error,2026-06,0.7004
-26580,hpi_surprise_4q,2026-06,2.8198
+26580,hpi_surprise_4q,2025-06,2.8198
 26580,hpi_trend_5y,2026-06,7.6967
 26580,hpi_yoy_latest,2026-06,8.4029
 26620,hpi_forecast_4q,2026-06,4.2234
@@ -1676,7 +1676,7 @@ cbsa_code,metric,period,value
 26620,hpi_forecast_8q_hi,2026-06,33.7415
 26620,hpi_forecast_8q_lo,2026-06,-8.8375
 26620,hpi_index_error,2026-06,0.8433
-26620,hpi_surprise_4q,2026-06,-0.3619
+26620,hpi_surprise_4q,2025-06,-0.3619
 26620,hpi_trend_5y,2026-06,7.4099
 26620,hpi_yoy_latest,2026-06,3.3178
 26820,hpi_forecast_4q,2026-06,4.8036
@@ -1686,7 +1686,7 @@ cbsa_code,metric,period,value
 26820,hpi_forecast_8q_hi,2026-06,34.7703
 26820,hpi_forecast_8q_lo,2026-06,-8.0937
 26820,hpi_index_error,2026-06,0.4316
-26820,hpi_surprise_4q,2026-06,1.4984
+26820,hpi_surprise_4q,2025-06,1.4984
 26820,hpi_trend_5y,2026-06,5.8349
 26820,hpi_yoy_latest,2026-06,4.819
 26900,hpi_forecast_4q,2026-06,5.1138
@@ -1696,7 +1696,7 @@ cbsa_code,metric,period,value
 26900,hpi_forecast_8q_hi,2026-06,35.2799
 26900,hpi_forecast_8q_lo,2026-06,-7.1477
 26900,hpi_index_error,2026-06,0.299
-26900,hpi_surprise_4q,2026-06,-1.551
+26900,hpi_surprise_4q,2025-06,-1.551
 26900,hpi_trend_5y,2026-06,7.5316
 26900,hpi_yoy_latest,2026-06,3.4772
 26980,hpi_forecast_4q,2026-06,5.6555
@@ -1706,7 +1706,7 @@ cbsa_code,metric,period,value
 26980,hpi_forecast_8q_hi,2026-06,36.6968
 26980,hpi_forecast_8q_lo,2026-06,-6.391
 26980,hpi_index_error,2026-06,0.7618
-26980,hpi_surprise_4q,2026-06,-1.5925
+26980,hpi_surprise_4q,2025-06,-1.5925
 26980,hpi_trend_5y,2026-06,6.0137
 26980,hpi_yoy_latest,2026-06,2.9999
 27060,hpi_forecast_4q,2026-06,1.3533
@@ -1716,7 +1716,7 @@ cbsa_code,metric,period,value
 27060,hpi_forecast_8q_hi,2026-06,25.0965
 27060,hpi_forecast_8q_lo,2026-06,-12.4274
 27060,hpi_index_error,2026-06,2.7875
-27060,hpi_surprise_4q,2026-06,-9.6381
+27060,hpi_surprise_4q,2025-06,-9.6381
 27060,hpi_trend_5y,2026-06,7.2009
 27060,hpi_yoy_latest,2026-06,-5.2049
 27100,hpi_forecast_4q,2026-06,6.4813
@@ -1726,7 +1726,7 @@ cbsa_code,metric,period,value
 27100,hpi_forecast_8q_hi,2026-06,39.0129
 27100,hpi_forecast_8q_lo,2026-06,-4.7202
 27100,hpi_index_error,2026-06,1.5713
-27100,hpi_surprise_4q,2026-06,1.3543
+27100,hpi_surprise_4q,2025-06,1.3543
 27100,hpi_trend_5y,2026-06,7.895
 27100,hpi_yoy_latest,2026-06,6.0825
 27140,hpi_forecast_4q,2026-06,4.3579
@@ -1736,7 +1736,7 @@ cbsa_code,metric,period,value
 27140,hpi_forecast_8q_hi,2026-06,32.9212
 27140,hpi_forecast_8q_lo,2026-06,-8.0902
 27140,hpi_index_error,2026-06,0.6048
-27140,hpi_surprise_4q,2026-06,-2.1528
+27140,hpi_surprise_4q,2025-06,-2.1528
 27140,hpi_trend_5y,2026-06,5.2721
 27140,hpi_yoy_latest,2026-06,1.7531
 27180,hpi_forecast_4q,2026-06,5.2827
@@ -1746,7 +1746,7 @@ cbsa_code,metric,period,value
 27180,hpi_forecast_8q_hi,2026-06,35.7565
 27180,hpi_forecast_8q_lo,2026-06,-6.5913
 27180,hpi_index_error,2026-06,1.5782
-27180,hpi_surprise_4q,2026-06,2.2256
+27180,hpi_surprise_4q,2025-06,2.2256
 27180,hpi_trend_5y,2026-06,9.3585
 27180,hpi_yoy_latest,2026-06,6.0886
 27260,hpi_forecast_4q,2026-06,3.2418
@@ -1756,7 +1756,7 @@ cbsa_code,metric,period,value
 27260,hpi_forecast_8q_hi,2026-06,30.7569
 27260,hpi_forecast_8q_lo,2026-06,-10.0808
 27260,hpi_index_error,2026-06,0.1596
-27260,hpi_surprise_4q,2026-06,-2.9616
+27260,hpi_surprise_4q,2025-06,-2.9616
 27260,hpi_trend_5y,2026-06,7.0411
 27260,hpi_yoy_latest,2026-06,0.1091
 27340,hpi_forecast_4q,2026-06,4.5843
@@ -1766,7 +1766,7 @@ cbsa_code,metric,period,value
 27340,hpi_forecast_8q_hi,2026-06,33.7048
 27340,hpi_forecast_8q_lo,2026-06,-8.3391
 27340,hpi_index_error,2026-06,1.8212
-27340,hpi_surprise_4q,2026-06,-0.9951
+27340,hpi_surprise_4q,2025-06,-0.9951
 27340,hpi_trend_5y,2026-06,9.6187
 27340,hpi_yoy_latest,2026-06,3.8256
 27500,hpi_forecast_4q,2026-06,6.1017
@@ -1776,7 +1776,7 @@ cbsa_code,metric,period,value
 27500,hpi_forecast_8q_hi,2026-06,38.0141
 27500,hpi_forecast_8q_lo,2026-06,-5.1817
 27500,hpi_index_error,2026-06,0.7213
-27500,hpi_surprise_4q,2026-06,-2.5949
+27500,hpi_surprise_4q,2025-06,-2.5949
 27500,hpi_trend_5y,2026-06,9.1751
 27500,hpi_yoy_latest,2026-06,4.7707
 27620,hpi_forecast_4q,2026-06,5.9077
@@ -1786,7 +1786,7 @@ cbsa_code,metric,period,value
 27620,hpi_forecast_8q_hi,2026-06,37.4127
 27620,hpi_forecast_8q_lo,2026-06,-5.6064
 27620,hpi_index_error,2026-06,0.4256
-27620,hpi_surprise_4q,2026-06,-2.7803
+27620,hpi_surprise_4q,2025-06,-2.7803
 27620,hpi_trend_5y,2026-06,9.0563
 27620,hpi_yoy_latest,2026-06,3.1525
 27740,hpi_forecast_4q,2026-06,5.3463
@@ -1796,7 +1796,7 @@ cbsa_code,metric,period,value
 27740,hpi_forecast_8q_hi,2026-06,36.0299
 27740,hpi_forecast_8q_lo,2026-06,-6.8138
 27740,hpi_index_error,2026-06,0.4184
-27740,hpi_surprise_4q,2026-06,-0.988
+27740,hpi_surprise_4q,2025-06,-0.988
 27740,hpi_trend_5y,2026-06,10.3228
 27740,hpi_yoy_latest,2026-06,4.028
 27780,hpi_forecast_4q,2026-06,4.8506
@@ -1806,7 +1806,7 @@ cbsa_code,metric,period,value
 27780,hpi_forecast_8q_hi,2026-06,34.4601
 27780,hpi_forecast_8q_lo,2026-06,-6.886
 27780,hpi_index_error,2026-06,1.511
-27780,hpi_surprise_4q,2026-06,-0.1095
+27780,hpi_surprise_4q,2025-06,-0.1095
 27780,hpi_trend_5y,2026-06,7.9634
 27780,hpi_yoy_latest,2026-06,6.0611
 27860,hpi_forecast_4q,2026-06,4.053
@@ -1816,7 +1816,7 @@ cbsa_code,metric,period,value
 27860,hpi_forecast_8q_hi,2026-06,32.3498
 27860,hpi_forecast_8q_lo,2026-06,-8.7376
 27860,hpi_index_error,2026-06,1.5594
-27860,hpi_surprise_4q,2026-06,-5.3341
+27860,hpi_surprise_4q,2025-06,-5.3341
 27860,hpi_trend_5y,2026-06,5.2509
 27860,hpi_yoy_latest,2026-06,-0.9522
 27900,hpi_forecast_4q,2026-06,4.3704
@@ -1826,7 +1826,7 @@ cbsa_code,metric,period,value
 27900,hpi_forecast_8q_hi,2026-06,33.64
 27900,hpi_forecast_8q_lo,2026-06,-7.8525
 27900,hpi_index_error,2026-06,0.9978
-27900,hpi_surprise_4q,2026-06,-3.5235
+27900,hpi_surprise_4q,2025-06,-3.5235
 27900,hpi_trend_5y,2026-06,8.0155
 27900,hpi_yoy_latest,2026-06,1.9864
 27980,hpi_forecast_4q,2026-06,3.5231
@@ -1836,7 +1836,7 @@ cbsa_code,metric,period,value
 27980,hpi_forecast_8q_hi,2026-06,30.2114
 27980,hpi_forecast_8q_lo,2026-06,-9.4166
 27980,hpi_index_error,2026-06,1.0707
-27980,hpi_surprise_4q,2026-06,2.3478
+27980,hpi_surprise_4q,2025-06,2.3478
 27980,hpi_trend_5y,2026-06,8.2377
 27980,hpi_yoy_latest,2026-06,3.9304
 28020,hpi_forecast_4q,2026-06,5.3151
@@ -1846,7 +1846,7 @@ cbsa_code,metric,period,value
 28020,hpi_forecast_8q_hi,2026-06,35.6272
 28020,hpi_forecast_8q_lo,2026-06,-6.4243
 28020,hpi_index_error,2026-06,0.7377
-28020,hpi_surprise_4q,2026-06,-4.7761
+28020,hpi_surprise_4q,2025-06,-4.7761
 28020,hpi_trend_5y,2026-06,7.195
 28020,hpi_yoy_latest,2026-06,0.657
 28100,hpi_forecast_4q,2026-06,6.0752
@@ -1856,7 +1856,7 @@ cbsa_code,metric,period,value
 28100,hpi_forecast_8q_hi,2026-06,37.7401
 28100,hpi_forecast_8q_lo,2026-06,-4.9958
 28100,hpi_index_error,2026-06,2.6333
-28100,hpi_surprise_4q,2026-06,2.0113
+28100,hpi_surprise_4q,2025-06,2.0113
 28100,hpi_trend_5y,2026-06,7.7827
 28100,hpi_yoy_latest,2026-06,5.5039
 28140,hpi_forecast_4q,2026-06,5.6607
@@ -1866,7 +1866,7 @@ cbsa_code,metric,period,value
 28140,hpi_forecast_8q_hi,2026-06,36.9007
 28140,hpi_forecast_8q_lo,2026-06,-6.1552
 28140,hpi_index_error,2026-06,0.1636
-28140,hpi_surprise_4q,2026-06,-1.2829
+28140,hpi_surprise_4q,2025-06,-1.2829
 28140,hpi_trend_5y,2026-06,7.3317
 28140,hpi_yoy_latest,2026-06,3.1834
 28420,hpi_forecast_4q,2026-06,4.2235
@@ -1876,7 +1876,7 @@ cbsa_code,metric,period,value
 28420,hpi_forecast_8q_hi,2026-06,33.0103
 28420,hpi_forecast_8q_lo,2026-06,-8.5172
 28420,hpi_index_error,2026-06,0.5944
-28420,hpi_surprise_4q,2026-06,-1.2257
+28420,hpi_surprise_4q,2025-06,-1.2257
 28420,hpi_trend_5y,2026-06,5.9066
 28420,hpi_yoy_latest,2026-06,1.9136
 28450,hpi_forecast_4q,2026-06,7.7532
@@ -1886,7 +1886,7 @@ cbsa_code,metric,period,value
 28450,hpi_forecast_8q_hi,2026-06,42.3354
 28450,hpi_forecast_8q_lo,2026-06,-2.9368
 28450,hpi_index_error,2026-06,0.6299
-28450,hpi_surprise_4q,2026-06,1.7188
+28450,hpi_surprise_4q,2025-06,1.7188
 28450,hpi_trend_5y,2026-06,9.0767
 28450,hpi_yoy_latest,2026-06,8.3623
 28660,hpi_forecast_4q,2026-06,2.9961
@@ -1896,7 +1896,7 @@ cbsa_code,metric,period,value
 28660,hpi_forecast_8q_hi,2026-06,29.5942
 28660,hpi_forecast_8q_lo,2026-06,-10.4442
 28660,hpi_index_error,2026-06,0.9179
-28660,hpi_surprise_4q,2026-06,0.6358
+28660,hpi_surprise_4q,2025-06,0.6358
 28660,hpi_trend_5y,2026-06,6.8502
 28660,hpi_yoy_latest,2026-06,1.7261
 28700,hpi_forecast_4q,2026-06,4.5985
@@ -1906,7 +1906,7 @@ cbsa_code,metric,period,value
 28700,hpi_forecast_8q_hi,2026-06,34.1314
 28700,hpi_forecast_8q_lo,2026-06,-7.7819
 28700,hpi_index_error,2026-06,0.495
-28700,hpi_surprise_4q,2026-06,-2.4953
+28700,hpi_surprise_4q,2025-06,-2.4953
 28700,hpi_trend_5y,2026-06,9.8936
 28700,hpi_yoy_latest,2026-06,3.0008
 28740,hpi_forecast_4q,2026-06,5.2054
@@ -1916,7 +1916,7 @@ cbsa_code,metric,period,value
 28740,hpi_forecast_8q_hi,2026-06,35.391
 28740,hpi_forecast_8q_lo,2026-06,-6.6813
 28740,hpi_index_error,2026-06,0.7024
-28740,hpi_surprise_4q,2026-06,-1.5213
+28740,hpi_surprise_4q,2025-06,-1.5213
 28740,hpi_trend_5y,2026-06,7.8916
 28740,hpi_yoy_latest,2026-06,2.5952
 28880,hpi_forecast_4q,2026-06,3.7567
@@ -1926,7 +1926,7 @@ cbsa_code,metric,period,value
 28880,hpi_forecast_8q_hi,2026-06,31.6729
 28880,hpi_forecast_8q_lo,2026-06,-8.833
 28880,hpi_index_error,2026-06,0.5329
-28880,hpi_surprise_4q,2026-06,-3.0013
+28880,hpi_surprise_4q,2025-06,-3.0013
 28880,hpi_trend_5y,2026-06,8.3558
 28880,hpi_yoy_latest,2026-06,3.3696
 28940,hpi_forecast_4q,2026-06,5.2677
@@ -1936,7 +1936,7 @@ cbsa_code,metric,period,value
 28940,hpi_forecast_8q_hi,2026-06,36.0309
 28940,hpi_forecast_8q_lo,2026-06,-7.4858
 28940,hpi_index_error,2026-06,0.3047
-28940,hpi_surprise_4q,2026-06,-1.1258
+28940,hpi_surprise_4q,2025-06,-1.1258
 28940,hpi_trend_5y,2026-06,10.3263
 28940,hpi_yoy_latest,2026-06,3.8804
 29020,hpi_forecast_4q,2026-06,6.7484
@@ -1946,7 +1946,7 @@ cbsa_code,metric,period,value
 29020,hpi_forecast_8q_hi,2026-06,39.4434
 29020,hpi_forecast_8q_lo,2026-06,-4.5397
 29020,hpi_index_error,2026-06,1.5927
-29020,hpi_surprise_4q,2026-06,1.4368
+29020,hpi_surprise_4q,2025-06,1.4368
 29020,hpi_trend_5y,2026-06,8.9564
 29020,hpi_yoy_latest,2026-06,7.2369
 29100,hpi_forecast_4q,2026-06,6.4475
@@ -1956,7 +1956,7 @@ cbsa_code,metric,period,value
 29100,hpi_forecast_8q_hi,2026-06,38.8787
 29100,hpi_forecast_8q_lo,2026-06,-4.7031
 29100,hpi_index_error,2026-06,0.6413
-29100,hpi_surprise_4q,2026-06,-0.0789
+29100,hpi_surprise_4q,2025-06,-0.0789
 29100,hpi_trend_5y,2026-06,8.4515
 29100,hpi_yoy_latest,2026-06,5.0036
 29180,hpi_forecast_4q,2026-06,5.0448
@@ -1966,7 +1966,7 @@ cbsa_code,metric,period,value
 29180,hpi_forecast_8q_hi,2026-06,35.1033
 29180,hpi_forecast_8q_lo,2026-06,-7.1335
 29180,hpi_index_error,2026-06,0.9596
-29180,hpi_surprise_4q,2026-06,2.9574
+29180,hpi_surprise_4q,2025-06,2.9574
 29180,hpi_trend_5y,2026-06,4.6172
 29180,hpi_yoy_latest,2026-06,5.5651
 29200,hpi_forecast_4q,2026-06,4.7183
@@ -1976,7 +1976,7 @@ cbsa_code,metric,period,value
 29200,hpi_forecast_8q_hi,2026-06,33.9444
 29200,hpi_forecast_8q_lo,2026-06,-8.9173
 29200,hpi_index_error,2026-06,0.8004
-29200,hpi_surprise_4q,2026-06,-0.8601
+29200,hpi_surprise_4q,2025-06,-0.8601
 29200,hpi_trend_5y,2026-06,8.5769
 29200,hpi_yoy_latest,2026-06,4.1084
 29340,hpi_forecast_4q,2026-06,5.2791
@@ -1986,7 +1986,7 @@ cbsa_code,metric,period,value
 29340,hpi_forecast_8q_hi,2026-06,35.8566
 29340,hpi_forecast_8q_lo,2026-06,-6.3787
 29340,hpi_index_error,2026-06,1.8621
-29340,hpi_surprise_4q,2026-06,6.2921
+29340,hpi_surprise_4q,2025-06,6.2921
 29340,hpi_trend_5y,2026-06,3.3028
 29340,hpi_yoy_latest,2026-06,7.7174
 29404,hpi_forecast_4q,2026-06,7.0479
@@ -1996,7 +1996,7 @@ cbsa_code,metric,period,value
 29404,hpi_forecast_8q_hi,2026-06,40.1932
 29404,hpi_forecast_8q_lo,2026-06,-3.6003
 29404,hpi_index_error,2026-06,0.2772
-29404,hpi_surprise_4q,2026-06,-1.6179
+29404,hpi_surprise_4q,2025-06,-1.6179
 29404,hpi_trend_5y,2026-06,8.7079
 29404,hpi_yoy_latest,2026-06,5.2263
 29414,hpi_forecast_4q,2026-06,5.5367
@@ -2006,7 +2006,7 @@ cbsa_code,metric,period,value
 29414,hpi_forecast_8q_hi,2026-06,36.4909
 29414,hpi_forecast_8q_lo,2026-06,-5.9593
 29414,hpi_index_error,2026-06,0.4839
-29414,hpi_surprise_4q,2026-06,-0.9759
+29414,hpi_surprise_4q,2025-06,-0.9759
 29414,hpi_trend_5y,2026-06,7.0779
 29414,hpi_yoy_latest,2026-06,4.0597
 29420,hpi_forecast_4q,2026-06,3.4822
@@ -2016,7 +2016,7 @@ cbsa_code,metric,period,value
 29420,hpi_forecast_8q_hi,2026-06,31.5768
 29420,hpi_forecast_8q_lo,2026-06,-10.1653
 29420,hpi_index_error,2026-06,0.2613
-29420,hpi_surprise_4q,2026-06,-2.8306
+29420,hpi_surprise_4q,2025-06,-2.8306
 29420,hpi_trend_5y,2026-06,4.8934
 29420,hpi_yoy_latest,2026-06,-0.0467
 29460,hpi_forecast_4q,2026-06,2.6839
@@ -2026,7 +2026,7 @@ cbsa_code,metric,period,value
 29460,hpi_forecast_8q_hi,2026-06,29.9351
 29460,hpi_forecast_8q_lo,2026-06,-11.013
 29460,hpi_index_error,2026-06,0.3098
-29460,hpi_surprise_4q,2026-06,0.4939
+29460,hpi_surprise_4q,2025-06,0.4939
 29460,hpi_trend_5y,2026-06,7.394
 29460,hpi_yoy_latest,2026-06,2.3832
 29484,hpi_forecast_4q,2026-06,6.3653
@@ -2036,7 +2036,7 @@ cbsa_code,metric,period,value
 29484,hpi_forecast_8q_hi,2026-06,38.5741
 29484,hpi_forecast_8q_lo,2026-06,-4.8551
 29484,hpi_index_error,2026-06,0.1414
-29484,hpi_surprise_4q,2026-06,-2.0157
+29484,hpi_surprise_4q,2025-06,-2.0157
 29484,hpi_trend_5y,2026-06,9.6484
 29484,hpi_yoy_latest,2026-06,4.8346
 29540,hpi_forecast_4q,2026-06,7.227
@@ -2046,7 +2046,7 @@ cbsa_code,metric,period,value
 29540,hpi_forecast_8q_hi,2026-06,40.7148
 29540,hpi_forecast_8q_lo,2026-06,-3.5932
 29540,hpi_index_error,2026-06,0.3725
-29540,hpi_surprise_4q,2026-06,0.9003
+29540,hpi_surprise_4q,2025-06,0.9003
 29540,hpi_trend_5y,2026-06,9.0253
 29540,hpi_yoy_latest,2026-06,6.2535
 29620,hpi_forecast_4q,2026-06,5.656
@@ -2056,7 +2056,7 @@ cbsa_code,metric,period,value
 29620,hpi_forecast_8q_hi,2026-06,36.6433
 29620,hpi_forecast_8q_lo,2026-06,-5.811
 29620,hpi_index_error,2026-06,0.7983
-29620,hpi_surprise_4q,2026-06,-0.1441
+29620,hpi_surprise_4q,2025-06,-0.1441
 29620,hpi_trend_5y,2026-06,7.4158
 29620,hpi_yoy_latest,2026-06,5.1382
 29700,hpi_forecast_4q,2026-06,4.5938
@@ -2066,7 +2066,7 @@ cbsa_code,metric,period,value
 29700,hpi_forecast_8q_hi,2026-06,33.5509
 29700,hpi_forecast_8q_lo,2026-06,-7.5871
 29700,hpi_index_error,2026-06,1.7635
-29700,hpi_surprise_4q,2026-06,-0.2062
+29700,hpi_surprise_4q,2025-06,-0.2062
 29700,hpi_trend_5y,2026-06,6.0808
 29700,hpi_yoy_latest,2026-06,2.2354
 29740,hpi_forecast_4q,2026-06,2.7028
@@ -2076,7 +2076,7 @@ cbsa_code,metric,period,value
 29740,hpi_forecast_8q_hi,2026-06,29.0038
 29740,hpi_forecast_8q_lo,2026-06,-10.4706
 29740,hpi_index_error,2026-06,0.9516
-29740,hpi_surprise_4q,2026-06,-3.8625
+29740,hpi_surprise_4q,2025-06,-3.8625
 29740,hpi_trend_5y,2026-06,7.2389
 29740,hpi_yoy_latest,2026-06,-0.3751
 29820,hpi_forecast_4q,2026-06,3.7556
@@ -2086,7 +2086,7 @@ cbsa_code,metric,period,value
 29820,hpi_forecast_8q_hi,2026-06,31.7529
 29820,hpi_forecast_8q_lo,2026-06,-9.116
 29820,hpi_index_error,2026-06,0.106
-29820,hpi_surprise_4q,2026-06,-1.5463
+29820,hpi_surprise_4q,2025-06,-1.5463
 29820,hpi_trend_5y,2026-06,7.2435
 29820,hpi_yoy_latest,2026-06,2.7667
 29940,hpi_forecast_4q,2026-06,5.2284
@@ -2096,7 +2096,7 @@ cbsa_code,metric,period,value
 29940,hpi_forecast_8q_hi,2026-06,35.373
 29940,hpi_forecast_8q_lo,2026-06,-6.7018
 29940,hpi_index_error,2026-06,0.6447
-29940,hpi_surprise_4q,2026-06,0.1666
+29940,hpi_surprise_4q,2025-06,0.1666
 29940,hpi_trend_5y,2026-06,7.21
 29940,hpi_yoy_latest,2026-06,4.8126
 30020,hpi_forecast_4q,2026-06,5.9236
@@ -2106,7 +2106,7 @@ cbsa_code,metric,period,value
 30020,hpi_forecast_8q_hi,2026-06,36.8038
 30020,hpi_forecast_8q_lo,2026-06,-5.8958
 30020,hpi_index_error,2026-06,3.6371
-30020,hpi_surprise_4q,2026-06,6.8023
+30020,hpi_surprise_4q,2025-06,6.8023
 30020,hpi_trend_5y,2026-06,7.4797
 30020,hpi_yoy_latest,2026-06,10.221
 30140,hpi_forecast_4q,2026-06,6.2378
@@ -2116,7 +2116,7 @@ cbsa_code,metric,period,value
 30140,hpi_forecast_8q_hi,2026-06,38.4944
 30140,hpi_forecast_8q_lo,2026-06,-5.2634
 30140,hpi_index_error,2026-06,1.0674
-30140,hpi_surprise_4q,2026-06,-4.6429
+30140,hpi_surprise_4q,2025-06,-4.6429
 30140,hpi_trend_5y,2026-06,8.3988
 30140,hpi_yoy_latest,2026-06,1.2991
 30300,hpi_forecast_4q,2026-06,3.7974
@@ -2126,7 +2126,7 @@ cbsa_code,metric,period,value
 30300,hpi_forecast_8q_hi,2026-06,31.5474
 30300,hpi_forecast_8q_lo,2026-06,-9.213
 30300,hpi_index_error,2026-06,0.8816
-30300,hpi_surprise_4q,2026-06,0.9321
+30300,hpi_surprise_4q,2025-06,0.9321
 30300,hpi_trend_5y,2026-06,7.0058
 30300,hpi_yoy_latest,2026-06,4.6821
 30340,hpi_forecast_4q,2026-06,3.7993
@@ -2136,7 +2136,7 @@ cbsa_code,metric,period,value
 30340,hpi_forecast_8q_hi,2026-06,31.7644
 30340,hpi_forecast_8q_lo,2026-06,-8.9986
 30340,hpi_index_error,2026-06,1.8178
-30340,hpi_surprise_4q,2026-06,-4.7555
+30340,hpi_surprise_4q,2025-06,-4.7555
 30340,hpi_trend_5y,2026-06,9.4033
 30340,hpi_yoy_latest,2026-06,1.7035
 30460,hpi_forecast_4q,2026-06,6.1142
@@ -2146,7 +2146,7 @@ cbsa_code,metric,period,value
 30460,hpi_forecast_8q_hi,2026-06,37.6938
 30460,hpi_forecast_8q_lo,2026-06,-5.3548
 30460,hpi_index_error,2026-06,0.4186
-30460,hpi_surprise_4q,2026-06,0.7785
+30460,hpi_surprise_4q,2025-06,0.7785
 30460,hpi_trend_5y,2026-06,8.8037
 30460,hpi_yoy_latest,2026-06,6.1168
 30500,hpi_forecast_4q,2026-06,4.3106
@@ -2156,7 +2156,7 @@ cbsa_code,metric,period,value
 30500,hpi_forecast_8q_hi,2026-06,32.6841
 30500,hpi_forecast_8q_lo,2026-06,-8.0913
 30500,hpi_index_error,2026-06,0.487
-30500,hpi_surprise_4q,2026-06,-5.2854
+30500,hpi_surprise_4q,2025-06,-5.2854
 30500,hpi_trend_5y,2026-06,5.6366
 30500,hpi_yoy_latest,2026-06,0.3801
 30620,hpi_forecast_4q,2026-06,8.2037
@@ -2166,7 +2166,7 @@ cbsa_code,metric,period,value
 30620,hpi_forecast_8q_hi,2026-06,43.5895
 30620,hpi_forecast_8q_lo,2026-06,-1.8455
 30620,hpi_index_error,2026-06,0.9732
-30620,hpi_surprise_4q,2026-06,6.1299
+30620,hpi_surprise_4q,2025-06,6.1299
 30620,hpi_trend_5y,2026-06,8.2332
 30620,hpi_yoy_latest,2026-06,11.0876
 30700,hpi_forecast_4q,2026-06,5.9197
@@ -2176,7 +2176,7 @@ cbsa_code,metric,period,value
 30700,hpi_forecast_8q_hi,2026-06,37.3384
 30700,hpi_forecast_8q_lo,2026-06,-6.0581
 30700,hpi_index_error,2026-06,0.4274
-30700,hpi_surprise_4q,2026-06,-2.3839
+30700,hpi_surprise_4q,2025-06,-2.3839
 30700,hpi_trend_5y,2026-06,6.8562
 30700,hpi_yoy_latest,2026-06,2.112
 30780,hpi_forecast_4q,2026-06,5.049
@@ -2186,7 +2186,7 @@ cbsa_code,metric,period,value
 30780,hpi_forecast_8q_hi,2026-06,35.1559
 30780,hpi_forecast_8q_lo,2026-06,-7.0419
 30780,hpi_index_error,2026-06,0.5387
-30780,hpi_surprise_4q,2026-06,-1.4938
+30780,hpi_surprise_4q,2025-06,-1.4938
 30780,hpi_trend_5y,2026-06,6.6264
 30780,hpi_yoy_latest,2026-06,2.3169
 30860,hpi_forecast_4q,2026-06,3.3616
@@ -2196,7 +2196,7 @@ cbsa_code,metric,period,value
 30860,hpi_forecast_8q_hi,2026-06,30.0367
 30860,hpi_forecast_8q_lo,2026-06,-9.7444
 30860,hpi_index_error,2026-06,0.3736
-30860,hpi_surprise_4q,2026-06,-2.9132
+30860,hpi_surprise_4q,2025-06,-2.9132
 30860,hpi_trend_5y,2026-06,6.6718
 30860,hpi_yoy_latest,2026-06,0.6001
 30980,hpi_forecast_4q,2026-06,5.4193
@@ -2206,7 +2206,7 @@ cbsa_code,metric,period,value
 30980,hpi_forecast_8q_hi,2026-06,36.2816
 30980,hpi_forecast_8q_lo,2026-06,-5.8225
 30980,hpi_index_error,2026-06,0.8774
-30980,hpi_surprise_4q,2026-06,-0.2045
+30980,hpi_surprise_4q,2025-06,-0.2045
 30980,hpi_trend_5y,2026-06,8.0544
 30980,hpi_yoy_latest,2026-06,3.3722
 31020,hpi_forecast_4q,2026-06,4.9202
@@ -2216,7 +2216,7 @@ cbsa_code,metric,period,value
 31020,hpi_forecast_8q_hi,2026-06,35.1659
 31020,hpi_forecast_8q_lo,2026-06,-7.0906
 31020,hpi_index_error,2026-06,0.3741
-31020,hpi_surprise_4q,2026-06,-1.4947
+31020,hpi_surprise_4q,2025-06,-1.4947
 31020,hpi_trend_5y,2026-06,5.4465
 31020,hpi_yoy_latest,2026-06,2.4636
 31084,hpi_forecast_4q,2026-06,4.5686
@@ -2226,7 +2226,7 @@ cbsa_code,metric,period,value
 31084,hpi_forecast_8q_hi,2026-06,33.1435
 31084,hpi_forecast_8q_lo,2026-06,-7.8572
 31084,hpi_index_error,2026-06,0.1012
-31084,hpi_surprise_4q,2026-06,-2.6118
+31084,hpi_surprise_4q,2025-06,-2.6118
 31084,hpi_trend_5y,2026-06,5.6976
 31084,hpi_yoy_latest,2026-06,1.2001
 31140,hpi_forecast_4q,2026-06,5.4071
@@ -2236,7 +2236,7 @@ cbsa_code,metric,period,value
 31140,hpi_forecast_8q_hi,2026-06,35.9399
 31140,hpi_forecast_8q_lo,2026-06,-6.5729
 31140,hpi_index_error,2026-06,0.2981
-31140,hpi_surprise_4q,2026-06,-1.6861
+31140,hpi_surprise_4q,2025-06,-1.6861
 31140,hpi_trend_5y,2026-06,6.9929
 31140,hpi_yoy_latest,2026-06,3.8484
 31180,hpi_forecast_4q,2026-06,4.6028
@@ -2246,7 +2246,7 @@ cbsa_code,metric,period,value
 31180,hpi_forecast_8q_hi,2026-06,34.3007
 31180,hpi_forecast_8q_lo,2026-06,-7.6888
 31180,hpi_index_error,2026-06,0.6261
-31180,hpi_surprise_4q,2026-06,-0.1882
+31180,hpi_surprise_4q,2025-06,-0.1882
 31180,hpi_trend_5y,2026-06,5.0973
 31180,hpi_yoy_latest,2026-06,2.2815
 31340,hpi_forecast_4q,2026-06,5.3238
@@ -2256,7 +2256,7 @@ cbsa_code,metric,period,value
 31340,hpi_forecast_8q_hi,2026-06,36.1539
 31340,hpi_forecast_8q_lo,2026-06,-6.5485
 31340,hpi_index_error,2026-06,0.5287
-31340,hpi_surprise_4q,2026-06,-0.5766
+31340,hpi_surprise_4q,2025-06,-0.5766
 31340,hpi_trend_5y,2026-06,8.6256
 31340,hpi_yoy_latest,2026-06,4.7423
 31420,hpi_forecast_4q,2026-06,4.7368
@@ -2266,7 +2266,7 @@ cbsa_code,metric,period,value
 31420,hpi_forecast_8q_hi,2026-06,34.224
 31420,hpi_forecast_8q_lo,2026-06,-7.3342
 31420,hpi_index_error,2026-06,1.3746
-31420,hpi_surprise_4q,2026-06,-3.6469
+31420,hpi_surprise_4q,2025-06,-3.6469
 31420,hpi_trend_5y,2026-06,8.8726
 31420,hpi_yoy_latest,2026-06,2.7134
 31540,hpi_forecast_4q,2026-06,5.4159
@@ -2276,7 +2276,7 @@ cbsa_code,metric,period,value
 31540,hpi_forecast_8q_hi,2026-06,36.0413
 31540,hpi_forecast_8q_lo,2026-06,-7.1659
 31540,hpi_index_error,2026-06,0.2182
-31540,hpi_surprise_4q,2026-06,-0.3929
+31540,hpi_surprise_4q,2025-06,-0.3929
 31540,hpi_trend_5y,2026-06,8.305
 31540,hpi_yoy_latest,2026-06,4.9155
 31700,hpi_forecast_4q,2026-06,5.841
@@ -2286,7 +2286,7 @@ cbsa_code,metric,period,value
 31700,hpi_forecast_8q_hi,2026-06,37.1847
 31700,hpi_forecast_8q_lo,2026-06,-5.739
 31700,hpi_index_error,2026-06,0.4401
-31700,hpi_surprise_4q,2026-06,-0.8388
+31700,hpi_surprise_4q,2025-06,-0.8388
 31700,hpi_trend_5y,2026-06,8.7874
 31700,hpi_yoy_latest,2026-06,4.7538
 31740,hpi_forecast_4q,2026-06,5.4633
@@ -2296,7 +2296,7 @@ cbsa_code,metric,period,value
 31740,hpi_forecast_8q_hi,2026-06,36.0197
 31740,hpi_forecast_8q_lo,2026-06,-6.2496
 31740,hpi_index_error,2026-06,0.7897
-31740,hpi_surprise_4q,2026-06,0.0865
+31740,hpi_surprise_4q,2025-06,0.0865
 31740,hpi_trend_5y,2026-06,6.4308
 31740,hpi_yoy_latest,2026-06,4.3252
 31860,hpi_forecast_4q,2026-06,4.5822
@@ -2306,7 +2306,7 @@ cbsa_code,metric,period,value
 31860,hpi_forecast_8q_hi,2026-06,33.7491
 31860,hpi_forecast_8q_lo,2026-06,-7.7002
 31860,hpi_index_error,2026-06,0.7076
-31860,hpi_surprise_4q,2026-06,-3.4326
+31860,hpi_surprise_4q,2025-06,-3.4326
 31860,hpi_trend_5y,2026-06,5.5175
 31860,hpi_yoy_latest,2026-06,1.1928
 31900,hpi_forecast_4q,2026-06,4.4478
@@ -2316,7 +2316,7 @@ cbsa_code,metric,period,value
 31900,hpi_forecast_8q_hi,2026-06,33.5496
 31900,hpi_forecast_8q_lo,2026-06,-7.3619
 31900,hpi_index_error,2026-06,0.9299
-31900,hpi_surprise_4q,2026-06,-10.4162
+31900,hpi_surprise_4q,2025-06,-10.4162
 31900,hpi_trend_5y,2026-06,8.4267
 31900,hpi_yoy_latest,2026-06,-3.6356
 31924,hpi_forecast_4q,2026-06,3.2083
@@ -2326,7 +2326,7 @@ cbsa_code,metric,period,value
 31924,hpi_forecast_8q_hi,2026-06,30.1451
 31924,hpi_forecast_8q_lo,2026-06,-9.9256
 31924,hpi_index_error,2026-06,0.1292
-31924,hpi_surprise_4q,2026-06,-3.2908
+31924,hpi_surprise_4q,2025-06,-3.2908
 31924,hpi_trend_5y,2026-06,7.8627
 31924,hpi_yoy_latest,2026-06,0.5067
 32580,hpi_forecast_4q,2026-06,5.534
@@ -2336,7 +2336,7 @@ cbsa_code,metric,period,value
 32580,hpi_forecast_8q_hi,2026-06,36.5794
 32580,hpi_forecast_8q_lo,2026-06,-6.4514
 32580,hpi_index_error,2026-06,1.0973
-32580,hpi_surprise_4q,2026-06,4.4089
+32580,hpi_surprise_4q,2025-06,4.4089
 32580,hpi_trend_5y,2026-06,9.0963
 32580,hpi_yoy_latest,2026-06,7.6182
 32780,hpi_forecast_4q,2026-06,4.114
@@ -2346,7 +2346,7 @@ cbsa_code,metric,period,value
 32780,hpi_forecast_8q_hi,2026-06,32.6585
 32780,hpi_forecast_8q_lo,2026-06,-8.6755
 32780,hpi_index_error,2026-06,0.289
-32780,hpi_surprise_4q,2026-06,-0.2294
+32780,hpi_surprise_4q,2025-06,-0.2294
 32780,hpi_trend_5y,2026-06,4.0547
 32780,hpi_yoy_latest,2026-06,3.869
 32820,hpi_forecast_4q,2026-06,3.7738
@@ -2356,7 +2356,7 @@ cbsa_code,metric,period,value
 32820,hpi_forecast_8q_hi,2026-06,31.4471
 32820,hpi_forecast_8q_lo,2026-06,-8.4807
 32820,hpi_index_error,2026-06,0.2706
-32820,hpi_surprise_4q,2026-06,-1.1695
+32820,hpi_surprise_4q,2025-06,-1.1695
 32820,hpi_trend_5y,2026-06,5.8808
 32820,hpi_yoy_latest,2026-06,1.7853
 32900,hpi_forecast_4q,2026-06,2.8522
@@ -2366,7 +2366,7 @@ cbsa_code,metric,period,value
 32900,hpi_forecast_8q_hi,2026-06,28.4435
 32900,hpi_forecast_8q_lo,2026-06,-10.9497
 32900,hpi_index_error,2026-06,0.6571
-32900,hpi_surprise_4q,2026-06,-2.6663
+32900,hpi_surprise_4q,2025-06,-2.6663
 32900,hpi_trend_5y,2026-06,4.8026
 32900,hpi_yoy_latest,2026-06,-0.0108
 33124,hpi_forecast_4q,2026-06,4.6821
@@ -2376,7 +2376,7 @@ cbsa_code,metric,period,value
 33124,hpi_forecast_8q_hi,2026-06,33.0327
 33124,hpi_forecast_8q_lo,2026-06,-7.2419
 33124,hpi_index_error,2026-06,0.1012
-33124,hpi_surprise_4q,2026-06,-3.5428
+33124,hpi_surprise_4q,2025-06,-3.5428
 33124,hpi_trend_5y,2026-06,10.8938
 33124,hpi_yoy_latest,2026-06,1.2662
 33140,hpi_forecast_4q,2026-06,6.5119
@@ -2386,7 +2386,7 @@ cbsa_code,metric,period,value
 33140,hpi_forecast_8q_hi,2026-06,39.0888
 33140,hpi_forecast_8q_lo,2026-06,-4.6374
 33140,hpi_index_error,2026-06,1.4633
-33140,hpi_surprise_4q,2026-06,0.2018
+33140,hpi_surprise_4q,2025-06,0.2018
 33140,hpi_trend_5y,2026-06,9.2064
 33140,hpi_yoy_latest,2026-06,6.6269
 33220,hpi_forecast_4q,2026-06,5.9729
@@ -2396,7 +2396,7 @@ cbsa_code,metric,period,value
 33220,hpi_forecast_8q_hi,2026-06,37.5172
 33220,hpi_forecast_8q_lo,2026-06,-5.3492
 33220,hpi_index_error,2026-06,0.9825
-33220,hpi_surprise_4q,2026-06,-3.0809
+33220,hpi_surprise_4q,2025-06,-3.0809
 33220,hpi_trend_5y,2026-06,8.7162
 33220,hpi_yoy_latest,2026-06,3.5243
 33260,hpi_forecast_4q,2026-06,4.9969
@@ -2406,7 +2406,7 @@ cbsa_code,metric,period,value
 33260,hpi_forecast_8q_hi,2026-06,35.4523
 33260,hpi_forecast_8q_lo,2026-06,-7.1036
 33260,hpi_index_error,2026-06,0.3736
-33260,hpi_surprise_4q,2026-06,-1.6944
+33260,hpi_surprise_4q,2025-06,-1.6944
 33260,hpi_trend_5y,2026-06,4.9808
 33260,hpi_yoy_latest,2026-06,4.0865
 33340,hpi_forecast_4q,2026-06,7.2433
@@ -2416,7 +2416,7 @@ cbsa_code,metric,period,value
 33340,hpi_forecast_8q_hi,2026-06,40.9231
 33340,hpi_forecast_8q_lo,2026-06,-3.6224
 33340,hpi_index_error,2026-06,0.1739
-33340,hpi_surprise_4q,2026-06,0.1696
+33340,hpi_surprise_4q,2025-06,0.1696
 33340,hpi_trend_5y,2026-06,8.7231
 33340,hpi_yoy_latest,2026-06,6.1961
 33460,hpi_forecast_4q,2026-06,4.7474
@@ -2426,7 +2426,7 @@ cbsa_code,metric,period,value
 33460,hpi_forecast_8q_hi,2026-06,34.3066
 33460,hpi_forecast_8q_lo,2026-06,-7.2526
 33460,hpi_index_error,2026-06,0.0847
-33460,hpi_surprise_4q,2026-06,-1.4698
+33460,hpi_surprise_4q,2025-06,-1.4698
 33460,hpi_trend_5y,2026-06,4.9519
 33460,hpi_yoy_latest,2026-06,2.6008
 33500,hpi_forecast_4q,2026-06,5.5045
@@ -2436,7 +2436,7 @@ cbsa_code,metric,period,value
 33500,hpi_forecast_8q_hi,2026-06,36.2931
 33500,hpi_forecast_8q_lo,2026-06,-5.5778
 33500,hpi_index_error,2026-06,1.7168
-33500,hpi_surprise_4q,2026-06,3.0004
+33500,hpi_surprise_4q,2025-06,3.0004
 33500,hpi_trend_5y,2026-06,6.0189
 33500,hpi_yoy_latest,2026-06,6.7465
 33540,hpi_forecast_4q,2026-06,2.9695
@@ -2446,7 +2446,7 @@ cbsa_code,metric,period,value
 33540,hpi_forecast_8q_hi,2026-06,29.6624
 33540,hpi_forecast_8q_lo,2026-06,-10.5142
 33540,hpi_index_error,2026-06,0.4906
-33540,hpi_surprise_4q,2026-06,-3.4328
+33540,hpi_surprise_4q,2025-06,-3.4328
 33540,hpi_trend_5y,2026-06,7.8441
 33540,hpi_yoy_latest,2026-06,0.4321
 33660,hpi_forecast_4q,2026-06,4.7818
@@ -2456,7 +2456,7 @@ cbsa_code,metric,period,value
 33660,hpi_forecast_8q_hi,2026-06,34.1097
 33660,hpi_forecast_8q_lo,2026-06,-7.2048
 33660,hpi_index_error,2026-06,1.8473
-33660,hpi_surprise_4q,2026-06,-1.7257
+33660,hpi_surprise_4q,2025-06,-1.7257
 33660,hpi_trend_5y,2026-06,7.0798
 33660,hpi_yoy_latest,2026-06,2.1306
 33700,hpi_forecast_4q,2026-06,3.791
@@ -2466,7 +2466,7 @@ cbsa_code,metric,period,value
 33700,hpi_forecast_8q_hi,2026-06,31.2557
 33700,hpi_forecast_8q_lo,2026-06,-9.2295
 33700,hpi_index_error,2026-06,0.3665
-33700,hpi_surprise_4q,2026-06,-0.2189
+33700,hpi_surprise_4q,2025-06,-0.2189
 33700,hpi_trend_5y,2026-06,4.6929
 33700,hpi_yoy_latest,2026-06,2.7562
 33740,hpi_forecast_4q,2026-06,3.3046
@@ -2476,7 +2476,7 @@ cbsa_code,metric,period,value
 33740,hpi_forecast_8q_hi,2026-06,30.2284
 33740,hpi_forecast_8q_lo,2026-06,-9.3235
 33740,hpi_index_error,2026-06,1.9107
-33740,hpi_surprise_4q,2026-06,-1.1534
+33740,hpi_surprise_4q,2025-06,-1.1534
 33740,hpi_trend_5y,2026-06,4.0493
 33740,hpi_yoy_latest,2026-06,2.0606
 33780,hpi_forecast_4q,2026-06,5.1336
@@ -2486,7 +2486,7 @@ cbsa_code,metric,period,value
 33780,hpi_forecast_8q_hi,2026-06,35.4142
 33780,hpi_forecast_8q_lo,2026-06,-6.3708
 33780,hpi_index_error,2026-06,0.7333
-33780,hpi_surprise_4q,2026-06,-3.7926
+33780,hpi_surprise_4q,2025-06,-3.7926
 33780,hpi_trend_5y,2026-06,6.3633
 33780,hpi_yoy_latest,2026-06,2.1114
 33860,hpi_forecast_4q,2026-06,5.1804
@@ -2496,7 +2496,7 @@ cbsa_code,metric,period,value
 33860,hpi_forecast_8q_hi,2026-06,35.108
 33860,hpi_forecast_8q_lo,2026-06,-6.9652
 33860,hpi_index_error,2026-06,1.5908
-33860,hpi_surprise_4q,2026-06,2.4598
+33860,hpi_surprise_4q,2025-06,2.4598
 33860,hpi_trend_5y,2026-06,7.1138
 33860,hpi_yoy_latest,2026-06,6.0093
 33874,hpi_forecast_4q,2026-06,5.9272
@@ -2506,7 +2506,7 @@ cbsa_code,metric,period,value
 33874,hpi_forecast_8q_hi,2026-06,37.4837
 33874,hpi_forecast_8q_lo,2026-06,-5.4594
 33874,hpi_index_error,2026-06,0.1691
-33874,hpi_surprise_4q,2026-06,-1.317
+33874,hpi_surprise_4q,2025-06,-1.317
 33874,hpi_trend_5y,2026-06,7.874
 33874,hpi_yoy_latest,2026-06,4.0894
 34060,hpi_forecast_4q,2026-06,4.9775
@@ -2516,7 +2516,7 @@ cbsa_code,metric,period,value
 34060,hpi_forecast_8q_hi,2026-06,35.0343
 34060,hpi_forecast_8q_lo,2026-06,-6.4982
 34060,hpi_index_error,2026-06,1.1884
-34060,hpi_surprise_4q,2026-06,1.7495
+34060,hpi_surprise_4q,2025-06,1.7495
 34060,hpi_trend_5y,2026-06,6.0139
 34060,hpi_yoy_latest,2026-06,6.1525
 34100,hpi_forecast_4q,2026-06,4.907
@@ -2526,7 +2526,7 @@ cbsa_code,metric,period,value
 34100,hpi_forecast_8q_hi,2026-06,35.1153
 34100,hpi_forecast_8q_lo,2026-06,-7.5158
 34100,hpi_index_error,2026-06,0.5312
-34100,hpi_surprise_4q,2026-06,-5.4241
+34100,hpi_surprise_4q,2025-06,-5.4241
 34100,hpi_trend_5y,2026-06,9.7442
 34100,hpi_yoy_latest,2026-06,0.8998
 34580,hpi_forecast_4q,2026-06,3.8152
@@ -2536,7 +2536,7 @@ cbsa_code,metric,period,value
 34580,hpi_forecast_8q_hi,2026-06,31.8003
 34580,hpi_forecast_8q_lo,2026-06,-8.94
 34580,hpi_index_error,2026-06,0.6885
-34580,hpi_surprise_4q,2026-06,-1.8761
+34580,hpi_surprise_4q,2025-06,-1.8761
 34580,hpi_trend_5y,2026-06,7.0081
 34580,hpi_yoy_latest,2026-06,3.4529
 34620,hpi_forecast_4q,2026-06,8.1269
@@ -2546,7 +2546,7 @@ cbsa_code,metric,period,value
 34620,hpi_forecast_8q_hi,2026-06,43.6101
 34620,hpi_forecast_8q_lo,2026-06,-2.3515
 34620,hpi_index_error,2026-06,2.1302
-34620,hpi_surprise_4q,2026-06,8.6343
+34620,hpi_surprise_4q,2025-06,8.6343
 34620,hpi_trend_5y,2026-06,9.9258
 34620,hpi_yoy_latest,2026-06,13.9335
 34740,hpi_forecast_4q,2026-06,5.3638
@@ -2556,7 +2556,7 @@ cbsa_code,metric,period,value
 34740,hpi_forecast_8q_hi,2026-06,36.1445
 34740,hpi_forecast_8q_lo,2026-06,-6.307
 34740,hpi_index_error,2026-06,0.9476
-34740,hpi_surprise_4q,2026-06,-4.2893
+34740,hpi_surprise_4q,2025-06,-4.2893
 34740,hpi_trend_5y,2026-06,9.795
 34740,hpi_yoy_latest,2026-06,2.4296
 34820,hpi_forecast_4q,2026-06,3.6456
@@ -2566,7 +2566,7 @@ cbsa_code,metric,period,value
 34820,hpi_forecast_8q_hi,2026-06,32.8834
 34820,hpi_forecast_8q_lo,2026-06,-10.6146
 34820,hpi_index_error,2026-06,0.3533
-34820,hpi_surprise_4q,2026-06,-3.5963
+34820,hpi_surprise_4q,2025-06,-3.5963
 34820,hpi_trend_5y,2026-06,8.7507
 34820,hpi_yoy_latest,2026-06,0.8253
 34900,hpi_forecast_4q,2026-06,3.456
@@ -2576,7 +2576,7 @@ cbsa_code,metric,period,value
 34900,hpi_forecast_8q_hi,2026-06,30.4531
 34900,hpi_forecast_8q_lo,2026-06,-9.6512
 34900,hpi_index_error,2026-06,0.6241
-34900,hpi_surprise_4q,2026-06,-2.8495
+34900,hpi_surprise_4q,2025-06,-2.8495
 34900,hpi_trend_5y,2026-06,3.2215
 34900,hpi_yoy_latest,2026-06,-1.8305
 34940,hpi_forecast_4q,2026-06,2.5257
@@ -2586,7 +2586,7 @@ cbsa_code,metric,period,value
 34940,hpi_forecast_8q_hi,2026-06,28.1506
 34940,hpi_forecast_8q_lo,2026-06,-11.0073
 34940,hpi_index_error,2026-06,0.2399
-34940,hpi_surprise_4q,2026-06,-0.218
+34940,hpi_surprise_4q,2025-06,-0.218
 34940,hpi_trend_5y,2026-06,8.305
 34940,hpi_yoy_latest,2026-06,0.8423
 34980,hpi_forecast_4q,2026-06,4.055
@@ -2596,7 +2596,7 @@ cbsa_code,metric,period,value
 34980,hpi_forecast_8q_hi,2026-06,32.6925
 34980,hpi_forecast_8q_lo,2026-06,-9.1717
 34980,hpi_index_error,2026-06,0.0993
-34980,hpi_surprise_4q,2026-06,-2.5734
+34980,hpi_surprise_4q,2025-06,-2.5734
 34980,hpi_trend_5y,2026-06,7.8386
 34980,hpi_yoy_latest,2026-06,1.6357
 35004,hpi_forecast_4q,2026-06,6.8191
@@ -2606,7 +2606,7 @@ cbsa_code,metric,period,value
 35004,hpi_forecast_8q_hi,2026-06,39.708
 35004,hpi_forecast_8q_lo,2026-06,-4.1113
 35004,hpi_index_error,2026-06,0.1363
-35004,hpi_surprise_4q,2026-06,-0.4585
+35004,hpi_surprise_4q,2025-06,-0.4585
 35004,hpi_trend_5y,2026-06,8.1146
 35004,hpi_yoy_latest,2026-06,6.3505
 35084,hpi_forecast_4q,2026-06,6.8513
@@ -2616,7 +2616,7 @@ cbsa_code,metric,period,value
 35084,hpi_forecast_8q_hi,2026-06,39.7049
 35084,hpi_forecast_8q_lo,2026-06,-3.9835
 35084,hpi_index_error,2026-06,0.1875
-35084,hpi_surprise_4q,2026-06,-0.6269
+35084,hpi_surprise_4q,2025-06,-0.6269
 35084,hpi_trend_5y,2026-06,8.9821
 35084,hpi_yoy_latest,2026-06,6.3378
 35300,hpi_forecast_4q,2026-06,6.8803
@@ -2626,7 +2626,7 @@ cbsa_code,metric,period,value
 35300,hpi_forecast_8q_hi,2026-06,38.9324
 35300,hpi_forecast_8q_lo,2026-06,-4.4427
 35300,hpi_index_error,2026-06,0.5071
-35300,hpi_surprise_4q,2026-06,-0.909
+35300,hpi_surprise_4q,2025-06,-0.909
 35300,hpi_trend_5y,2026-06,9.1477
 35300,hpi_yoy_latest,2026-06,6.0194
 35380,hpi_forecast_4q,2026-06,4.434
@@ -2636,7 +2636,7 @@ cbsa_code,metric,period,value
 35380,hpi_forecast_8q_hi,2026-06,33.1228
 35380,hpi_forecast_8q_lo,2026-06,-7.892
 35380,hpi_index_error,2026-06,0.4435
-35380,hpi_surprise_4q,2026-06,0.8322
+35380,hpi_surprise_4q,2025-06,0.8322
 35380,hpi_trend_5y,2026-06,2.6324
 35380,hpi_yoy_latest,2026-06,2.662
 35614,hpi_forecast_4q,2026-06,6.733
@@ -2646,7 +2646,7 @@ cbsa_code,metric,period,value
 35614,hpi_forecast_8q_hi,2026-06,39.0549
 35614,hpi_forecast_8q_lo,2026-06,-4.2019
 35614,hpi_index_error,2026-06,0.1686
-35614,hpi_surprise_4q,2026-06,-0.8624
+35614,hpi_surprise_4q,2025-06,-0.8624
 35614,hpi_trend_5y,2026-06,7.7229
 35614,hpi_yoy_latest,2026-06,5.7219
 35660,hpi_forecast_4q,2026-06,6.6137
@@ -2656,7 +2656,7 @@ cbsa_code,metric,period,value
 35660,hpi_forecast_8q_hi,2026-06,39.2931
 35660,hpi_forecast_8q_lo,2026-06,-4.4652
 35660,hpi_index_error,2026-06,0.9418
-35660,hpi_surprise_4q,2026-06,2.72
+35660,hpi_surprise_4q,2025-06,2.72
 35660,hpi_trend_5y,2026-06,8.6082
 35660,hpi_yoy_latest,2026-06,7.6077
 35840,hpi_forecast_4q,2026-06,1.4948
@@ -2666,7 +2666,7 @@ cbsa_code,metric,period,value
 35840,hpi_forecast_8q_hi,2026-06,26.2651
 35840,hpi_forecast_8q_lo,2026-06,-13.9359
 35840,hpi_index_error,2026-06,0.1773
-35840,hpi_surprise_4q,2026-06,-0.2088
+35840,hpi_surprise_4q,2025-06,-0.2088
 35840,hpi_trend_5y,2026-06,6.5832
 35840,hpi_yoy_latest,2026-06,-0.4596
 35980,hpi_forecast_4q,2026-06,7.8286
@@ -2676,7 +2676,7 @@ cbsa_code,metric,period,value
 35980,hpi_forecast_8q_hi,2026-06,41.7046
 35980,hpi_forecast_8q_lo,2026-06,-3.0311
 35980,hpi_index_error,2026-06,0.7083
-35980,hpi_surprise_4q,2026-06,-1.3675
+35980,hpi_surprise_4q,2025-06,-1.3675
 35980,hpi_trend_5y,2026-06,9.9775
 35980,hpi_yoy_latest,2026-06,6.3603
 36084,hpi_forecast_4q,2026-06,1.8414
@@ -2686,7 +2686,7 @@ cbsa_code,metric,period,value
 36084,hpi_forecast_8q_hi,2026-06,26.1594
 36084,hpi_forecast_8q_lo,2026-06,-11.798
 36084,hpi_index_error,2026-06,0.1666
-36084,hpi_surprise_4q,2026-06,-6.6833
+36084,hpi_surprise_4q,2025-06,-6.6833
 36084,hpi_trend_5y,2026-06,1.5946
 36084,hpi_yoy_latest,2026-06,-4.7997
 36100,hpi_forecast_4q,2026-06,3.0212
@@ -2696,7 +2696,7 @@ cbsa_code,metric,period,value
 36100,hpi_forecast_8q_hi,2026-06,31.4412
 36100,hpi_forecast_8q_lo,2026-06,-11.2063
 36100,hpi_index_error,2026-06,0.285
-36100,hpi_surprise_4q,2026-06,-1.1677
+36100,hpi_surprise_4q,2025-06,-1.1677
 36100,hpi_trend_5y,2026-06,8.1773
 36100,hpi_yoy_latest,2026-06,2.1767
 36220,hpi_forecast_4q,2026-06,5.0021
@@ -2706,7 +2706,7 @@ cbsa_code,metric,period,value
 36220,hpi_forecast_8q_hi,2026-06,35.1149
 36220,hpi_forecast_8q_lo,2026-06,-7.0142
 36220,hpi_index_error,2026-06,0.8666
-36220,hpi_surprise_4q,2026-06,-5.5029
+36220,hpi_surprise_4q,2025-06,-5.5029
 36220,hpi_trend_5y,2026-06,4.5234
 36220,hpi_yoy_latest,2026-06,0.06
 36260,hpi_forecast_4q,2026-06,4.6178
@@ -2716,7 +2716,7 @@ cbsa_code,metric,period,value
 36260,hpi_forecast_8q_hi,2026-06,33.9764
 36260,hpi_forecast_8q_lo,2026-06,-7.9534
 36260,hpi_index_error,2026-06,0.1919
-36260,hpi_surprise_4q,2026-06,0.4333
+36260,hpi_surprise_4q,2025-06,0.4333
 36260,hpi_trend_5y,2026-06,5.8971
 36260,hpi_yoy_latest,2026-06,3.6792
 36420,hpi_forecast_4q,2026-06,4.4711
@@ -2726,7 +2726,7 @@ cbsa_code,metric,period,value
 36420,hpi_forecast_8q_hi,2026-06,33.6435
 36420,hpi_forecast_8q_lo,2026-06,-8.0335
 36420,hpi_index_error,2026-06,0.1908
-36420,hpi_surprise_4q,2026-06,-1.1926
+36420,hpi_surprise_4q,2025-06,-1.1926
 36420,hpi_trend_5y,2026-06,6.4022
 36420,hpi_yoy_latest,2026-06,2.4123
 36500,hpi_forecast_4q,2026-06,3.6854
@@ -2736,7 +2736,7 @@ cbsa_code,metric,period,value
 36500,hpi_forecast_8q_hi,2026-06,31.5164
 36500,hpi_forecast_8q_lo,2026-06,-9.4565
 36500,hpi_index_error,2026-06,0.208
-36500,hpi_surprise_4q,2026-06,-1.4671
+36500,hpi_surprise_4q,2025-06,-1.4671
 36500,hpi_trend_5y,2026-06,5.6707
 36500,hpi_yoy_latest,2026-06,2.9714
 36540,hpi_forecast_4q,2026-06,6.0008
@@ -2746,7 +2746,7 @@ cbsa_code,metric,period,value
 36540,hpi_forecast_8q_hi,2026-06,37.9205
 36540,hpi_forecast_8q_lo,2026-06,-5.7706
 36540,hpi_index_error,2026-06,0.2162
-36540,hpi_surprise_4q,2026-06,0.1198
+36540,hpi_surprise_4q,2025-06,0.1198
 36540,hpi_trend_5y,2026-06,6.9818
 36540,hpi_yoy_latest,2026-06,4.1504
 36740,hpi_forecast_4q,2026-06,2.8951
@@ -2756,7 +2756,7 @@ cbsa_code,metric,period,value
 36740,hpi_forecast_8q_hi,2026-06,29.4091
 36740,hpi_forecast_8q_lo,2026-06,-10.7944
 36740,hpi_index_error,2026-06,0.1211
-36740,hpi_surprise_4q,2026-06,-2.4979
+36740,hpi_surprise_4q,2025-06,-2.4979
 36740,hpi_trend_5y,2026-06,7.7753
 36740,hpi_yoy_latest,2026-06,0.825
 36780,hpi_forecast_4q,2026-06,6.9325
@@ -2766,7 +2766,7 @@ cbsa_code,metric,period,value
 36780,hpi_forecast_8q_hi,2026-06,40.0879
 36780,hpi_forecast_8q_lo,2026-06,-4.2594
 36780,hpi_index_error,2026-06,0.608
-36780,hpi_surprise_4q,2026-06,-0.4081
+36780,hpi_surprise_4q,2025-06,-0.4081
 36780,hpi_trend_5y,2026-06,9.2892
 36780,hpi_yoy_latest,2026-06,5.9082
 36980,hpi_forecast_4q,2026-06,7.0311
@@ -2776,7 +2776,7 @@ cbsa_code,metric,period,value
 36980,hpi_forecast_8q_hi,2026-06,40.4588
 36980,hpi_forecast_8q_lo,2026-06,-3.7806
 36980,hpi_index_error,2026-06,1.0881
-36980,hpi_surprise_4q,2026-06,8.3403
+36980,hpi_surprise_4q,2025-06,8.3403
 36980,hpi_trend_5y,2026-06,8.2499
 36980,hpi_yoy_latest,2026-06,12.9883
 37100,hpi_forecast_4q,2026-06,3.6212
@@ -2786,7 +2786,7 @@ cbsa_code,metric,period,value
 37100,hpi_forecast_8q_hi,2026-06,30.965
 37100,hpi_forecast_8q_lo,2026-06,-9.1371
 37100,hpi_index_error,2026-06,0.2887
-37100,hpi_surprise_4q,2026-06,-4.8638
+37100,hpi_surprise_4q,2025-06,-4.8638
 37100,hpi_trend_5y,2026-06,5.1698
 37100,hpi_yoy_latest,2026-06,-1.3402
 37140,hpi_forecast_4q,2026-06,6.4825
@@ -2796,7 +2796,7 @@ cbsa_code,metric,period,value
 37140,hpi_forecast_8q_hi,2026-06,38.8971
 37140,hpi_forecast_8q_lo,2026-06,-4.6224
 37140,hpi_index_error,2026-06,1.4452
-37140,hpi_surprise_4q,2026-06,6.3311
+37140,hpi_surprise_4q,2025-06,6.3311
 37140,hpi_trend_5y,2026-06,8.0524
 37140,hpi_yoy_latest,2026-06,11.3828
 37340,hpi_forecast_4q,2026-06,3.3192
@@ -2806,7 +2806,7 @@ cbsa_code,metric,period,value
 37340,hpi_forecast_8q_hi,2026-06,30.8687
 37340,hpi_forecast_8q_lo,2026-06,-10.022
 37340,hpi_index_error,2026-06,0.1897
-37340,hpi_surprise_4q,2026-06,0.0592
+37340,hpi_surprise_4q,2025-06,0.0592
 37340,hpi_trend_5y,2026-06,7.0317
 37340,hpi_yoy_latest,2026-06,2.1679
 37460,hpi_forecast_4q,2026-06,4.442
@@ -2816,7 +2816,7 @@ cbsa_code,metric,period,value
 37460,hpi_forecast_8q_hi,2026-06,34.0706
 37460,hpi_forecast_8q_lo,2026-06,-8.4368
 37460,hpi_index_error,2026-06,0.4139
-37460,hpi_surprise_4q,2026-06,-0.947
+37460,hpi_surprise_4q,2025-06,-0.947
 37460,hpi_trend_5y,2026-06,7.1365
 37460,hpi_yoy_latest,2026-06,3.129
 37620,hpi_forecast_4q,2026-06,6.2256
@@ -2826,7 +2826,7 @@ cbsa_code,metric,period,value
 37620,hpi_forecast_8q_hi,2026-06,38.2572
 37620,hpi_forecast_8q_lo,2026-06,-4.6743
 37620,hpi_index_error,2026-06,1.9796
-37620,hpi_surprise_4q,2026-06,5.356
+37620,hpi_surprise_4q,2025-06,5.356
 37620,hpi_trend_5y,2026-06,6.8381
 37620,hpi_yoy_latest,2026-06,8.5624
 37860,hpi_forecast_4q,2026-06,4.7381
@@ -2836,7 +2836,7 @@ cbsa_code,metric,period,value
 37860,hpi_forecast_8q_hi,2026-06,34.3676
 37860,hpi_forecast_8q_lo,2026-06,-7.9076
 37860,hpi_index_error,2026-06,0.2908
-37860,hpi_surprise_4q,2026-06,-3.062
+37860,hpi_surprise_4q,2025-06,-3.062
 37860,hpi_trend_5y,2026-06,7.3393
 37860,hpi_yoy_latest,2026-06,0.9678
 37900,hpi_forecast_4q,2026-06,7.2277
@@ -2846,7 +2846,7 @@ cbsa_code,metric,period,value
 37900,hpi_forecast_8q_hi,2026-06,40.9747
 37900,hpi_forecast_8q_lo,2026-06,-3.4087
 37900,hpi_index_error,2026-06,0.5838
-37900,hpi_surprise_4q,2026-06,-2.9134
+37900,hpi_surprise_4q,2025-06,-2.9134
 37900,hpi_trend_5y,2026-06,7.6524
 37900,hpi_yoy_latest,2026-06,3.6822
 37964,hpi_forecast_4q,2026-06,5.5642
@@ -2856,7 +2856,7 @@ cbsa_code,metric,period,value
 37964,hpi_forecast_8q_hi,2026-06,36.4022
 37964,hpi_forecast_8q_lo,2026-06,-5.6639
 37964,hpi_index_error,2026-06,0.2194
-37964,hpi_surprise_4q,2026-06,-1.6354
+37964,hpi_surprise_4q,2025-06,-1.6354
 37964,hpi_trend_5y,2026-06,5.9485
 37964,hpi_yoy_latest,2026-06,4.2807
 38060,hpi_forecast_4q,2026-06,3.2737
@@ -2866,7 +2866,7 @@ cbsa_code,metric,period,value
 38060,hpi_forecast_8q_hi,2026-06,30.4557
 38060,hpi_forecast_8q_lo,2026-06,-10.1089
 38060,hpi_index_error,2026-06,0.0598
-38060,hpi_surprise_4q,2026-06,-1.9214
+38060,hpi_surprise_4q,2025-06,-1.9214
 38060,hpi_trend_5y,2026-06,6.3179
 38060,hpi_yoy_latest,2026-06,0.8483
 38240,hpi_forecast_4q,2026-06,3.6458
@@ -2876,7 +2876,7 @@ cbsa_code,metric,period,value
 38240,hpi_forecast_8q_hi,2026-06,31.9909
 38240,hpi_forecast_8q_lo,2026-06,-10.2489
 38240,hpi_index_error,2026-06,3.0965
-38240,hpi_surprise_4q,2026-06,-7.5125
+38240,hpi_surprise_4q,2025-06,-7.5125
 38240,hpi_trend_5y,2026-06,9.1414
 38240,hpi_yoy_latest,2026-06,-2.2365
 38300,hpi_forecast_4q,2026-06,4.8783
@@ -2886,7 +2886,7 @@ cbsa_code,metric,period,value
 38300,hpi_forecast_8q_hi,2026-06,34.5982
 38300,hpi_forecast_8q_lo,2026-06,-7.1021
 38300,hpi_index_error,2026-06,0.2343
-38300,hpi_surprise_4q,2026-06,-1.78
+38300,hpi_surprise_4q,2025-06,-1.78
 38300,hpi_trend_5y,2026-06,6.4571
 38300,hpi_yoy_latest,2026-06,3.4071
 38340,hpi_forecast_4q,2026-06,6.0796
@@ -2896,7 +2896,7 @@ cbsa_code,metric,period,value
 38340,hpi_forecast_8q_hi,2026-06,37.7526
 38340,hpi_forecast_8q_lo,2026-06,-5.046
 38340,hpi_index_error,2026-06,0.9265
-38340,hpi_surprise_4q,2026-06,1.0296
+38340,hpi_surprise_4q,2025-06,1.0296
 38340,hpi_trend_5y,2026-06,9.2109
 38340,hpi_yoy_latest,2026-06,6.3233
 38540,hpi_forecast_4q,2026-06,4.4577
@@ -2906,7 +2906,7 @@ cbsa_code,metric,period,value
 38540,hpi_forecast_8q_hi,2026-06,33.5608
 38540,hpi_forecast_8q_lo,2026-06,-8.5191
 38540,hpi_index_error,2026-06,0.5077
-38540,hpi_surprise_4q,2026-06,-1.5284
+38540,hpi_surprise_4q,2025-06,-1.5284
 38540,hpi_trend_5y,2026-06,6.9277
 38540,hpi_yoy_latest,2026-06,2.2802
 38860,hpi_forecast_4q,2026-06,5.9388
@@ -2916,7 +2916,7 @@ cbsa_code,metric,period,value
 38860,hpi_forecast_8q_hi,2026-06,37.7159
 38860,hpi_forecast_8q_lo,2026-06,-6.2788
 38860,hpi_index_error,2026-06,0.3477
-38860,hpi_surprise_4q,2026-06,-0.6387
+38860,hpi_surprise_4q,2025-06,-0.6387
 38860,hpi_trend_5y,2026-06,9.2867
 38860,hpi_yoy_latest,2026-06,4.5169
 38900,hpi_forecast_4q,2026-06,3.7634
@@ -2926,7 +2926,7 @@ cbsa_code,metric,period,value
 38900,hpi_forecast_8q_hi,2026-06,31.5244
 38900,hpi_forecast_8q_lo,2026-06,-8.8523
 38900,hpi_index_error,2026-06,0.0694
-38900,hpi_surprise_4q,2026-06,-1.4405
+38900,hpi_surprise_4q,2025-06,-1.4405
 38900,hpi_trend_5y,2026-06,3.9167
 38900,hpi_yoy_latest,2026-06,1.3946
 38940,hpi_forecast_4q,2026-06,2.5517
@@ -2936,7 +2936,7 @@ cbsa_code,metric,period,value
 38940,hpi_forecast_8q_hi,2026-06,29.4071
 38940,hpi_forecast_8q_lo,2026-06,-11.0656
 38940,hpi_index_error,2026-06,0.2239
-38940,hpi_surprise_4q,2026-06,-3.4026
+38940,hpi_surprise_4q,2025-06,-3.4026
 38940,hpi_trend_5y,2026-06,7.7295
 38940,hpi_yoy_latest,2026-06,-0.5925
 39150,hpi_forecast_4q,2026-06,4.3906
@@ -2946,7 +2946,7 @@ cbsa_code,metric,period,value
 39150,hpi_forecast_8q_hi,2026-06,33.7334
 39150,hpi_forecast_8q_lo,2026-06,-8.762
 39150,hpi_index_error,2026-06,0.1931
-39150,hpi_surprise_4q,2026-06,-4.947
+39150,hpi_surprise_4q,2025-06,-4.947
 39150,hpi_trend_5y,2026-06,6.1006
 39150,hpi_yoy_latest,2026-06,-0.7297
 39300,hpi_forecast_4q,2026-06,5.832
@@ -2956,7 +2956,7 @@ cbsa_code,metric,period,value
 39300,hpi_forecast_8q_hi,2026-06,37.0492
 39300,hpi_forecast_8q_lo,2026-06,-5.3728
 39300,hpi_index_error,2026-06,0.197
-39300,hpi_surprise_4q,2026-06,-1.555
+39300,hpi_surprise_4q,2025-06,-1.555
 39300,hpi_trend_5y,2026-06,8.726
 39300,hpi_yoy_latest,2026-06,4.6954
 39340,hpi_forecast_4q,2026-06,4.4591
@@ -2966,7 +2966,7 @@ cbsa_code,metric,period,value
 39340,hpi_forecast_8q_hi,2026-06,33.7319
 39340,hpi_forecast_8q_lo,2026-06,-8.3637
 39340,hpi_index_error,2026-06,0.257
-39340,hpi_surprise_4q,2026-06,-0.6917
+39340,hpi_surprise_4q,2025-06,-0.6917
 39340,hpi_trend_5y,2026-06,6.0586
 39340,hpi_yoy_latest,2026-06,3.4974
 39380,hpi_forecast_4q,2026-06,2.0903
@@ -2976,7 +2976,7 @@ cbsa_code,metric,period,value
 39380,hpi_forecast_8q_hi,2026-06,27.1455
 39380,hpi_forecast_8q_lo,2026-06,-11.0603
 39380,hpi_index_error,2026-06,0.3951
-39380,hpi_surprise_4q,2026-06,-5.5976
+39380,hpi_surprise_4q,2025-06,-5.5976
 39380,hpi_trend_5y,2026-06,3.96
 39380,hpi_yoy_latest,2026-06,-2.8977
 39460,hpi_forecast_4q,2026-06,0.8523
@@ -2986,7 +2986,7 @@ cbsa_code,metric,period,value
 39460,hpi_forecast_8q_hi,2026-06,25.4909
 39460,hpi_forecast_8q_lo,2026-06,-14.362
 39460,hpi_index_error,2026-06,0.3441
-39460,hpi_surprise_4q,2026-06,1.6349
+39460,hpi_surprise_4q,2025-06,1.6349
 39460,hpi_trend_5y,2026-06,4.7832
 39460,hpi_yoy_latest,2026-06,-0.1811
 39540,hpi_forecast_4q,2026-06,7.0769
@@ -2996,7 +2996,7 @@ cbsa_code,metric,period,value
 39540,hpi_forecast_8q_hi,2026-06,40.6879
 39540,hpi_forecast_8q_lo,2026-06,-3.9657
 39540,hpi_index_error,2026-06,0.7919
-39540,hpi_surprise_4q,2026-06,0.6483
+39540,hpi_surprise_4q,2025-06,0.6483
 39540,hpi_trend_5y,2026-06,9.3752
 39540,hpi_yoy_latest,2026-06,7.2018
 39580,hpi_forecast_4q,2026-06,3.1287
@@ -3006,7 +3006,7 @@ cbsa_code,metric,period,value
 39580,hpi_forecast_8q_hi,2026-06,30.4575
 39580,hpi_forecast_8q_lo,2026-06,-10.8633
 39580,hpi_index_error,2026-06,0.1328
-39580,hpi_surprise_4q,2026-06,-2.2856
+39580,hpi_surprise_4q,2025-06,-2.2856
 39580,hpi_trend_5y,2026-06,7.696
 39580,hpi_yoy_latest,2026-06,1.0959
 39660,hpi_forecast_4q,2026-06,4.4475
@@ -3016,7 +3016,7 @@ cbsa_code,metric,period,value
 39660,hpi_forecast_8q_hi,2026-06,33.5626
 39660,hpi_forecast_8q_lo,2026-06,-8.164
 39660,hpi_index_error,2026-06,0.2831
-39660,hpi_surprise_4q,2026-06,-2.9641
+39660,hpi_surprise_4q,2025-06,-2.9641
 39660,hpi_trend_5y,2026-06,7.7292
 39660,hpi_yoy_latest,2026-06,1.7763
 39740,hpi_forecast_4q,2026-06,6.9736
@@ -3026,7 +3026,7 @@ cbsa_code,metric,period,value
 39740,hpi_forecast_8q_hi,2026-06,40.3158
 39740,hpi_forecast_8q_lo,2026-06,-3.6875
 39740,hpi_index_error,2026-06,0.7692
-39740,hpi_surprise_4q,2026-06,-1.6816
+39740,hpi_surprise_4q,2025-06,-1.6816
 39740,hpi_trend_5y,2026-06,9.0147
 39740,hpi_yoy_latest,2026-06,4.5725
 39820,hpi_forecast_4q,2026-06,3.3007
@@ -3036,7 +3036,7 @@ cbsa_code,metric,period,value
 39820,hpi_forecast_8q_hi,2026-06,30.242
 39820,hpi_forecast_8q_lo,2026-06,-9.9186
 39820,hpi_index_error,2026-06,0.4832
-39820,hpi_surprise_4q,2026-06,-1.6381
+39820,hpi_surprise_4q,2025-06,-1.6381
 39820,hpi_trend_5y,2026-06,3.7666
 39820,hpi_yoy_latest,2026-06,0.8995
 39900,hpi_forecast_4q,2026-06,4.5487
@@ -3046,7 +3046,7 @@ cbsa_code,metric,period,value
 39900,hpi_forecast_8q_hi,2026-06,33.9404
 39900,hpi_forecast_8q_lo,2026-06,-7.9649
 39900,hpi_index_error,2026-06,0.1964
-39900,hpi_surprise_4q,2026-06,-0.1723
+39900,hpi_surprise_4q,2025-06,-0.1723
 39900,hpi_trend_5y,2026-06,5.4429
 39900,hpi_yoy_latest,2026-06,3.7563
 40060,hpi_forecast_4q,2026-06,5.2397
@@ -3056,7 +3056,7 @@ cbsa_code,metric,period,value
 40060,hpi_forecast_8q_hi,2026-06,35.8017
 40060,hpi_forecast_8q_lo,2026-06,-7.09
 40060,hpi_index_error,2026-06,0.1541
-40060,hpi_surprise_4q,2026-06,-1.9982
+40060,hpi_surprise_4q,2025-06,-1.9982
 40060,hpi_trend_5y,2026-06,8.1092
 40060,hpi_yoy_latest,2026-06,3.3736
 40140,hpi_forecast_4q,2026-06,3.5341
@@ -3066,7 +3066,7 @@ cbsa_code,metric,period,value
 40140,hpi_forecast_8q_hi,2026-06,30.9173
 40140,hpi_forecast_8q_lo,2026-06,-9.4497
 40140,hpi_index_error,2026-06,0.1026
-40140,hpi_surprise_4q,2026-06,-2.6814
+40140,hpi_surprise_4q,2025-06,-2.6814
 40140,hpi_trend_5y,2026-06,6.3282
 40140,hpi_yoy_latest,2026-06,0.8311
 40220,hpi_forecast_4q,2026-06,5.5828
@@ -3076,7 +3076,7 @@ cbsa_code,metric,period,value
 40220,hpi_forecast_8q_hi,2026-06,36.4182
 40220,hpi_forecast_8q_lo,2026-06,-6.1628
 40220,hpi_index_error,2026-06,0.3236
-40220,hpi_surprise_4q,2026-06,-2.2428
+40220,hpi_surprise_4q,2025-06,-2.2428
 40220,hpi_trend_5y,2026-06,8.6261
 40220,hpi_yoy_latest,2026-06,3.3387
 40340,hpi_forecast_4q,2026-06,5.5083
@@ -3086,7 +3086,7 @@ cbsa_code,metric,period,value
 40340,hpi_forecast_8q_hi,2026-06,36.2465
 40340,hpi_forecast_8q_lo,2026-06,-6.2259
 40340,hpi_index_error,2026-06,0.2895
-40340,hpi_surprise_4q,2026-06,-1.1204
+40340,hpi_surprise_4q,2025-06,-1.1204
 40340,hpi_trend_5y,2026-06,5.8066
 40340,hpi_yoy_latest,2026-06,2.9931
 40380,hpi_forecast_4q,2026-06,6.3149
@@ -3096,7 +3096,7 @@ cbsa_code,metric,period,value
 40380,hpi_forecast_8q_hi,2026-06,38.2749
 40380,hpi_forecast_8q_lo,2026-06,-4.9877
 40380,hpi_index_error,2026-06,0.4304
-40380,hpi_surprise_4q,2026-06,-3.4459
+40380,hpi_surprise_4q,2025-06,-3.4459
 40380,hpi_trend_5y,2026-06,10.12
 40380,hpi_yoy_latest,2026-06,4.465
 40420,hpi_forecast_4q,2026-06,4.6127
@@ -3106,7 +3106,7 @@ cbsa_code,metric,period,value
 40420,hpi_forecast_8q_hi,2026-06,34.0366
 40420,hpi_forecast_8q_lo,2026-06,-7.1171
 40420,hpi_index_error,2026-06,0.5824
-40420,hpi_surprise_4q,2026-06,0.583
+40420,hpi_surprise_4q,2025-06,0.583
 40420,hpi_trend_5y,2026-06,10.3673
 40420,hpi_yoy_latest,2026-06,8.1467
 40484,hpi_forecast_4q,2026-06,6.5936
@@ -3116,7 +3116,7 @@ cbsa_code,metric,period,value
 40484,hpi_forecast_8q_hi,2026-06,39.6194
 40484,hpi_forecast_8q_lo,2026-06,-4.8174
 40484,hpi_index_error,2026-06,0.4531
-40484,hpi_surprise_4q,2026-06,-1.9765
+40484,hpi_surprise_4q,2025-06,-1.9765
 40484,hpi_trend_5y,2026-06,8.95
 40484,hpi_yoy_latest,2026-06,3.8115
 40580,hpi_forecast_4q,2026-06,3.3642
@@ -3126,7 +3126,7 @@ cbsa_code,metric,period,value
 40580,hpi_forecast_8q_hi,2026-06,30.6927
 40580,hpi_forecast_8q_lo,2026-06,-9.7167
 40580,hpi_index_error,2026-06,1.7139
-40580,hpi_surprise_4q,2026-06,-7.1059
+40580,hpi_surprise_4q,2025-06,-7.1059
 40580,hpi_trend_5y,2026-06,7.6087
 40580,hpi_yoy_latest,2026-06,-2.2241
 40660,hpi_forecast_4q,2026-06,3.0363
@@ -3136,7 +3136,7 @@ cbsa_code,metric,period,value
 40660,hpi_forecast_8q_hi,2026-06,29.8145
 40660,hpi_forecast_8q_lo,2026-06,-9.728
 40660,hpi_index_error,2026-06,0.708
-40660,hpi_surprise_4q,2026-06,-7.1576
+40660,hpi_surprise_4q,2025-06,-7.1576
 40660,hpi_trend_5y,2026-06,8.041
 40660,hpi_yoy_latest,2026-06,-1.6094
 40900,hpi_forecast_4q,2026-06,3.2384
@@ -3146,7 +3146,7 @@ cbsa_code,metric,period,value
 40900,hpi_forecast_8q_hi,2026-06,30.1237
 40900,hpi_forecast_8q_lo,2026-06,-9.9949
 40900,hpi_index_error,2026-06,0.1384
-40900,hpi_surprise_4q,2026-06,-2.8654
+40900,hpi_surprise_4q,2025-06,-2.8654
 40900,hpi_trend_5y,2026-06,3.6913
 40900,hpi_yoy_latest,2026-06,0.0759
 40980,hpi_forecast_4q,2026-06,6.3846
@@ -3156,7 +3156,7 @@ cbsa_code,metric,period,value
 40980,hpi_forecast_8q_hi,2026-06,38.6957
 40980,hpi_forecast_8q_lo,2026-06,-4.6549
 40980,hpi_index_error,2026-06,2.01
-40980,hpi_surprise_4q,2026-06,-1.8521
+40980,hpi_surprise_4q,2025-06,-1.8521
 40980,hpi_trend_5y,2026-06,8.0683
 40980,hpi_yoy_latest,2026-06,4.3049
 41060,hpi_forecast_4q,2026-06,5.279
@@ -3166,7 +3166,7 @@ cbsa_code,metric,period,value
 41060,hpi_forecast_8q_hi,2026-06,35.4935
 41060,hpi_forecast_8q_lo,2026-06,-6.5112
 41060,hpi_index_error,2026-06,0.421
-41060,hpi_surprise_4q,2026-06,-1.2361
+41060,hpi_surprise_4q,2025-06,-1.2361
 41060,hpi_trend_5y,2026-06,6.3231
 41060,hpi_yoy_latest,2026-06,3.2079
 41100,hpi_forecast_4q,2026-06,2.6712
@@ -3176,7 +3176,7 @@ cbsa_code,metric,period,value
 41100,hpi_forecast_8q_hi,2026-06,29.5962
 41100,hpi_forecast_8q_lo,2026-06,-11.7689
 41100,hpi_index_error,2026-06,0.4404
-41100,hpi_surprise_4q,2026-06,-3.6986
+41100,hpi_surprise_4q,2025-06,-3.6986
 41100,hpi_trend_5y,2026-06,5.3183
 41100,hpi_yoy_latest,2026-06,-0.1277
 41140,hpi_forecast_4q,2026-06,5.0052
@@ -3186,7 +3186,7 @@ cbsa_code,metric,period,value
 41140,hpi_forecast_8q_hi,2026-06,34.8906
 41140,hpi_forecast_8q_lo,2026-06,-6.4317
 41140,hpi_index_error,2026-06,0.8798
-41140,hpi_surprise_4q,2026-06,-4.1467
+41140,hpi_surprise_4q,2025-06,-4.1467
 41140,hpi_trend_5y,2026-06,8.6284
 41140,hpi_yoy_latest,2026-06,2.7006
 41180,hpi_forecast_4q,2026-06,5.7683
@@ -3196,7 +3196,7 @@ cbsa_code,metric,period,value
 41180,hpi_forecast_8q_hi,2026-06,36.9299
 41180,hpi_forecast_8q_lo,2026-06,-5.6638
 41180,hpi_index_error,2026-06,0.1747
-41180,hpi_surprise_4q,2026-06,-1.2845
+41180,hpi_surprise_4q,2025-06,-1.2845
 41180,hpi_trend_5y,2026-06,7.0446
 41180,hpi_yoy_latest,2026-06,4.1201
 41304,hpi_forecast_4q,2026-06,3.3375
@@ -3206,7 +3206,7 @@ cbsa_code,metric,period,value
 41304,hpi_forecast_8q_hi,2026-06,29.808
 41304,hpi_forecast_8q_lo,2026-06,-9.992
 41304,hpi_index_error,2026-06,0.1339
-41304,hpi_surprise_4q,2026-06,-0.5079
+41304,hpi_surprise_4q,2025-06,-0.5079
 41304,hpi_trend_5y,2026-06,7.5074
 41304,hpi_yoy_latest,2026-06,-0.0891
 41420,hpi_forecast_4q,2026-06,3.8702
@@ -3216,7 +3216,7 @@ cbsa_code,metric,period,value
 41420,hpi_forecast_8q_hi,2026-06,31.9397
 41420,hpi_forecast_8q_lo,2026-06,-8.7092
 41420,hpi_index_error,2026-06,0.2074
-41420,hpi_surprise_4q,2026-06,-4.5639
+41420,hpi_surprise_4q,2025-06,-4.5639
 41420,hpi_trend_5y,2026-06,5.0103
 41420,hpi_yoy_latest,2026-06,-0.2237
 41500,hpi_forecast_4q,2026-06,3.973
@@ -3226,7 +3226,7 @@ cbsa_code,metric,period,value
 41500,hpi_forecast_8q_hi,2026-06,31.6912
 41500,hpi_forecast_8q_lo,2026-06,-8.6784
 41500,hpi_index_error,2026-06,0.5524
-41500,hpi_surprise_4q,2026-06,-0.2626
+41500,hpi_surprise_4q,2025-06,-0.2626
 41500,hpi_trend_5y,2026-06,5.1201
 41500,hpi_yoy_latest,2026-06,3.202
 41540,hpi_forecast_4q,2026-06,3.7318
@@ -3236,7 +3236,7 @@ cbsa_code,metric,period,value
 41540,hpi_forecast_8q_hi,2026-06,31.4346
 41540,hpi_forecast_8q_lo,2026-06,-8.9272
 41540,hpi_index_error,2026-06,1.1042
-41540,hpi_surprise_4q,2026-06,-1.8848
+41540,hpi_surprise_4q,2025-06,-1.8848
 41540,hpi_trend_5y,2026-06,8.5648
 41540,hpi_yoy_latest,2026-06,3.4433
 41620,hpi_forecast_4q,2026-06,4.2225
@@ -3246,7 +3246,7 @@ cbsa_code,metric,period,value
 41620,hpi_forecast_8q_hi,2026-06,32.6543
 41620,hpi_forecast_8q_lo,2026-06,-8.3815
 41620,hpi_index_error,2026-06,0.1032
-41620,hpi_surprise_4q,2026-06,-1.3343
+41620,hpi_surprise_4q,2025-06,-1.3343
 41620,hpi_trend_5y,2026-06,5.9259
 41620,hpi_yoy_latest,2026-06,2.4147
 41660,hpi_forecast_4q,2026-06,4.9061
@@ -3256,7 +3256,7 @@ cbsa_code,metric,period,value
 41660,hpi_forecast_8q_hi,2026-06,34.4829
 41660,hpi_forecast_8q_lo,2026-06,-7.2884
 41660,hpi_index_error,2026-06,0.8036
-41660,hpi_surprise_4q,2026-06,-0.8342
+41660,hpi_surprise_4q,2025-06,-0.8342
 41660,hpi_trend_5y,2026-06,5.9329
 41660,hpi_yoy_latest,2026-06,1.8229
 41700,hpi_forecast_4q,2026-06,2.3611
@@ -3266,7 +3266,7 @@ cbsa_code,metric,period,value
 41700,hpi_forecast_8q_hi,2026-06,28.2242
 41700,hpi_forecast_8q_lo,2026-06,-10.8271
 41700,hpi_index_error,2026-06,0.3474
-41700,hpi_surprise_4q,2026-06,-2.3631
+41700,hpi_surprise_4q,2025-06,-2.3631
 41700,hpi_trend_5y,2026-06,5.2658
 41700,hpi_yoy_latest,2026-06,-0.5257
 41740,hpi_forecast_4q,2026-06,4.8456
@@ -3276,7 +3276,7 @@ cbsa_code,metric,period,value
 41740,hpi_forecast_8q_hi,2026-06,34.2123
 41740,hpi_forecast_8q_lo,2026-06,-7.4875
 41740,hpi_index_error,2026-06,0.1042
-41740,hpi_surprise_4q,2026-06,-1.1982
+41740,hpi_surprise_4q,2025-06,-1.1982
 41740,hpi_trend_5y,2026-06,7.0889
 41740,hpi_yoy_latest,2026-06,2.4917
 41780,hpi_forecast_4q,2026-06,6.8016
@@ -3286,7 +3286,7 @@ cbsa_code,metric,period,value
 41780,hpi_forecast_8q_hi,2026-06,39.7999
 41780,hpi_forecast_8q_lo,2026-06,-4.1661
 41780,hpi_index_error,2026-06,0.8937
-41780,hpi_surprise_4q,2026-06,-0.2542
+41780,hpi_surprise_4q,2025-06,-0.2542
 41780,hpi_trend_5y,2026-06,10.079
 41780,hpi_yoy_latest,2026-06,6.7791
 41884,hpi_forecast_4q,2026-06,4.7549
@@ -3296,7 +3296,7 @@ cbsa_code,metric,period,value
 41884,hpi_forecast_8q_hi,2026-06,34.0264
 41884,hpi_forecast_8q_lo,2026-06,-7.3197
 41884,hpi_index_error,2026-06,0.3785
-41884,hpi_surprise_4q,2026-06,-2.4775
+41884,hpi_surprise_4q,2025-06,-2.4775
 41884,hpi_trend_5y,2026-06,3.2774
 41884,hpi_yoy_latest,2026-06,-0.2796
 41940,hpi_forecast_4q,2026-06,3.6019
@@ -3306,7 +3306,7 @@ cbsa_code,metric,period,value
 41940,hpi_forecast_8q_hi,2026-06,30.6527
 41940,hpi_forecast_8q_lo,2026-06,-9.1817
 41940,hpi_index_error,2026-06,0.2573
-41940,hpi_surprise_4q,2026-06,-3.6719
+41940,hpi_surprise_4q,2025-06,-3.6719
 41940,hpi_trend_5y,2026-06,4.9681
 41940,hpi_yoy_latest,2026-06,-0.9765
 42020,hpi_forecast_4q,2026-06,3.8861
@@ -3316,7 +3316,7 @@ cbsa_code,metric,period,value
 42020,hpi_forecast_8q_hi,2026-06,31.8
 42020,hpi_forecast_8q_lo,2026-06,-8.9475
 42020,hpi_index_error,2026-06,0.3908
-42020,hpi_surprise_4q,2026-06,0.0827
+42020,hpi_surprise_4q,2025-06,0.0827
 42020,hpi_trend_5y,2026-06,6.4251
 42020,hpi_yoy_latest,2026-06,3.3982
 42034,hpi_forecast_4q,2026-06,4.2409
@@ -3326,7 +3326,7 @@ cbsa_code,metric,period,value
 42034,hpi_forecast_8q_hi,2026-06,32.2993
 42034,hpi_forecast_8q_lo,2026-06,-8.2032
 42034,hpi_index_error,2026-06,0.7715
-42034,hpi_surprise_4q,2026-06,0.6425
+42034,hpi_surprise_4q,2025-06,0.6425
 42034,hpi_trend_5y,2026-06,3.7698
 42034,hpi_yoy_latest,2026-06,3.5134
 42100,hpi_forecast_4q,2026-06,3.9769
@@ -3336,7 +3336,7 @@ cbsa_code,metric,period,value
 42100,hpi_forecast_8q_hi,2026-06,31.4317
 42100,hpi_forecast_8q_lo,2026-06,-8.6409
 42100,hpi_index_error,2026-06,0.661
-42100,hpi_surprise_4q,2026-06,-1.0571
+42100,hpi_surprise_4q,2025-06,-1.0571
 42100,hpi_trend_5y,2026-06,3.8082
 42100,hpi_yoy_latest,2026-06,1.7375
 42140,hpi_forecast_4q,2026-06,4.208
@@ -3346,7 +3346,7 @@ cbsa_code,metric,period,value
 42140,hpi_forecast_8q_hi,2026-06,32.7401
 42140,hpi_forecast_8q_lo,2026-06,-8.4536
 42140,hpi_index_error,2026-06,0.5947
-42140,hpi_surprise_4q,2026-06,0.7697
+42140,hpi_surprise_4q,2025-06,0.7697
 42140,hpi_trend_5y,2026-06,7.2611
 42140,hpi_yoy_latest,2026-06,4.0103
 42200,hpi_forecast_4q,2026-06,5.5045
@@ -3356,7 +3356,7 @@ cbsa_code,metric,period,value
 42200,hpi_forecast_8q_hi,2026-06,35.7268
 42200,hpi_forecast_8q_lo,2026-06,-6.4682
 42200,hpi_index_error,2026-06,0.3997
-42200,hpi_surprise_4q,2026-06,-1.4239
+42200,hpi_surprise_4q,2025-06,-1.4239
 42200,hpi_trend_5y,2026-06,7.5166
 42200,hpi_yoy_latest,2026-06,2.2961
 42220,hpi_forecast_4q,2026-06,3.8232
@@ -3366,7 +3366,7 @@ cbsa_code,metric,period,value
 42220,hpi_forecast_8q_hi,2026-06,31.6018
 42220,hpi_forecast_8q_lo,2026-06,-9.1768
 42220,hpi_index_error,2026-06,0.3299
-42220,hpi_surprise_4q,2026-06,-1.6812
+42220,hpi_surprise_4q,2025-06,-1.6812
 42220,hpi_trend_5y,2026-06,3.2899
 42220,hpi_yoy_latest,2026-06,0.7916
 42340,hpi_forecast_4q,2026-06,3.7953
@@ -3376,7 +3376,7 @@ cbsa_code,metric,period,value
 42340,hpi_forecast_8q_hi,2026-06,31.8905
 42340,hpi_forecast_8q_lo,2026-06,-9.9603
 42340,hpi_index_error,2026-06,0.4386
-42340,hpi_surprise_4q,2026-06,-0.9781
+42340,hpi_surprise_4q,2025-06,-0.9781
 42340,hpi_trend_5y,2026-06,10.3327
 42340,hpi_yoy_latest,2026-06,3.37
 42540,hpi_forecast_4q,2026-06,7.3101
@@ -3386,7 +3386,7 @@ cbsa_code,metric,period,value
 42540,hpi_forecast_8q_hi,2026-06,41.3263
 42540,hpi_forecast_8q_lo,2026-06,-3.2385
 42540,hpi_index_error,2026-06,1.2587
-42540,hpi_surprise_4q,2026-06,0.6266
+42540,hpi_surprise_4q,2025-06,0.6266
 42540,hpi_trend_5y,2026-06,9.396
 42540,hpi_yoy_latest,2026-06,7.514
 42644,hpi_forecast_4q,2026-06,3.304
@@ -3396,7 +3396,7 @@ cbsa_code,metric,period,value
 42644,hpi_forecast_8q_hi,2026-06,30.2807
 42644,hpi_forecast_8q_lo,2026-06,-9.5639
 42644,hpi_index_error,2026-06,0.0874
-42644,hpi_surprise_4q,2026-06,-3.3781
+42644,hpi_surprise_4q,2025-06,-3.3781
 42644,hpi_trend_5y,2026-06,4.4943
 42644,hpi_yoy_latest,2026-06,0.3254
 42680,hpi_forecast_4q,2026-06,3.729
@@ -3406,7 +3406,7 @@ cbsa_code,metric,period,value
 42680,hpi_forecast_8q_hi,2026-06,32.1874
 42680,hpi_forecast_8q_lo,2026-06,-8.7752
 42680,hpi_index_error,2026-06,0.4033
-42680,hpi_surprise_4q,2026-06,1.303
+42680,hpi_surprise_4q,2025-06,1.303
 42680,hpi_trend_5y,2026-06,8.0597
 42680,hpi_yoy_latest,2026-06,3.0037
 42700,hpi_forecast_4q,2026-06,4.2663
@@ -3416,7 +3416,7 @@ cbsa_code,metric,period,value
 42700,hpi_forecast_8q_hi,2026-06,33.5241
 42700,hpi_forecast_8q_lo,2026-06,-8.6133
 42700,hpi_index_error,2026-06,0.6657
-42700,hpi_surprise_4q,2026-06,2.0815
+42700,hpi_surprise_4q,2025-06,2.0815
 42700,hpi_trend_5y,2026-06,9.1244
 42700,hpi_yoy_latest,2026-06,5.1775
 43100,hpi_forecast_4q,2026-06,6.9531
@@ -3426,7 +3426,7 @@ cbsa_code,metric,period,value
 43100,hpi_forecast_8q_hi,2026-06,40.1477
 43100,hpi_forecast_8q_lo,2026-06,-4.3303
 43100,hpi_index_error,2026-06,0.7348
-43100,hpi_surprise_4q,2026-06,-2.0291
+43100,hpi_surprise_4q,2025-06,-2.0291
 43100,hpi_trend_5y,2026-06,10.0311
 43100,hpi_yoy_latest,2026-06,4.7178
 43300,hpi_forecast_4q,2026-06,1.2883
@@ -3436,7 +3436,7 @@ cbsa_code,metric,period,value
 43300,hpi_forecast_8q_hi,2026-06,25.9384
 43300,hpi_forecast_8q_lo,2026-06,-13.2671
 43300,hpi_index_error,2026-06,1.4524
-43300,hpi_surprise_4q,2026-06,-5.679
+43300,hpi_surprise_4q,2025-06,-5.679
 43300,hpi_trend_5y,2026-06,7.0026
 43300,hpi_yoy_latest,2026-06,-2.4221
 43340,hpi_forecast_4q,2026-06,5.4955
@@ -3446,7 +3446,7 @@ cbsa_code,metric,period,value
 43340,hpi_forecast_8q_hi,2026-06,36.0563
 43340,hpi_forecast_8q_lo,2026-06,-6.2402
 43340,hpi_index_error,2026-06,1.124
-43340,hpi_surprise_4q,2026-06,3.165
+43340,hpi_surprise_4q,2025-06,3.165
 43340,hpi_trend_5y,2026-06,4.9961
 43340,hpi_yoy_latest,2026-06,5.6678
 43420,hpi_forecast_4q,2026-06,3.9885
@@ -3456,7 +3456,7 @@ cbsa_code,metric,period,value
 43420,hpi_forecast_8q_hi,2026-06,32.9852
 43420,hpi_forecast_8q_lo,2026-06,-8.5828
 43420,hpi_index_error,2026-06,0.538
-43420,hpi_surprise_4q,2026-06,-5.1956
+43420,hpi_surprise_4q,2025-06,-5.1956
 43420,hpi_trend_5y,2026-06,6.8754
 43420,hpi_yoy_latest,2026-06,-0.8109
 43580,hpi_forecast_4q,2026-06,5.3159
@@ -3466,7 +3466,7 @@ cbsa_code,metric,period,value
 43580,hpi_forecast_8q_hi,2026-06,35.5426
 43580,hpi_forecast_8q_lo,2026-06,-6.2753
 43580,hpi_index_error,2026-06,0.8555
-43580,hpi_surprise_4q,2026-06,-5.7611
+43580,hpi_surprise_4q,2025-06,-5.7611
 43580,hpi_trend_5y,2026-06,6.9058
 43580,hpi_yoy_latest,2026-06,-1.1316
 43620,hpi_forecast_4q,2026-06,3.736
@@ -3476,7 +3476,7 @@ cbsa_code,metric,period,value
 43620,hpi_forecast_8q_hi,2026-06,32.0864
 43620,hpi_forecast_8q_lo,2026-06,-9.3187
 43620,hpi_index_error,2026-06,0.4752
-43620,hpi_surprise_4q,2026-06,-1.5384
+43620,hpi_surprise_4q,2025-06,-1.5384
 43620,hpi_trend_5y,2026-06,6.3964
 43620,hpi_yoy_latest,2026-06,2.4675
 43640,hpi_forecast_4q,2026-06,4.1487
@@ -3486,7 +3486,7 @@ cbsa_code,metric,period,value
 43640,hpi_forecast_8q_hi,2026-06,32.6825
 43640,hpi_forecast_8q_lo,2026-06,-8.5007
 43640,hpi_index_error,2026-06,0.7908
-43640,hpi_surprise_4q,2026-06,0.6546
+43640,hpi_surprise_4q,2025-06,0.6546
 43640,hpi_trend_5y,2026-06,4.983
 43640,hpi_yoy_latest,2026-06,3.5472
 43780,hpi_forecast_4q,2026-06,6.6935
@@ -3496,7 +3496,7 @@ cbsa_code,metric,period,value
 43780,hpi_forecast_8q_hi,2026-06,39.6331
 43780,hpi_forecast_8q_lo,2026-06,-4.3002
 43780,hpi_index_error,2026-06,0.7091
-43780,hpi_surprise_4q,2026-06,1.7888
+43780,hpi_surprise_4q,2025-06,1.7888
 43780,hpi_trend_5y,2026-06,8.9861
 43780,hpi_yoy_latest,2026-06,6.7233
 43900,hpi_forecast_4q,2026-06,4.9378
@@ -3506,7 +3506,7 @@ cbsa_code,metric,period,value
 43900,hpi_forecast_8q_hi,2026-06,35.8793
 43900,hpi_forecast_8q_lo,2026-06,-7.9889
 43900,hpi_index_error,2026-06,0.5566
-43900,hpi_surprise_4q,2026-06,-2.9085
+43900,hpi_surprise_4q,2025-06,-2.9085
 43900,hpi_trend_5y,2026-06,8.9461
 43900,hpi_yoy_latest,2026-06,2.3138
 44060,hpi_forecast_4q,2026-06,3.5196
@@ -3516,7 +3516,7 @@ cbsa_code,metric,period,value
 44060,hpi_forecast_8q_hi,2026-06,31.1274
 44060,hpi_forecast_8q_lo,2026-06,-9.6255
 44060,hpi_index_error,2026-06,0.1705
-44060,hpi_surprise_4q,2026-06,-3.3157
+44060,hpi_surprise_4q,2025-06,-3.3157
 44060,hpi_trend_5y,2026-06,5.245
 44060,hpi_yoy_latest,2026-06,-0.0475
 44100,hpi_forecast_4q,2026-06,6.7692
@@ -3526,7 +3526,7 @@ cbsa_code,metric,period,value
 44100,hpi_forecast_8q_hi,2026-06,39.495
 44100,hpi_forecast_8q_lo,2026-06,-4.3516
 44100,hpi_index_error,2026-06,0.7801
-44100,hpi_surprise_4q,2026-06,0.0103
+44100,hpi_surprise_4q,2025-06,0.0103
 44100,hpi_trend_5y,2026-06,7.2735
 44100,hpi_yoy_latest,2026-06,5.1337
 44140,hpi_forecast_4q,2026-06,5.6436
@@ -3536,7 +3536,7 @@ cbsa_code,metric,period,value
 44140,hpi_forecast_8q_hi,2026-06,36.635
 44140,hpi_forecast_8q_lo,2026-06,-5.5411
 44140,hpi_index_error,2026-06,0.5254
-44140,hpi_surprise_4q,2026-06,-0.8511
+44140,hpi_surprise_4q,2025-06,-0.8511
 44140,hpi_trend_5y,2026-06,7.6091
 44140,hpi_yoy_latest,2026-06,4.3806
 44180,hpi_forecast_4q,2026-06,5.2862
@@ -3546,7 +3546,7 @@ cbsa_code,metric,period,value
 44180,hpi_forecast_8q_hi,2026-06,36.0206
 44180,hpi_forecast_8q_lo,2026-06,-6.833
 44180,hpi_index_error,2026-06,0.4424
-44180,hpi_surprise_4q,2026-06,0.1239
+44180,hpi_surprise_4q,2025-06,0.1239
 44180,hpi_trend_5y,2026-06,8.1298
 44180,hpi_yoy_latest,2026-06,3.9665
 44220,hpi_forecast_4q,2026-06,5.7068
@@ -3556,7 +3556,7 @@ cbsa_code,metric,period,value
 44220,hpi_forecast_8q_hi,2026-06,36.5356
 44220,hpi_forecast_8q_lo,2026-06,-5.7122
 44220,hpi_index_error,2026-06,0.8338
-44220,hpi_surprise_4q,2026-06,-4.3453
+44220,hpi_surprise_4q,2025-06,-4.3453
 44220,hpi_trend_5y,2026-06,8.8356
 44220,hpi_yoy_latest,2026-06,2.2887
 44300,hpi_forecast_4q,2026-06,5.4923
@@ -3566,7 +3566,7 @@ cbsa_code,metric,period,value
 44300,hpi_forecast_8q_hi,2026-06,35.7683
 44300,hpi_forecast_8q_lo,2026-06,-5.9853
 44300,hpi_index_error,2026-06,1.0185
-44300,hpi_surprise_4q,2026-06,-1.2808
+44300,hpi_surprise_4q,2025-06,-1.2808
 44300,hpi_trend_5y,2026-06,6.5719
 44300,hpi_yoy_latest,2026-06,3.1641
 44420,hpi_forecast_4q,2026-06,6.9399
@@ -3576,7 +3576,7 @@ cbsa_code,metric,period,value
 44420,hpi_forecast_8q_hi,2026-06,40.7875
 44420,hpi_forecast_8q_lo,2026-06,-4.6473
 44420,hpi_index_error,2026-06,1.2256
-44420,hpi_surprise_4q,2026-06,1.8411
+44420,hpi_surprise_4q,2025-06,1.8411
 44420,hpi_trend_5y,2026-06,9.5237
 44420,hpi_yoy_latest,2026-06,7.4844
 44700,hpi_forecast_4q,2026-06,2.3125
@@ -3586,7 +3586,7 @@ cbsa_code,metric,period,value
 44700,hpi_forecast_8q_hi,2026-06,27.3978
 44700,hpi_forecast_8q_lo,2026-06,-11.4323
 44700,hpi_index_error,2026-06,0.3337
-44700,hpi_surprise_4q,2026-06,-4.1286
+44700,hpi_surprise_4q,2025-06,-4.1286
 44700,hpi_trend_5y,2026-06,3.4073
 44700,hpi_yoy_latest,2026-06,-1.7537
 44940,hpi_forecast_4q,2026-06,6.6335
@@ -3596,7 +3596,7 @@ cbsa_code,metric,period,value
 44940,hpi_forecast_8q_hi,2026-06,39.2852
 44940,hpi_forecast_8q_lo,2026-06,-4.8537
 44940,hpi_index_error,2026-06,3.0093
-44940,hpi_surprise_4q,2026-06,6.002
+44940,hpi_surprise_4q,2025-06,6.002
 44940,hpi_trend_5y,2026-06,9.7333
 44940,hpi_yoy_latest,2026-06,11.1143
 45060,hpi_forecast_4q,2026-06,6.4966
@@ -3606,7 +3606,7 @@ cbsa_code,metric,period,value
 45060,hpi_forecast_8q_hi,2026-06,38.6636
 45060,hpi_forecast_8q_lo,2026-06,-4.9436
 45060,hpi_index_error,2026-06,0.6402
-45060,hpi_surprise_4q,2026-06,-1.3828
+45060,hpi_surprise_4q,2025-06,-1.3828
 45060,hpi_trend_5y,2026-06,10.4157
 45060,hpi_yoy_latest,2026-06,6.1422
 45104,hpi_forecast_4q,2026-06,4.3085
@@ -3616,7 +3616,7 @@ cbsa_code,metric,period,value
 45104,hpi_forecast_8q_hi,2026-06,33.0054
 45104,hpi_forecast_8q_lo,2026-06,-8.2891
 45104,hpi_index_error,2026-06,0.1268
-45104,hpi_surprise_4q,2026-06,-2.1725
+45104,hpi_surprise_4q,2025-06,-2.1725
 45104,hpi_trend_5y,2026-06,5.1354
 45104,hpi_yoy_latest,2026-06,1.8583
 45220,hpi_forecast_4q,2026-06,4.6694
@@ -3626,7 +3626,7 @@ cbsa_code,metric,period,value
 45220,hpi_forecast_8q_hi,2026-06,34.0523
 45220,hpi_forecast_8q_lo,2026-06,-8.3071
 45220,hpi_index_error,2026-06,0.316
-45220,hpi_surprise_4q,2026-06,2.1754
+45220,hpi_surprise_4q,2025-06,2.1754
 45220,hpi_trend_5y,2026-06,7.3964
 45220,hpi_yoy_latest,2026-06,5.0045
 45294,hpi_forecast_4q,2026-06,3.1483
@@ -3636,7 +3636,7 @@ cbsa_code,metric,period,value
 45294,hpi_forecast_8q_hi,2026-06,30.0516
 45294,hpi_forecast_8q_lo,2026-06,-10.1591
 45294,hpi_index_error,2026-06,0.1157
-45294,hpi_surprise_4q,2026-06,-1.3358
+45294,hpi_surprise_4q,2025-06,-1.3358
 45294,hpi_trend_5y,2026-06,8.1268
 45294,hpi_yoy_latest,2026-06,1.0701
 45460,hpi_forecast_4q,2026-06,6.5707
@@ -3646,7 +3646,7 @@ cbsa_code,metric,period,value
 45460,hpi_forecast_8q_hi,2026-06,39.1562
 45460,hpi_forecast_8q_lo,2026-06,-4.4201
 45460,hpi_index_error,2026-06,3.2782
-45460,hpi_surprise_4q,2026-06,1.7292
+45460,hpi_surprise_4q,2025-06,1.7292
 45460,hpi_trend_5y,2026-06,9.2394
 45460,hpi_yoy_latest,2026-06,7.6825
 45500,hpi_forecast_4q,2026-06,4.9113
@@ -3656,7 +3656,7 @@ cbsa_code,metric,period,value
 45500,hpi_forecast_8q_hi,2026-06,34.6728
 45500,hpi_forecast_8q_lo,2026-06,-7.0971
 45500,hpi_index_error,2026-06,1.5904
-45500,hpi_surprise_4q,2026-06,-1.1708
+45500,hpi_surprise_4q,2025-06,-1.1708
 45500,hpi_trend_5y,2026-06,7.6157
 45500,hpi_yoy_latest,2026-06,4.3846
 45780,hpi_forecast_4q,2026-06,5.3437
@@ -3666,7 +3666,7 @@ cbsa_code,metric,period,value
 45780,hpi_forecast_8q_hi,2026-06,35.8616
 45780,hpi_forecast_8q_lo,2026-06,-6.2079
 45780,hpi_index_error,2026-06,0.3992
-45780,hpi_surprise_4q,2026-06,-2.509
+45780,hpi_surprise_4q,2025-06,-2.509
 45780,hpi_trend_5y,2026-06,7.3901
 45780,hpi_yoy_latest,2026-06,3.3833
 45820,hpi_forecast_4q,2026-06,5.7776
@@ -3676,7 +3676,7 @@ cbsa_code,metric,period,value
 45820,hpi_forecast_8q_hi,2026-06,36.883
 45820,hpi_forecast_8q_lo,2026-06,-5.8332
 45820,hpi_index_error,2026-06,0.6745
-45820,hpi_surprise_4q,2026-06,0.25
+45820,hpi_surprise_4q,2025-06,0.25
 45820,hpi_trend_5y,2026-06,8.0924
 45820,hpi_yoy_latest,2026-06,5.6298
 45900,hpi_forecast_4q,2026-06,4.6054
@@ -3686,7 +3686,7 @@ cbsa_code,metric,period,value
 45900,hpi_forecast_8q_hi,2026-06,34.2086
 45900,hpi_forecast_8q_lo,2026-06,-8.0151
 45900,hpi_index_error,2026-06,0.5738
-45900,hpi_surprise_4q,2026-06,-2.8729
+45900,hpi_surprise_4q,2025-06,-2.8729
 45900,hpi_trend_5y,2026-06,9.785
 45900,hpi_yoy_latest,2026-06,3.33
 45940,hpi_forecast_4q,2026-06,5.723
@@ -3696,7 +3696,7 @@ cbsa_code,metric,period,value
 45940,hpi_forecast_8q_hi,2026-06,36.5173
 45940,hpi_forecast_8q_lo,2026-06,-5.9342
 45940,hpi_index_error,2026-06,0.6357
-45940,hpi_surprise_4q,2026-06,-2.0848
+45940,hpi_surprise_4q,2025-06,-2.0848
 45940,hpi_trend_5y,2026-06,10.4191
 45940,hpi_yoy_latest,2026-06,5.1881
 46060,hpi_forecast_4q,2026-06,3.559
@@ -3706,7 +3706,7 @@ cbsa_code,metric,period,value
 46060,hpi_forecast_8q_hi,2026-06,31.1134
 46060,hpi_forecast_8q_lo,2026-06,-9.0231
 46060,hpi_index_error,2026-06,0.1522
-46060,hpi_surprise_4q,2026-06,-0.6718
+46060,hpi_surprise_4q,2025-06,-0.6718
 46060,hpi_trend_5y,2026-06,6.8781
 46060,hpi_yoy_latest,2026-06,1.8825
 46140,hpi_forecast_4q,2026-06,5.4109
@@ -3716,7 +3716,7 @@ cbsa_code,metric,period,value
 46140,hpi_forecast_8q_hi,2026-06,36.0902
 46140,hpi_forecast_8q_lo,2026-06,-6.6389
 46140,hpi_index_error,2026-06,0.2438
-46140,hpi_surprise_4q,2026-06,-0.5681
+46140,hpi_surprise_4q,2025-06,-0.5681
 46140,hpi_trend_5y,2026-06,7.7891
 46140,hpi_yoy_latest,2026-06,3.9546
 46220,hpi_forecast_4q,2026-06,3.6364
@@ -3726,7 +3726,7 @@ cbsa_code,metric,period,value
 46220,hpi_forecast_8q_hi,2026-06,31.0976
 46220,hpi_forecast_8q_lo,2026-06,-8.8514
 46220,hpi_index_error,2026-06,1.5107
-46220,hpi_surprise_4q,2026-06,-4.5307
+46220,hpi_surprise_4q,2025-06,-4.5307
 46220,hpi_trend_5y,2026-06,5.8224
 46220,hpi_yoy_latest,2026-06,-0.0594
 46300,hpi_forecast_4q,2026-06,3.9908
@@ -3736,7 +3736,7 @@ cbsa_code,metric,period,value
 46300,hpi_forecast_8q_hi,2026-06,32.3542
 46300,hpi_forecast_8q_lo,2026-06,-8.9384
 46300,hpi_index_error,2026-06,1.1847
-46300,hpi_surprise_4q,2026-06,-4.4003
+46300,hpi_surprise_4q,2025-06,-4.4003
 46300,hpi_trend_5y,2026-06,5.9418
 46300,hpi_yoy_latest,2026-06,-1.5503
 46340,hpi_forecast_4q,2026-06,4.5699
@@ -3746,7 +3746,7 @@ cbsa_code,metric,period,value
 46340,hpi_forecast_8q_hi,2026-06,34.2219
 46340,hpi_forecast_8q_lo,2026-06,-7.1926
 46340,hpi_index_error,2026-06,0.7033
-46340,hpi_surprise_4q,2026-06,-0.2753
+46340,hpi_surprise_4q,2025-06,-0.2753
 46340,hpi_trend_5y,2026-06,7.24
 46340,hpi_yoy_latest,2026-06,2.6694
 46520,hpi_forecast_4q,2026-06,6.9797
@@ -3756,7 +3756,7 @@ cbsa_code,metric,period,value
 46520,hpi_forecast_8q_hi,2026-06,39.8429
 46520,hpi_forecast_8q_lo,2026-06,-4.0713
 46520,hpi_index_error,2026-06,0.6038
-46520,hpi_surprise_4q,2026-06,9.2721
+46520,hpi_surprise_4q,2025-06,9.2721
 46520,hpi_trend_5y,2026-06,6.7471
 46520,hpi_yoy_latest,2026-06,11.0588
 46540,hpi_forecast_4q,2026-06,4.9177
@@ -3766,7 +3766,7 @@ cbsa_code,metric,period,value
 46540,hpi_forecast_8q_hi,2026-06,34.6179
 46540,hpi_forecast_8q_lo,2026-06,-6.8843
 46540,hpi_index_error,2026-06,1.6255
-46540,hpi_surprise_4q,2026-06,3.6145
+46540,hpi_surprise_4q,2025-06,3.6145
 46540,hpi_trend_5y,2026-06,9.5834
 46540,hpi_yoy_latest,2026-06,8.7517
 46660,hpi_forecast_4q,2026-06,6.8288
@@ -3776,7 +3776,7 @@ cbsa_code,metric,period,value
 46660,hpi_forecast_8q_hi,2026-06,39.7989
 46660,hpi_forecast_8q_lo,2026-06,-4.6582
 46660,hpi_index_error,2026-06,0.8126
-46660,hpi_surprise_4q,2026-06,5.5095
+46660,hpi_surprise_4q,2025-06,5.5095
 46660,hpi_trend_5y,2026-06,9.4008
 46660,hpi_yoy_latest,2026-06,10.0348
 46700,hpi_forecast_4q,2026-06,2.6748
@@ -3786,7 +3786,7 @@ cbsa_code,metric,period,value
 46700,hpi_forecast_8q_hi,2026-06,28.4095
 46700,hpi_forecast_8q_lo,2026-06,-10.669
 46700,hpi_index_error,2026-06,0.3914
-46700,hpi_surprise_4q,2026-06,-2.5028
+46700,hpi_surprise_4q,2025-06,-2.5028
 46700,hpi_trend_5y,2026-06,2.717
 46700,hpi_yoy_latest,2026-06,-0.6677
 47020,hpi_forecast_4q,2026-06,4.6476
@@ -3796,7 +3796,7 @@ cbsa_code,metric,period,value
 47020,hpi_forecast_8q_hi,2026-06,34.2215
 47020,hpi_forecast_8q_lo,2026-06,-6.9774
 47020,hpi_index_error,2026-06,0.9365
-47020,hpi_surprise_4q,2026-06,2.218
+47020,hpi_surprise_4q,2025-06,2.218
 47020,hpi_trend_5y,2026-06,6.6879
 47020,hpi_yoy_latest,2026-06,5.3346
 47220,hpi_forecast_4q,2026-06,6.4887
@@ -3806,7 +3806,7 @@ cbsa_code,metric,period,value
 47220,hpi_forecast_8q_hi,2026-06,39.0676
 47220,hpi_forecast_8q_lo,2026-06,-4.2622
 47220,hpi_index_error,2026-06,1.0594
-47220,hpi_surprise_4q,2026-06,-0.0376
+47220,hpi_surprise_4q,2025-06,-0.0376
 47220,hpi_trend_5y,2026-06,9.9153
 47220,hpi_yoy_latest,2026-06,7.6378
 47260,hpi_forecast_4q,2026-06,5.4089
@@ -3816,7 +3816,7 @@ cbsa_code,metric,period,value
 47260,hpi_forecast_8q_hi,2026-06,36.0283
 47260,hpi_forecast_8q_lo,2026-06,-6.3982
 47260,hpi_index_error,2026-06,0.1571
-47260,hpi_surprise_4q,2026-06,-1.4262
+47260,hpi_surprise_4q,2025-06,-1.4262
 47260,hpi_trend_5y,2026-06,7.4807
 47260,hpi_yoy_latest,2026-06,3.6371
 47300,hpi_forecast_4q,2026-06,4.0342
@@ -3826,7 +3826,7 @@ cbsa_code,metric,period,value
 47300,hpi_forecast_8q_hi,2026-06,31.7186
 47300,hpi_forecast_8q_lo,2026-06,-9.2788
 47300,hpi_index_error,2026-06,0.5196
-47300,hpi_surprise_4q,2026-06,-4.3663
+47300,hpi_surprise_4q,2025-06,-4.3663
 47300,hpi_trend_5y,2026-06,6.8128
 47300,hpi_yoy_latest,2026-06,0.6368
 47380,hpi_forecast_4q,2026-06,3.6987
@@ -3836,7 +3836,7 @@ cbsa_code,metric,period,value
 47380,hpi_forecast_8q_hi,2026-06,31.5105
 47380,hpi_forecast_8q_lo,2026-06,-9.085
 47380,hpi_index_error,2026-06,0.7834
-47380,hpi_surprise_4q,2026-06,-1.3992
+47380,hpi_surprise_4q,2025-06,-1.3992
 47380,hpi_trend_5y,2026-06,6.445
 47380,hpi_yoy_latest,2026-06,1.0042
 47460,hpi_forecast_4q,2026-06,3.196
@@ -3846,7 +3846,7 @@ cbsa_code,metric,period,value
 47460,hpi_forecast_8q_hi,2026-06,30.3011
 47460,hpi_forecast_8q_lo,2026-06,-9.5615
 47460,hpi_index_error,2026-06,0.7646
-47460,hpi_surprise_4q,2026-06,-4.5238
+47460,hpi_surprise_4q,2025-06,-4.5238
 47460,hpi_trend_5y,2026-06,5.8806
 47460,hpi_yoy_latest,2026-06,1.2367
 47580,hpi_forecast_4q,2026-06,5.639
@@ -3856,7 +3856,7 @@ cbsa_code,metric,period,value
 47580,hpi_forecast_8q_hi,2026-06,37.3087
 47580,hpi_forecast_8q_lo,2026-06,-6.6027
 47580,hpi_index_error,2026-06,0.8985
-47580,hpi_surprise_4q,2026-06,3.6903
+47580,hpi_surprise_4q,2025-06,3.6903
 47580,hpi_trend_5y,2026-06,9.4368
 47580,hpi_yoy_latest,2026-06,7.9104
 47664,hpi_forecast_4q,2026-06,5.696
@@ -3866,7 +3866,7 @@ cbsa_code,metric,period,value
 47664,hpi_forecast_8q_hi,2026-06,36.8584
 47664,hpi_forecast_8q_lo,2026-06,-5.7719
 47664,hpi_index_error,2026-06,0.1452
-47664,hpi_surprise_4q,2026-06,-0.7941
+47664,hpi_surprise_4q,2025-06,-0.7941
 47664,hpi_trend_5y,2026-06,6.9001
 47664,hpi_yoy_latest,2026-06,4.3834
 47764,hpi_forecast_4q,2026-06,3.824
@@ -3876,7 +3876,7 @@ cbsa_code,metric,period,value
 47764,hpi_forecast_8q_hi,2026-06,31.4956
 47764,hpi_forecast_8q_lo,2026-06,-8.7002
 47764,hpi_index_error,2026-06,0.2276
-47764,hpi_surprise_4q,2026-06,-3.086
+47764,hpi_surprise_4q,2025-06,-3.086
 47764,hpi_trend_5y,2026-06,3.1378
 47764,hpi_yoy_latest,2026-06,0.4728
 47930,hpi_forecast_4q,2026-06,6.0946
@@ -3886,7 +3886,7 @@ cbsa_code,metric,period,value
 47930,hpi_forecast_8q_hi,2026-06,36.8439
 47930,hpi_forecast_8q_lo,2026-06,-5.6065
 47930,hpi_index_error,2026-06,0.6275
-47930,hpi_surprise_4q,2026-06,-3.3142
+47930,hpi_surprise_4q,2025-06,-3.3142
 47930,hpi_trend_5y,2026-06,9.1886
 47930,hpi_yoy_latest,2026-06,3.899
 47940,hpi_forecast_4q,2026-06,5.5322
@@ -3896,7 +3896,7 @@ cbsa_code,metric,period,value
 47940,hpi_forecast_8q_hi,2026-06,36.1859
 47940,hpi_forecast_8q_lo,2026-06,-5.7569
 47940,hpi_index_error,2026-06,0.9123
-47940,hpi_surprise_4q,2026-06,-1.6619
+47940,hpi_surprise_4q,2025-06,-1.6619
 47940,hpi_trend_5y,2026-06,6.5033
 47940,hpi_yoy_latest,2026-06,2.5831
 48060,hpi_forecast_4q,2026-06,6.3198
@@ -3906,7 +3906,7 @@ cbsa_code,metric,period,value
 48060,hpi_forecast_8q_hi,2026-06,37.6656
 48060,hpi_forecast_8q_lo,2026-06,-4.7223
 48060,hpi_index_error,2026-06,3.3954
-48060,hpi_surprise_4q,2026-06,3.6324
+48060,hpi_surprise_4q,2025-06,3.6324
 48060,hpi_trend_5y,2026-06,6.8308
 48060,hpi_yoy_latest,2026-06,8.8949
 48140,hpi_forecast_4q,2026-06,6.2898
@@ -3916,7 +3916,7 @@ cbsa_code,metric,period,value
 48140,hpi_forecast_8q_hi,2026-06,38.2784
 48140,hpi_forecast_8q_lo,2026-06,-5.0019
 48140,hpi_index_error,2026-06,0.7535
-48140,hpi_surprise_4q,2026-06,-1.9869
+48140,hpi_surprise_4q,2025-06,-1.9869
 48140,hpi_trend_5y,2026-06,9.2176
 48140,hpi_yoy_latest,2026-06,5.1876
 48260,hpi_forecast_4q,2026-06,8.4747
@@ -3926,7 +3926,7 @@ cbsa_code,metric,period,value
 48260,hpi_forecast_8q_hi,2026-06,44.3517
 48260,hpi_forecast_8q_lo,2026-06,-1.5827
 48260,hpi_index_error,2026-06,1.5104
-48260,hpi_surprise_4q,2026-06,4.6094
+48260,hpi_surprise_4q,2025-06,4.6094
 48260,hpi_trend_5y,2026-06,9.2807
 48260,hpi_yoy_latest,2026-06,9.0772
 48300,hpi_forecast_4q,2026-06,3.924
@@ -3936,7 +3936,7 @@ cbsa_code,metric,period,value
 48300,hpi_forecast_8q_hi,2026-06,32.2824
 48300,hpi_forecast_8q_lo,2026-06,-9.1031
 48300,hpi_index_error,2026-06,0.6043
-48300,hpi_surprise_4q,2026-06,-7.0859
+48300,hpi_surprise_4q,2025-06,-7.0859
 48300,hpi_trend_5y,2026-06,5.9551
 48300,hpi_yoy_latest,2026-06,-2.3306
 48424,hpi_forecast_4q,2026-06,4.8968
@@ -3946,7 +3946,7 @@ cbsa_code,metric,period,value
 48424,hpi_forecast_8q_hi,2026-06,34.4987
 48424,hpi_forecast_8q_lo,2026-06,-7.0908
 48424,hpi_index_error,2026-06,0.1383
-48424,hpi_surprise_4q,2026-06,0.7645
+48424,hpi_surprise_4q,2025-06,0.7645
 48424,hpi_trend_5y,2026-06,9.6823
 48424,hpi_yoy_latest,2026-06,3.6547
 48540,hpi_forecast_4q,2026-06,6.585
@@ -3956,7 +3956,7 @@ cbsa_code,metric,period,value
 48540,hpi_forecast_8q_hi,2026-06,39.0045
 48540,hpi_forecast_8q_lo,2026-06,-4.3482
 48540,hpi_index_error,2026-06,0.9953
-48540,hpi_surprise_4q,2026-06,-3.9313
+48540,hpi_surprise_4q,2025-06,-3.9313
 48540,hpi_trend_5y,2026-06,6.4625
 48540,hpi_yoy_latest,2026-06,0.5845
 48620,hpi_forecast_4q,2026-06,5.76
@@ -3966,7 +3966,7 @@ cbsa_code,metric,period,value
 48620,hpi_forecast_8q_hi,2026-06,36.9804
 48620,hpi_forecast_8q_lo,2026-06,-5.991
 48620,hpi_index_error,2026-06,0.4288
-48620,hpi_surprise_4q,2026-06,0.1966
+48620,hpi_surprise_4q,2025-06,0.1966
 48620,hpi_trend_5y,2026-06,7.2792
 48620,hpi_yoy_latest,2026-06,4.5392
 48660,hpi_forecast_4q,2026-06,3.4015
@@ -3976,7 +3976,7 @@ cbsa_code,metric,period,value
 48660,hpi_forecast_8q_hi,2026-06,30.7785
 48660,hpi_forecast_8q_lo,2026-06,-9.0263
 48660,hpi_index_error,2026-06,1.2891
-48660,hpi_surprise_4q,2026-06,-2.3235
+48660,hpi_surprise_4q,2025-06,-2.3235
 48660,hpi_trend_5y,2026-06,6.066
 48660,hpi_yoy_latest,2026-06,0.7942
 48680,hpi_forecast_4q,2026-06,2.9379
@@ -3986,7 +3986,7 @@ cbsa_code,metric,period,value
 48680,hpi_forecast_8q_hi,2026-06,30.8574
 48680,hpi_forecast_8q_lo,2026-06,-12.7651
 48680,hpi_index_error,2026-06,0.5272
-48680,hpi_surprise_4q,2026-06,1.2721
+48680,hpi_surprise_4q,2025-06,1.2721
 48680,hpi_trend_5y,2026-06,6.3631
 48680,hpi_yoy_latest,2026-06,2.6057
 48700,hpi_forecast_4q,2026-06,4.713
@@ -3996,7 +3996,7 @@ cbsa_code,metric,period,value
 48700,hpi_forecast_8q_hi,2026-06,34.0666
 48700,hpi_forecast_8q_lo,2026-06,-6.8308
 48700,hpi_index_error,2026-06,1.7826
-48700,hpi_surprise_4q,2026-06,2.7168
+48700,hpi_surprise_4q,2025-06,2.7168
 48700,hpi_trend_5y,2026-06,6.491
 48700,hpi_yoy_latest,2026-06,7.4527
 48864,hpi_forecast_4q,2026-06,5.8659
@@ -4006,7 +4006,7 @@ cbsa_code,metric,period,value
 48864,hpi_forecast_8q_hi,2026-06,37.0993
 48864,hpi_forecast_8q_lo,2026-06,-5.7257
 48864,hpi_index_error,2026-06,0.3762
-48864,hpi_surprise_4q,2026-06,-1.0791
+48864,hpi_surprise_4q,2025-06,-1.0791
 48864,hpi_trend_5y,2026-06,7.9931
 48864,hpi_yoy_latest,2026-06,4.4252
 48900,hpi_forecast_4q,2026-06,4.2967
@@ -4016,7 +4016,7 @@ cbsa_code,metric,period,value
 48900,hpi_forecast_8q_hi,2026-06,34.3897
 48900,hpi_forecast_8q_lo,2026-06,-9.7644
 48900,hpi_index_error,2026-06,0.3789
-48900,hpi_surprise_4q,2026-06,-1.1895
+48900,hpi_surprise_4q,2025-06,-1.1895
 48900,hpi_trend_5y,2026-06,9.8082
 48900,hpi_yoy_latest,2026-06,3.6975
 49020,hpi_forecast_4q,2026-06,5.6992
@@ -4026,7 +4026,7 @@ cbsa_code,metric,period,value
 49020,hpi_forecast_8q_hi,2026-06,37.3399
 49020,hpi_forecast_8q_lo,2026-06,-6.2923
 49020,hpi_index_error,2026-06,1.3473
-49020,hpi_surprise_4q,2026-06,2.3831
+49020,hpi_surprise_4q,2025-06,2.3831
 49020,hpi_trend_5y,2026-06,7.8673
 49020,hpi_yoy_latest,2026-06,6.7054
 49180,hpi_forecast_4q,2026-06,4.9995
@@ -4036,7 +4036,7 @@ cbsa_code,metric,period,value
 49180,hpi_forecast_8q_hi,2026-06,35.2619
 49180,hpi_forecast_8q_lo,2026-06,-7.5439
 49180,hpi_index_error,2026-06,0.3328
-49180,hpi_surprise_4q,2026-06,-1.933
+49180,hpi_surprise_4q,2025-06,-1.933
 49180,hpi_trend_5y,2026-06,9.1509
 49180,hpi_yoy_latest,2026-06,3.2588
 49340,hpi_forecast_4q,2026-06,5.0146
@@ -4046,7 +4046,7 @@ cbsa_code,metric,period,value
 49340,hpi_forecast_8q_hi,2026-06,34.8251
 49340,hpi_forecast_8q_lo,2026-06,-6.6072
 49340,hpi_index_error,2026-06,0.3094
-49340,hpi_surprise_4q,2026-06,-3.0526
+49340,hpi_surprise_4q,2025-06,-3.0526
 49340,hpi_trend_5y,2026-06,7.5372
 49340,hpi_yoy_latest,2026-06,2.535
 49420,hpi_forecast_4q,2026-06,3.6481
@@ -4056,7 +4056,7 @@ cbsa_code,metric,period,value
 49420,hpi_forecast_8q_hi,2026-06,31.1029
 49420,hpi_forecast_8q_lo,2026-06,-8.743
 49420,hpi_index_error,2026-06,0.8972
-49420,hpi_surprise_4q,2026-06,-1.6577
+49420,hpi_surprise_4q,2025-06,-1.6577
 49420,hpi_trend_5y,2026-06,6.0786
 49420,hpi_yoy_latest,2026-06,2.3736
 49620,hpi_forecast_4q,2026-06,5.9709
@@ -4066,7 +4066,7 @@ cbsa_code,metric,period,value
 49620,hpi_forecast_8q_hi,2026-06,37.8579
 49620,hpi_forecast_8q_lo,2026-06,-5.4075
 49620,hpi_index_error,2026-06,0.4606
-49620,hpi_surprise_4q,2026-06,0.6837
+49620,hpi_surprise_4q,2025-06,0.6837
 49620,hpi_trend_5y,2026-06,8.1119
 49620,hpi_yoy_latest,2026-06,6.0564
 49660,hpi_forecast_4q,2026-06,7.509
@@ -4076,7 +4076,7 @@ cbsa_code,metric,period,value
 49660,hpi_forecast_8q_hi,2026-06,41.5197
 49660,hpi_forecast_8q_lo,2026-06,-3.101
 49660,hpi_index_error,2026-06,0.5927
-49660,hpi_surprise_4q,2026-06,-1.3826
+49660,hpi_surprise_4q,2025-06,-1.3826
 49660,hpi_trend_5y,2026-06,9.1629
 49660,hpi_yoy_latest,2026-06,4.7537
 49700,hpi_forecast_4q,2026-06,2.8684
@@ -4086,7 +4086,7 @@ cbsa_code,metric,period,value
 49700,hpi_forecast_8q_hi,2026-06,28.9895
 49700,hpi_forecast_8q_lo,2026-06,-10.7414
 49700,hpi_index_error,2026-06,0.6264
-49700,hpi_surprise_4q,2026-06,-1.3625
+49700,hpi_surprise_4q,2025-06,-1.3625
 49700,hpi_trend_5y,2026-06,3.8293
 49700,hpi_yoy_latest,2026-06,0.8596
 49740,hpi_forecast_4q,2026-06,4.6759
@@ -4096,6 +4096,6 @@ cbsa_code,metric,period,value
 49740,hpi_forecast_8q_hi,2026-06,34.3101
 49740,hpi_forecast_8q_lo,2026-06,-7.3485
 49740,hpi_index_error,2026-06,0.3972
-49740,hpi_surprise_4q,2026-06,-4.9206
+49740,hpi_surprise_4q,2025-06,-4.9206
 49740,hpi_trend_5y,2026-06,7.0878
 49740,hpi_yoy_latest,2026-06,-0.0237

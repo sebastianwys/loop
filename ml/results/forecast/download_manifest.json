@@ -9,12 +9,12 @@
       "dataset": "house price index growth forecasts with 90 percent conformal bands, realized growth and forecast surprise by metro"
     },
     "integrity": {
-      "sha256": "b2573c00154a7d909b1105a1ea068517970241028956c26635e278ae97685e06",
+      "sha256": "aecd67ffc3462339d56b6c36d95569214b8de023f8d30d113f671c471526dacb",
       "size_kb": 153.2,
       "row_count": 4100
     },
     "version": "seqgru, origin 2026Q2",
-    "downloaded_at": "2026-09-17T04:55:53Z",
+    "downloaded_at": "2026-09-18T03:53:34Z",
     "notes": {
       "model": "seqgru",
       "origin": "2026Q2",
