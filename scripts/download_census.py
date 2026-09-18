@@ -40,6 +40,24 @@ DIVISION_PARENTS = [
     "35620", "37980", "41860", "42660", "45300", "47900",
 ]
 
+# metro codes that changed between delineations with the same counties
+# underneath, mapped to the current code so the older vintages join. the
+# division table below did this for divisions and there was none for metros, so
+# four metros carried no 2014 or 2019 acs row at all while fhfa, which restates
+# its series on one delineation, held all three years for them. that is five of
+# the 33 metro-years the merged csv is missing; the other 28 are real redraws
+# and no crosswalk can honestly fill them.
+#
+# every pair is checked against cbsa_counties_by_vintage rather than matched by
+# name: the old code holds exactly the county set the new one holds today, in
+# every vintage the delineation lists it, and no vintage carries both
+MSA_CROSSWALK = {
+    "19380": "19430",  # dayton -> dayton-kettering-beavercreek, oh
+    "39100": "28880",  # poughkeepsie-newburgh-middletown -> kiryas joel-poughkeepsie-newburgh, ny
+    "39140": "39150",  # prescott -> prescott valley-prescott, az
+    "45540": "48680",  # the villages -> wildwood-the villages, fl
+}
+
 # division codes that changed between delineations with the same counties
 # underneath, mapped to the current code so the older vintages join
 DIVISION_CROSSWALK = {
@@ -173,9 +191,9 @@ def resolve_years(refresh=False):
     return years
 
 
-# tag rows with the code the merge joins on. msas join on their own code,
-# divisions on the division code, crosswalked when a delineation renamed it.
-# the api columns stay as they came
+# tag rows with the code the merge joins on: a metro on its own code, a division
+# on the division code, each crosswalked when a delineation renumbered it
+# without moving a county. the api columns stay as they came
 def tag_geography(df, level):
     df = df.copy()
     df["geo_level"] = level
@@ -183,10 +201,10 @@ def tag_geography(df, level):
         df["geo_code"] = df[DIV_COL].map(lambda code: DIVISION_CROSSWALK.get(code, code))
         df["parent_cbsa"] = df[MSA_COL]
     else:
-        df["geo_code"] = df[MSA_COL]
+        df["geo_code"] = df[MSA_COL].map(lambda code: MSA_CROSSWALK.get(code, code))
         df["parent_cbsa"] = ""
     # geo_code is what the merge joins on, so it has to name one place. a
-    # vintage carrying both a renamed division's old code and its new one would
+    # vintage carrying both a renumbered area's old code and its new one would
     # land two rows on one key and put the metro in the merged csv twice
     repeated = sorted(df.loc[df["geo_code"].duplicated(), "geo_code"].unique())
     if repeated:

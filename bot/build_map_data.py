@@ -16,7 +16,7 @@ from bot.common import (
 # crosswalk the census download joins the older vintages on
 sys.path.insert(0, str(BASE_DIR / "scripts"))
 
-from download_census import DIVISION_CROSSWALK
+from download_census import DIVISION_CROSSWALK, MSA_CROSSWALK
 
 DEFAULT_PATHS = {
     "enrichment_dir": RAW_DIR,
@@ -45,11 +45,12 @@ DEFAULT_PATHS = {
 # under two, 25 under five and 43 at ten or more
 FOOTPRINT_TOLERANCE = 0.02
 
-# the code a renumbered division carried on an older delineation. omb renumbers
-# a division without moving a county under it, and the census download joins the
-# older vintages onto the new code, so the footprint guard has to follow the
-# renumbering rather than be defeated by it
-FORMER_CODE = {new: old for old, new in DIVISION_CROSSWALK.items()}
+# the code a renumbered area carried on an older delineation. omb renumbers a
+# metro or a division without moving a county under it, and the census download
+# joins the older vintages onto the new code, so the footprint guard has to
+# follow the renumbering rather than be defeated by it. both tables, since a
+# guard that reads one of them is the defect this audit kept finding
+FORMER_CODE = {new: old for old, new in {**DIVISION_CROSSWALK, **MSA_CROSSWALK}.items()}
 
 # fhfa's metro series begin in 1975, so the panel draws the whole history, one
 # annual mean of the quarterly index per year, the last year partial. this is
