@@ -46,7 +46,7 @@ One row per metro per quarter. 410 metros, 1975Q1 to 2026Q2, 71,072 rows. FHFA a
 
 The rule in that figure is `spec.FIT_END`, and it is the only date that matters: the train block runs to 2017Q4 but its last three years are held out for validation, so a model fits on outcomes through 2014Q4. A column with no value left of the rule fails the `seen` test in `nets.moments`, and `encode` then zeroes both its value and its presence channel in every window, the test block included.
 
-Fourteen columns are declared as features. Nine survive that test. Eight further columns ride along for the figures and the map without reaching a model, and why is in The Models.
+Eleven columns are features. Nine survive that test. Eleven more ride along for the figures and the map without reaching a model, and why is in The Models.
 
 | feature | share of fitting samples | share of test samples |
 |---|---|---|
@@ -55,9 +55,9 @@ Fourteen columns are declared as features. Nine survive that test. Eight further
 | expanded index and its error | 0.76 / 0.79 | 1.00 |
 | Zillow home values | 0.38 | 0.98 |
 | population and migration | 0.09 | 0.99 |
-| permits, income, rents, listing prices, inventory | 0.00 | 0.87 to 1.00 |
+| permits, income | 0.00 | 0.97 to 0.99 |
 
-The last row is the one to read. Those five reach 87 to 100 percent of test samples and none of the fitting ones, so every published number below is a nine-feature model's. Deepening the two sources that could be deepened moved unemployment from 0.09 to 0.82 and the mortgage rate from 0.50 to 1.00; the other five cannot be deepened, because the data does not exist earlier. `admit.py` measures them at a boundary where they are visible, and the result is in The Models.
+The last row is the one to read, and it is why two different models are described below. Permits and income are in 97 and 99 percent of test samples and in none of the fitting ones, so the backtest scored in The Results reads nine series, while the forecast the map draws is refitted through 2026Q2 and reads all eleven. Deepening the two sources that could be deepened moved unemployment from 0.09 to 0.82 and the mortgage rate from 0.50 to 1.00; these two cannot be deepened, because the data does not exist earlier. `admit.py` measures them at a boundary where they are visible, and the result is in The Models.
 
 ![feature trends](results/figures/03_feature_trends.png)
 ![house prices since 1990](results/figures/02_hpi_history.png)
@@ -148,12 +148,12 @@ Mean absolute error of the median forecast, in percentage points of growth. Cove
 | model | 1q | 2q | 4q | 8q | coverage 1q/2q/4q/8q |
 |---|---|---|---|---|---|
 | no change | 2.30 | 3.72 | 7.66 | 18.05 | 0.87 / 0.91 / 0.86 / 0.68 |
-| momentum | 2.10 | 2.94 | 5.89 | 15.56 | 0.76 / 0.84 / 0.81 / 0.54 |
+| momentum | 2.10 | 2.94 | 5.89 | 15.56 | 0.76 / 0.83 / 0.81 / 0.54 |
 | metro mean | 2.02 | 2.90 | 5.13 | 11.82 | 0.88 / 0.92 / 0.87 / 0.69 |
 | ridge | 1.81 | 2.49 | 4.36 | 10.41 | 0.77 / 0.88 / 0.86 / 0.64 |
-| gradient boosting | 1.85 | 2.72 | 4.42 | 10.75 | 0.76 / 0.82 / 0.91 / 0.72 |
+| gradient boosting | 1.85 | 2.71 | 4.42 | 10.75 | 0.76 / 0.82 / 0.91 / 0.72 |
 | window mlp | 2.17 | 3.24 | 6.58 | 15.62 | 0.82 / 0.92 / 0.92 / 0.68 |
-| sequence gru | 1.93 | 2.57 | 4.21 | 10.16 | 0.80 / 0.88 / 0.87 / 0.66 |
+| sequence gru | 1.93 | 2.57 | 4.21 | 10.15 | 0.80 / 0.88 / 0.87 / 0.66 |
 
 Every model on this table improved when the two FHFA columns joined, because every model gets the same inputs. That is the point of a shared evaluation frame: a new feature has to beat the classical rules holding the same feature, not the version of them that never saw it.
 
@@ -161,8 +161,8 @@ Every model on this table improved when the two FHFA columns joined, because eve
 
 Three honest readings of that table.
 
-- The GRU wins where the horizon is long, by 0.15 points over ridge at four quarters and 0.25 at eight, and ridge wins the short ones, by 0.12 at one quarter and 0.08 at two. A penalised linear model on the same features is hard to beat one quarter out, and that is worth saying out loud. The GRU does beat the metro's own fifty year average at every horizon, which is the rule that matters: a long mean is a good guess at a trend and a bad one across a boom, and it degrades from 5.13 to 11.82 as the horizon doubles while the GRU goes 4.21 to 10.16.
-- Ridge is the closest rival at eight quarters, 10.41 against 10.16. A quarter of a percentage point over two years is not a gap anyone should bet on, and the GRU's case at that horizon rests on its band being narrower, not on those 0.25 points. Gradient boosting used to hold that spot at 10.25 and now sits at 10.75, and the move was not a modelling change: one metro of 410 recovering its Zillow history in the panel was enough. A learner that swings half a point on 0.2 percent of the training metros is not one to read a tenth of a point from.
+- The GRU wins where the horizon is long, by 0.15 points over ridge at four quarters and 0.25 at eight, and ridge wins the short ones, by 0.12 at one quarter and 0.08 at two. A penalised linear model on the same features is hard to beat one quarter out, and that is worth saying out loud. The GRU does beat the metro's own fifty year average at every horizon, which is the rule that matters: a long mean is a good guess at a trend and a bad one across a boom, and it degrades from 5.13 to 11.82 as the horizon doubles while the GRU goes 4.21 to 10.15.
+- Ridge is the closest rival at eight quarters, 10.41 against 10.15. A quarter of a percentage point over two years is not a gap anyone should bet on, and the GRU's case at that horizon rests on its band being narrower, not on those 0.25 points. Gradient boosting used to hold that spot at 10.25 and now sits at 10.75, and the move was not a modelling change: one metro of 410 recovering its Zillow history in the panel was enough. A learner that swings half a point on 0.2 percent of the training metros is not one to read a tenth of a point from.
 - The GRU earns its place on the bands. At four quarters its band is 29 percent narrower than the long run average's, at 0.87 coverage against 0.87. At eight quarters it is 36 percent narrower for 0.66 against 0.69.
 - Every model under-covers at eight quarters, the GRU at 0.66 against a nominal 0.90, and the spread across models runs 0.54 to 0.72. That is the honest cost of a fixed calibration window, and it is read out in The Limits below rather than smoothed over.
 
