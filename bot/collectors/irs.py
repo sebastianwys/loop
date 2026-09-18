@@ -99,7 +99,20 @@ def county_net(inflow, outflow):
 # the sheet has two title rows above the header and note rows at the bottom
 # connecticut replaced its counties with planning regions in 2023. a source
 # still reporting a county has to reach the cbsa that county's region belongs
-# to, or every filing year before the change joins nothing
+# to, or every filing year before the change joins nothing.
+#
+# this is an approximation and the map says so. irs publishes counties, not
+# towns, so a county total cannot be split where a planning region cut it in
+# half, and each county is credited whole to one region. measured on inflow
+# returns across the 2021 to 2022 seam, where the filing years change from
+# counties to regions with nothing else moving: bridgeport +5.4 percent,
+# norwich +0.5, putnam -11.5, hartford -16.3, new haven -28.6, torrington
+# -42.6. bridgeport and norwich are near enough to a whole county to carry.
+#
+# 47930 waterbury-shelton is naugatuck valley, 09140, alone. no county in
+# this table maps to 09140, because naugatuck valley was assembled from towns
+# in three of them, so 47930 has no filing year before 2022 and no county
+# arithmetic can give it one. redtest_irs_connecticut holds the case open
 CONNECTICUT = {
     "09001": "09190",  # fairfield, western connecticut
     "09003": "09110",  # hartford, capitol

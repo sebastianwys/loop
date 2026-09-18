@@ -9,12 +9,12 @@
       "dataset": "county to county migration, total us in and out migration per county summed to cbsa and metropolitan division codes"
     },
     "integrity": {
-      "sha256": "4680966faca9d36a96fe7f9dc48ed40f264646262dc43a8786bf7b57f54c0c87",
-      "size_kb": 1278.0,
-      "row_count": 38256
+      "sha256": "ee3f5d88d2f1315607a41dc90ba5c543e95bdc673e59221b1bbfd2c80b176a77",
+      "size_kb": 1284.5,
+      "row_count": 38448
     },
     "version": "through 2022-2023",
-    "downloaded_at": "2026-09-15T19:53:56Z",
+    "downloaded_at": "2026-09-18T05:57:39Z",
     "notes": {
       "summary_row": "partner state 97 with county 0, Total Migration-US, per county",
       "rule": "a county counts in a year only when both its inflow and outflow totals are present and not suppressed (-1), counties sum to their cbsa and, inside a division, to that division too",

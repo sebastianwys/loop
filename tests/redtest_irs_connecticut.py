@@ -1,5 +1,13 @@
-# a red test for the audit's irs finding. run it deliberately, it is not
-# discovered by run_tests.py:
+# a red test for the audit's irs finding. six of the seven closed 2026-09-18
+# when the collector was re-run against the planning region crosswalk that
+# landed after the last pull. one stays open and is not a stale artifact:
+# 47930 waterbury-shelton is the naugatuck valley planning region alone, and
+# naugatuck valley was assembled from towns in three counties, so no county
+# total the irs published before 2022 belongs to it. irs has no town level
+# file, so this one cannot be fixed by arithmetic, only by a town crosswalk
+# and a source that publishes towns. the note at CONNECTICUT in the collector
+# measures what the other six cost. run it deliberately, it is not discovered
+# by run_tests.py:
 #   ml/.venv/bin/python -m unittest tests.redtest_irs_connecticut -v
 
 import unittest
