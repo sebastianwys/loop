@@ -89,13 +89,13 @@ Endpoint `https://api.census.gov/data/{year}/acs/acs5`, all metropolitan and mic
                            v
             +-------------------------+
             |    INTEGRATED CSV       |
-            |  1,197 rows x 24 cols   |
+            |  1,204 rows x 24 cols   |
             |  410 metros             |
             |  2014, 2019, 2024       |
             +-------------------------+
 ```
 
-`data/integrated/hpi_census_merged.csv`. 410 metros is 373 metropolitan statistical areas plus 37 metropolitan divisions. The theoretical maximum is 1,230 (410 x 3); the 33 missing rows are the Census side, not the FHFA side. All 33 are in the FHFA slice for their year and absent from the ACS vintage, 18 in 2014 and 15 in 2019, none in 2024. They are codes Census had not published yet at that vintage, newer designations and divisions, while FHFA carries its index back under the current definitions.
+`data/integrated/hpi_census_merged.csv`. 410 metros is 373 metropolitan statistical areas plus 37 metropolitan divisions. The theoretical maximum is 1,230 (410 x 3); the 26 missing rows are the Census side, not the FHFA side. All 26 are in the FHFA slice for their year and absent from the ACS vintage, 14 in 2014 and 12 in 2019, none in 2024. They are codes Census had not published yet at that vintage, newer designations and divisions, while FHFA carries its index back under the current definitions. Five of them were recovered on 2026-09-18: a metro that is renumbered without being redrawn is the same metro, so MSA_CROSSWALK joins the older vintage onto the current code, and Cleveland, Dayton, Wildwood-The Villages, Prescott Valley and Kiryas Joel each got a vintage or two back. Cleveland is the one pair whose counties are not identical, gaining Ashtabula, which the footprint guard weighs at 4.70 percent, over the two percent tolerance, so its year figures are published and its decade rates are withheld and say why.
 
 ## The Five Problems
 

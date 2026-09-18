@@ -218,6 +218,8 @@ place_id,place_name,hpi_type,hpi_flavor,yr,avg_index_nsa,quarters_available,NAME
 17300,"Clarksville, TN-KY",traditional,all-transactions,2014,172.8725,4,"Clarksville, TN-KY Metro Area",46653,270751,30.2,162525,23443,8785,96607,57077,135600,17300,,msa,17300,,2014,0.590816400467875
 17300,"Clarksville, TN-KY",traditional,all-transactions,2019,207.43,4,"Clarksville, TN-KY Metro Area",53027,299470,31.1,184466,29759,12517,109408,64272,154600,17300,,msa,17300,,2019,0.5874524714828897
 17300,"Clarksville, TN-KY",traditional,all-transactions,2024,354.32,4,"Clarksville, TN-KY Metro Area",68967,334564,32.1,208802,35914,16566,124867,76154,253300,17300,,msa,17300,,2024,0.6098809132917424
+17410,"Cleveland, OH",traditional,all-transactions,2014,127.465,4,"Cleveland-Elyria, OH Metro Area",49551,2067490,41.0,1424361,251498,111627,846647,558141,139800,17410,,msa,17410,,2014,0.6592369665279627
+17410,"Cleveland, OH",traditional,all-transactions,2019,156.155,4,"Cleveland-Elyria, OH Metro Area",56008,2056898,41.3,1441913,272279,125137,861912,559157,151600,17410,,msa,17410,,2019,0.6487402426233768
 17410,"Cleveland, OH",traditional,all-transactions,2024,242.655,4,"Cleveland, OH Metro Area",70678,2171526,41.6,1546299,314014,152059,931377,619763,215400,17410,,msa,17410,,2024,0.6654265673298783
 17420,"Cleveland, TN",traditional,all-transactions,2014,174.725,4,"Cleveland, TN Metro Area",41301,117719,39.5,79487,9088,3762,44442,30632,137600,17420,,msa,17420,,2014,0.6892579091850052
 17420,"Cleveland, TN",traditional,all-transactions,2019,215.01749999999998,4,"Cleveland, TN Metro Area",49921,122563,40.3,84314,11002,4604,47575,31785,156300,17420,,msa,17420,,2019,0.6681029952706253
@@ -267,6 +269,7 @@ place_id,place_name,hpi_type,hpi_flavor,yr,avg_index_nsa,quarters_available,NAME
 19340,"Davenport-Moline-Rock Island, IA-IL",traditional,all-transactions,2014,175.535,4,"Davenport-Moline-Rock Island, IA-IL Metro Area",51263,381913,39.3,259795,43242,17559,154591,109315,124600,19340,,msa,19340,,2014,0.7071239593508031
 19340,"Davenport-Moline-Rock Island, IA-IL",traditional,all-transactions,2019,196.64,4,"Davenport-Moline-Rock Island, IA-IL Metro Area",58531,381175,39.7,261609,45071,19226,153939,108190,136200,19340,,msa,19340,,2019,0.7028108536498223
 19340,"Davenport-Moline-Rock Island, IA-IL",traditional,all-transactions,2024,271.22249999999997,4,"Davenport-Moline-Rock Island, IA-IL Metro Area",72738,381503,40.4,263369,49772,21987,161702,115884,174100,19340,,msa,19340,,2024,0.7166516184091725
+19430,"Dayton-Kettering-Beavercreek, OH",traditional,all-transactions,2014,121.63,4,"Dayton, OH Metro Area",47162,801259,39.4,540147,83384,45482,327391,208923,122700,19430,,msa,19430,,2014,0.6381452147432275
 19430,"Dayton-Kettering-Beavercreek, OH",traditional,all-transactions,2019,153.15,4,"Dayton-Kettering, OH Metro Area",55634,803543,39.3,549796,94473,52225,330975,209321,135000,19430,,msa,19430,,2019,0.6324374952790996
 19430,"Dayton-Kettering-Beavercreek, OH",traditional,all-transactions,2024,243.945,4,"Dayton-Kettering-Beavercreek, OH Metro Area",71739,816080,39.1,561089,105238,61224,344391,223806,201100,19430,,msa,19430,,2024,0.6498601879840066
 19460,"Decatur, AL",traditional,all-transactions,2014,155.2875,4,"Decatur, AL Metro Area",44273,153579,39.7,104920,12673,4673,59168,43427,114700,19460,,msa,19460,,2014,0.7339609248242294
@@ -562,6 +565,7 @@ place_id,place_name,hpi_type,hpi_flavor,yr,avg_index_nsa,quarters_available,NAME
 28740,"Kingston, NY",traditional,all-transactions,2014,214.23250000000002,4,"Kingston, NY Metro Area",58592,181598,42.9,128233,20984,13414,69388,48242,226600,28740,,msa,28740,,2014,0.6952498991180032
 28740,"Kingston, NY",traditional,all-transactions,2019,262.2825,4,"Kingston, NY Metro Area",64304,178665,44.0,130190,22618,14734,69320,47321,230500,28740,,msa,28740,,2019,0.6826457010963647
 28740,"Kingston, NY",traditional,all-transactions,2024,458.6775,4,"Kingston, NY Metro Area",86271,182601,44.1,134979,27981,18070,74278,51924,352500,28740,,msa,28740,,2024,0.6990495166805784
+28880,"Kiryas Joel-Poughkeepsie-Newburgh, NY",traditional,all-transactions,2019,216.5125,4,"Poughkeepsie-Newburgh-Middletown, NY Metro Area",80534,673839,39.2,448388,81414,50771,236429,160124,276500,28880,,msa,28880,,2019,0.6772604037575762
 28880,"Kiryas Joel-Poughkeepsie-Newburgh, NY",traditional,all-transactions,2024,348.29,4,"Kiryas Joel-Poughkeepsie-Newburgh, NY Metro Area",98233,704836,39.4,473803,95998,59515,254883,174449,393600,28880,,msa,28880,,2024,0.6844277570493128
 28940,"Knoxville, TN",traditional,all-transactions,2014,175.7,4,"Knoxville, TN Metro Area",44906,847765,40.3,581447,96190,38747,340980,234569,148200,28940,,msa,28940,,2014,0.6879259780632295
 28940,"Knoxville, TN",traditional,all-transactions,2019,221.1675,4,"Knoxville, TN Metro Area",54636,853337,40.4,591129,105440,47057,341209,234316,171300,28940,,msa,28940,,2019,0.6867228003950658
@@ -861,6 +865,7 @@ place_id,place_name,hpi_type,hpi_flavor,yr,avg_index_nsa,quarters_available,NAME
 38940,"Port St. Lucie, FL",traditional,all-transactions,2014,164.2875,4,"Port St. Lucie, FL Metro Area",45752,433646,46.0,315101,46878,19003,167932,124818,140400,38940,,msa,38940,,2014,0.7432651311245028
 38940,"Port St. Lucie, FL",traditional,all-transactions,2019,265.885,4,"Port St. Lucie, FL Metro Area",55153,472012,47.8,349901,58367,23653,179289,134411,210100,38940,,msa,38940,,2019,0.7496890495233952
 38940,"Port St. Lucie, FL",traditional,all-transactions,2024,467.1675,4,"Port St. Lucie, FL Metro Area",74514,522676,47.6,390609,75691,29314,205254,161982,364900,38940,,msa,38940,,2024,0.7891782864158555
+39150,"Prescott Valley-Prescott, AZ",traditional,all-transactions,2014,180.095,4,"Prescott, AZ Metro Area",44000,213689,50.8,160107,25274,10223,91508,64048,181100,39150,,msa,39150,,2014,0.6999169471521616
 39150,"Prescott Valley-Prescott, AZ",traditional,all-transactions,2019,262.145,4,"Prescott Valley-Prescott, AZ Metro Area",52451,228067,53.4,175215,26314,13220,98386,70821,252000,39150,,msa,39150,,2019,0.7198280243124022
 39150,"Prescott Valley-Prescott, AZ",traditional,all-transactions,2024,425.1525,4,"Prescott Valley-Prescott, AZ Metro Area",69613,245480,55.1,192027,34634,16650,111157,83441,425200,39150,,msa,39150,,2024,0.7506589778421512
 39300,"Providence-Warwick, RI-MA",traditional,all-transactions,2014,197.33,4,"Providence-Warwick, RI-MA Metro Area",56267,1604317,40.0,1094519,197346,90010,620570,378697,253900,39300,,msa,39300,,2014,0.6102405852683823
@@ -1162,6 +1167,8 @@ place_id,place_name,hpi_type,hpi_flavor,yr,avg_index_nsa,quarters_available,NAME
 48660,"Wichita Falls, TX",traditional,all-transactions,2014,160.43,4,"Wichita Falls, TX Metro Area",45892,151202,35.2,96978,13437,4604,55317,35991,89000,48660,,msa,48660,,2014,0.6506318130050437
 48660,"Wichita Falls, TX",traditional,all-transactions,2019,189.6425,4,"Wichita Falls, TX Metro Area",49779,150715,35.6,97996,14944,5802,55913,35515,102300,48660,,msa,48660,,2019,0.6351832310911595
 48660,"Wichita Falls, TX",traditional,all-transactions,2024,297.4175,4,"Wichita Falls, TX Metro Area",65379,149358,36.6,98396,16451,5913,56774,36637,157600,48660,,msa,48660,,2024,0.6453129953852116
+48680,"Wildwood-The Villages, FL",traditional,all-transactions,2014,216.265,4,"The Villages, FL Metro Area",49874,103708,64.5,91658,14182,7831,45868,41407,199500,48680,,msa,48680,,2014,0.9027426528298595
+48680,"Wildwood-The Villages, FL",traditional,all-transactions,2019,257.2375,4,"The Villages, FL Metro Area",57226,125044,67.4,112211,20675,11859,56230,50446,258600,48680,,msa,48680,,2019,0.8971367597367953
 48680,"Wildwood-The Villages, FL",traditional,all-transactions,2024,396.9075,4,"Wildwood-The Villages, FL Metro Area",76508,143408,68.5,129083,27316,13700,70318,61604,385400,48680,,msa,48680,,2024,0.8760772490685174
 48700,"Williamsport, PA",traditional,all-transactions,2014,188.64499999999998,4,"Williamsport, PA Metro Area",45877,116676,41.3,80224,9953,4177,46008,32189,134600,48700,,msa,48700,,2014,0.6996391931837941
 48700,"Williamsport, PA",traditional,all-transactions,2019,203.7625,4,"Williamsport, PA Metro Area",54241,114330,41.5,80512,12470,4710,45608,31581,155800,48700,,msa,48700,,2019,0.6924443080161375

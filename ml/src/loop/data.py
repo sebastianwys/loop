@@ -15,11 +15,11 @@ import pandas as pd
 from loop import spec
 
 PATH = spec.REPO_ROOT / "data" / "integrated" / "hpi_census_merged.csv"
-SHA256 = "ce2322ba9a7a6c938db3b2616baadf95ecdbd528d64ed0598d5e4d93394e9d4b"
+SHA256 = "b65d953f4c6beed7266be7da74292c45917d4c2fa404ba6414c402610dc18deb"
 
 # the shape the published file has, checked so a file that hashes differently
 # on purpose still cannot be a different dataset by accident
-ROWS = 1197
+ROWS = 1204
 METROS = 410
 YEARS = [2014, 2019, 2024]
 

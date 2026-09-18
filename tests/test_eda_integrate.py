@@ -135,11 +135,11 @@ if __name__ == "__main__":
 # real file and fails if the shape, the coverage or the bytes move
 class TestTheIntegratedFileIsTheOneEverythingWasComputedOn(unittest.TestCase):
     PATH = Path(__file__).resolve().parent.parent / "data" / "integrated" / "hpi_census_merged.csv"
-    SHA256 = "ce2322ba9a7a6c938db3b2616baadf95ecdbd528d64ed0598d5e4d93394e9d4b"
-    SHAPE = (1197, 24)
+    SHA256 = "b65d953f4c6beed7266be7da74292c45917d4c2fa404ba6414c402610dc18deb"
+    SHAPE = (1204, 24)
     METROS = 410
     YEARS = [2014, 2019, 2024]
-    LEVELS = {"msa": 1101, "division": 96}
+    LEVELS = {"msa": 1108, "division": 96}
 
     @classmethod
     def setUpClass(cls):

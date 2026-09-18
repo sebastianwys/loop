@@ -20,7 +20,7 @@ class TestLoadTheRealFile(unittest.TestCase):
 
     def test_the_published_shape(self):
         data.check_shape(self.frame)
-        self.assertEqual(len(self.frame), 1197)
+        self.assertEqual(len(self.frame), 1204)
         self.assertEqual(self.frame["cbsa_code"].nunique(), 410)
         self.assertEqual(sorted(int(y) for y in self.frame["year"].unique()), [2014, 2019, 2024])
 

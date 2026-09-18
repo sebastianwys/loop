@@ -49,9 +49,22 @@ DIVISION_PARENTS = [
 # and no crosswalk can honestly fill them.
 #
 # every pair is checked against cbsa_counties_by_vintage rather than matched by
-# name: the old code holds exactly the county set the new one holds today, in
-# every vintage the delineation lists it, and no vintage carries both
+# name: the old code holds the county set the new one holds today, in every
+# vintage the delineation lists it, and no vintage carries both.
+#
+# cleveland is the one pair where the county set is not identical, admitted
+# on 2026-09-18. 17410 holds the five counties 17460 held plus
+# ashtabula, which the footprint guard weighs at 4.70 percent: ashtabula's
+# 97,167 people at the 2024 vintage over the metro's 2,067,490 at 2014, the
+# base moved_share divides by. it is the same place renumbered, and whether a
+# rate may be reported over a footprint that moved is the guard's question,
+# not the crosswalk's: at 4.70 against a FOOTPRINT_TOLERANCE of 0.02 the
+# decade rates stay refused and the panel says so, while the 2014 and 2019
+# levels are published as what they are. of the ten metros short an acs vintage it is the only renumber;
+# the rest were created, promoted or carved out of a larger area and have no
+# predecessor to join
 MSA_CROSSWALK = {
+    "17460": "17410",  # cleveland-elyria -> cleveland, oh (plus ashtabula)
     "19380": "19430",  # dayton -> dayton-kettering-beavercreek, oh
     "39100": "28880",  # poughkeepsie-newburgh-middletown -> kiryas joel-poughkeepsie-newburgh, ny
     "39140": "39150",  # prescott -> prescott valley-prescott, az

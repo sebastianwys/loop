@@ -9,10 +9,10 @@ Headline: a sequence GRU wins both long horizons outright, cuts the no-change er
 | item | value |
 |---|---|
 | file | `../data/integrated/hpi_census_merged.csv` |
-| rows x cols | 1,197 x 24 |
+| rows x cols | 1,204 x 24 |
 | metros | 410, of which 37 are metropolitan divisions |
 | years | 2014, 2019, 2024 |
-| sha256 | `ce2322ba9a7a6c938db3b2616baadf95ecdbd528d64ed0598d5e4d93394e9d4b` |
+| sha256 | `b65d953f4c6beed7266be7da74292c45917d4c2fa404ba6414c402610dc18deb` |
 
 Read only. This folder never writes to `data/`. If the pipeline re-runs, the hash in the loader is updated in the same commit.
 

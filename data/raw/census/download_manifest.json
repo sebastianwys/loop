@@ -22,7 +22,7 @@
       ]
     },
     "integrity": {
-      "sha256": "6d7a2b9d27d18d1ba42993f46386fe9b5f95ec32da4132660676eb77dbc6c7a2",
+      "sha256": "654ffe8ebb7df97b2a846a2eaefbd3b25cc6ebb1a2c47142d2e2fa0fc17e681f",
       "size_kb": 101.8,
       "row_count": 960
     },
@@ -31,7 +31,7 @@
       2010,
       2014
     ],
-    "downloaded_at": "2026-09-16T05:41:56Z"
+    "downloaded_at": "2026-09-18T16:32:45Z"
   },
   {
     "filename": "acs_5yr_2019.csv",
@@ -56,7 +56,7 @@
       ]
     },
     "integrity": {
-      "sha256": "f0230334e6d41d1e435cd497081f3adc10d0222e1f7a306be7c5d5cbf4c87456",
+      "sha256": "70b78fe8e156df42c59ff54cbe6f633acdf7ceeef261e12c079f77bc2a78ded2",
       "size_kb": 102.8,
       "row_count": 969
     },
@@ -65,7 +65,7 @@
       2015,
       2019
     ],
-    "downloaded_at": "2026-09-16T05:42:05Z"
+    "downloaded_at": "2026-09-18T16:32:54Z"
   },
   {
     "filename": "acs_5yr_2024.csv",
@@ -99,6 +99,6 @@
       2020,
       2024
     ],
-    "downloaded_at": "2026-09-16T05:42:14Z"
+    "downloaded_at": "2026-09-18T16:33:04Z"
   }
 ]
