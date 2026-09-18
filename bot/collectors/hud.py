@@ -273,6 +273,26 @@ def rows_for(counties, rows, regions):
     return [(fips, rows[fips]) for fips in sorted(rows) if home_county(fips, regions) in wanted]
 
 
+# whether hud's own entity is a value for the whole cbsa. the counties the
+# delineation gives the code are placed in this year's hud rows, and the
+# entity's rent is the cbsa's only when all of them sit in one fmr area.
+#
+# hud trails omb by a delineation on a handful of codes a year, and those
+# entities are named "..., ST MSA" like any whole metro. the name that gives an
+# exception area away says nothing about them, so only the counties can: hud
+# kept its fiscal 2024 atlantic city-hammonton entity on atlantic county alone
+# while the delineation had already added cape may, which is its own fmr area.
+#
+# no row for any of the counties is no evidence either way rather than evidence
+# of a split, so the entity stands. the question is asked once a year because
+# hud catches up one year at a time
+def covers_whole_metro(counties, rows, regions):
+    placed = rows_for(counties, rows, regions)
+    if not placed:
+        return None
+    return len({area for _, (area, _) in placed}) == 1
+
+
 # the population behind one hud row, looked up the same way home_county places
 # it: the whole fips first, then state and town code for connecticut
 def weight_of(fips, county_pop, town_pop):
@@ -529,6 +549,9 @@ def collect():
     absent = [code for code in levels if code not in ids]
     membership = load_membership(MEMBERSHIP)
     rollups = {code: membership[code] for code in absent if code in membership}
+    # the counties of the codes hud does have an entity for, so each year's rows
+    # can be asked whether that entity still covers the whole cbsa
+    checkable = {code: membership[code] for code in entities if code in membership}
     unresolved = [code for code in absent if code not in rollups]
     divisions = sum(levels[code] == "division" for code in absent)
     print(f"[hud] {len(entities)} of {len(levels)} study codes have a metro entity, "
@@ -552,26 +575,61 @@ def collect():
             print(f"[hud] {dataset} has nothing for {empty}, those years are not asked for again")
 
     states, needed, county_pop, town_pop, regions = {}, [], {}, {}, {}
-    if rollups:
+    if rollups or checkable:
         states = parse_state_list(client.get_json(STATE_LIST_URL)[1])
-        needed = sorted({fips[:2] for counties in rollups.values() for fips in counties})
+        # every state a rollup is built from and every state an entity is
+        # checked against, since one county row answers both questions
+        needed = sorted({fips[:2] for group in (rollups, checkable)
+                         for counties in group.values() for fips in counties})
         county_pop, town_pop, regions = census_population(needed, env_key("CENSUS_API_KEY"))
         print(f"[hud] {len(rollups)} codes rebuilt from {sum(len(c) for c in rollups.values())} "
-              f"counties across {len(needed)} states, weights: {len(county_pop)} counties "
+              f"counties and {len(checkable)} entities checked against theirs, across "
+              f"{len(needed)} states, weights: {len(county_pop)} counties "
               f"and {len(town_pop)} towns")
         if not county_pop:
             print("[hud] no census population came back, only codes that sit in one fmr area resolve")
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    records, skipped, raw_files, rolled = [], {}, [], {}
+    records, skipped, raw_files, rolled, trailing = [], {}, [], {}, {}
     gaps = {"unweighted_towns": set(), "codes_missing_an_area": {}}
     for year in sorted(set(years_for["fmr"]) | set(years_for["il"])):
         captured = {"year": year, "fmr": {}, "il": {}, "states": {}}
+
+        # only this year's rows, so a rent and the fmr area map behind an
+        # income both come from the year being asked about. they are read
+        # before the entities because they are what says whether an entity is
+        # still a value for its whole cbsa
+        fresh = {}
+        for fips in needed:
+            postal = states.get(fips)
+            if not postal:
+                skipped["no state code"] = skipped.get("no state code", 0) + 1
+                continue
+            status, payload = client.get_json(STATE_URL + postal, {"year": year})
+            rows = parse_state_rows(payload) if isinstance(payload, dict) else {}
+            if rows:
+                captured["states"][postal] = payload
+                fresh.update(rows)
+            else:
+                skipped[f"statedata {status}"] = skipped.get(f"statedata {status}", 0) + 1
+
+        # a code hud is trailing the delineation on this year is not asked for,
+        # it is rebuilt from its counties beside the codes that never had an
+        # entity. the year hud catches up, its own number is the cbsa's again
+        split = [code for code, counties in sorted(checkable.items())
+                 if covers_whole_metro(counties, fresh, regions) is False]
+        asking = {code: entity for code, entity in entities.items() if code not in set(split)}
+        year_rollups = dict(rollups, **{code: checkable[code] for code in split})
+        if split:
+            trailing[year] = split
+            print(f"[hud] {year}: {len(split)} entities cover part of their cbsa and are "
+                  f"rebuilt from its counties: {', '.join(split)}")
+
         for dataset, (base, metric, parse) in DATASETS.items():
             if year not in years_for[dataset]:
                 continue
             found = 0
-            for code, entity in entities.items():
+            for code, entity in asking.items():
                 status, payload = client.get_json(base + entity, {"year": year})
                 if not isinstance(payload, dict) or "data" not in payload:
                     key = str(status) if payload is None else "nodata"
@@ -582,25 +640,10 @@ def collect():
                 if value is not None:
                     records.append((code, metric, year, value))
                     found += 1
-            print(f"[hud] {dataset} {year}: {found} of {len(entities)} metros with a value")
+            print(f"[hud] {dataset} {year}: {found} of {len(asking)} metros with a value")
 
-        if rollups:
-            # only this year's rows, so a rent and the fmr area map behind an
-            # income both come from the year being asked about
-            fresh = {}
-            for fips in needed:
-                postal = states.get(fips)
-                if not postal:
-                    skipped["no state code"] = skipped.get("no state code", 0) + 1
-                    continue
-                status, payload = client.get_json(STATE_URL + postal, {"year": year})
-                rows = parse_state_rows(payload) if isinstance(payload, dict) else {}
-                if rows:
-                    captured["states"][postal] = payload
-                    fresh.update(rows)
-                else:
-                    skipped[f"statedata {status}"] = skipped.get(f"statedata {status}", 0) + 1
-            records.extend(rollup_records(client, year, years_for, rollups, fresh,
+        if year_rollups:
+            records.extend(rollup_records(client, year, years_for, year_rollups, fresh,
                                           (regions, county_pop, town_pop), captured, skipped,
                                           rolled, gaps))
 
@@ -639,6 +682,9 @@ def collect():
             "metro_list": LIST_URL,
             "state_data_endpoint": STATE_URL + "{state}?year={year}",
             "entities": len(entities),
+            # a code whose entity was named for the whole metro but covered
+            # only part of it that year, rebuilt from its counties instead
+            "entities_trailing_the_delineation": trailing,
             "study_codes": len(levels),
             "years": years_for,
             "years_without_data": [y for y in all_years if str(y) not in have],
