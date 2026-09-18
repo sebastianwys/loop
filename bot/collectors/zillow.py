@@ -1,4 +1,4 @@
-from bot.common import RAW_DIR, fetch, manifest_entry, write_manifest
+from bot.common import RAW_DIR, fetch, looks_like_csv, manifest_entry, write_manifest
 
 OUT_DIR = RAW_DIR / "zillow"
 BASE = "https://files.zillowstatic.com/research/public_csvs"
@@ -18,21 +18,31 @@ FILES = {
 ATTRIBUTION = "Data provided by Zillow Research (zillow.com/research/data). Zillow terms of use apply."
 
 
+# these csvs are gitignored, so the archived copy is the only copy. zillow can
+# answer 200 with an error page, so fetch and prove every body first and write
+# only once all of them are good. a partial run leaves the archive alone
 def collect():
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    entries = []
+    downloads = []
     for filename, (url, dataset) in FILES.items():
         print(f"[zillow] fetching {filename}")
         response = fetch(url)
         response.raise_for_status()
+        if not response.content.strip():
+            raise RuntimeError(f"{filename} came back empty")
+        if not looks_like_csv(response.content):
+            raise RuntimeError(f"{filename} came back without a RegionName header, usually an error page")
+        downloads.append((filename, url, dataset, response.content))
 
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    entries = []
+    for filename, url, dataset, content in downloads:
         path = OUT_DIR / filename
-        path.write_bytes(response.content)
+        path.write_bytes(content)
 
         # last column header is the newest month, which is the file's version
-        header = response.content.split(b"\n", 1)[0].decode()
+        header = content.split(b"\n", 1)[0].decode()
         newest_month = header.rsplit(",", 1)[-1].strip()
-        row_count = response.content.count(b"\n") - 1
+        row_count = content.count(b"\n") - 1
 
         entries.append(manifest_entry(path, url, "Zillow Research", dataset,
                                       f"through {newest_month}", row_count, ATTRIBUTION))

@@ -4,9 +4,9 @@ import re
 
 import pandas as pd
 
-from bot.build_map_data import zillow_candidates
+from bot.build_map_data import MIN_YEAR_SHARE, zillow_candidates
 from bot.collectors.gazetteer import OUT_FILE as CENTROIDS
-from bot.common import RAW_DIR, fetch, manifest_entry, write_manifest
+from bot.common import RAW_DIR, fetch, looks_like_csv, manifest_entry, write_manifest
 
 OUT_DIR = RAW_DIR / "zillow_extras"
 OUT_FILE = OUT_DIR / "metrics.csv"
@@ -77,10 +77,15 @@ def match_names(gazetteer, zillow_names):
     return mapping
 
 
+# the month columns of a file, which are the calendar that source published
+def month_columns(frame):
+    return [c for c in frame.columns if MONTH.match(str(c))]
+
+
 # the month columns of one file as long rows keyed by cbsa code. names with
 # no code and empty cells are dropped
 def monthly_rows(frame, mapping):
-    months = [c for c in frame.columns if MONTH.match(str(c))]
+    months = month_columns(frame)
     keep = frame.loc[frame.index.isin(list(mapping)), months].apply(pd.to_numeric, errors="coerce")
     long = keep.rename_axis("RegionName").reset_index()
     long = long.melt(id_vars="RegionName", var_name="month", value_name="value").dropna(subset=["value"])
@@ -89,13 +94,18 @@ def monthly_rows(frame, mapping):
 
 
 # annual means over the months present in each year, plus the newest month.
-# period is yyyy for a year and yyyy-mm for the month
-def summarize(long, metric):
+# period is yyyy for a year and yyyy-mm for the month. months is the calendar
+# the source published, the denominator build_map_data.zillow_annual divides
+# by: a metro holding less than MIN_YEAR_SHARE of a year has no mean for it
+def summarize(long, metric, months):
     long = long.dropna(subset=["value"])
     if long.empty:
         return pd.DataFrame(columns=COLUMNS)
+    published = pd.Series([str(m)[:4] for m in months], dtype=str).value_counts()
     year = long["month"].astype(str).str[:4].rename("period")
-    annual = long.groupby([long["cbsa_code"], year])["value"].mean().reset_index()
+    annual = long.groupby([long["cbsa_code"], year])["value"].agg(["mean", "count"]).reset_index()
+    annual = annual[annual["count"] >= annual["period"].map(published) * MIN_YEAR_SHARE]
+    annual = annual.rename(columns={"mean": "value"}).drop(columns="count")
     last = long.sort_values("month", kind="stable").groupby("cbsa_code").tail(1)
     newest = pd.DataFrame({
         "cbsa_code": last["cbsa_code"],
@@ -127,10 +137,15 @@ def forecast_rows(frame, mapping, metric=FORECAST):
     return pd.DataFrame(rows, columns=COLUMNS).sort_values("cbsa_code", kind="stable").reset_index(drop=True)
 
 
-# a body is a zillow csv when its first line is a header with the name column
-def looks_like_csv(content):
-    header = content.split(b"\n", 1)[0].decode("utf-8", "replace")
-    return "RegionName" in [field.strip().strip('"') for field in header.split(",")]
+# the metrics the archive on disk already carries. empty when there is none,
+# which is what makes skipping a source fine on a first run
+def archived_metrics(path):
+    if not path.exists():
+        return set()
+    try:
+        return set(pd.read_csv(path, usecols=["metric"])["metric"].dropna())
+    except (ValueError, pd.errors.EmptyDataError):
+        return set()
 
 
 def collect():
@@ -170,13 +185,24 @@ def collect():
 
     parts = []
     for metric, frame in frames.items():
-        rows = forecast_rows(frame, mapping, metric) if metric == FORECAST else summarize(monthly_rows(frame, mapping), metric)
+        rows = (forecast_rows(frame, mapping, metric) if metric == FORECAST
+                else summarize(monthly_rows(frame, mapping), metric, month_columns(frame)))
         if len(rows):
             parts.append(rows)
     df = pd.concat(parts, ignore_index=True) if parts else pd.DataFrame(columns=COLUMNS)
 
     monthly_newest = [info["newest_column"] for metric, info in files.items() if metric != FORECAST]
     version = f"through {max(monthly_newest)}" if monthly_newest else f"forecast base {files[FORECAST]['base_date']}"
+
+    # metrics.csv is replaced whole, so a pull that lost a file would drop that
+    # metric from every metro. skipping a source is fine, losing one the archive
+    # already carries is not
+    lost = archived_metrics(OUT_FILE) - set(df["metric"])
+    if lost:
+        raise RuntimeError(
+            f"zillow_extras: this pull has no {', '.join(sorted(lost))}, "
+            "refusing to replace metrics.csv with a partial one"
+        )
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     df.to_csv(OUT_FILE, index=False)

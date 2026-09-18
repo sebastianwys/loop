@@ -43,6 +43,13 @@ def fetch(url, params=None, json_body=None, timeout=120, retries=3):
     raise last_error
 
 
+# a zillow research csv always names RegionName in its header. a 200 carrying
+# an error page does not, which is the only thing that separates them
+def looks_like_csv(content):
+    header = content.split(b"\n", 1)[0].decode("utf-8", "replace")
+    return "RegionName" in [field.strip().strip('"') for field in header.split(",")]
+
+
 def env_key(var):
     return os.environ.get(var, "").strip()
 

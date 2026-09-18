@@ -174,7 +174,8 @@ class TestMonthlyRows(unittest.TestCase):
 
 class TestSummarize(unittest.TestCase):
     def summary(self, text=INVENTORY):
-        return zx.summarize(zx.monthly_rows(frame(text), MAPPING), "inventory")
+        df = frame(text)
+        return zx.summarize(zx.monthly_rows(df, MAPPING), "inventory", zx.month_columns(df))
 
     def test_columns_and_metric(self):
         df = self.summary()
@@ -184,9 +185,10 @@ class TestSummarize(unittest.TestCase):
     def test_annual_means_and_newest_month(self):
         self.assertEqual(rows(self.summary(), "10180"), {"2023": 50.0, "2024": 15.0, "2025": 30.0, "2025-01": 30.0})
 
-    # the missing february leaves chicago's 2024 mean at the january value
-    def test_missing_month_left_out_of_the_mean(self):
-        self.assertEqual(rows(self.summary(), "16980"), {"2023": 500.0, "2024": 100.0, "2025": 300.0, "2025-01": 300.0})
+    # the missing february leaves chicago one of the two months zillow
+    # published for 2024, too little of the year to have a mean
+    def test_missing_month_leaves_the_year_short(self):
+        self.assertEqual(rows(self.summary(), "16980"), {"2023": 500.0, "2025": 300.0, "2025-01": 300.0})
 
     def test_unmatched_zillow_name_emits_nothing(self):
         self.assertEqual(set(self.summary().cbsa_code), {"10180", "16980"})
@@ -210,12 +212,12 @@ class TestSummarize(unittest.TestCase):
         self.assertEqual(list(df.columns), zx.COLUMNS)
 
     def test_empty_long_frame(self):
-        df = zx.summarize(pd.DataFrame(columns=["cbsa_code", "month", "value"]), "inventory")
+        df = zx.summarize(pd.DataFrame(columns=["cbsa_code", "month", "value"]), "inventory", [])
         self.assertEqual(len(df), 0)
         self.assertEqual(list(df.columns), zx.COLUMNS)
 
     def test_values_rounded_to_four_places(self):
-        text = HEADER + '1,1,"Abilene, TX",msa,TX,1,2,,\n'
+        text = HEADER + '1,1,"Abilene, TX",msa,TX,1,2,2,\n'
         self.assertEqual(rows(self.summary(text), "10180")["2024"], 2.0)
         text = HEADER + '1,1,"Abilene, TX",msa,TX,,1,2,\n'
         self.assertEqual(rows(self.summary(text), "10180")["2024"], 1.5)
@@ -342,7 +344,8 @@ class TestCollect(unittest.TestCase):
         self.assertEqual(entry["source"]["provider"], "Zillow Research")
         self.assertEqual(entry["source"]["endpoint"], zx.CATALOG)
         self.assertEqual(entry["version"], "through 2025-01-31")
-        self.assertEqual(entry["integrity"]["row_count"], 4 * 2 * 3 + 1)
+        # chicago is short of three quarters of the months 2024 published
+        self.assertEqual(entry["integrity"]["row_count"], (4 + 3) * 3 + 1)
         notes = entry["notes"]
         self.assertEqual(notes["attribution"], zx.ATTRIBUTION)
         self.assertEqual(set(notes["files"]), set(zx.FILES))
