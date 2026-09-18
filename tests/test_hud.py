@@ -22,7 +22,11 @@ TOKEN = "synthetic-token-1234"
 LISTING = {"data": [
     {"cbsa_code": "METRO10180M10180", "area_name": "Abilene, TX MSA", "category": "MetroArea"},
     {"cbsa_code": "METRO29180N22001", "area_name": "Acadia Parish, LA HUD Metro FMR Area", "category": "MetroArea"},
-    {"cbsa_code": "METRO16980M16980", "area_name": "Chicago-Joliet-Naperville, IL HUD Metro FMR Area", "category": "MetroArea"},
+    # an exception area carries the whole metro id and hud's rent for the part
+    # of the metro it was drawn around, so it is not that metro's rent
+    {"cbsa_code": "METRO13980M13980", "category": "MetroArea",
+     "area_name": "Blacksburg-Christiansburg-Radford, VA HUD Metro FMR Area"},
+    {"cbsa_code": "METRO16980M16980", "area_name": "Chicago-Naperville-Elgin, IL-IN-WI MSA", "category": "MetroArea"},
     {"cbsa_code": "METRO16980MM1600", "area_name": "Chicago subarea", "category": "MetroArea"},
     {"cbsa_code": "METRO10180M10180", "area_name": "Abilene, TX MSA repeated", "category": "MetroArea"},
     {"area_name": "row without a code", "category": "MetroArea"},
@@ -80,7 +84,7 @@ class TestMetroList(unittest.TestCase):
     def test_subarea_repeat_and_malformed_rows_are_dropped(self):
         ids = hud.parse_metro_list(LISTING)
         self.assertEqual(sorted(ids), ["01234", "10180", "16980"])
-        self.assertEqual(len(hud.list_entries(LISTING)) - len(ids), 5)
+        self.assertEqual(len(hud.list_entries(LISTING)) - len(ids), 6)
 
     def test_leading_zero_code_survives_as_a_string(self):
         self.assertEqual(hud.parse_metro_list(LISTING)["01234"], "METRO01234M01234")

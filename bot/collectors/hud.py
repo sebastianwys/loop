@@ -2,12 +2,12 @@
 # metro entity and year is one call, so the run covers the study years plus
 # the newest year each dataset offers rather than every year since 2014
 #
-# hud publishes for its own fmr areas, not for every cbsa. 66 of the 410 study
-# codes have no whole metro entity: hud splits the metro into smaller fmr
-# areas, or still keys it by the pre 2023 cbsa code, or carries it as ordinary
-# counties. those codes are rebuilt from the counties the omb delineation gives
-# them, each county carrying the value of the fmr area it sits in, weighted by
-# population
+# hud publishes for its own fmr areas, not for every cbsa. a study code has no
+# whole metro entity when hud splits the metro into smaller fmr areas, keys the
+# largest of them as an exception area covering part of the cbsa, still keys it
+# by the pre 2023 cbsa code, or carries it as ordinary counties. those codes are
+# rebuilt from the counties the omb delineation gives them, each county carrying
+# the value of the fmr area it sits in, weighted by population
 import json
 import math
 import re
@@ -91,6 +91,12 @@ PROBES = 8
 # as in METRO29180N22001, and covers only part of the metro
 ENTITY = re.compile(r"^METRO(\d{5})M(\d{5})$")
 
+# hud names an area it publishes for a whole omb metro "..., ST MSA" and an
+# exception area, which covers part of one, "... HUD Metro FMR Area". an
+# exception area is keyed by the whole metro id all the same, so its name is
+# the only thing in the listing that tells the two apart
+EXCEPTION_AREA = "hud metro fmr area"
+
 
 # the list endpoints wrap their rows in "data". a bare list is accepted too
 def list_entries(payload):
@@ -99,12 +105,16 @@ def list_entries(payload):
     return payload if isinstance(payload, list) else []
 
 
-# cbsa code -> whole metro entity id. subareas, malformed rows and repeats
-# are dropped, and the first entity seen for a code wins
+# cbsa code -> whole metro entity id. subareas, exception areas, malformed rows
+# and repeats are dropped, and the first entity seen for a code wins. an
+# exception area's rent is the rent of the part of the metro hud drew it
+# around, so the code is rebuilt from its counties instead
 def parse_metro_list(payload):
     ids = {}
     for entry in list_entries(payload):
         if not isinstance(entry, dict):
+            continue
+        if str(entry.get("area_name", "")).strip().lower().endswith(EXCEPTION_AREA):
             continue
         match = ENTITY.match(str(entry.get("cbsa_code", "")).strip())
         if match and match.group(1) == match.group(2):

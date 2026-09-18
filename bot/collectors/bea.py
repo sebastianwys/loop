@@ -68,6 +68,24 @@ COMBINED = {
     "51958": ["51199", "51735"],
 }
 
+# connecticut replaced its counties with planning regions in 2022. bea
+# publishes the counties through 2023 and the regions from 2024, while the
+# delineation names the regions alone, so a county row joins nothing and a
+# connecticut metro arrives with its newest year only. each county takes the
+# code of the region that succeeded it, the one holding most of its towns.
+# the two sides never carry a value in the same year: bea writes 0 for the
+# side it did not estimate and parse_counties drops it
+CONNECTICUT = {
+    "09001": "09190",  # fairfield, western connecticut
+    "09003": "09110",  # hartford, capitol
+    "09005": "09160",  # litchfield, northwest hills
+    "09007": "09130",  # middlesex, lower connecticut river valley
+    "09009": "09170",  # new haven, south central connecticut
+    "09011": "09180",  # new london, southeastern connecticut
+    "09013": "09110",  # tolland, capitol
+    "09015": "09150",  # windham, northeastern connecticut
+}
+
 
 # an error block bea sent inside a 200, with its code kept for the year probe
 class ApiError(RuntimeError):
@@ -325,9 +343,24 @@ def _download(url):
     return response.content
 
 
-# the county to code mapping: the delineation workbook plus bea's combined areas
+# the crosswalk plus one row per connecticut county and code the region that
+# succeeded it carries. a region the delineation does not name adds nothing,
+# and a delineation that names the county itself keeps its own row, since two
+# rows for one county would count it twice
+def add_connecticut(crosswalk):
+    codes_of = {}
+    for fips, code in zip(crosswalk["county_fips"], crosswalk["cbsa_code"]):
+        codes_of.setdefault(fips, set()).add(code)
+    extra = [{"county_fips": county, "cbsa_code": code}
+             for county, region in sorted(CONNECTICUT.items()) if county not in codes_of
+             for code in sorted(codes_of.get(region, ()))]
+    return pd.concat([crosswalk, pd.DataFrame(extra)], ignore_index=True) if extra else crosswalk
+
+
+# the county to code mapping: the delineation workbook, bea's combined areas
+# and connecticut's counties
 def load_crosswalk():
-    return extend_crosswalk(irs.parse_crosswalk(_download(irs.DELINEATION_URL)))
+    return add_connecticut(extend_crosswalk(irs.parse_crosswalk(_download(irs.DELINEATION_URL))))
 
 
 def line_params(line, years):
@@ -425,6 +458,9 @@ def collect():
                     "zero, since bea writes 0 for a geography it did not estimate that year. a combined area "
                     "bea reports under its own code takes the cbsa its parts share",
             "combined_areas": sorted(COMBINED),
+            # a connecticut county, which bea publishes through 2023, counts
+            # in the cbsa of the planning region that succeeded it
+            "connecticut_counties": CONNECTICUT,
             "delineation": irs.DELINEATION_URL,
             "years": f"{used[0]} through {newest}",
             "next_year_probed": f"{year} not published",
