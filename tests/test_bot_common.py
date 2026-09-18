@@ -176,5 +176,109 @@ class TestWritesAreIdempotent(unittest.TestCase):
         self.assertEqual(json.loads(path.read_text())[0]["downloaded_at"], "2026-09-15T00:00:00Z")
 
 
+# every raw file under data/raw is the only copy the pipeline has of a vintage
+# its publisher does not keep, so a write that dies partway has to cost the new
+# file rather than the old one
+class TestAnArchiveIsRenamedOverNeverTruncated(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.folder = Path(self.tmp.name)
+        self.path = self.folder / "metrics.csv"
+        self.path.write_text("cbsa_code,value\n10180,1\n")
+
+    def test_a_write_that_finishes_lands(self):
+        common.replace_atomically(self.path, lambda staged: staged.write_text("new\n"))
+        self.assertEqual(self.path.read_text(), "new\n")
+
+    def test_a_write_that_raises_leaves_the_previous_file_whole(self):
+        def dies(staged):
+            staged.write_text("half")
+            raise OSError("no space left on device")
+        with self.assertRaises(OSError):
+            common.replace_atomically(self.path, dies)
+        self.assertEqual(self.path.read_text(), "cbsa_code,value\n10180,1\n")
+
+    # a half written body left in the folder would be worse than the truncation
+    def test_a_write_that_raises_leaves_nothing_half_written_behind(self):
+        with self.assertRaises(OSError):
+            common.replace_atomically(self.path, lambda staged: (_ for _ in ()).throw(OSError("boom")))
+        self.assertEqual(sorted(p.name for p in self.folder.iterdir()), ["metrics.csv"])
+
+    def test_the_body_never_reaches_the_destination_path(self):
+        seen = []
+        common.replace_atomically(self.path, lambda staged: (seen.append(staged), staged.write_text("x\n")))
+        self.assertNotEqual(seen[0], self.path)
+        self.assertEqual(seen[0].name, "metrics.csv.part")
+
+
+# one file at a time is not enough for a collector that writes several. a run
+# that dies between two of them would leave some of this run's files beside
+# some of the last one's, under a manifest describing neither set
+class TestAFolderIsReplacedWholeOrNotAtAll(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.folder = Path(self.tmp.name)
+        (self.folder / "one.csv").write_text("old one\n")
+        (self.folder / "two.csv").write_text("old two\n")
+
+    def names(self):
+        return sorted(p.name for p in self.folder.iterdir())
+
+    def test_every_file_lands_when_the_body_finishes(self):
+        with common.staged_folder(self.folder) as landing:
+            landing.text("one.csv", "new one\n")
+            landing.text("two.csv", "new two\n")
+        self.assertEqual((self.folder / "one.csv").read_text(), "new one\n")
+        self.assertEqual((self.folder / "two.csv").read_text(), "new two\n")
+
+    def test_a_body_that_raises_lands_none_of_them(self):
+        with self.assertRaises(RuntimeError):
+            with common.staged_folder(self.folder) as landing:
+                landing.text("one.csv", "new one\n")
+                raise RuntimeError("the second fetch failed")
+        self.assertEqual((self.folder / "one.csv").read_text(), "old one\n")
+        self.assertEqual((self.folder / "two.csv").read_text(), "old two\n")
+
+    # the staging directory goes with it, so the next run reads a folder that
+    # holds one run's files and nothing else
+    def test_the_staging_directory_is_gone_either_way(self):
+        with common.staged_folder(self.folder) as landing:
+            landing.text("one.csv", "new one\n")
+        self.assertEqual(self.names(), ["one.csv", "two.csv"])
+        with self.assertRaises(RuntimeError):
+            with common.staged_folder(self.folder):
+                raise RuntimeError("boom")
+        self.assertEqual(self.names(), ["one.csv", "two.csv"])
+
+    # manifest_entry hashes and names the file the run produced, which is why
+    # the staged file keeps the name it will land under
+    def test_a_staged_file_carries_the_name_it_will_land_under(self):
+        with common.staged_folder(self.folder) as landing:
+            staged = landing.path("one.csv")
+            self.assertEqual(staged.name, "one.csv")
+            self.assertNotEqual(staged.parent, self.folder)
+            staged.write_text("new one\n")
+
+    def test_the_manifest_lands_with_the_files_it_describes(self):
+        with common.staged_folder(self.folder) as landing:
+            landing.text("one.csv", "new one\n")
+            landing.manifest([{"filename": "one.csv", "integrity": {"row_count": 1},
+                               "downloaded_at": "2026-09-17T00:00:00Z"}])
+        written = json.loads((self.folder / common.MANIFEST_FILE).read_text())
+        self.assertEqual(written[0]["filename"], "one.csv")
+
+    def test_a_manifest_that_did_not_move_is_left_alone(self):
+        entries = [{"filename": "one.csv", "integrity": {"row_count": 1},
+                    "downloaded_at": "2026-09-17T00:00:00Z"}]
+        with common.staged_folder(self.folder) as landing:
+            landing.manifest(entries)
+        before = (self.folder / common.MANIFEST_FILE).read_bytes()
+        with common.staged_folder(self.folder) as landing:
+            landing.manifest([dict(entries[0], downloaded_at="2026-09-18T06:00:00Z")])
+        self.assertEqual((self.folder / common.MANIFEST_FILE).read_bytes(), before)
+
+
 if __name__ == "__main__":
     unittest.main()

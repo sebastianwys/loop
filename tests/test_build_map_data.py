@@ -231,6 +231,39 @@ class TestBaseCases(BuildCase):
         self.assertIsNone(chicago["latest"]["hpi_forecast_4q_date"])
 
 
+# a version is evidence this build read the source. the gazetteer line was a
+# constant in the module, so it named the folder whatever the build had open,
+# and the folder holds three files: the centroids every dot is placed at and the
+# two frozen vintage tables the decade growth rates are decided by
+class TestTheGazetteerLineIsEvidenceOfARead(BuildCase):
+    def absent(self, name):
+        return Path(self.tmp.name) / f"absent_{name}.csv"
+
+    def test_a_build_that_read_all_three_names_the_gazetteer(self):
+        self.assertEqual(self.build()["sources"]["gazetteer"], f"{bm.GAZETTEER_YEAR} Gazetteer")
+
+    def test_a_build_that_opened_neither_vintage_table_says_so(self):
+        payload = self.build(membership=self.absent("membership"),
+                             county_population=self.absent("population"))
+        self.assertEqual(payload["sources"]["gazetteer"], f"{bm.GAZETTEER_YEAR} Gazetteer, centroids only")
+
+    def test_a_build_missing_one_of_them_names_the_two_it_read(self):
+        payload = self.build(county_population=self.absent("population"))
+        self.assertEqual(payload["sources"]["gazetteer"],
+                         f"{bm.GAZETTEER_YEAR} Gazetteer, centroids and county membership only")
+
+    # the folder stays named either way, because the vintage line and the
+    # provenance block are two readings of one list of folders
+    def test_the_folder_is_named_whatever_the_build_read(self):
+        payload = self.build(membership=self.absent("membership"),
+                             county_population=self.absent("population"))
+        self.assertIn("gazetteer", payload["sources"])
+
+    def test_the_helper_says_nothing_when_it_read_nothing(self):
+        self.assertIsNone(bm.gazetteer_version(None, None, None))
+        self.assertIsNone(bm.gazetteer_version(pd.DataFrame(), {}, {}))
+
+
 class TestEdgeCases(BuildCase):
     def test_missing_optional_files_still_build(self):
         gone = Path(self.tmp.name) / "gone.csv"

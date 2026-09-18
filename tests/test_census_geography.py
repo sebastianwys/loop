@@ -65,6 +65,39 @@ class TestGeographyTags(unittest.TestCase):
             self.assertEqual(out.geo_code.tolist(), [new_code], old_code)
             self.assertNotEqual(old_code, new_code)
 
+    # dayton's 2014 vintage code was 19380 on the same three counties. fhfa
+    # restates its series on one delineation and the acs does not, so without
+    # this the metro has no acs row at all for that vintage
+    def test_crosswalk_maps_renumbered_metros(self):
+        df = pd.DataFrame({dc.MSA_COL: ["19380", "10180"]})
+        out = dc.tag_geography(df, "msa")
+        self.assertEqual(out.geo_code.tolist(), ["19430", "10180"])
+        self.assertEqual(out[dc.MSA_COL].tolist(), ["19380", "10180"])  # the api column is untouched
+
+    def test_each_msa_crosswalk_entry_moves_the_code_it_names(self):
+        for old_code, new_code in dc.MSA_CROSSWALK.items():
+            out = dc.tag_geography(pd.DataFrame({dc.MSA_COL: [old_code]}), "msa")
+            self.assertEqual(out.geo_code.tolist(), [new_code], old_code)
+            self.assertNotEqual(old_code, new_code)
+
+    # the same collapse the division table is guarded against. no vintage of the
+    # acs carries both codes of any of these pairs, and this is what says so if
+    # one ever does
+    def test_two_metro_rows_landing_on_one_join_key_stop_the_pull(self):
+        df = pd.DataFrame({dc.MSA_COL: ["19380", "19430"]})
+        with self.assertRaises(ValueError) as caught:
+            dc.tag_geography(df, "msa")
+        self.assertIn("19430", str(caught.exception))
+
+    # a metro renumbered onto a division's code, or the reverse, would put one
+    # place in the merged csv twice under two geo_levels
+    def test_the_two_crosswalks_do_not_overlap(self):
+        self.assertFalse(set(dc.MSA_CROSSWALK) & set(dc.DIVISION_CROSSWALK))
+        self.assertFalse(set(dc.MSA_CROSSWALK.values()) & set(dc.DIVISION_CROSSWALK.values()))
+        self.assertFalse(set(dc.MSA_CROSSWALK) & set(dc.MSA_CROSSWALK.values()))
+        for code in list(dc.MSA_CROSSWALK) + list(dc.MSA_CROSSWALK.values()):
+            self.assertRegex(code, r"^\d{5}$")
+
     def test_parents_and_crosswalk_are_well_formed(self):
         self.assertEqual(len(dc.DIVISION_PARENTS), 13)
         self.assertEqual(len(set(dc.DIVISION_PARENTS)), 13)

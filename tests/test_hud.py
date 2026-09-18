@@ -615,6 +615,65 @@ class TestRollups(FakeHud, unittest.TestCase):
         self.assertIn("state responses", manifest[1]["source"]["dataset"])
 
 
+# hud publishes for its own fmr areas. an entity named for the whole metro is
+# that metro's rent only while the metro's counties all sit in one of them, and
+# hud trails the omb delineation on a handful of codes a year, so the question
+# is asked once a year rather than once a run
+class TestCoversWholeMetro(unittest.TestCase):
+    ROWS = {"1703199999": ("Chicago area", 1428), "1704399999": ("Chicago area", 1428),
+            "1711199999": ("Kendall county area", 1000)}
+
+    def test_counties_in_one_fmr_area_are_covered_whole(self):
+        self.assertIs(hud.covers_whole_metro(["17031", "17043"], self.ROWS, {}), True)
+
+    def test_counties_across_two_fmr_areas_are_not(self):
+        self.assertIs(hud.covers_whole_metro(["17031", "17111"], self.ROWS, {}), False)
+
+    # no row for any of the counties is no evidence either way, not evidence of
+    # a split, so the caller keeps hud's own number rather than blanking it
+    def test_no_rows_for_the_code_is_neither(self):
+        self.assertIsNone(hud.covers_whole_metro(["48059", "48253"], self.ROWS, {}))
+        self.assertIsNone(hud.covers_whole_metro([], self.ROWS, {}))
+
+    # a county with no row is missing evidence, and the counties that do answer
+    # still decide it
+    def test_a_county_hud_did_not_publish_does_not_convict(self):
+        self.assertIs(hud.covers_whole_metro(["17031", "17999"], self.ROWS, {}), True)
+
+
+# the same rule through collect, where the split is decided against the year's
+# own rows and sends the code down the rollup path
+class TestAnEntityIsCheckedAgainstItsCounties(FakeHud, unittest.TestCase):
+    # 16980 has an entity, and here it also has counties to check it against
+    membership = MEMBERSHIP + "16980,17031\n16980,17043\n"
+
+    def fmr(self, code, period):
+        _, frame, _, _, _, _ = self.run_collect()
+        rows = frame[(frame.cbsa_code == code) & (frame.metric == "fmr_2br") & (frame.period == period)]
+        return rows["value"].tolist()
+
+    def test_an_entity_whose_counties_share_one_area_keeps_its_own_value(self):
+        self.assertEqual(self.fmr("16980", "2024"), [1428.0])
+
+    # cook stays in the chicago area and dupage moves to one of its own, so the
+    # entity's 1428 is a rent for part of the cbsa:
+    # (1428*5275541 + 1000*932877) / 6208418 = 1363.69
+    def test_an_entity_that_covers_part_of_its_cbsa_is_rebuilt_from_its_counties(self):
+        split = dict(STATE_DATA)
+        split[("IL", 2024)] = [county_row("1703199999", CHICAGO_AREA, 1428),
+                               county_row("1704399999", "DuPage County, IL HUD Metro FMR Area", 1000)]
+        with patch.dict(STATE_DATA, split, clear=True):
+            self.assertEqual(self.fmr("16980", "2024"), [1364.0])
+
+    # and the year hud has not split the area, the entity stands again
+    def test_the_split_is_decided_one_year_at_a_time(self):
+        split = dict(STATE_DATA)
+        split[("IL", 2024)] = [county_row("1703199999", CHICAGO_AREA, 1428),
+                               county_row("1704399999", "DuPage County, IL HUD Metro FMR Area", 1000)]
+        with patch.dict(STATE_DATA, split, clear=True):
+            self.assertEqual(self.fmr("16980", "2019"), [1180.0])
+
+
 class TestStudyCodes(unittest.TestCase):
     def test_levels_sorted_and_deduplicated(self):
         with tempfile.TemporaryDirectory() as tmp:

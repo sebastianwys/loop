@@ -83,6 +83,29 @@ describe("buildSources", () => {
     expect(buildSources(undefined).rows).toEqual([]);
   });
 
+  // the provenance row is evidence the bytes landed. the vintage line beside it
+  // is evidence this build read them, and goes null where it read nothing. the
+  // page printed both with nothing tying them together, so a reader met a
+  // vintage in one table and a blank in the other and had to pick one
+  it("marks a row whose vintage line this build could not fill", () => {
+    const data = { ...withProvenance([entry({}), entry({ source: "census" })]),
+                   sources: { fhfa: null, census: "ACS 5-year 2024" } } as unknown as MapData;
+    const rows = buildSources(data).rows;
+    expect(rows.find((r) => r.entry.source === "fhfa")?.read).toBe(false);
+    expect(rows.find((r) => r.entry.source === "census")?.read).toBe(true);
+    // and the landing record is untouched, which is what the table is for
+    expect(rows.find((r) => r.entry.source === "fhfa")?.entry.version).toBe("2026-Q2");
+  });
+
+  // a build with no vintage line, or one that does not name the folder, cannot
+  // support either claim and makes neither
+  it("says nothing about a build that carries no vintage line", () => {
+    const data = { ...withProvenance([entry({})]), sources: undefined } as unknown as MapData;
+    expect(buildSources(data).rows[0].read).toBeNull();
+    const partial = { ...withProvenance([entry({})]), sources: { census: "ACS" } } as unknown as MapData;
+    expect(buildSources(partial).rows[0].read).toBeNull();
+  });
+
   it("sorts the rows by folder name so the page does not reorder between builds", () => {
     const report = buildSources(withProvenance([entry({ source: "zillow" }), entry({ source: "acs" }), entry({ source: "irs" })]));
     expect(report.rows.map((r) => r.entry.source)).toEqual(["acs", "irs", "zillow"]);
@@ -261,6 +284,8 @@ describe.skipIf(!present)("the provenance block of the built metros.json", () =>
       expect(row.version, row.source).not.toBe("");
       expect(row.provider, row.source).not.toBe("");
     }
+    // and this build read every folder it names, so no row wears the mark
+    for (const row of report.rows) expect(row.read, row.entry.source).toBe(true);
     // the vintage line and the provenance table are two readings of one list
     // of folders. a source in one and not the other leaves a reader deciding
     // which of the two to believe
