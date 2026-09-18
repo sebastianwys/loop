@@ -589,3 +589,29 @@ svg { max-width: 100%; }
   :root { --hairline: var(--baseline); --muted: var(--ink-2); }
   .ind-tile { border-color: var(--hairline); }
 }
+
+/* a question mark beside a heading, and the two or three sentences it opens.
+   the bubble replaces standing prose under a table, so it sits over the panel
+   rather than pushing it, and it is wide enough to read at the panel's width */
+.explainer { display: inline-flex; vertical-align: middle; margin-left: 6px; }
+/* the bubble is anchored to the heading, not to the question mark, so it spans
+   the panel column instead of running off its right edge and being clipped */
+.detail h3, .detail summary, .sidebar label { position: relative; }
+.explainer-open {
+  width: 1.05rem; height: 1.05rem; padding: 0; line-height: 1;
+  border: 1px solid var(--baseline); border-radius: 50%;
+  background: var(--surface); color: var(--muted);
+  font-size: 0.7rem; font-weight: 600; cursor: pointer;
+}
+.explainer-open:hover { color: var(--ink); border-color: var(--ink-2); }
+.explainer-open:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.explainer-open[aria-expanded="true"] { background: var(--plane); color: var(--ink); border-color: var(--ink-2); }
+.explainer-bubble {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 30;
+  width: auto; padding: 8px 10px;
+  border: 1px solid var(--hairline); border-radius: 4px;
+  background: var(--surface); box-shadow: var(--shadow-float);
+  font-size: 0.82rem; font-weight: 400; line-height: 1.45; color: var(--ink-2);
+  white-space: normal; text-align: left;
+}
+.explainer-source { display: block; margin-top: 6px; font-size: 0.76rem; color: var(--muted); }

@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
 import { browserHost, csvFilename, downloadCsv, rankingCsv } from "../lib/csv";
 import { formatValue } from "../lib/format";
-import { GROUPS, SOURCE_LABEL, type Metric, type MetricDef } from "../lib/metrics";
+import { GROUPS, type Metric, type MetricDef, metricExplainer } from "../lib/metrics";
 import { rankMetros, searchMetros } from "../lib/rank";
 import type { ColorScale } from "../lib/scale";
 import type { Metro, Period, Sources } from "../types";
 import type { MapMode } from "../lib/boundaries";
 import type { ShapesStatus } from "../App";
+import { Explainer } from "./Explainer";
 import { Timeline } from "./Timeline";
 
 interface Props {
@@ -122,7 +123,10 @@ export function Sidebar({
       </div>
 
       <div>
-        <label htmlFor="metric">color metros by</label>
+        <label htmlFor="metric">
+          color metros by
+          <Explainer label="this metric">{metricExplainer(metric)}</Explainer>
+        </label>
         <select id="metric" value={metric.def.id} onChange={(e) => onMetricChange(e.target.value)}>
           {GROUPS.map((group) => {
             const members = defs.filter((d) => d.group === group);
@@ -135,7 +139,6 @@ export function Sidebar({
             );
           })}
         </select>
-        <p className="metric-source">{SOURCE_LABEL[metric.source]}</p>
       </div>
 
       <Timeline def={metric.def} metros={metros} period={period} available={available} onPeriodChange={onPeriodChange} />

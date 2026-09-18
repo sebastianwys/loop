@@ -1,11 +1,12 @@
 import { useMemo } from "react";
 import { footprintNote, geoNote, inheritedFrom, parentMetricsNote } from "../lib/geo";
-import { forecastCaption, forecastLines } from "../lib/forecast";
+import { forecastExplainer, forecastLines } from "../lib/forecast";
 import { formatValue } from "../lib/format";
 import { forecastOf } from "../lib/history";
 import { DEFS, GROUPS, defDate, type MetricDef } from "../lib/metrics";
 import { dateLabel, laterStartsNote, latestColumn, publishedPeriods } from "../lib/timeline";
 import type { AnnualSeries, Growth, Metro, Period, YearKey } from "../types";
+import { Explainer } from "./Explainer";
 import { HistoryChart } from "./HistoryChart";
 import { InlineSpark, Sparkline } from "./Sparkline";
 
@@ -85,6 +86,7 @@ export function DetailPanel({ metro, metros, onClose }: Props) {
   const history = metro.series?.hpi ?? null;
   const forecast = forecastOf(metro);
   const forecasts = forecastLines(metro);
+  const explainer = forecastExplainer(metro);
   const inherited = parentMetricsNote(metro);
   const footprint = footprintNote(metro);
   // a measure in a vintage table shows its latest value there already
@@ -101,12 +103,12 @@ export function DetailPanel({ metro, metros, onClose }: Props) {
         </button>
       </header>
 
-      <h3>House price index, all transactions</h3>
+      <h3>
+        House price index, all transactions
+        {history && <Explainer label="this chart">{historyNote(history, forecast !== null)}</Explainer>}
+      </h3>
       {history ? (
-        <>
-          <HistoryChart series={history} forecast={forecast} name={metro.name} />
-          <p className="geo-note">{historyNote(history, forecast !== null)}</p>
-        </>
+        <HistoryChart series={history} forecast={forecast} name={metro.name} />
       ) : (
         <Sparkline values={hpi} labels={YEARS} title={`house price index for ${metro.name}, 2014, 2019 and 2024`} />
       )}
@@ -121,7 +123,10 @@ export function DetailPanel({ metro, metros, onClose }: Props) {
         })));
         return (
           <details key={group} open={group === "House prices"}>
-            <summary>{group}, by vintage year</summary>
+            <summary>
+              {group}, by vintage year
+              {note && <Explainer label={`the ${group.toLowerCase()} table`}>{note}</Explainer>}
+            </summary>
             <table className="vintage">
               <thead>
                 <tr>
@@ -164,7 +169,6 @@ export function DetailPanel({ metro, metros, onClose }: Props) {
                 })}
               </tbody>
             </table>
-            {note && <p className="table-note">{note}</p>}
           </details>
         );
       })}
@@ -184,7 +188,13 @@ export function DetailPanel({ metro, metros, onClose }: Props) {
 
       {forecasts.length > 0 && (
         <>
-          <h3>Forecasts</h3>
+          <h3>
+            Forecasts
+            <Explainer label="these forecasts">
+              {explainer.sentences.join(" ")}
+              <span className="explainer-source">{explainer.source}</span>
+            </Explainer>
+          </h3>
           <table>
             <tbody>
               {forecasts.map((line) => (
@@ -195,7 +205,6 @@ export function DetailPanel({ metro, metros, onClose }: Props) {
               ))}
             </tbody>
           </table>
-          <p className="geo-note">{forecastCaption(metro)}</p>
         </>
       )}
 

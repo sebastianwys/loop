@@ -313,7 +313,6 @@ function Panels({ def, metros, period, available, onPeriodChange }: Props) {
           );
         })}
       </div>
-      {def.periods.length === 0 && <p className="mode-note">a change between the shaded years, not a single period</p>}
       {def.periods.length > 0 && available.length === 0 && <p className="mode-note">no period carries a value in this data</p>}
     </div>
   );

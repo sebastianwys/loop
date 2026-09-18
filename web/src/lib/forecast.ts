@@ -1,4 +1,6 @@
 import { formatValue } from "./format";
+import { BACKTEST } from "./modelNumbers";
+import { SHIPPED, points, rowAt } from "./model";
 import { SOURCE_LABEL, dateAt, defById, fieldAt, labelFor } from "./metrics";
 import type { Metro } from "../types";
 
@@ -58,4 +60,23 @@ export function forecastCaption(metro: Metro): string {
     if (date) return `${source}, origin ${date}`;
   }
   return source;
+}
+
+// what the Forecasts table is, in three sentences, for the panel's question
+// mark. the coverage numbers are read from the shipped backtest rather than
+// written down, so a retrain moves this with the rest of the page
+export function forecastExplainer(metro: Metro): { sentences: string[]; source: string } {
+  const near = rowAt(BACKTEST, SHIPPED, 4);
+  const far = rowAt(BACKTEST, SHIPPED, 8);
+  const covered = near && far
+    ? `Over 2022 onward it held ${points(near.coverage)} of outcomes at four quarters and ${points(far.coverage)} at eight`
+    : "Its held-out coverage is reported on the model page";
+  return {
+    sentences: [
+      "A sequence GRU reads twenty-four quarters of this metro's history and its covariates, then predicts how the FHFA index moves over the next four and eight quarters.",
+      "The band is conformal: it is widened until it covers nine in ten outcomes the model never trained on, so it is a calibrated range rather than a best and worst case.",
+      `${covered}, short of the nine in ten it is built for, so the eight quarter band is the one to read loosely.`,
+    ],
+    source: forecastCaption(metro),
+  };
 }

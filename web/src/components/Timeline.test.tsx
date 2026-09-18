@@ -50,7 +50,11 @@ describe("the timeline with no history behind the metric", () => {
 
   it("leaves a change figure showing its shaded span and no ticks", () => {
     const markup = render(scrub({ deep: null }), "hpi_19_24", null);
-    expect(markup).toContain("a change between the shaded years");
+    // the span is drawn with its two years labelled. the sentence explaining
+    // that this is a change and not a reading moved to the metric's question
+    // mark in the sidebar, which metricExplainer covers
+    expect(markup).toContain('class="span"');
+    expect(markup).toContain('class="span-year"');
     expect(markup).not.toContain('type="range"');
   });
 });

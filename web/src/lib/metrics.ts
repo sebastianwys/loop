@@ -313,3 +313,15 @@ export function metricCaption(metric: Metric, metros: Metro[]): string {
   const when = /^\d{4}$/.test(newest) ? yearLabel(newest, metric.source) : newest;
   return `${source}, latest ${when}`;
 }
+
+// what the colour on the map means, in two or three sentences, for the
+// sidebar's question mark. it replaces a bare source line and the timeline's
+// note about vintage changes, both of which said a fraction of this
+export function metricExplainer(metric: Metric): string {
+  const source = SOURCE_LABEL[metric.def.source];
+  const spanned = metric.def.periods.length === 0;
+  const what = spanned
+    ? `Every metro is coloured by its ${metric.def.label}, which is a change measured between the two shaded vintage years rather than a reading at one date.`
+    : `Every metro is coloured by its ${metric.def.label} at the period the timeline is set to.`;
+  return `${what} The numbers come from ${source} and are not adjusted or smoothed here. A metro with no reading is drawn hollow rather than guessed at.`;
+}
