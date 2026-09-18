@@ -1,5 +1,6 @@
 import json
 import re
+import sys
 from pathlib import Path
 
 import pandas as pd
@@ -7,6 +8,12 @@ import pandas as pd
 from bot import indicators
 from bot.collectors.gazetteer import YEAR as GAZETTEER_YEAR
 from bot.common import BASE_DIR, INTEGRATED, RAW_DIR, STUDY_YEARS, WEB_DATA_DIR, unchanged_but_for_stamps, utc_now
+
+# scripts/ is not a package, so put it on the path before importing the
+# crosswalk the census download joins the older vintages on
+sys.path.insert(0, str(BASE_DIR / "scripts"))
+
+from download_census import DIVISION_CROSSWALK
 
 DEFAULT_PATHS = {
     "enrichment_dir": RAW_DIR,
@@ -34,6 +41,12 @@ DEFAULT_PATHS = {
 # outright. measured over all 84 changed metros, 4 are under one percent, 7
 # under two, 25 under five and 43 at ten or more
 FOOTPRINT_TOLERANCE = 0.02
+
+# the code a renumbered division carried on an older delineation. omb renumbers
+# a division without moving a county under it, and the census download joins the
+# older vintages onto the new code, so the footprint guard has to follow the
+# renumbering rather than be defeated by it
+FORMER_CODE = {new: old for old, new in DIVISION_CROSSWALK.items()}
 
 # fhfa's metro series begin in 1975, so the panel draws the whole history, one
 # annual mean of the quarterly index per year, the last year partial. this is
@@ -208,6 +221,16 @@ def load_fhfa_series(path):
     return series
 
 
+# the index a price history carries for one year, none when the history does
+# not reach that year
+def index_at(history, year):
+    if not history:
+        return None
+    place = int(year) - history["start"]
+    values = history["values"]
+    return values[place] if 0 <= place < len(values) else None
+
+
 def load_fred(path):
     df = pd.read_csv(path, dtype={"date": str})
     df["value"] = pd.to_numeric(df["value"], errors="coerce")
@@ -223,17 +246,28 @@ def load_national(path):
 
 # --- zillow ---
 
+# a metro zillow files under a name no rule can reach from the census one. it
+# publishes st mary's county maryland as "California, MD", the principal city
+# lexington park replaced, so the name is spelled out here instead
+ZILLOW_ALIASES = {
+    "Lexington Park, MD": "California, MD",
+}
+
+
 # fhfa says "Chicago-Naperville-Elgin, IL-IN-WI", zillow says "Chicago, IL".
-# exact name first, then first city, then first two cities
+# exact name first, then the alias if there is one, then first city, then first
+# two cities
 def zillow_candidates(place_name):
+    alias = ZILLOW_ALIASES.get(place_name)
     if "," not in place_name:
-        return [place_name]
+        return [place_name] if alias is None else [place_name, alias]
     cities, states = [part.strip() for part in place_name.split(",", 1)]
     state_tokens = states.replace("-", " ").split()
     first_state = state_tokens[0] if state_tokens else ""
     # "/" separates a city from its county name, as in louisville/jefferson county
     parts = [part.strip() for part in cities.replace("/", "-").split("-")]
-    candidates = [place_name, f"{parts[0]}, {first_state}"]
+    candidates = [place_name] if alias is None else [place_name, alias]
+    candidates.append(f"{parts[0]}, {first_state}")
     if len(parts) > 1:
         candidates.append(f"{parts[0]}-{parts[1]}, {first_state}")
     # zillow sometimes names a metro by a later city, "The Villages, FL" for
@@ -671,7 +705,7 @@ def provenance_block(raw_dir, *folders):
 
 # --- assembly ---
 
-def year_record(row, zhvi_row, zori_row, bls_frame, cbsa, year):
+def year_record(row, zhvi_row, zori_row, bls_frame, cbsa, year, history=None):
     get = (lambda col: None) if row is None else (lambda col: row.get(col))
     pop = get("total_pop")
     bachelors, masters = get("bachelors_count"), get("masters_count")
@@ -682,8 +716,14 @@ def year_record(row, zhvi_row, zori_row, bls_frame, cbsa, year):
     own_rate = get("homeownership_rate")
     if missing(own_rate):
         own_rate = ratio(get("owner_occupied_units"), get("total_occupied_units"))
+    # the acs side of the join has no row for 33 of the metro-years, and fhfa
+    # published an index for every one of them, so the panel falls back on the
+    # price history this build drew rather than reading the year as blank
+    hpi = get("avg_index_nsa")
+    if missing(hpi):
+        hpi = index_at(history, year)
     return {
-        "hpi": rnd(get("avg_index_nsa"), 2),
+        "hpi": rnd(hpi, 2),
         "income": rnd(get("median_income"), 1),
         "pop": as_int(pop),
         "age": rnd(get("median_age"), 1),
@@ -704,7 +744,13 @@ def build_metros(merged, centroids, zhvi=None, zori=None, bls_frame=None, enrich
     # the counties a cbsa code held in one vintage, or none when the delineation
     # of that vintage does not carry the code at all
     def counties_at(year, code):
-        return None if not membership else membership.get(str(year), {}).get(str(code))
+        if not membership:
+            return None
+        vintage = membership.get(str(year), {})
+        counties = vintage.get(str(code))
+        if counties is None:
+            counties = vintage.get(FORMER_CODE.get(str(code)))
+        return counties
 
     # the share of a metro's people that changed hands between two vintages: the
     # counties it gained, counted where they were counted, plus the ones it lost,
@@ -806,6 +852,13 @@ def build_metros(merged, centroids, zhvi=None, zori=None, bls_frame=None, enrich
             return rate
 
         hpi_series = series.get(cbsa) if series else None
+
+        # the index fhfa published for a year: the joined row where the census
+        # side has one, the metro's own price history where it has none
+        def index(year):
+            published = value(year, "avg_index_nsa")
+            return index_at(hpi_series, year) if missing(published) else published
+
         zhvi_latest, zhvi_date = zillow_latest(zhvi_row)
         zori_latest, zori_date = zillow_latest(zori_row)
         unemp_latest, unemp_date = bls_latest(bls_frame, cbsa)
@@ -818,7 +871,8 @@ def build_metros(merged, centroids, zhvi=None, zori=None, bls_frame=None, enrich
             "zillow_scope": zillow_scope,
             "lat": float(centroid["lat"]),
             "lon": float(centroid["lon"]),
-            "years": {str(y): year_record(rows.get(y), zhvi_row, zori_row, bls_frame, cbsa, y) for y in STUDY_YEARS},
+            "years": {str(y): year_record(rows.get(y), zhvi_row, zori_row, bls_frame, cbsa, y, hpi_series)
+                      for y in STUDY_YEARS},
             "latest": {
                 "zhvi": rnd(zhvi_latest, 1), "zhvi_date": zhvi_date,
                 "zori": rnd(zori_latest, 1), "zori_date": zori_date,
@@ -829,8 +883,8 @@ def build_metros(merged, centroids, zhvi=None, zori=None, bls_frame=None, enrich
                 "hpi_date": quarter_end_month(hpi_series.get("as_of")) if hpi_series else None,
             },
             "growth": {
-                f"hpi_{y0 % 100}_{y1 % 100}": rnd(growth(value(y1, "avg_index_nsa"), value(y0, "avg_index_nsa")), 4),
-                f"hpi_{y1 % 100}_{y2 % 100}": rnd(growth(value(y2, "avg_index_nsa"), value(y1, "avg_index_nsa")), 4),
+                f"hpi_{y0 % 100}_{y1 % 100}": rnd(growth(index(y1), index(y0)), 4),
+                f"hpi_{y1 % 100}_{y2 % 100}": rnd(growth(index(y2), index(y1)), 4),
                 f"income_{y0 % 100}_{y2 % 100}": rnd(acs_growth(y2, y0, "median_income"), 4),
                 f"pop_{y0 % 100}_{y2 % 100}": rnd(acs_growth(y2, y0, "total_pop"), 4),
                 f"home_value_{y0 % 100}_{y2 % 100}": rnd(acs_growth(y2, y0, "median_home_value"), 4),
@@ -852,6 +906,23 @@ def build_metros(merged, centroids, zhvi=None, zori=None, bls_frame=None, enrich
 
 def zillow_version(frame):
     return None if frame is None or not len(frame.columns) else f"through {frame.columns[-1]}"
+
+
+# read off the series this build loaded, not off a manifest describing a file
+# it may never have opened. none means the build did not read the source, which
+# is what lets refuse_to_lose_a_source tell a real vintage from a borrowed one
+def fhfa_version(series):
+    if not series:
+        return None
+    as_of = max(entry["as_of"] for entry in series.values() if entry.get("as_of"))
+    return f"{as_of[:4]}-{as_of[4:]}" if as_of else None
+
+
+def national_version(frame):
+    if frame is None or not len(frame):
+        return None
+    newest = frame["date"].max()
+    return None if pd.isna(newest) else f"through {newest}"
 
 
 def bls_version(frame):
@@ -879,23 +950,70 @@ def national_block(fred_frame, national_frame=None):
     return block or None
 
 
+# what a build is worth in the file: the metros it put on the map, the tiles in
+# the strip, and how many metros carry a number for each field beside them. the
+# version string next to a source is a manifest's word for it and a build that
+# opened nothing still carries it, so the refusal below is measured on these
+def payload_counts(payload):
+    national = payload.get("national") or {}
+    counts = {
+        "metros": len(payload.get("metros") or []),
+        "indicators": len(national.get("indicators") or []),
+        "mortgage_rate": sum(1 for v in (national.get("mortgage_rate") or {}).values() if v is not None),
+        # the note a weighed boundary move leaves. without the delineations on
+        # disk nothing can be weighed, and the decade rates the file withholds
+        # would come back as numbers over two different places
+        "footprint_moved": sum(1 for m in payload.get("metros") or [] if m.get("footprint_moved") is not None),
+    }
+    for metro in payload.get("metros") or []:
+        for field, value in (metro.get("latest") or {}).items():
+            if value is not None and not field.endswith("_date"):
+                counts[field] = counts.get(field, 0) + 1
+    return counts
+
+
+# the source behind each core field, so a refusal names the collector to run
+# rather than the column that emptied. an enrichment metric is named by the
+# folder that published it, which the build knows for every folder it read
+CORE_FIELDS = {
+    "hpi": "fhfa", "zhvi": "zillow", "zori": "zillow", "unemp": "bls",
+    "indicators": "national", "mortgage_rate": "fred",
+}
+
+
 # a source is optional on a first build and mandatory on every one after. the
 # zillow csvs are gitignored, so a checkout that has not run that collector
 # cannot see them, and a partial rebuild would write nulls over every zhvi and
 # zori in the file. fail instead, and name what went missing
-def refuse_to_lose_a_source(out_path, payload):
-    if not Path(out_path).exists():
+def refuse_to_lose_a_source(out_path, payload, enrichments=()):
+    out_path = Path(out_path)
+    if not out_path.exists():
         return
     try:
-        previous = json.loads(Path(out_path).read_text())
+        previous = json.loads(out_path.read_text())
     except ValueError:
         return
+    before, after = payload_counts(previous), payload_counts(payload)
+    emptied = [field for field, count in before.items() if count and not after.get(field)]
+    owner = dict(CORE_FIELDS)
+    for source in enrichments:
+        for metric in source["metrics"]:
+            owner[metric] = source["name"]
+    # a folder that published a metrics.csv into the file before and has none
+    # this time is where the metrics nothing else accounts for went
+    live = {source["name"] for source in enrichments}
+    gone = {e.get("source") for e in (previous.get("provenance") or [])
+            if e.get("filename") == ENRICHMENT_FILE and e.get("source") not in live}
+    lost = {owner[field] for field in emptied if field in owner}
+    orphans = [field for field in emptied if field not in owner]
+    if orphans:
+        lost.update(gone or orphans)
     had = {name for name, version in (previous.get("sources") or {}).items() if version}
     has = {name for name, version in (payload.get("sources") or {}).items() if version}
-    lost = sorted(had - has)
+    lost.update(had - has)
     if lost:
         raise RuntimeError(
-            f"{out_path.name} already carries {lost} and this build cannot see "
+            f"{out_path.name} already carries {sorted(lost)} and this build cannot see "
             "them, so writing would blank those columns. run those collectors "
             "first, or build somewhere else"
         )
@@ -951,9 +1069,20 @@ def build(out_path=None, paths=None):
         "metros": metros,
     }
 
+    # a version is evidence that this build read the source. where it did not,
+    # a folder carrying a manifest stays named so the vintage line and the
+    # provenance block still list one set of folders, but its version goes to
+    # none rather than being borrowed off a file that was never opened
+    for name, version in (("fhfa", fhfa_version(fhfa_series)),
+                          ("national", national_version(national_frame))):
+        if version is not None:
+            payload["sources"][name] = version
+        elif name in payload["sources"]:
+            payload["sources"][name] = None
+
     out_path = Path(out_path) if out_path else WEB_DATA_DIR / "metros.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    refuse_to_lose_a_source(out_path, payload)
+    refuse_to_lose_a_source(out_path, payload, enrichments)
     # the daily national refresh rebuilds this whether or not fred moved, so a
     # rebuild that lands on the same numbers leaves the file exactly as it was
     if not unchanged_but_for_stamps(out_path, payload):

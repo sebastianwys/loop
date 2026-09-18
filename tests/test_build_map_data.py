@@ -723,8 +723,16 @@ class TestProvenance(BuildCase):
         payload = self.build(forecast_dir=folder)
         named = {e["source"] for e in payload["provenance"]}
         self.assertTrue(named.issubset(set(payload["sources"])), named - set(payload["sources"]))
+        # every folder the block names is still named here, which is the point
         for name in ("fhfa", "census", "boundaries", "national"):
+            self.assertIn(name, payload["sources"])
+        # census and boundaries are read off their manifest. fhfa and national
+        # are read off the frames this build loaded, and it opened neither, so
+        # advertising a vintage for them would be the borrowed-version defect
+        for name in ("census", "boundaries"):
             self.assertEqual(payload["sources"][name], f"{name} vintage")
+        for name in ("fhfa", "national"):
+            self.assertIsNone(payload["sources"][name])
 
 
 # four from the audit pile, all in the readers that turn a source file into a
@@ -1243,11 +1251,14 @@ class TestASmallBoundaryMoveIsNotARedraw(unittest.TestCase):
         self.assertIsNone(self.metro("26420")["growth"]["pop_14_24"])
         self.assertNotIn("footprint_moved", self.metro("26420"))
 
-    def test_exactly_the_seven_measured_metros_are_marked(self):
+    # 16984 joined the seven when the guard began following omb's renumbering:
+    # the chicago division gave up kendall county, 1.62 percent of its people,
+    # and under its old code that move is measurable rather than unknown
+    def test_exactly_the_eight_measured_metros_are_marked(self):
         metros, _, _ = bm.build_metros(self.merged, self.centroids, membership=self.membership,
                                        county_population=self.population)
         marked = sorted(m["cbsa"] for m in metros if "footprint_moved" in m)
-        self.assertEqual(marked, ["16740", "17140", "26420", "31340", "33460", "47260", "48620"])
+        self.assertEqual(marked, ["16740", "16984", "17140", "26420", "31340", "33460", "47260", "48620"])
         for metro in metros:
             if "footprint_moved" in metro:
                 self.assertIsNotNone(metro["growth"]["pop_14_24"], metro["cbsa"])
