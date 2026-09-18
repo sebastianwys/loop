@@ -6,7 +6,7 @@ import pandas as pd
 
 from bot.build_map_data import MIN_YEAR_SHARE, zillow_candidates
 from bot.collectors.gazetteer import OUT_FILE as CENTROIDS
-from bot.common import RAW_DIR, fetch, looks_like_csv, manifest_entry, write_csv, write_manifest
+from bot.common import RAW_DIR, fetch, looks_like_csv, manifest_entry, staged_folder
 
 OUT_DIR = RAW_DIR / "zillow_extras"
 OUT_FILE = OUT_DIR / "metrics.csv"
@@ -204,24 +204,24 @@ def collect():
             "refusing to replace metrics.csv with a partial one"
         )
 
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    write_csv(df, OUT_FILE)
-    write_manifest(OUT_DIR, [manifest_entry(
-        OUT_FILE, CATALOG, "Zillow Research",
-        "Metro inventory, days to pending, price cut share and one year ZHVF growth, annual means plus the newest month",
-        version, len(df),
-        {
-            "attribution": ATTRIBUTION,
-            "processing": "raw csvs read in memory and not kept, names mapped to cbsa codes through the gazetteer",
-            "files": files,
-            "skipped": skipped,
-            "forecast_horizon_months": FORECAST_MONTHS,
-            "gazetteer_metros": len(gazetteer),
-            "gazetteer_metros_matched": len(mapping),
-            "zillow_metros": len(names),
-            "zillow_metros_unmatched": len(names) - len(mapping),
-        },
-    )])
+    with staged_folder(OUT_DIR) as landing:
+        path = landing.csv(df, OUT_FILE.name)
+        landing.manifest([manifest_entry(
+            path, CATALOG, "Zillow Research",
+            "Metro inventory, days to pending, price cut share and one year ZHVF growth, annual means plus the newest month",
+            version, len(df),
+            {
+                "attribution": ATTRIBUTION,
+                "processing": "raw csvs read in memory and not kept, names mapped to cbsa codes through the gazetteer",
+                "files": files,
+                "skipped": skipped,
+                "forecast_horizon_months": FORECAST_MONTHS,
+                "gazetteer_metros": len(gazetteer),
+                "gazetteer_metros_matched": len(mapping),
+                "zillow_metros": len(names),
+                "zillow_metros_unmatched": len(names) - len(mapping),
+            },
+        )])
     print(f"[zillow_extras] {len(df)} rows for {df['metric'].nunique()} metrics, "
           f"{len(mapping)} of {len(gazetteer)} gazetteer metros matched, "
           f"{len(names) - len(mapping)} zillow metros unmatched -> {OUT_FILE.name}")

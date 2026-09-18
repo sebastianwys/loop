@@ -2,7 +2,7 @@ from datetime import date
 
 import pandas as pd
 
-from bot.common import INTEGRATED, RAW_DIR, env_key, fetch, manifest_entry, write_csv, write_manifest
+from bot.common import INTEGRATED, RAW_DIR, env_key, fetch, manifest_entry, staged_folder
 from bot.collectors.gazetteer import OUT_FILE as CENTROIDS
 
 OUT_DIR = RAW_DIR / "bls"
@@ -123,13 +123,13 @@ def collect():
     df = df.drop_duplicates(["series_id", "year", "period"], keep="last")
     df = df.sort_values(["series_id", "year", "period"]).reset_index(drop=True)
 
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    write_csv(df, OUT_FILE)
-    write_manifest(OUT_DIR, [manifest_entry(
-        OUT_FILE, API, "U.S. Bureau of Labor Statistics",
-        "Local Area Unemployment Statistics, metropolitan area unemployment rate, not seasonally adjusted",
-        f"{start_year} onward, every month plus annual averages", len(df),
-        {"series_requested": len(ids), "series_missing": len(missing), "keyed": bool(key)},
-    )])
+    with staged_folder(OUT_DIR) as landing:
+        path = landing.csv(df, OUT_FILE.name)
+        landing.manifest([manifest_entry(
+            path, API, "U.S. Bureau of Labor Statistics",
+            "Local Area Unemployment Statistics, metropolitan area unemployment rate, not seasonally adjusted",
+            f"{start_year} onward, every month plus annual averages", len(df),
+            {"series_requested": len(ids), "series_missing": len(missing), "keyed": bool(key)},
+        )])
     print(f"[bls] {df['series_id'].nunique()} of {len(ids)} series, {len(missing)} missing -> {OUT_FILE.name}")
     return OUT_FILE

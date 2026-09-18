@@ -10,8 +10,10 @@ data/raw/zillow/*.csv
 data/raw/*/.download_complete
 
 # a body on its way to an archive, named beside the file it will be renamed
-# over. a run that dies mid-write cleans it up, a run that is killed cannot
+# over, and the directory a collector stages its whole folder in. a run that
+# dies cleans both up, a run that is killed cannot
 data/raw/*/*.part
+data/raw/*/.staging-*/
 
 # boundary shapefiles are fetched by npm run boundaries, the topojson is committed
 data/raw/boundaries/*.zip

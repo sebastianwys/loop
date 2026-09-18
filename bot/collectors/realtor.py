@@ -3,7 +3,7 @@ import io
 
 import pandas as pd
 
-from bot.common import RAW_DIR, fetch, manifest_entry, write_csv, write_manifest
+from bot.common import RAW_DIR, fetch, manifest_entry, staged_folder
 
 OUT_DIR = RAW_DIR / "realtor"
 OUT_FILE = OUT_DIR / "metrics.csv"
@@ -90,34 +90,34 @@ def collect():
     newest = history["period"].max()
 
     # the raw file is not kept, so its fingerprint travels in the notes
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    write_csv(metrics, OUT_FILE)
-    write_manifest(OUT_DIR, [manifest_entry(
-        OUT_FILE, URL, "Realtor.com Economic Research",
-        "Inventory core metrics, metro history: monthly listing price, active listings, "
-        "days on market and price reductions, summarized to annual means and the newest month",
-        f"through {newest}", len(metrics),
-        {
-            "attribution": ATTRIBUTION,
-            "source_file": filename,
-            "source_sha256": hashlib.sha256(content).hexdigest(),
-            "source_size_kb": round(len(content) / 1024, 1),
-            "source_rows": int(len(history)),
-            "source_newest_month": newest,
-            "full_years": years,
-            "quality_flagged_rows": int(history["flagged"].sum()),
-            "metrics": {
-                "median_listing_price": "median_listing_price as published",
-                "active_listings": "active_listing_count as published",
-                "days_on_market": "median_days_on_market as published",
-                "price_reduced_share": "price_reduced_count over total_listing_count, "
-                                       "null when the denominator is 0 or missing",
+    with staged_folder(OUT_DIR) as landing:
+        path = landing.csv(metrics, OUT_FILE.name)
+        landing.manifest([manifest_entry(
+            path, URL, "Realtor.com Economic Research",
+            "Inventory core metrics, metro history: monthly listing price, active listings, "
+            "days on market and price reductions, summarized to annual means and the newest month",
+            f"through {newest}", len(metrics),
+            {
+                "attribution": ATTRIBUTION,
+                "source_file": filename,
+                "source_sha256": hashlib.sha256(content).hexdigest(),
+                "source_size_kb": round(len(content) / 1024, 1),
+                "source_rows": int(len(history)),
+                "source_newest_month": newest,
+                "full_years": years,
+                "quality_flagged_rows": int(history["flagged"].sum()),
+                "metrics": {
+                    "median_listing_price": "median_listing_price as published",
+                    "active_listings": "active_listing_count as published",
+                    "days_on_market": "median_days_on_market as published",
+                    "price_reduced_share": "price_reduced_count over total_listing_count, "
+                                           "null when the denominator is 0 or missing",
+                },
+                "aggregation": "annual rows are means of the months in each full calendar year, "
+                               "monthly rows are the newest month with a value per metro and metric, "
+                               "flagged months are kept",
             },
-            "aggregation": "annual rows are means of the months in each full calendar year, "
-                           "monthly rows are the newest month with a value per metro and metric, "
-                           "flagged months are kept",
-        },
-    )])
+        )])
     print(f"[realtor] {history['cbsa_code'].nunique()} metros, {len(history)} monthly rows through "
           f"{newest}, {len(years)} full years, {len(metrics)} metric rows -> {OUT_FILE.name}")
     return OUT_FILE

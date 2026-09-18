@@ -2,7 +2,7 @@ import pandas as pd
 
 from bot import indicators
 from bot.collectors.fred import parse_observations
-from bot.common import RAW_DIR, env_key, fetch, manifest_entry, write_csv, write_manifest
+from bot.common import RAW_DIR, env_key, fetch, manifest_entry, staged_folder
 
 OUT_DIR = RAW_DIR / "national"
 OUT_FILE = OUT_DIR / "indicators.csv"
@@ -58,18 +58,18 @@ def collect():
 
     out = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=COLUMNS)
 
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    write_csv(out, OUT_FILE)
-    write_manifest(OUT_DIR, [manifest_entry(
-        OUT_FILE, ENDPOINT, "Federal Reserve Bank of St. Louis, FRED",
-        "national indicators for the map's dashboard strip, one row per series and observation",
-        f"through {out['date'].max()}", len(out),
-        {
-            "series": series_ids,
-            "daily_series_cut_to_the_last_observation_of_each_month": list(DAILY),
-            "missing_observations": "fred publishes a dot, written here as an empty value",
-        },
-    )])
+    with staged_folder(OUT_DIR) as landing:
+        path = landing.csv(out, OUT_FILE.name)
+        landing.manifest([manifest_entry(
+            path, ENDPOINT, "Federal Reserve Bank of St. Louis, FRED",
+            "national indicators for the map's dashboard strip, one row per series and observation",
+            f"through {out['date'].max()}", len(out),
+            {
+                "series": series_ids,
+                "daily_series_cut_to_the_last_observation_of_each_month": list(DAILY),
+                "missing_observations": "fred publishes a dot, written here as an empty value",
+            },
+        )])
     silent = f", {len(empty)} with nothing to download" if empty else ""
     print(f"[national] {len(frames)} of {len(series_ids)} series{silent}, {len(out)} rows "
           f"through {out['date'].max()} -> {OUT_FILE.name}")

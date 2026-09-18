@@ -8,7 +8,7 @@ import time
 import pandas as pd
 
 from bot.collectors import irs
-from bot.common import RAW_DIR, env_key, fetch, manifest_entry, replace_atomically, write_csv, write_manifest
+from bot.common import RAW_DIR, env_key, fetch, manifest_entry, staged_folder, write_csv
 
 OUT_DIR = RAW_DIR / "bea"
 ENDPOINT = "https://apps.bea.gov/api/data"
@@ -316,10 +316,10 @@ def _get(key, params):
     return payload
 
 
-# raw responses are committed, so the request echo must not carry the key
+# raw responses are committed, so the request echo must not carry the key. the
+# path is inside the run's staging directory, which is what makes the write safe
 def _save(path, payload, key):
-    replace_atomically(path, lambda staged: staged.write_text(
-        redact(json.dumps(payload, separators=(",", ":")), key) + "\n"))
+    path.write_text(redact(json.dumps(payload, separators=(",", ":")), key) + "\n")
     return path
 
 
@@ -421,51 +421,52 @@ def collect():
     df = df.sort_values(["cbsa_code", "metric", "period"]).reset_index(drop=True)
     newest = used[-1]
 
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    metrics_file = write_metrics(df, OUT_DIR / "metrics.csv")
-    entries = [manifest_entry(
-        metrics_file,
-        _query(method="GetData", datasetname=DATASET, TableName=TABLE, GeoFips="COUNTY", Year=year_param(used)),
-        PROVIDER,
-        "Regional Economic Accounts, CAINC1 personal income summary, county rows summed to cbsa and "
-        "metropolitan division codes, annual",
-        f"{TABLE} county rollup, {used[0]} through {newest}", len(df),
-        {
-            "metrics": {
-                INCOME: {"line": "1", "unit": LINES["1"]["unit"]},
-                POPULATION: {"line": "2", "unit": LINES["2"]["unit"]},
-                PER_CAPITA: {"derived": "personal income times 1000 over population, rounded half up to the dollar"},
+    # the rollup, both raw line payloads and the manifest land together
+    with staged_folder(OUT_DIR) as landing:
+        metrics_file = write_metrics(df, landing.path("metrics.csv"))
+        entries = [manifest_entry(
+            metrics_file,
+            _query(method="GetData", datasetname=DATASET, TableName=TABLE, GeoFips="COUNTY", Year=year_param(used)),
+            PROVIDER,
+            "Regional Economic Accounts, CAINC1 personal income summary, county rows summed to cbsa and "
+            "metropolitan division codes, annual",
+            f"{TABLE} county rollup, {used[0]} through {newest}", len(df),
+            {
+                "metrics": {
+                    INCOME: {"line": "1", "unit": LINES["1"]["unit"]},
+                    POPULATION: {"line": "2", "unit": LINES["2"]["unit"]},
+                    PER_CAPITA: {"derived": "personal income times 1000 over population, rounded half up to the dollar"},
+                },
+                "rule": "lines 1 and 2 are pulled per county and summed to every cbsa and, inside a division, to "
+                        "that division too. a county counts in a year only when both lines carry a value above "
+                        "zero, since bea writes 0 for a geography it did not estimate that year. a combined area "
+                        "bea reports under its own code takes the cbsa its parts share",
+                "combined_areas": sorted(COMBINED),
+                # a connecticut county, which bea publishes through 2023, counts
+                # in the cbsa of the planning region that succeeded it
+                "connecticut_counties": irs.CONNECTICUT,
+                "delineation": irs.DELINEATION_URL,
+                "years": f"{used[0]} through {newest}",
+                "next_year_probed": f"{year} not published",
+                "cbsa_codes": int(df["cbsa_code"].nunique()),
             },
-            "rule": "lines 1 and 2 are pulled per county and summed to every cbsa and, inside a division, to "
-                    "that division too. a county counts in a year only when both lines carry a value above "
-                    "zero, since bea writes 0 for a geography it did not estimate that year. a combined area "
-                    "bea reports under its own code takes the cbsa its parts share",
-            "combined_areas": sorted(COMBINED),
-            # a connecticut county, which bea publishes through 2023, counts
-            # in the cbsa of the planning region that succeeded it
-            "connecticut_counties": irs.CONNECTICUT,
-            "delineation": irs.DELINEATION_URL,
-            "years": f"{used[0]} through {newest}",
-            "next_year_probed": f"{year} not published",
-            "cbsa_codes": int(df["cbsa_code"].nunique()),
-        },
-    )]
-    for line, spec in LINES.items():
-        payload = trim_payload(merge_payloads(payloads[line]), used)
-        kept = len(data_rows(results(payload)))
-        path = _save(OUT_DIR / f"cainc1_line{line}.json", payload, key)
-        entries.append(manifest_entry(
-            path, _query(method="GetData", datasetname=DATASET, TableName=TABLE, LineCode=line,
-                         GeoFips="COUNTY", Year=year_requests[line][0]),
-            PROVIDER, f"{TABLE} line {line}, {spec['metric']}, every county",
-            f"{TABLE} line {line} through {newest}", kept,
-            {"metric": spec["metric"], "unit": spec["unit"], "unit_mult": spec["unit_mult"],
-             "year_requests": year_requests[line], "rows_received": received[line], "rows_kept": kept},
-        ))
-        print(f"[bea] line {line}: {kept} rows for {used[0]} through {newest} of {received[line]} received "
-              f"-> {path.name}")
+        )]
+        for line, spec in LINES.items():
+            payload = trim_payload(merge_payloads(payloads[line]), used)
+            kept = len(data_rows(results(payload)))
+            path = _save(landing.path(f"cainc1_line{line}.json"), payload, key)
+            entries.append(manifest_entry(
+                path, _query(method="GetData", datasetname=DATASET, TableName=TABLE, LineCode=line,
+                             GeoFips="COUNTY", Year=year_requests[line][0]),
+                PROVIDER, f"{TABLE} line {line}, {spec['metric']}, every county",
+                f"{TABLE} line {line} through {newest}", kept,
+                {"metric": spec["metric"], "unit": spec["unit"], "unit_mult": spec["unit_mult"],
+                 "year_requests": year_requests[line], "rows_received": received[line], "rows_kept": kept},
+            ))
+            print(f"[bea] line {line}: {kept} rows for {used[0]} through {newest} of {received[line]} received "
+                  f"-> {path.name}")
 
-    write_manifest(OUT_DIR, entries)
+        landing.manifest(entries)
     print(f"[bea] {len(df)} rows, {df['cbsa_code'].nunique()} codes, {used[0]} through {newest} "
           f"-> {metrics_file.name}")
-    return metrics_file
+    return OUT_DIR / metrics_file.name

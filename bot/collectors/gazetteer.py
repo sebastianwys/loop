@@ -3,7 +3,7 @@ import zipfile
 
 import pandas as pd
 
-from bot.common import RAW_DIR, env_key, fetch, manifest_entry, write_csv, write_manifest
+from bot.common import RAW_DIR, env_key, fetch, manifest_entry, staged_folder
 
 YEAR = 2024
 GAZ = f"https://www2.census.gov/geo/docs/maps-data/data/gazetteer/{YEAR}_Gazetteer/{YEAR}_Gaz_"
@@ -227,40 +227,43 @@ def collect():
 
     df = pd.concat([cbsa[COLUMNS], divisions], ignore_index=True)
 
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    write_csv(df, OUT_FILE)
-    write_csv(membership, MEMBERSHIP_FILE)
-    write_csv(by_vintage, VINTAGE_MEMBERSHIP_FILE)
-    if population is not None:
-        write_csv(population, COUNTY_POPULATION_FILE)
-    write_manifest(OUT_DIR, [
-        manifest_entry(
-            OUT_FILE, URL, "U.S. Census Bureau",
-            f"{YEAR} Gazetteer cbsa and county internal points, divisions derived from the omb july 2023 delineation",
-            f"{YEAR} Gazetteer", len(df),
-            {"county_gazetteer": COUNTY_URL, "delineation": DELINEATION_URL, "divisions": int(len(divisions))},
-        ),
-        manifest_entry(
-            MEMBERSHIP_FILE, DELINEATION_URL, "U.S. Office of Management and Budget, via the U.S. Census Bureau",
-            "the counties of every cbsa and metropolitan division",
-            "omb july 2023 delineation", len(membership),
-            {"cbsas": int(membership["cbsa_code"].nunique())},
-        ),
-        manifest_entry(
-            VINTAGE_MEMBERSHIP_FILE, DELINEATION_URL,
-            "U.S. Office of Management and Budget, via the U.S. Census Bureau",
-            "the counties of every cbsa and metropolitan division on the delineation each acs vintage was published on",
-            "omb february 2013, september 2018 and july 2023 delineations", len(by_vintage),
-            {"vintages": sorted(VINTAGE_DELINEATIONS), "sources": VINTAGE_DELINEATIONS},
-        ),
-    ] + ([
-        manifest_entry(
-            COUNTY_POPULATION_FILE, CENSUS_URL.format(year="{year}"), "U.S. Census Bureau",
-            f"county population ({POPULATION}) at each acs vintage, the weight behind a county that moved",
-            "ACS 5-year " + ", ".join(sorted(VINTAGE_DELINEATIONS)), len(population),
-            {"table": POPULATION, "vintages": sorted(VINTAGE_DELINEATIONS)},
-        ),
-    ] if population is not None else []))
+    # four files and their manifest, landing together. a run that replaced the
+    # centroids and then died would leave them beside the last run's county sets
+    with staged_folder(OUT_DIR) as landing:
+        centroids = landing.csv(df, OUT_FILE.name)
+        counties = landing.csv(membership, MEMBERSHIP_FILE.name)
+        vintages = landing.csv(by_vintage, VINTAGE_MEMBERSHIP_FILE.name)
+        # left as it is without a census key, so it keeps the path it is on disk
+        people = (landing.csv(population, COUNTY_POPULATION_FILE.name)
+                  if population is not None else COUNTY_POPULATION_FILE)
+        landing.manifest([
+            manifest_entry(
+                centroids, URL, "U.S. Census Bureau",
+                f"{YEAR} Gazetteer cbsa and county internal points, divisions derived from the omb july 2023 delineation",
+                f"{YEAR} Gazetteer", len(df),
+                {"county_gazetteer": COUNTY_URL, "delineation": DELINEATION_URL, "divisions": int(len(divisions))},
+            ),
+            manifest_entry(
+                counties, DELINEATION_URL, "U.S. Office of Management and Budget, via the U.S. Census Bureau",
+                "the counties of every cbsa and metropolitan division",
+                "omb july 2023 delineation", len(membership),
+                {"cbsas": int(membership["cbsa_code"].nunique())},
+            ),
+            manifest_entry(
+                vintages, DELINEATION_URL,
+                "U.S. Office of Management and Budget, via the U.S. Census Bureau",
+                "the counties of every cbsa and metropolitan division on the delineation each acs vintage was published on",
+                "omb february 2013, september 2018 and july 2023 delineations", len(by_vintage),
+                {"vintages": sorted(VINTAGE_DELINEATIONS), "sources": VINTAGE_DELINEATIONS},
+            ),
+        ] + ([
+            manifest_entry(
+                people, CENSUS_URL.format(year="{year}"), "U.S. Census Bureau",
+                f"county population ({POPULATION}) at each acs vintage, the weight behind a county that moved",
+                "ACS 5-year " + ", ".join(sorted(VINTAGE_DELINEATIONS)), len(population),
+                {"table": POPULATION, "vintages": sorted(VINTAGE_DELINEATIONS)},
+            ),
+        ] if population is not None else []))
     print(f"[gazetteer] {len(cbsa)} cbsas and {len(divisions)} divisions -> {OUT_FILE.name}")
     print(f"[gazetteer] {len(membership)} cbsa county pairs -> {MEMBERSHIP_FILE.name}")
     print(f"[gazetteer] {len(by_vintage)} pairs across {by_vintage['vintage'].nunique()} vintages "

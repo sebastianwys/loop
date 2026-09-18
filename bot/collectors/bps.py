@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from bot.common import RAW_DIR, STUDY_YEARS, fetch, manifest_entry, replace_atomically, write_csv, write_manifest
+from bot.common import RAW_DIR, STUDY_YEARS, fetch, manifest_entry, staged_folder
 
 OUT_DIR = RAW_DIR / "bps"
 OUT_FILE = OUT_DIR / "metrics.csv"
@@ -105,48 +105,48 @@ def stray_years(frame, year):
 
 def collect(out_dir=OUT_DIR):
     out_dir = Path(out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
     out_file = out_dir / OUT_FILE.name
 
-    frames, entries, year = [], [], FIRST_YEAR
-    while True:
-        url = file_url(year)
-        name = url.rsplit("/", 1)[-1]
-        response = fetch(url)
-        # the annual file appears some months after the year ends, so a 404
-        # past the last study year is the end of the series, not an error
-        if response.status_code == 404 and year > REQUIRED_THROUGH:
-            print(f"[bps] {name} not published yet, series ends at {year - 1}")
-            break
-        response.raise_for_status()
+    # every annual file, the metrics table and the manifest land together
+    with staged_folder(out_dir) as landing:
+        frames, entries, year = [], [], FIRST_YEAR
+        while True:
+            url = file_url(year)
+            name = url.rsplit("/", 1)[-1]
+            response = fetch(url)
+            # the annual file appears some months after the year ends, so a 404
+            # past the last study year is the end of the series, not an error
+            if response.status_code == 404 and year > REQUIRED_THROUGH:
+                print(f"[bps] {name} not published yet, series ends at {year - 1}")
+                break
+            response.raise_for_status()
 
-        path = out_dir / name
-        replace_atomically(path, lambda staged: staged.write_bytes(response.content))
-        frame = parse_annual(response.content.decode("latin-1"))
-        stray = stray_years(frame, year)
-        if stray:
-            raise RuntimeError(f"bps: {name} carries survey years {stray}, expected {year}")
-        frames.append(frame)
-        entries.append(manifest_entry(path, url, PROVIDER, DATASET, f"{year} annual", len(frame)))
-        print(f"[bps] {name}: {len(frame)} areas")
-        year += 1
+            path = landing.bytes(name, response.content)
+            frame = parse_annual(response.content.decode("latin-1"))
+            stray = stray_years(frame, year)
+            if stray:
+                raise RuntimeError(f"bps: {name} carries survey years {stray}, expected {year}")
+            frames.append(frame)
+            entries.append(manifest_entry(path, url, PROVIDER, DATASET, f"{year} annual", len(frame)))
+            print(f"[bps] {name}: {len(frame)} areas")
+            year += 1
 
-    parsed = pd.concat(frames, ignore_index=True)
-    metrics = annual_metrics(parsed)
-    write_csv(metrics, out_file)
+        parsed = pd.concat(frames, ignore_index=True)
+        metrics = annual_metrics(parsed)
+        staged_metrics = landing.csv(metrics, out_file.name)
 
-    last_year = year - 1
-    version = f"{FIRST_YEAR} to {last_year} annual"
-    areas = int(parsed["cbsa_code"].nunique())
-    write_manifest(out_dir, [manifest_entry(
-        out_file, CBSA_DIR, PROVIDER, DATASET, version, len(metrics),
-        {
-            "years": [FIRST_YEAR, last_year],
-            "files": [entry["filename"] for entry in entries],
-            "areas": areas,
-            "metrics": list(METRICS),
-            "basis": "estimates with imputation. permits_units sums the 1, 2, 3-4 and 5+ unit classes",
-        },
-    )] + entries)
+        last_year = year - 1
+        version = f"{FIRST_YEAR} to {last_year} annual"
+        areas = int(parsed["cbsa_code"].nunique())
+        landing.manifest([manifest_entry(
+            staged_metrics, CBSA_DIR, PROVIDER, DATASET, version, len(metrics),
+            {
+                "years": [FIRST_YEAR, last_year],
+                "files": [entry["filename"] for entry in entries],
+                "areas": areas,
+                "metrics": list(METRICS),
+                "basis": "estimates with imputation. permits_units sums the 1, 2, 3-4 and 5+ unit classes",
+            },
+        )] + entries)
     print(f"[bps] {len(metrics)} metric rows for {areas} areas, {version} -> {out_file.name}")
     return out_file

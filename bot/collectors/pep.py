@@ -2,7 +2,7 @@ import io
 
 import pandas as pd
 
-from bot.common import RAW_DIR, fetch, manifest_entry, replace_atomically, write_csv, write_manifest
+from bot.common import RAW_DIR, fetch, manifest_entry, staged_folder, write_csv
 
 OUT_DIR = RAW_DIR / "pep"
 OUT_FILE = OUT_DIR / "metrics.csv"
@@ -166,46 +166,47 @@ def download():
 
 def collect():
     files = download()
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    # a superseded vintage saved by an earlier run has no place beside the new one
+    # every vintage's raw file, the metrics table and the manifest land together
+    with staged_folder(OUT_DIR) as landing:
+        frames, entries = {}, []
+        for vintage in sorted(files, reverse=True):
+            url, content = files[vintage]
+            raw = landing.bytes(_filename(url), content)
+            frames[vintage] = parse_vintage(content)
+            years = sorted(frames[vintage]["period"].unique())
+            entries.append(manifest_entry(
+                raw, url, PROVIDER,
+                f"Population Estimates Program vintage {vintage}, metropolitan and micropolitan "
+                "statistical area totals with components of change",
+                f"vintage {vintage}, {years[0]} to {years[-1]}", len(content.splitlines()) - 1,
+                {"encoding": "latin-1", "area_codes": int(frames[vintage]["cbsa_code"].nunique())},
+            ))
+
+        df = merge_vintages(frames)
+        metrics_path = write_metrics(df, landing.path(OUT_FILE.name))
+        years = sorted(df["period"].unique())
+        newest = max(files)
+        entries.insert(0, manifest_entry(
+            metrics_path, files[newest][0], PROVIDER,
+            "Population Estimates Program metro, micro and division totals with components of change, "
+            "one row per area, metric and year",
+            f"vintage {newest}, annual {years[0]} to {years[-1]}", len(df),
+            {
+                "metrics": METRICS,
+                "vintages": {str(vintage): files[vintage][0] for vintage in sorted(files)},
+                "base_years": "the population estimate is kept, the components are skipped "
+                              "because they cover april to june of that year only",
+                "rate": "domestic_migration_rate is domestic_migration per 1,000 of pop_estimate",
+            },
+        ))
+        landing.manifest(entries)
+    # a superseded vintage saved by an earlier run has no place beside the new
+    # one, and is dropped only once the new one has landed
     kept = {_filename(url) for url, _ in files.values()}
     for stale in OUT_DIR.glob("cbsa-est*-alldata.csv"):
         if stale.name not in kept:
             stale.unlink()
 
-    frames, entries = {}, []
-    for vintage in sorted(files, reverse=True):
-        url, content = files[vintage]
-        raw = OUT_DIR / _filename(url)
-        replace_atomically(raw, lambda staged: staged.write_bytes(content))
-        frames[vintage] = parse_vintage(content)
-        years = sorted(frames[vintage]["period"].unique())
-        entries.append(manifest_entry(
-            raw, url, PROVIDER,
-            f"Population Estimates Program vintage {vintage}, metropolitan and micropolitan "
-            "statistical area totals with components of change",
-            f"vintage {vintage}, {years[0]} to {years[-1]}", len(content.splitlines()) - 1,
-            {"encoding": "latin-1", "area_codes": int(frames[vintage]["cbsa_code"].nunique())},
-        ))
-
-    df = merge_vintages(frames)
-    write_metrics(df, OUT_FILE)
-    years = sorted(df["period"].unique())
-    newest = max(files)
-    entries.insert(0, manifest_entry(
-        OUT_FILE, files[newest][0], PROVIDER,
-        "Population Estimates Program metro, micro and division totals with components of change, "
-        "one row per area, metric and year",
-        f"vintage {newest}, annual {years[0]} to {years[-1]}", len(df),
-        {
-            "metrics": METRICS,
-            "vintages": {str(vintage): files[vintage][0] for vintage in sorted(files)},
-            "base_years": "the population estimate is kept, the components are skipped "
-                          "because they cover april to june of that year only",
-            "rate": "domestic_migration_rate is domestic_migration per 1,000 of pop_estimate",
-        },
-    ))
-    write_manifest(OUT_DIR, entries)
     print(f"[pep] {len(df)} rows for {df['cbsa_code'].nunique()} codes, "
           f"{years[0]} to {years[-1]} -> {OUT_FILE.name}")
     return OUT_FILE

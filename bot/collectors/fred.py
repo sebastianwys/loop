@@ -1,6 +1,6 @@
 import pandas as pd
 
-from bot.common import RAW_DIR, env_key, fetch, manifest_entry, write_csv, write_manifest
+from bot.common import RAW_DIR, env_key, fetch, manifest_entry, staged_folder
 
 OUT_DIR = RAW_DIR / "fred"
 OUT_FILE = OUT_DIR / "mortgage30us.csv"
@@ -36,12 +36,12 @@ def collect():
 
     df = parse_observations(response.json()["observations"])
 
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    write_csv(df, OUT_FILE)
-    write_manifest(OUT_DIR, [manifest_entry(
-        OUT_FILE, f"{ENDPOINT}?series_id={SERIES}", "Federal Reserve Bank of St. Louis, FRED",
-        "30-year fixed rate mortgage average in the United States, weekly",
-        f"through {df['date'].iloc[-1]}", len(df),
-    )])
+    with staged_folder(OUT_DIR) as landing:
+        path = landing.csv(df, OUT_FILE.name)
+        landing.manifest([manifest_entry(
+            path, f"{ENDPOINT}?series_id={SERIES}", "Federal Reserve Bank of St. Louis, FRED",
+            "30-year fixed rate mortgage average in the United States, weekly",
+            f"through {df['date'].iloc[-1]}", len(df),
+        )])
     print(f"[fred] {len(df)} weekly observations through {df['date'].iloc[-1]} -> {OUT_FILE.name}")
     return OUT_FILE

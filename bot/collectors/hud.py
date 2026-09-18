@@ -18,8 +18,8 @@ import pandas as pd
 import requests
 
 from bot.common import (
-    INTEGRATED, RAW_DIR, STUDY_YEARS, USER_AGENT, env_key, fetch, manifest_entry,
-    replace_atomically, write_csv, write_manifest
+    INTEGRATED, RAW_DIR, STUDY_YEARS, USER_AGENT, env_key, fetch, manifest_entry, staged_folder,
+    write_manifest
 )
 
 OUT_DIR = RAW_DIR / "hud"
@@ -590,8 +590,7 @@ def collect():
         if not county_pop:
             print("[hud] no census population came back, only codes that sit in one fmr area resolve")
 
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    records, skipped, raw_files, rolled, trailing = [], {}, [], {}, {}
+    records, skipped, captures, rolled, trailing = [], {}, [], {}, {}
     gaps = {"unweighted_towns": set(), "codes_missing_an_area": {}}
     for year in sorted(set(years_for["fmr"]) | set(years_for["il"])):
         captured = {"year": year, "fmr": {}, "il": {}, "states": {}}
@@ -650,12 +649,9 @@ def collect():
 
         count = len(captured["fmr"]) + len(captured["il"]) + len(captured["states"])
         if count:
-            path = OUT_DIR / f"hud_{year}.json"
-            replace_atomically(path, lambda staged: staged.write_text(json.dumps(captured) + "\n"))
-            raw_files.append((path, year, count))
+            captures.append((year, captured, count))
 
     df = build_rows(records)
-    write_csv(df, OUT_FILE)
 
     all_years = sorted(set(requested["fmr"]) | set(requested["il"]))
     have = set(df["period"])
@@ -674,47 +670,52 @@ def collect():
     version = f"fmr through {through['fmr']}, income limits through {through['il']}"
     if built:
         version += f", {len(built)} metros built from hud fmr areas"
-    entries = [manifest_entry(
-        OUT_FILE, FMR_URL + "{entityid}?year={year}", PROVIDER,
-        "Fair market rents, two bedroom, and income limits, median family income, by metro area and fiscal year",
-        version, len(df),
-        {
-            "income_limits_endpoint": IL_URL + "{entityid}?year={year}",
-            "metro_list": LIST_URL,
-            "state_data_endpoint": STATE_URL + "{state}?year={year}",
-            "entities": len(entities),
-            # a code whose entity was named for the whole metro but covered
-            # only part of it that year, rebuilt from its counties instead
-            "entities_trailing_the_delineation": trailing,
-            "study_codes": len(levels),
-            "years": years_for,
-            "years_without_data": [y for y in all_years if str(y) not in have],
-            "responses_skipped": skipped,
-            # a code hud has no entity for is rebuilt from its counties. one
-            # fmr area means the value is that area's as hud published it, more
-            # than one means an acs population weighted mean of them
-            "rollup_method": "acs population weighted mean over the hud fmr areas the cbsa's counties sit in",
-            "rollup_weights": f"acs 5 year {CENSUS_VINTAGE} {POPULATION}, counties and new england towns",
-            "rollup_codes": len(built),
-            "rollup_codes_weighted": len(weighted_codes),
-            # the areas behind each rebuilt code, and the year they describe.
-            # hud can split or merge an area between years, so this is the last
-            # year that resolved rather than a statement about all of them
-            "rollup_areas": {code: rolled[code] for code in built},
-            "study_codes_by_metric_and_year": coverage,
-            "codes_without_a_value": sorted(set(levels) - set(df["cbsa_code"])),
-            # a town the census could not weigh, and a cbsa whose income was
-            # withheld because one of its fmr areas never answered
-            "towns_without_a_weight": sorted(gaps["unweighted_towns"]),
-            "codes_missing_an_fmr_area": gaps["codes_missing_an_area"],
-        },
-    )]
-    for path, year, count in raw_files:
-        entries.append(manifest_entry(
-            path, API, PROVIDER,
-            f"raw fmr, il and state responses per entity for fiscal year {year}",
-            str(year), count,
-        ))
-    write_manifest(OUT_DIR, entries)
+    # the table, the raw years and the manifest land together or not at all
+    with staged_folder(OUT_DIR) as landing:
+        metrics = landing.csv(df, OUT_FILE.name)
+        raw_files = [(landing.text(f"hud_{year}.json", json.dumps(captured) + "\n"), year, count)
+                     for year, captured, count in captures]
+        entries = [manifest_entry(
+            metrics, FMR_URL + "{entityid}?year={year}", PROVIDER,
+            "Fair market rents, two bedroom, and income limits, median family income, by metro area and fiscal year",
+            version, len(df),
+            {
+                "income_limits_endpoint": IL_URL + "{entityid}?year={year}",
+                "metro_list": LIST_URL,
+                "state_data_endpoint": STATE_URL + "{state}?year={year}",
+                "entities": len(entities),
+                # a code whose entity was named for the whole metro but covered
+                # only part of it that year, rebuilt from its counties instead
+                "entities_trailing_the_delineation": trailing,
+                "study_codes": len(levels),
+                "years": years_for,
+                "years_without_data": [y for y in all_years if str(y) not in have],
+                "responses_skipped": skipped,
+                # a code hud has no entity for is rebuilt from its counties. one
+                # fmr area means the value is that area's as hud published it, more
+                # than one means an acs population weighted mean of them
+                "rollup_method": "acs population weighted mean over the hud fmr areas the cbsa's counties sit in",
+                "rollup_weights": f"acs 5 year {CENSUS_VINTAGE} {POPULATION}, counties and new england towns",
+                "rollup_codes": len(built),
+                "rollup_codes_weighted": len(weighted_codes),
+                # the areas behind each rebuilt code, and the year they describe.
+                # hud can split or merge an area between years, so this is the last
+                # year that resolved rather than a statement about all of them
+                "rollup_areas": {code: rolled[code] for code in built},
+                "study_codes_by_metric_and_year": coverage,
+                "codes_without_a_value": sorted(set(levels) - set(df["cbsa_code"])),
+                # a town the census could not weigh, and a cbsa whose income was
+                # withheld because one of its fmr areas never answered
+                "towns_without_a_weight": sorted(gaps["unweighted_towns"]),
+                "codes_missing_an_fmr_area": gaps["codes_missing_an_area"],
+            },
+        )]
+        for path, year, count in raw_files:
+            entries.append(manifest_entry(
+                path, API, PROVIDER,
+                f"raw fmr, il and state responses per entity for fiscal year {year}",
+                str(year), count,
+            ))
+        landing.manifest(entries)
     print(f"[hud] {len(df)} rows, {df['metric'].nunique()} metrics -> {OUT_FILE.name}")
     return OUT_FILE

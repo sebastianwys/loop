@@ -1,6 +1,8 @@
+import contextlib
 import hashlib
 import json
 import os
+import tempfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -91,6 +93,9 @@ def manifest_entry(path, endpoint, provider, dataset, version, row_count, notes=
     return entry
 
 
+# the file every collector writes beside its downloads
+MANIFEST_FILE = "download_manifest.json"
+
 # the fields that move on every run whether or not the data did
 STAMP_KEYS = ("downloaded_at", "generated_at")
 
@@ -143,7 +148,69 @@ def write_csv(frame, path, **kwargs):
 
 
 def write_manifest(folder, entries):
-    path = folder / "download_manifest.json"
+    path = folder / MANIFEST_FILE
     if unchanged_but_for_stamps(path, entries):
         return path
     return replace_atomically(path, lambda staged: staged.write_text(json.dumps(entries, indent=2) + "\n"))
+
+
+# one file at a time is not enough for a collector that writes several. a run
+# that dies between two of them leaves a folder holding some of this run's files
+# and some of the last one's, under a manifest describing neither, which is the
+# half-replaced folder the scripts/ download guard was given a staging directory
+# to prevent.
+#
+# every file is written under a staging directory inside the folder and keeps
+# the name it will land under, so manifest_entry hashes and names the file this
+# run produced rather than the one still on disk. nothing is renamed over the
+# archive until the body reaches the end, and a body that raises takes the
+# staging directory with it and leaves the previous vintage entire
+class Landing:
+    def __init__(self, folder, staging):
+        self.folder, self.staging, self.names = folder, staging, []
+
+    # where to write a file: the name it will land under, inside staging
+    def path(self, name):
+        name = Path(name).name
+        if name not in self.names:
+            self.names.append(name)
+        return self.staging / name
+
+    # a frame, through the same index=False rule write_csv uses
+    def csv(self, frame, name, **kwargs):
+        path = self.path(name)
+        frame.to_csv(path, index=False, **kwargs)
+        return path
+
+    def text(self, name, text):
+        path = self.path(name)
+        path.write_text(text)
+        return path
+
+    def bytes(self, name, content):
+        path = self.path(name)
+        path.write_bytes(content)
+        return path
+
+    # the manifest lands with the files it describes. a refresh that finds
+    # nothing new still leaves it alone, the same rule write_manifest applies
+    def manifest(self, entries):
+        path = self.folder / MANIFEST_FILE
+        if unchanged_but_for_stamps(path, entries):
+            return path
+        self.text(MANIFEST_FILE, json.dumps(entries, indent=2) + "\n")
+        return path
+
+    def commit(self):
+        for name in self.names:
+            os.replace(self.staging / name, self.folder / name)
+
+
+@contextlib.contextmanager
+def staged_folder(folder):
+    folder = Path(folder)
+    folder.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=folder, prefix=".staging-") as staging:
+        landing = Landing(folder, Path(staging))
+        yield landing
+        landing.commit()

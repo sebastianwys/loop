@@ -3,7 +3,7 @@ import unicodedata
 
 import pandas as pd
 
-from bot.common import BASE_DIR, RAW_DIR, STUDY_YEARS, env_key, fetch, manifest_entry, write_csv, write_manifest
+from bot.common import BASE_DIR, RAW_DIR, STUDY_YEARS, env_key, fetch, manifest_entry, staged_folder
 
 # scripts/ is not a package, so put it on the path before importing the
 # pipeline's geography constants and the division tagging it already tests
@@ -189,42 +189,43 @@ def collect():
     if not key:
         raise RuntimeError("CENSUS_API_KEY is not set. signup: https://api.census.gov/data/key_signup.html")
 
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    entries, frames, absent = [], [], {}
-    for year in VINTAGES:
-        codes = present_variables(year)
-        missing = [code for code in VARIABLES if code not in codes]
-        if missing:
-            absent[str(year)] = missing
-            nulled = [name for name in METRICS if name not in available_metrics(codes)]
-            print(f"[acs] {year} lacks {', '.join(missing)}, so {', '.join(nulled)} will be null")
+    # every vintage's raw csv, the metrics table and the manifest land together.
+    # a vintage that failed halfway used to leave the earlier ones replaced
+    with staged_folder(OUT_DIR) as landing:
+        entries, frames, absent = [], [], {}
+        for year in VINTAGES:
+            codes = present_variables(year)
+            missing = [code for code in VARIABLES if code not in codes]
+            if missing:
+                absent[str(year)] = missing
+                nulled = [name for name in METRICS if name not in available_metrics(codes)]
+                print(f"[acs] {year} lacks {', '.join(missing)}, so {', '.join(nulled)} will be null")
 
-        print(f"[acs] fetching {year}: every msa and micro plus the divisions of {len(DIVISION_PARENTS)} parents")
-        raw = fetch_vintage(year, key, codes)
-        path = OUT_DIR / f"acs_extra_{year}.csv"
-        write_csv(raw, path)
-        rows = metric_rows(raw, year)
-        frames.append(rows)
-        entries.append(manifest_entry(
-            path, BASE_URL.format(year=year), PROVIDER, f"ACS 5-year estimates, {year} vintage",
-            f"ACS 5-year {year}", len(raw),
-            {"geography": f"{MSA_COL}:* plus {DIV_COL}:* within {len(DIVISION_PARENTS)} split msas",
-             "variables": codes, "absent_variables": missing},
+            print(f"[acs] fetching {year}: every msa and micro plus the divisions of {len(DIVISION_PARENTS)} parents")
+            raw = fetch_vintage(year, key, codes)
+            path = landing.csv(raw, f"acs_extra_{year}.csv")
+            rows = metric_rows(raw, year)
+            frames.append(rows)
+            entries.append(manifest_entry(
+                path, BASE_URL.format(year=year), PROVIDER, f"ACS 5-year estimates, {year} vintage",
+                f"ACS 5-year {year}", len(raw),
+                {"geography": f"{MSA_COL}:* plus {DIV_COL}:* within {len(DIVISION_PARENTS)} split msas",
+                 "variables": codes, "absent_variables": missing},
+            ))
+            divisions = int((raw["geo_level"] == "division").sum())
+            print(f"[acs] {year}: {len(raw) - divisions} msas and micros, {divisions} divisions, "
+                  f"{rows['metric'].nunique()} metrics -> {path.name}")
+
+        metrics = combine(frames)
+        out = landing.csv(metrics, OUT_FILE.name)
+        entries.insert(0, manifest_entry(
+            out, BASE_URL.format(year=VINTAGES[-1]), PROVIDER,
+            "metro metrics derived from ACS 5-year estimates, one row per cbsa, metric and vintage",
+            version_label(), len(metrics),
+            {"metrics": METRICS, "vintages": VINTAGES, "division_crosswalk": DIVISION_CROSSWALK,
+             "absent_variables": absent, "raw_files": [f"acs_extra_{year}.csv" for year in VINTAGES]},
         ))
-        divisions = int((raw["geo_level"] == "division").sum())
-        print(f"[acs] {year}: {len(raw) - divisions} msas and micros, {divisions} divisions, "
-              f"{rows['metric'].nunique()} metrics -> {path.name}")
-
-    metrics = combine(frames)
-    write_csv(metrics, OUT_FILE)
-    entries.insert(0, manifest_entry(
-        OUT_FILE, BASE_URL.format(year=VINTAGES[-1]), PROVIDER,
-        "metro metrics derived from ACS 5-year estimates, one row per cbsa, metric and vintage",
-        version_label(), len(metrics),
-        {"metrics": METRICS, "vintages": VINTAGES, "division_crosswalk": DIVISION_CROSSWALK,
-         "absent_variables": absent, "raw_files": [f"acs_extra_{year}.csv" for year in VINTAGES]},
-    ))
-    write_manifest(OUT_DIR, entries)
+        landing.manifest(entries)
     print(f"[acs] {len(metrics)} rows, {metrics['cbsa_code'].nunique()} codes, "
           f"{metrics['metric'].nunique()} metrics -> {OUT_FILE.name}")
     return OUT_FILE

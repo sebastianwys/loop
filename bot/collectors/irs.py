@@ -3,7 +3,7 @@ import io
 
 import pandas as pd
 
-from bot.common import RAW_DIR, fetch, manifest_entry, write_csv, write_manifest
+from bot.common import RAW_DIR, fetch, manifest_entry, staged_folder
 
 OUT_DIR = RAW_DIR / "irs"
 OUT_FILE = OUT_DIR / "metrics.csv"
@@ -221,21 +221,21 @@ def collect():
 
     df = pd.concat(frames, ignore_index=True)
     last = year - 1
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    write_csv(df, OUT_FILE)
-    write_manifest(OUT_DIR, [manifest_entry(
-        OUT_FILE, URL.format(kind="inflow", pair=pair_label(last)), PROVIDER, DATASET,
-        f"through {last}-{last + 1}", len(df),
-        {
-            "summary_row": "partner state 97 with county 0, Total Migration-US, per county",
-            "rule": "a county counts in a year only when both its inflow and outflow totals are "
-                    "present and not suppressed (-1), counties sum to their cbsa and, inside a "
-                    "division, to that division too",
-            "period": "the second filing year of each pair",
-            "metrics": METRICS,
-            "delineation": DELINEATION_URL,
-            "files": files,
-        },
-    )])
+    with staged_folder(OUT_DIR) as landing:
+        path = landing.csv(df, OUT_FILE.name)
+        landing.manifest([manifest_entry(
+            path, URL.format(kind="inflow", pair=pair_label(last)), PROVIDER, DATASET,
+            f"through {last}-{last + 1}", len(df),
+            {
+                "summary_row": "partner state 97 with county 0, Total Migration-US, per county",
+                "rule": "a county counts in a year only when both its inflow and outflow totals are "
+                        "present and not suppressed (-1), counties sum to their cbsa and, inside a "
+                        "division, to that division too",
+                "period": "the second filing year of each pair",
+                "metrics": METRICS,
+                "delineation": DELINEATION_URL,
+                "files": files,
+            },
+        )])
     print(f"[irs] {len(df)} rows for {period_of(FIRST_YEAR)} through {period_of(last)} -> {OUT_FILE.name}")
     return OUT_FILE

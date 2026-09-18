@@ -1,4 +1,4 @@
-from bot.common import RAW_DIR, fetch, looks_like_csv, manifest_entry, replace_atomically, write_manifest
+from bot.common import RAW_DIR, fetch, looks_like_csv, manifest_entry, staged_folder
 
 OUT_DIR = RAW_DIR / "zillow"
 BASE = "https://files.zillowstatic.com/research/public_csvs"
@@ -33,20 +33,21 @@ def collect():
             raise RuntimeError(f"{filename} came back without a RegionName header, usually an error page")
         downloads.append((filename, url, dataset, response.content))
 
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    entries = []
-    for filename, url, dataset, content in downloads:
-        path = OUT_DIR / filename
-        replace_atomically(path, lambda staged: staged.write_bytes(content))
+    # both files and their manifest land together, so a second file that fails
+    # cannot leave the first one replaced under the previous manifest
+    with staged_folder(OUT_DIR) as landing:
+        entries = []
+        for filename, url, dataset, content in downloads:
+            path = landing.bytes(filename, content)
 
-        # last column header is the newest month, which is the file's version
-        header = content.split(b"\n", 1)[0].decode()
-        newest_month = header.rsplit(",", 1)[-1].strip()
-        row_count = content.count(b"\n") - 1
+            # last column header is the newest month, which is the file's version
+            header = content.split(b"\n", 1)[0].decode()
+            newest_month = header.rsplit(",", 1)[-1].strip()
+            row_count = content.count(b"\n") - 1
 
-        entries.append(manifest_entry(path, url, "Zillow Research", dataset,
-                                      f"through {newest_month}", row_count, ATTRIBUTION))
-        print(f"[zillow] {row_count} rows through {newest_month} -> {filename}")
+            entries.append(manifest_entry(path, url, "Zillow Research", dataset,
+                                          f"through {newest_month}", row_count, ATTRIBUTION))
+            print(f"[zillow] {row_count} rows through {newest_month} -> {filename}")
 
-    write_manifest(OUT_DIR, entries)
+        landing.manifest(entries)
     return OUT_DIR
