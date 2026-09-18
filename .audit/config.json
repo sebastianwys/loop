@@ -1,0 +1,24 @@
+{
+  "money_core": [
+    "scripts/*.py",
+    "bot/*.py",
+    "bot/collectors/*.py",
+    "ml/src/loop/*.py",
+    "web/src/lib/*.ts"
+  ],
+  "excluded_from_audit": [
+    "web/dist/*",
+    "web/public/*",
+    ".snakemake/*",
+    "data/*",
+    "ml/results/*",
+    "web/node_modules/*",
+    "ml/.venv/*"
+  ],
+  "test_command": "ml/.venv/bin/python run_tests.py && (cd ml && .venv/bin/python run_tests.py) && (cd web && npx vitest run && npx tsc --noEmit)",
+  "coverage_command": "not installed: coverage is absent from ml/.venv; see AUDIT.md",
+  "mutation_command": "not installed: mutmut is absent from ml/.venv",
+  "language": "python+typescript",
+  "thresholds": {"money_core_line": 100, "money_core_branch": 100,
+                 "global_line": 90, "mutation_score": 80}
+}
