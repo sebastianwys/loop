@@ -188,10 +188,17 @@ export function allUnderCover(rows: BacktestRow[], horizon: number, nominal = NO
   return at.length > 0 && at.every((row) => row.coverage < nominal);
 }
 
-const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight"];
+const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+  "ten", "eleven", "twelve", "thirteen", "fourteen"];
 
 export function horizonWord(horizon: number): string {
   return WORDS[horizon] ?? String(horizon);
+}
+
+// a count the prose was not written with. the page used to say "ten series"
+// in type, and went on saying it for two commits after the input set was cut
+export function inWords(count: number): string {
+  return Number.isInteger(count) && count >= 0 ? WORDS[count] ?? String(count) : String(count);
 }
 
 // "one quarter", "one and two quarters", "one, two and eight quarters"

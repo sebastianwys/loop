@@ -67,6 +67,12 @@ FEATURES = [
     "hpi_rstderr",
 ]
 
+# the same eleven split by how a network reads them: a sequence over the window,
+# or one value at the origin. nets owns the tensors, but the split is contract,
+# because the panel manifest publishes it and the web page quotes the counts
+SEQ_FEATURES = ["hpi_qoq", "hpi_yoy", "unemp", "mortgage", "zhvi_yoy", "hpi_exp_yoy", "hpi_rstderr"]
+STATIC_FEATURES = ["permits_per_1000", "pop_growth", "domestic_migration_rate", "income_growth"]
+
 # columns the panel carries that no model reads. each was built for the same
 # reason as the two above, tried on the validation block and rejected there:
 # the calendar quarter 0.006565, the metro against the cross section 0.006565,

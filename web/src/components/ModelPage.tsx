@@ -3,9 +3,9 @@ import { formatValue } from "../lib/format";
 import {
   LONG_RUN, NOMINAL_COVERAGE, NO_CHANGE, SHIPPED, asPercent, bandCut, bandExtremes, bestAt, closestTo,
   coverageRange, errorCut, horizonsIn, leaderboard, lossSentence, lossesOf, modelLabel, points, rowAt,
-  sentenceCase, spreadOf,
+  inWords, sentenceCase, spreadOf,
 } from "../lib/model";
-import { BACKTEST } from "../lib/modelNumbers";
+import { BACKTEST, INPUTS } from "../lib/modelNumbers";
 import type { ViewProps } from "../lib/views";
 import { ModelFigure } from "./ModelFigure";
 import "../styles/model.css";
@@ -101,16 +101,18 @@ export function ModelPage({ data }: ViewProps) {
           <ModelFigure id="coverage" />
           <p>
             How late a series starts matters more than it looks. A feature can only be learned where
-            the model is fitted, and the fitting block ends in 2017, so the share of fitting samples
-            it reaches is what decides whether it can be learned at all. Listings and inventory are
-            present in every test sample and in none of the fitting ones: the model was being scored
-            on information it had never once been taught to use. Zillow home values reach 0.40 of the
-            fitting block, population and migration 0.14, income 0.03.
+            the model is fitted, and that is not the whole train block: its last three years are held
+            out for validation, so a model fits on outcomes through 2014Q4. The rule down the middle
+            of the figure above is that date. Zillow home values reach 0.38 of the block left of it,
+            population and migration 0.09, and permits and income nothing at all, while all of them
+            are in 97 percent or more of the test samples the model is scored on.
           </p>
           <p>
             Two of those sources could be deepened and were. Unemployment went from 0.09 of the
-            fitting block to 0.79 and the mortgage rate from 0.50 to 1.00, and that alone cut
-            validation loss from 0.006602 to 0.006564.
+            fitting block to 0.82 and the mortgage rate from 0.50 to 1.00, and that alone cut
+            validation loss from 0.006602 to 0.006564. Permits and income cannot be deepened,
+            because the data does not exist earlier, which is why the backtest below reads nine
+            series while the forecast the map draws reads {inWords(INPUTS.sequence + INPUTS.annual)}.
           </p>
         </section>
 
@@ -178,8 +180,8 @@ export function ModelPage({ data }: ViewProps) {
           <p>
             Five classical rules set the bar: no change, momentum, the metro's own average growth,
             ridge on price lags and covariates, and gradient boosting with quantile losses. Two
-            networks share one input: 24 quarters of ten series each with a presence mask, four
-            annual features at the origin, and a learned embedding per metro. The window MLP flattens
+            networks share one input: 24 quarters of {inWords(INPUTS.sequence)} series each with a
+            presence mask, {inWords(INPUTS.annual)} annual features at the origin, and a learned embedding per metro. The window MLP flattens
             that into a three layer perceptron. The sequence GRU reads it as a sequence and
             concatenates the final state with the annual features and the embedding. Both emit three
             monotone quantiles per horizon and train on pinball loss with Adam, weight decay and
@@ -187,12 +189,12 @@ export function ModelPage({ data }: ViewProps) {
           </p>
           <p>
             Learning rate, weight decay and the input set are chosen on validation loss alone, never
-            on test. The validation set is the tail of the fitting block, outcomes realized 2015 to
-            2017.
+            on test. The validation set is the tail of the train block, outcomes realized 2015 to
+            2017, and what is left of that block is what the model fits on.
           </p>
           <ModelFigure id="training" />
           <p>
-            Two of the ten series are new, and both come from a file FHFA publishes beside the index
+            Two of the {inWords(INPUTS.sequence)} series are new, and both come from a file FHFA publishes beside the index
             that this project had downloaded and never read: the expanded-data index, a second
             estimate of the same metro quarter built from more records, and the standard error FHFA
             reports for it. That error is the only published measure of how thin a metro's
@@ -203,14 +205,16 @@ export function ModelPage({ data }: ViewProps) {
             . The model has no other way to know that.
           </p>
           <p>
-            Input sets were compared on validation loss and nothing else. The shipped ten series come
-            in at 0.006202. Dropping the expanded index costs a lot, 0.006564. Carrying both forms of
-            the index error buys 0.000003, which is noise, so the simpler set stays. Adding CPI, the
-            ten year, the term spread and national unemployment is worse than not having them at
-            0.006618: one number shared by all 410 metros tells a window which era it sits in and
-            nothing about the place. The rejected columns stay in the panel, out of reach of every
-            model, because a negative result that is one command from being re-run is worth more than
-            one written down.
+            Input sets were compared on validation loss and nothing else. The shipped
+            {" "}{inWords(INPUTS.sequence)} series come in at 0.006204. Dropping the expanded index
+            costs a lot, 0.006567. Adding CPI, the ten year, the term spread and national
+            unemployment is worse than not having them at 0.006617: one number shared by all 410
+            metros tells a window which era it sits in and nothing about the place. Two other
+            candidates land within 0.000007 of the shipped set, which is inside the spread five
+            seeds of the same set produce, so a margin that thin is a coin and the simpler set
+            stays. The rejected columns stay in the panel, out of reach of every model, because a
+            negative result that is one command from being re-run is worth more than one written
+            down.
           </p>
         </section>
 
@@ -377,7 +381,7 @@ export function ModelPage({ data }: ViewProps) {
               <strong>The index error is fitted in the wrong units.</strong> It enters the model as
               index points, and FHFA rebases every metro to 100 at its own start, so the same number
               means different things in two metros. Expressed as a percent of the index it is scale
-              free and slightly worse on validation, 0.006225 against 0.006202. The metro embedding is
+              free and slightly worse on validation, 0.006229 against 0.006204. The metro embedding is
               the likely reason the raw form survives. The percent form is what ships to the map,
               where a reader is comparing metros and the model is not.
             </li>

@@ -34,3 +34,7 @@ export const BACKTEST: BacktestRow[] = [
   { model: "windowmlp", horizon: 4, maePct: 6.5839, coverage: 0.9189, width: 0.2421, n: 7378 },
   { model: "windowmlp", horizon: 8, maePct: 15.6189, coverage: 0.6837, width: 0.3595, n: 7378 },
 ];
+
+// what the shipped model reads: a sequence over the window, a value at the
+// origin, and the columns the panel carries that no model touches
+export const INPUTS = { sequence: 7, annual: 4, context: 11 };

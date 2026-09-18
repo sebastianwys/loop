@@ -85,7 +85,18 @@ export function leaderboard(texts) {
   return rows.sort((a, b) => a.model.localeCompare(b.model) || a.horizon - b.horizon);
 }
 
-export function renderModule(rows) {
+// how many series a model reads, out of the panel manifest the builder wrote.
+// the page says this in prose, and prose that is typed goes stale: it claimed
+// ten series for two commits after the input set was cut to eleven columns
+export function readInputs(text) {
+  const manifest = JSON.parse(String(text));
+  const seq = manifest?.features?.sequence;
+  const annual = manifest?.features?.annual;
+  if (!Array.isArray(seq) || !Array.isArray(annual)) return null;
+  return { sequence: seq.length, annual: annual.length, context: (manifest.context ?? []).length };
+}
+
+export function renderModule(rows, inputs) {
   const body = rows
     .map((r) => `  { model: "${r.model}", horizon: ${r.horizon}, maePct: ${r.maePct}, `
       + `coverage: ${r.coverage}, width: ${r.width}, n: ${r.n} },`)
@@ -100,6 +111,15 @@ export function renderModule(rows) {
     "export const BACKTEST: BacktestRow[] = [",
     body,
     "];",
+    ...(inputs
+      ? [
+          "",
+          "// what the shipped model reads: a sequence over the window, a value at the",
+          "// origin, and the columns the panel carries that no model touches",
+          "export const INPUTS = "
+            + `{ sequence: ${inputs.sequence}, annual: ${inputs.annual}, context: ${inputs.context} };`,
+        ]
+      : []),
     "",
   ].join("\n");
 }
@@ -132,7 +152,9 @@ function writeNumbers() {
   }
   if (texts.length === 0) return { rows: 0, changed: false };
   const rows = leaderboard(texts);
-  const next = renderModule(rows);
+  const manifestPath = new URL("panel_manifest.json", ML);
+  const inputs = existsSync(manifestPath) ? readInputs(readFileSync(manifestPath, "utf8")) : null;
+  const next = renderModule(rows, inputs);
   const current = existsSync(OUT_MODULE) ? readFileSync(OUT_MODULE, "utf8") : "";
   // only touching the file when the numbers moved keeps the dev server from
   // reloading on every build

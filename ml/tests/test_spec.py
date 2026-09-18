@@ -188,3 +188,19 @@ class TestTargetIsFoundByCalendar(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# the split is published in the panel manifest and quoted as prose on the web
+# page, so the two lists and the flat one have to stay the same eleven columns
+class TestTheFeatureSplitMatchesTheFlatList(unittest.TestCase):
+    def test_every_feature_is_read_exactly_one_way(self):
+        self.assertEqual(sorted(spec.FEATURES), sorted(spec.SEQ_FEATURES + spec.STATIC_FEATURES))
+        self.assertEqual(set(spec.SEQ_FEATURES) & set(spec.STATIC_FEATURES), set())
+
+    def test_no_feature_is_also_a_context_column(self):
+        self.assertEqual(set(spec.FEATURES) & set(spec.CONTEXT), set())
+
+    def test_nets_reads_the_contract_rather_than_a_second_copy(self):
+        from loop import nets
+        self.assertEqual(nets.SEQ_FEATURES, spec.SEQ_FEATURES)
+        self.assertEqual(nets.STATIC_FEATURES, spec.STATIC_FEATURES)

@@ -531,6 +531,11 @@ def manifest(panel, path, have):
         "first_quarter": str(panel["quarter"].min()),
         "last_quarter": str(panel["quarter"].max()),
         "non_null_share": {c: round(float(panel[c].notna().mean()), 4) for c in spec.PANEL_COLUMNS},
+        # which columns a model may read and which only the figures and the map
+        # do. the web page quotes these counts in prose, and prose that is typed
+        # goes stale the moment the contract moves, which it has twice
+        "features": {"sequence": list(spec.SEQ_FEATURES), "annual": list(spec.STATIC_FEATURES)},
+        "context": list(spec.CONTEXT),
         "sources": {name: info["path"] for name, info in have.items() if info["present"]},
         "missing_sources": {name: f"{have[name]['path']} is absent, so {', '.join(ABSENT.get(name, []))} stay null"
                             for name in missing},

@@ -1,6 +1,9 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import { SAMPLE } from "../lib/data";
+import { inWords } from "../lib/model";
+import { INPUTS } from "../lib/modelNumbers";
 import type { LayoutMode } from "../lib/layout";
 import { FIGURE_IDS, FIGURES } from "../lib/modelFigures";
 import { DEFAULT_ROUTE } from "../lib/route";
@@ -172,5 +175,21 @@ describe("the model view", () => {
     expect(bare).toContain("0.66 of outcomes there against a nominal 0.90");
     expect(bare).not.toContain("undefined");
     expect(bare).not.toContain("NaN");
+  });
+});
+
+// the page said "ten series" in type and went on saying it for two commits
+// after the input set was cut. the count is generated now, and this is the
+// guard that it stays generated rather than quietly becoming type again
+describe("how many series the page says the model reads", () => {
+  it("matches the shipped contract, whatever it currently is", () => {
+    expect(page).toContain(`24 quarters of ${inWords(INPUTS.sequence)} series`);
+    expect(page).toContain(`${inWords(INPUTS.annual)} annual features at the origin`);
+  });
+
+  it("is the count the panel manifest published, not a number someone typed", () => {
+    const manifest = JSON.parse(readFileSync("../ml/results/panel_manifest.json", "utf8"));
+    expect(INPUTS.sequence).toBe(manifest.features.sequence.length);
+    expect(INPUTS.annual).toBe(manifest.features.annual.length);
   });
 });
