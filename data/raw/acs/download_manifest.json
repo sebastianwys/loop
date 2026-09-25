@@ -9,12 +9,12 @@
       "dataset": "metro metrics derived from ACS 5-year estimates, one row per cbsa, metric and vintage"
     },
     "integrity": {
-      "sha256": "388cb6eae971831d88945f03146b324c5da052095bdb8ca98bf1b84f182b09f4",
+      "sha256": "21450aeeb970833f7a2079cde880326d6ab739e843f5449cb9bbd5f5fb1b5cec",
       "size_kb": 565.8,
       "row_count": 17406
     },
     "version": "ACS 5-year 2014, 2019, 2024",
-    "downloaded_at": "2026-09-15T19:04:53Z",
+    "downloaded_at": "2026-09-25T14:37:01Z",
     "notes": {
       "metrics": {
         "gross_rent": {
@@ -98,12 +98,12 @@
       "dataset": "ACS 5-year estimates, 2014 vintage"
     },
     "integrity": {
-      "sha256": "420f3fb2eaade33c0996a2b6051f93ac47df9f64501ab16b808626258748647f",
+      "sha256": "da5fce58c4c3b82088ba513cf2b78984f750351d21555309c6222aa956452158",
       "size_kb": 129.4,
       "row_count": 960
     },
     "version": "ACS 5-year 2014",
-    "downloaded_at": "2026-09-15T19:04:00Z",
+    "downloaded_at": "2026-09-25T14:36:34Z",
     "notes": {
       "geography": "metropolitan statistical area/micropolitan statistical area:* plus metropolitan division:* within 13 split msas",
       "variables": [
@@ -136,12 +136,12 @@
       "dataset": "ACS 5-year estimates, 2019 vintage"
     },
     "integrity": {
-      "sha256": "1508278e70a867426ab41d251033e32d186b526b643ebc5ca9b9c3a334e49678",
+      "sha256": "f08ca27d2ad7783fb60912168b3e15afed320c8bc94308ded61f2451796e242f",
       "size_kb": 130.5,
       "row_count": 969
     },
     "version": "ACS 5-year 2019",
-    "downloaded_at": "2026-09-15T19:04:32Z",
+    "downloaded_at": "2026-09-25T14:36:47Z",
     "notes": {
       "geography": "metropolitan statistical area/micropolitan statistical area:* plus metropolitan division:* within 13 split msas",
       "variables": [
@@ -179,7 +179,7 @@
       "row_count": 972
     },
     "version": "ACS 5-year 2024",
-    "downloaded_at": "2026-09-15T19:04:53Z",
+    "downloaded_at": "2026-09-25T14:37:01Z",
     "notes": {
       "geography": "metropolitan statistical area/micropolitan statistical area:* plus metropolitan division:* within 13 split msas",
       "variables": [
