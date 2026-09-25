@@ -9,12 +9,12 @@
       "dataset": "Regional Economic Accounts, CAINC1 personal income summary, county rows summed to cbsa and metropolitan division codes, annual"
     },
     "integrity": {
-      "sha256": "4cef3cb7e94581823b0e281c81b96b8d782b323b276368792f1b8dd58de74ce3",
-      "size_kb": 1137.8,
-      "row_count": 31536
+      "sha256": "33a447c183315eab02a2a2150054e6e3f921fa8f487ccdc6b3e9f53c4770c6cf",
+      "size_kb": 1144.3,
+      "row_count": 31716
     },
     "version": "CAINC1 county rollup, 2014 through 2024",
-    "downloaded_at": "2026-09-15T19:05:00Z",
+    "downloaded_at": "2026-09-25T14:37:08Z",
     "notes": {
       "metrics": {
         "bea_personal_income": {
@@ -56,6 +56,16 @@
         "51955",
         "51958"
       ],
+      "connecticut_counties": {
+        "09001": "09190",
+        "09003": "09110",
+        "09005": "09160",
+        "09007": "09130",
+        "09009": "09170",
+        "09011": "09180",
+        "09013": "09110",
+        "09015": "09150"
+      },
       "delineation": "https://www2.census.gov/programs-surveys/metro-micro/geographies/reference-files/2023/delineation-files/list1_2023.xlsx",
       "years": "2014 through 2024",
       "next_year_probed": "2026 not published",
@@ -72,12 +82,12 @@
       "dataset": "CAINC1 line 1, bea_personal_income, every county"
     },
     "integrity": {
-      "sha256": "910a9bd5a40842f651baa59acc61d4088ba443237fb9c17d68cc7ccf10656490",
+      "sha256": "679f791da3f7977c696887be9ea54676aba80bb42fe98b2c157570abcbfedbfd",
       "size_kb": 5200.2,
       "row_count": 34639
     },
     "version": "CAINC1 line 1 through 2024",
-    "downloaded_at": "2026-09-15T19:05:00Z",
+    "downloaded_at": "2026-09-25T14:37:09Z",
     "notes": {
       "metric": "bea_personal_income",
       "unit": "Thousands of dollars",
@@ -99,12 +109,12 @@
       "dataset": "CAINC1 line 2, bea_population, every county"
     },
     "integrity": {
-      "sha256": "c6a65b242191ed2c82ab1b9558c9b9a7bb79cc6d16fc4bf803d969d0d12cbd17",
+      "sha256": "2f5a0aacd1d11e7dd2e13b9660381f9e039152bd272347062ae8eef10961b0fc",
       "size_kb": 5504.1,
       "row_count": 34639
     },
     "version": "CAINC1 line 2 through 2024",
-    "downloaded_at": "2026-09-15T19:05:00Z",
+    "downloaded_at": "2026-09-25T14:37:09Z",
     "notes": {
       "metric": "bea_population",
       "unit": "Number of persons",

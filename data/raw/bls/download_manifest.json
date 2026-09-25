@@ -9,12 +9,12 @@
       "dataset": "Local Area Unemployment Statistics, metropolitan area unemployment rate, not seasonally adjusted"
     },
     "integrity": {
-      "sha256": "7c39ad0c7383c7e485393b1e7e378ddee258a094692310968d652ea0c005c833",
-      "size_kb": 7614.4,
-      "row_count": 194646
+      "sha256": "c2b08b1d92b62bb4533145f65e37d76fe96513f136d469e5394c0abfec62c784",
+      "size_kb": 7614.6,
+      "row_count": 194650
     },
     "version": "1990 onward, every month plus annual averages",
-    "downloaded_at": "2026-09-17T04:45:09Z",
+    "downloaded_at": "2026-09-25T14:37:43Z",
     "notes": {
       "series_requested": 410,
       "series_missing": 0,
