@@ -56,10 +56,11 @@ class TestWhatTheVintageTablesDecide(unittest.TestCase):
         self.assertIsNone(self.rates(self.membership)["13460"])
         self.assertEqual(self.rates(None)["13460"], 0.5803)
 
-    def test_seventy_two_metros_gain_a_rate_the_delineation_refuses(self):
+    def test_seventy_three_metros_gain_a_rate_the_delineation_refuses(self):
         held, guessed = self.rates(self.membership), self.rates(None)
         gained = sorted(c for c in held if held[c] is None and guessed[c] is not None)
-        self.assertEqual(len(gained), 72, gained[:8])
+        # was 72. the 2026-09-18 renumbering crosswalk gave cleveland, 17410, its 2014 row
+        self.assertEqual(len(gained), 73, gained[:8])
 
 
 if __name__ == "__main__":

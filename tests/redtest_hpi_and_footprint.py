@@ -20,9 +20,10 @@ V0, V1, V2 = [str(y) for y in bm.STUDY_YEARS]
 # within a rounding step rather than exactly
 ROUNDING = 0.06
 
-# cleveland is one of the metros the census side of the join has no 2014 or
-# 2019 row for. fhfa published all four quarters of both years, and the price
-# history in the metro's own payload draws them
+# cleveland was one of the metros the census side of the join had no 2014 or
+# 2019 row for, until the 2026-09-18 crosswalk. fhfa published all four
+# quarters of both years, and the price history in the metro's own payload
+# draws them
 CLEVELAND = "17410"
 CLEVELAND_2014 = 127.5
 CLEVELAND_2019 = 156.2
@@ -144,11 +145,14 @@ class TestTheYearPanelIsBuiltFromWhatFhfaPublished(unittest.TestCase):
         cls.rows = merged[merged["cbsa_code"] == CLEVELAND]
         centroids = bm.load_centroids(bm.DEFAULT_PATHS["centroids"])
         cls.series = bm.load_fhfa_series(bm.DEFAULT_PATHS["fhfa"])
-        cls.metro = bm.build_metros(cls.rows, centroids, series=cls.series)[0][0]
+        # the build is handed the 2024 row alone, the join as it stood before the
+        # crosswalk, so its 2014 and 2019 panel can only come from the series
+        alone = cls.rows[cls.rows["year"].astype(int) == int(V2)]
+        cls.metro = bm.build_metros(alone, centroids, series=cls.series)[0][0]
 
-    # the census side is the one with no row, which is what the panel is reading
-    def test_the_census_join_carries_only_2024_for_cleveland(self):
-        self.assertEqual(sorted(str(int(year)) for year in self.rows["year"]), [V2])
+    # was 2024 alone. the 2026-09-18 renumbering crosswalk joined its 2014 and 2019 rows
+    def test_the_census_join_carries_all_three_years_for_cleveland(self):
+        self.assertEqual(sorted(str(int(year)) for year in self.rows["year"]), [V0, V1, V2])
 
     def test_the_build_fills_the_panel_from_the_series_it_holds(self):
         history = self.series[CLEVELAND]
@@ -220,7 +224,7 @@ class TestARenumberedDivisionKeepsItsFootprint(unittest.TestCase):
         self.assertEqual(reported, {cbsa: RENUMBERED_POP_14_24[cbsa] for cbsa in sorted(RENUMBERED_POP_14_24)})
 
 
-# the integrated file is short of 33 metro-years, and the report blames fhfa
+# the integrated file is short of 26 metro-years, and the report blames fhfa
 # for them. fhfa published every one: it is the census side that has no row
 class TestTheReportNamesTheSideOfTheJoinThatIsMissing(unittest.TestCase):
     @classmethod

@@ -91,14 +91,18 @@ describe("what the product claims about the model's own numbers", () => {
   // between two rates, so it is in percentage points. the accuracy page prints
   // it that way and the map must print the same field the same way
   it("prints the surprise in percentage points on the map, as the accuracy page does", () => {
-    // this metro fell 4.9 percent against an expected 5.9, so the miss is
-    // 10.8 points, not 10.8 percent of anything
+    // this metro fell 4.9 percent, and its miss against the backtest's call is
+    // a gap between two growth rates: points, not a percent of anything
     const metro = DATA.metros.find((m) => m.cbsa === "15260")!;
     const realized = metricById("hpi_yoy_latest");
     const surprise = metricById("hpi_surprise_4q");
+    // the miss is read off the build, not typed: a retrain moves the call it is measured from
+    const miss = Number(surprise.accessor(metro)!.toFixed(1));
 
     expect(metro.name).toBe("Brunswick-St. Simons, GA");
     expect(formatValue(realized.accessor(metro), realized.format, realized.kind === "diverging")).toBe("-4.9%");
-    expect(formatValue(surprise.accessor(metro), surprise.format, surprise.kind === "diverging")).toBe("-10.8 pp");
+    // signed to one decimal with a pp suffix, the way the accuracy page prints a miss
+    expect(formatValue(surprise.accessor(metro), surprise.format, surprise.kind === "diverging"))
+      .toBe(`${miss > 0 ? "+" : ""}${(miss === 0 ? 0 : miss).toFixed(1)} pp`);
   });
 });

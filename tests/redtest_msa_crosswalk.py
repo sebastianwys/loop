@@ -94,12 +94,13 @@ class TestTheRenumberedPairsAreTheSamePlace(unittest.TestCase):
         have = set(zip(merged.cbsa_code, merged.year))
         codes, years = sorted(merged.cbsa_code.unique()), sorted(merged.year.unique())
         gaps = [(c, y) for c in codes for y in years if (c, y) not in have]
-        self.assertEqual(len(gaps), 33)
+        # was 33, the 2026-09-18 renumbering crosswalk joined these five and cleveland's two
+        self.assertEqual(len(gaps), 26)
+        joined = [("19430", 2014), ("28880", 2019), ("39150", 2014), ("48680", 2014), ("48680", 2019)]
+        self.assertEqual([pair for pair in joined if pair not in have], [])
         recovered = [(c, y) for c, y in gaps
                      if any(new == c and old in self.acs[str(y)] for old, new in RENUMBERED.items())]
-        self.assertEqual(sorted(recovered),
-                         [("19430", 2014), ("28880", 2019), ("39150", 2014),
-                          ("48680", 2014), ("48680", 2019)])
+        self.assertEqual(sorted(recovered), [])
 
 
 if __name__ == "__main__":

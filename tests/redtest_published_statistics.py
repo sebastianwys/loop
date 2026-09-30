@@ -94,7 +94,7 @@ def markdown_table(text, header):
 
 
 # the report retires an older decoupling claim by publishing a significance test
-# on two correlations that were measured on one and the same 392 metros. the
+# on two correlations that were measured on one and the same 396 metros. the
 # published test is the independent-sample fisher z, which assumes they were
 # not. population in 2019 and 2024 correlates at 0.998 and hpi at 0.905, so
 # nearly all of the sampling error is common to both correlations and cancels,
@@ -104,8 +104,10 @@ def markdown_table(text, header):
 # metro count are recomputed here, the verdict is read out of the prose. a
 # deliberate recompute updates these in the same commit as the paragraph
 class TestThePopulationClaimRestsOnAPairedTest(unittest.TestCase):
-    METROS = 392
-    PUBLISHED_R = {2014: 0.28, 2019: 0.32, 2024: 0.28}
+    # 392 until the 2026-09-18 renumbering crosswalk joined four more metros to
+    # all three vintages
+    METROS = 396
+    PUBLISHED_R = {2014: 0.27, 2019: 0.31, 2024: 0.27}
     ALPHA = 0.05
     DRAWS = 50000
     SEED = 477
@@ -137,7 +139,7 @@ class TestThePopulationClaimRestsOnAPairedTest(unittest.TestCase):
             r_jh=cross[0, 2], r_jm=cross[0, 3], r_kh=cross[1, 2], r_km=cross[1, 3]
         )
         cls.claim = next(
-            line for line in report_text().splitlines() if "392 metros" in line
+            line for line in report_text().splitlines() if "396 metros" in line
         )
 
     def steiger(self):
