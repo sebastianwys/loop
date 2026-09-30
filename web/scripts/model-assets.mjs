@@ -42,8 +42,22 @@ export const PAIRED = "backtest/paired.csv";
 // decided the inputs the fitting block could not see
 export const ADMISSION = ["admission.csv", "admission_pairs.csv"];
 
+// the walk-forward record, ml/walkforward.py: every model refitted once a year
+// and scored on the outcomes from 2018 on and from 2022 on. the vintage run
+// reads fhfa's index as each release first printed it, and it is the one the
+// page leads with. the latest run reads the index as fhfa prints it today, and
+// the page reads it only to say how much the revisions were worth
+export const WALKFORWARD = "walkforward/vintage/summary.csv";
+export const WALKFORWARD_LATEST = "walkforward/latest/summary.csv";
+export const WALKFORWARD_BANDS = "walkforward/vintage/bands.csv";
+export const WALKFORWARD_PAIRED = "walkforward/vintage/paired.csv";
+
 // the model the map draws, whose raw band the calibration figure plots
 const SHIPPED = "seqgru";
+
+// the rule that says nothing changes, which the page measures the shipped
+// model's cut against
+const NO_CHANGE = "no_change";
 
 // the metros the fans figure's alt text names, the first two it draws
 export const FAN_METROS = ["16984", "12420"];
@@ -69,6 +83,10 @@ export const REQUIRED = [
   ...Object.values(HISTORY_FILES).map((name) => `backtest/${name}`),
   PAIRED,
   ...ADMISSION,
+  WALKFORWARD,
+  WALKFORWARD_LATEST,
+  WALKFORWARD_BANDS,
+  WALKFORWARD_PAIRED,
   FORECASTS,
   MANIFEST,
 ];
@@ -221,6 +239,99 @@ export function admissionRows(text) {
     .filter((row) => row.arm.length > 0 && Number.isFinite(row.seed));
 }
 
+// one row per model, horizon, span and band, sorted so a rebuild does not
+// churn the file. span is the first outcome quarter scored, and band is the
+// online band or the static one, which only 2022 onward has
+export function walkRows(text) {
+  return parseBacktest(text)
+    .map((row) => ({
+      model: String(row.model ?? ""),
+      horizon: cellNumber(row.horizon),
+      span: String(row.span ?? ""),
+      band: String(row.band ?? ""),
+      n: cellNumber(row.n),
+      origins: cellNumber(row.origins),
+      maePct: kept(cellNumber(row.mae_pct)),
+      coverage: kept(cellNumber(row.coverage)),
+      width: kept(cellNumber(row.width)),
+      intervalScore: kept(cellNumber(row.interval_score)),
+    }))
+    .filter((row) => row.model.length > 0 && Number.isFinite(row.horizon) && row.span.length > 0 && row.band.length > 0)
+    .sort((a, b) => a.model.localeCompare(b.model) || a.horizon - b.horizon
+      || a.span.localeCompare(b.span) || a.band.localeCompare(b.band));
+}
+
+// the online band's settings for each model and horizon. pandas writes a
+// boolean as True or False, and anything else is a scale nobody recorded
+export function walkBands(text) {
+  const flag = (cell) => {
+    const word = String(cell ?? "").trim().toLowerCase();
+    return word === "true" ? true : word === "false" ? false : null;
+  };
+  return parseBacktest(text)
+    .map((row) => ({
+      model: String(row.model ?? ""),
+      horizon: cellNumber(row.horizon),
+      gamma: kept(cellNumber(row.gamma)),
+      window: kept(cellNumber(row.window)),
+      scaled: flag(row.scaled),
+    }))
+    .filter((row) => row.model.length > 0 && Number.isFinite(row.horizon))
+    .sort((a, b) => a.model.localeCompare(b.model) || a.horizon - b.horizon);
+}
+
+// the walk-forward paired test, the shipped model against every other one at
+// every horizon, once over each span. a p value the test could not compute
+// stays missing, as it does in the backtest's
+export function walkPairedRows(text, model = SHIPPED) {
+  return parseBacktest(text)
+    .filter((row) => row.model === model && row.against && row.span)
+    .map((row) => ({
+      span: row.span,
+      against: row.against,
+      horizon: cellNumber(row.horizon),
+      origins: cellNumber(row.origins),
+      difference: kept(cellNumber(row.difference)),
+      pValue: kept(cellNumber(row.p_value)),
+    }))
+    .filter((row) => Number.isFinite(row.horizon))
+    .sort((a, b) => a.span.localeCompare(b.span) || a.against.localeCompare(b.against) || a.horizon - b.horizon);
+}
+
+// the earliest span, the whole record. a span is named by the first outcome
+// quarter it scores
+export function firstSpan(rows) {
+  return [...new Set(rows.map((row) => row.span))].filter((span) => /^\d{4}Q[1-4]$/.test(span)).sort()[0] ?? null;
+}
+
+// every row the module carries ships in the page's bundle, so the four
+// walk-forward constants keep only the rows the page reads. the parsers above
+// still read and check the whole files, and the filter runs as they are
+// written out.
+//
+// the summary: every model over the record, and over the later span only the
+// shipped model, both its bands, and no change, which its cut is set against
+export function shownWalk(rows, record = firstSpan(rows)) {
+  return rows.filter((row) => (row.span === record
+    ? row.band === "online"
+    : row.model === SHIPPED || (row.model === NO_CHANGE && row.band === "online")));
+}
+
+// today's index, only for the two record errors the revisions sentence compares
+export function shownLatest(rows, record = firstSpan(rows)) {
+  return rows.filter((row) => row.span === record && row.band === "online" && (row.model === SHIPPED || row.model === NO_CHANGE));
+}
+
+// the band settings, only the shipped model's, the one set the page states
+export function shownBands(rows) {
+  return rows.filter((row) => row.model === SHIPPED);
+}
+
+// the paired test, every rival over the record and only no change after it
+export function shownPaired(rows, record = firstSpan(rows)) {
+  return rows.filter((row) => row.span === record || row.against === NO_CHANGE);
+}
+
 // what a training history shows: the epoch validation loss was lowest, which
 // is where training stopped and what the figure marks, the last epoch run,
 // the epoch from which validation stays within one percent of that low for
@@ -356,7 +467,7 @@ export function renderModule(rows, inputs, extras = {}) {
     .map((r) => `  { model: "${r.model}", horizon: ${literal(r.horizon)}, maePct: ${literal(r.maePct)}, `
       + `coverage: ${literal(r.coverage)}, width: ${literal(r.width)}, n: ${literal(r.n)} },`)
     .join("\n");
-  const { raw, training, forecast, panel, coverage, calibration, paired, admission } = extras;
+  const { raw, training, forecast, panel, coverage, calibration, paired, admission, walk, walkLatest, bands, walkPaired } = extras;
   const types = ["BacktestRow"];
   if (raw) types.push("RawBand");
   if (training) types.push("TrainingFacts");
@@ -365,6 +476,12 @@ export function renderModule(rows, inputs, extras = {}) {
   if (coverage !== undefined) types.push("PanelCoverage");
   if (paired) types.push("PairedRow");
   if (admission) types.push("AdmissionRow");
+  if (walk || walkLatest) types.push("WalkRow");
+  if (bands) types.push("WalkBand");
+  if (walkPaired) types.push("WalkPairedRow");
+  const walkLine = (r) => `  { model: ${JSON.stringify(r.model)}, horizon: ${literal(r.horizon)}, span: ${JSON.stringify(r.span)}, `
+    + `band: ${JSON.stringify(r.band)}, n: ${literal(r.n)}, origins: ${literal(r.origins)}, maePct: ${literal(r.maePct)}, `
+    + `coverage: ${literal(r.coverage)}, width: ${literal(r.width)}, intervalScore: ${literal(r.intervalScore)} },`;
   return [
     "// generated by scripts/model-assets.mjs from ml/results/backtest. do not",
     "// edit by hand: npm run build rewrites it from the csvs the backtest wrote,",
@@ -444,6 +561,52 @@ export function renderModule(rows, inputs, extras = {}) {
           "];",
         ]
       : []),
+    ...(walk
+      ? [
+          "",
+          "// the walk-forward record, every model refitted once a year and fed fhfa's",
+          "// index as each release first printed it. span is the first outcome quarter",
+          "// scored: every model over the whole record, and over 2022 onward only the",
+          "// shipped model, both its bands, and no change",
+          "export const WALKFORWARD: WalkRow[] = [",
+          ...walk.map(walkLine),
+          "];",
+        ]
+      : []),
+    ...(walkLatest
+      ? [
+          "",
+          "// the shipped model's and no change's record fed the index as fhfa prints it",
+          "// today, which says how much the revisions were worth",
+          "export const WALKFORWARD_LATEST: WalkRow[] = [",
+          ...walkLatest.map(walkLine),
+          "];",
+        ]
+      : []),
+    ...(bands
+      ? [
+          "",
+          "// the shipped model's online band settings for each horizon, chosen on the",
+          "// outcomes before the record. a window of 0 is every outcome realized so far",
+          "export const WALKFORWARD_BANDS: WalkBand[] = [",
+          ...bands.map((r) => `  { model: ${JSON.stringify(r.model)}, horizon: ${literal(r.horizon)}, gamma: ${literal(r.gamma)}, `
+            + `window: ${literal(r.window)}, scaled: ${r.scaled === null ? "null" : String(r.scaled)} },`),
+          "];",
+        ]
+      : []),
+    ...(walkPaired
+      ? [
+          "",
+          "// the shipped model against every other one over the record, and against no",
+          "// change over 2022 onward, a paired test per span and horizon. difference is",
+          "// the shipped model's mean error less the other's, in points, so a negative",
+          "// one has it closer",
+          "export const WALKFORWARD_PAIRED: WalkPairedRow[] = [",
+          ...walkPaired.map((r) => `  { span: ${JSON.stringify(r.span)}, against: ${JSON.stringify(r.against)}, horizon: ${literal(r.horizon)}, `
+            + `origins: ${literal(r.origins)}, difference: ${literal(r.difference)}, pValue: ${literal(r.pValue)} },`),
+          "];",
+        ]
+      : []),
     ...(coverage !== undefined
       ? [
           "",
@@ -507,10 +670,25 @@ export function writeNumbers(results = ML, outModule = OUT_MODULE, repo = REPO) 
   const calibration = calibrationSize(read("backtest/seqgru.csv"));
   const paired = pairedRows(read(PAIRED));
   const admission = ADMISSION.flatMap((name) => admissionRows(read(name)));
+  const walk = walkRows(read(WALKFORWARD));
+  if (!walk.some((row) => row.model === SHIPPED)) {
+    throw new Error(`[model-assets] ml/results/${WALKFORWARD} has no rows for ${SHIPPED}, the model the page leads with`);
+  }
+  const walkLatest = walkRows(read(WALKFORWARD_LATEST));
+  const bands = walkBands(read(WALKFORWARD_BANDS));
+  const walkPaired = walkPairedRows(read(WALKFORWARD_PAIRED));
   const current = existsSync(outModule) ? readFileSync(outModule, "utf8") : "";
   const measured = measureCoverage(results);
   const coverage = measured ?? carriedCoverage(current);
-  const next = renderModule(rows, inputs, { raw, training, forecast, panel, coverage, calibration, paired, admission });
+  // the record is the vintage summary's earliest span, for all four files
+  const record = firstSpan(walk);
+  const next = renderModule(rows, inputs, {
+    raw, training, forecast, panel, coverage, calibration, paired, admission,
+    walk: shownWalk(walk, record),
+    walkLatest: shownLatest(walkLatest, record),
+    bands: shownBands(bands),
+    walkPaired: shownPaired(walkPaired, record),
+  });
   // only touching the file when the numbers moved keeps the dev server from
   // reloading on every build
   if (next !== current) writeFileSync(outModule, next);

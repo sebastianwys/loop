@@ -1,13 +1,20 @@
 import { useMemo } from "react";
 import { formatValue } from "../lib/format";
 import {
-  EXPANDED_BEFORE, EXPANDED_FOR_ALL_FROM, FIT_END, LONG_RUN, NOMINAL_COVERAGE, NO_CHANGE, SHIPPED, TRAIN_END, WHY_SHIPPED,
-  admissionSentences, aheadOf, allUnderCover, asPercent, bandCut, bandExtremes, bestAt, bothScored, closestTo, coverageRange,
-  errorCut, extraFit, featureName, horizonPhrase, horizonsIn, inWords, joinList, leaderboard, lossSentence, lossesOf, matchedBy,
-  matchedEverywhere, matchedPhrase, meanVerdict, modelLabel, modelsIn, pairedOrigins, pairedWith, points, proseName, ridgeVerdict,
-  rowAt, scored, sentenceCase, separatedAt, separatedSentence, shiftQuarter, spreadOf, winsAt,
+  AVERAGE, BAND_TUNE, CHALLENGERS, EXPANDED_BEFORE, EXPANDED_FOR_ALL_FROM, FIT_END, LONG_RUN, NOMINAL_COVERAGE, NO_CHANGE,
+  PAIRED_LEVEL, REFIT_FROM, RULE_HORIZONS, SHIPPED, TRAIN_END, WHY_SHIPPED,
+  admissionSentences, aheadOf, allUnderCover, asPercent, bandCall, bandCut, bandExtremes, bandPairs, bandWords, beatenEverywhere,
+  bestAt, bothScored, closerAt, closestTo, coverageRange, cutWords, edgeSentence, edgeTest, edgesOver, errorCut, errorCuts,
+  extraFit, featureName, horizonPhrase, horizonWord, horizonsIn, inWords, joinList, leaderboard, lossSentence, lossesOf, matchedBy,
+  matchedEverywhere, matchedPhrase, meanVerdict, modelLabel, modelsIn, pAt, pBound, pList, pText, pairedOrigins, pairedWith,
+  points, proseName, revisionOf, ridgeVerdict, rowAt, ruleCall, ruleSentence, scored, sentenceCase, separatedAt,
+  separatedSentence, settingsPhrase, shiftQuarter, spanPaired, spanRows, spanStart, spansIn, spreadOf, tiedWith, widthAgainst,
+  winsAt,
 } from "../lib/model";
-import { ADMISSION, BACKTEST, CALIBRATION_N, INPUTS, PAIRED, PANEL, PANEL_COVERAGE } from "../lib/modelNumbers";
+import {
+  ADMISSION, BACKTEST, CALIBRATION_N, INPUTS, PAIRED, PANEL, PANEL_COVERAGE, WALKFORWARD, WALKFORWARD_BANDS, WALKFORWARD_LATEST,
+  WALKFORWARD_PAIRED,
+} from "../lib/modelNumbers";
 import type { ViewProps } from "../lib/views";
 import { ModelFigure } from "./ModelFigure";
 import "../styles/model.css";
@@ -49,8 +56,34 @@ function cutPhrase(near: number | null, far: number | null): string {
   return `${one(near, "four quarters")} and ${one(far, "eight")}`;
 }
 
+// "runs bands 23 percent narrower at four quarters and 34 at eight than the
+// metro's own long run average", or wider where they are
+function bandPhrase(near: number | null, far: number | null): string {
+  if (near === null || far === null) return "has no band to set against the metro's own long run average at four and eight quarters";
+  const word = (cut: number) => (cut >= 0 ? "narrower" : "wider");
+  const size = (cut: number) => asPercent(Math.abs(cut));
+  return word(near) === word(far)
+    ? `runs bands ${size(near)} percent ${word(near)} at four quarters and ${size(far)} at eight than the metro's own long run average`
+    : `runs a band ${size(near)} percent ${word(near)} at four quarters and ${size(far)} percent ${word(far)} at eight than the `
+      + "metro's own long run average";
+}
+
+// the one value every row shares, or null when they differ
+function shared(values: number[]): number | null {
+  return values.length > 0 && values.every((value) => value === values[0]) ? values[0] : null;
+}
+
+// "only the four quarter gap passes the test", read off the horizons the
+// paired test put past chance out of the ones it tested
+function passWords(apart: number[], tested: number[]): string {
+  if (apart.length === 0) return "no gap passes the test";
+  if (apart.length === tested.length) return "every gap passes the test";
+  return `only the ${joinList(apart.map(horizonWord))} quarter ${apart.length === 1 ? "gap passes" : "gaps pass"} the test`;
+}
+
 // the walkthrough in ml/README.md as a page: the panel, the evaluation
-// design, the models, the results, the shipped forecast, the limits.
+// design, the models, the results, the walk-forward record, the shipped
+// forecast, the limits.
 //
 // every number here is read rather than written down. the leaderboard and the
 // panel's facts come from ml/results through scripts/model-assets.mjs, and the
@@ -164,6 +197,212 @@ export function ModelPage({ data }: ViewProps) {
   // what the admission run found for the inputs the old gate could not see
   const admitted = admissionSentences(ADMISSION);
 
+  // the walk-forward record, which the page leads with: every model refitted
+  // once a year and fed fhfa's index as each release first printed it, scored
+  // over the whole record and over 2022 onward apart. the same record read on
+  // today's index is only there to say what the revisions were worth
+  const walkSpans = spansIn(WALKFORWARD);
+  const recordFrom = walkSpans[0] ?? null;
+  const recentFrom = walkSpans.length > 1 ? walkSpans[walkSpans.length - 1] : null;
+  const record = spanRows(WALKFORWARD, recordFrom);
+  const recent = spanRows(WALKFORWARD, recentFrom);
+  const recordPaired = spanPaired(WALKFORWARD_PAIRED, recordFrom);
+  const recentPaired = spanPaired(WALKFORWARD_PAIRED, recentFrom);
+  const walkHorizons = horizonsIn(record);
+  const walkBoard = leaderboard(record);
+  const walkWinners = new Map(walkHorizons.map((horizon) => [horizon, bestAt(record, horizon)?.model ?? null]));
+  const recordOrigins = shared(record.map((row) => row.origins));
+  const recentOrigins = shared(recent.map((row) => row.origins));
+  const recordN = shared(record.map((row) => row.n));
+  const recordStart = recordFrom ? spanStart(recordFrom) : null;
+  const recentStart = recentFrom ? spanStart(recentFrom) : null;
+  const joined = modelsIn(record).filter((model) => !modelsIn(rows).includes(model));
+  // the average is named in full the first time the page meets it
+  const introName = (model: string) => (model === AVERAGE ? "an average of the GRU and ridge" : proseName(model));
+
+  // against no change, over the record and over 2022 onward, and where the
+  // paired test puts that gap past chance with the gru the closer
+  const recordCut4 = errorCut(record, SHIPPED, NO_CHANGE, 4);
+  const recordCut8 = errorCut(record, SHIPPED, NO_CHANGE, 8);
+  const recentCut4 = errorCut(recent, SHIPPED, NO_CHANGE, 4);
+  const recentCut8 = errorCut(recent, SHIPPED, NO_CHANGE, 8);
+  const recordTested = pairedWith(recordPaired, NO_CHANGE);
+  const recentTested = pairedWith(recentPaired, NO_CHANGE);
+  const recordApart = closerAt(recordPaired, NO_CHANGE, "shipped");
+  const recentApart = closerAt(recentPaired, NO_CHANGE, "shipped");
+  const recordEvery = recordTested.length > 0 && recordApart.length === recordTested.length;
+  const recordBound = pBound(recordTested.filter((row) => recordApart.includes(row.horizon)).map((row) => row.pValue));
+  const recentP = recentApart.map((horizon) => pAt(recentPaired, NO_CHANGE, horizon)).filter(scored);
+  // 2022 onward is the fixed split's own test block when both score the same
+  // samples at every horizon
+  const sameOutcomes = recent.length > 0 && horizons.every((h) => {
+    const mine = rowAt(recent, SHIPPED, h);
+    return mine !== null && mine.n === rowAt(rows, SHIPPED, h)?.n;
+  });
+  const recent4 = rowAt(recent, SHIPPED, 4);
+  const recent8 = rowAt(recent, SHIPPED, 8);
+  const recentVsSplit = recentCut4 === null || recentCut8 === null || cut4 === null || cut8 === null
+    ? null
+    : recentCut4 < cut4 && recentCut8 < cut8 ? "below" : recentCut4 > cut4 && recentCut8 > cut8 ? "above" : "set against";
+
+  // who stands where on the record: the rivals lower than the gru somewhere,
+  // the ones the record cannot tell from it, what the rule written before the
+  // run makes of ridge and the average, and the ones it beats everywhere
+  const walkWins = winsAt(record, SHIPPED);
+  const edges = edgesOver(record);
+  // the ones lower at more horizons first, the order the readings name them in
+  const tied = tiedWith(record, recordPaired)
+    .sort((a, b) => aheadOf(record, b, SHIPPED).length - aheadOf(record, a, SHIPPED).length);
+  const tiedGaps = tied.flatMap((model) => pairedWith(recordPaired, model));
+  const tiedApart = tiedGaps.filter((row) => row.pValue < PAIRED_LEVEL).length;
+  const calls = CHALLENGERS.filter((model) => pairedWith(recordPaired, model).length > 0).map((model) => ruleCall(recordPaired, model));
+  const promoted = calls.filter((call) => call.replaces).map((call) => call.against);
+  const beaten = beatenEverywhere(recordPaired, walkHorizons);
+  const revision = revisionOf(record, spanRows(WALKFORWARD_LATEST, recordFrom));
+
+  // the gru's two bands on 2022 onward and what the band rule makes of them
+  const bandPairsRecent = bandPairs(WALKFORWARD, recentFrom);
+  const bandRule = bandCall(bandPairsRecent);
+  const longPair = bandPairsRecent.length > 0 ? bandPairsRecent[bandPairsRecent.length - 1] : null;
+  const longWidth = longPair ? widthAgainst(longPair.online.width, longPair.static.width) : null;
+  const longGain = longPair && scored(longPair.online.coverage) && scored(longPair.static.coverage)
+    ? Math.round((longPair.online.coverage - longPair.static.coverage) * 100)
+    : null;
+  const settings = settingsPhrase(WALKFORWARD_BANDS);
+  const stepping = WALKFORWARD_BANDS.some((band) => band.model === SHIPPED && scored(band.gamma) && band.gamma > 0);
+  const missRate = 1 - NOMINAL_COVERAGE;
+
+  // the headline, the way ml/README.md opens: the record, then 2022 onward
+  // against the fixed split, then where the gru stands among the models the
+  // record cannot tell apart
+  const recordTest = recordEvery
+    ? `, and a paired test puts the gap beyond chance at every horizon${recordBound ? ` (p below ${recordBound})` : ""}`
+    : recordApart.length > 0
+      ? `, and a paired test puts the gap beyond chance at ${horizonPhrase(recordApart)}`
+      : recordTested.length > 0 ? ", though a paired test puts every one of those gaps down to chance" : "";
+  const recentCuts = recentCut4 !== null && recentCut8 !== null && recentCut4 >= 0 && recentCut8 >= 0
+    ? asPercent(recentCut4) === asPercent(recentCut8)
+      ? `the cut is ${asPercent(recentCut4)} percent at both`
+      : `the cut is ${asPercent(recentCut4)} percent at four quarters and ${asPercent(recentCut8)} at eight`
+    : `the GRU ${cutPhrase(recentCut4, recentCut8)}`;
+  const lowestOnRecord = walkWins.length === 0
+    ? "The GRU does not have the lowest error at any horizon of that record"
+    : walkWins.length === walkHorizons.length
+      ? "The GRU has the lowest error at every horizon of that record"
+      : `The GRU has the lowest error at ${horizonPhrase(walkWins)} of that record`;
+  const withinChance = tiedApart === 0
+    ? "within chance of it"
+    : `within chance of it at all but ${inWords(tiedApart)} of ${tied.length === 1 ? "its" : "their"} ${inWords(tiedGaps.length)} gaps`;
+  const standing = tied.length === 0
+    ? `${lowestOnRecord}.`
+    : `${lowestOnRecord}: ${joinList(tied.map(introName))} ${tied.length === 1 ? "is" : "are"} ${withinChance}`
+      + `${promoted.length === 0 ? `, so it ships as one of ${inWords(tied.length + 1)} tied models, by a rule written before the run` : ""}.`;
+  const overruled = promoted.length > 0
+    ? ` A rule written before the run says ${joinList(promoted.map(introName))} should replace it.`
+    : "";
+  const headline = record.length === 0 || recordCut4 === null
+    ? ""
+    : [
+        `Refitted once a year from ${REFIT_FROM} and fed FHFA's index as each release first printed it, the sequence GRU `
+          + `${cutPhrase(recordCut4, recordCut8)}`
+          + `${recordOrigins !== null && recordStart ? `, across the ${recordOrigins} quarterly origins whose outcomes land from ${recordStart} on` : ""}`
+          + `${recordTest}.`,
+        recent.length > 0 && recentStart
+          ? `On ${recentStart} onward alone${sameOutcomes ? ", the years the fixed split below scores" : ""}, ${recentCuts}`
+            + `${recentVsSplit && cut4 !== null && cut8 !== null ? `, ${recentVsSplit} that split's ${asPercent(cut4)} and ${asPercent(cut8)}` : ""}`
+            + `${recentTested.length > 0 ? `, and ${passWords(recentApart, recentTested.map((row) => row.horizon))}` : ""}.`
+          : "",
+        `${standing}${overruled}`,
+      ].filter((sentence) => sentence.length > 0).join(" ");
+
+  // the fixed split's own numbers, which the headline used to carry
+  const fixedP4 = pAt(PAIRED, NO_CHANGE, 4);
+  const fixedP8 = pAt(PAIRED, NO_CHANGE, 8);
+  const fixedP = fixedP4 === null || fixedP8 === null
+    ? ""
+    : pText(fixedP4) === pText(fixedP8) ? ` (p ${pText(fixedP4)} at both)` : ` (${pList([fixedP4, fixedP8])})`;
+
+  // the four readings of the record, each chosen by the rows it reads, so a
+  // rerun that moves a p value moves the words
+  const recordCuts = errorCuts(record, SHIPPED, NO_CHANGE);
+  const recentCutsAll = errorCuts(recent, SHIPPED, NO_CHANGE);
+  const splitApart = closerAt(PAIRED, NO_CHANGE, "shipped");
+  const recordBeyond = recordEvery
+    ? ", beyond chance at every horizon"
+    : recordApart.length > 0
+      ? `, beyond chance at ${horizonPhrase(recordApart)}`
+      : recordTested.length > 0 ? ", and the paired test puts every one of those gaps down to chance" : "";
+  // more origins are only worth a sentence while they separate more
+  const moreOrigins = recordOrigins !== null && origins !== null && recordApart.length > splitApart.length
+    ? ` The record's ${recordOrigins} origins, through a boom and a correction, give the test something to work with that the `
+      + `fixed split's ${origins} from one cycle did not.`
+    : "";
+  const recentPass = recentTested.length === 0
+    ? ""
+    : `, and ${passWords(recentApart, recentTested.map((row) => row.horizon))}`
+      + `${recentApart.length > 0 && recentApart.length < recentTested.length ? ` (${pList(recentP)})` : ""}`;
+  const againstFixed = recentVsSplit && recent4 && recent8 && shipped4 && shipped8 && cut4 !== null && cut8 !== null
+    ? ` At four and eight quarters that ${recentVsSplit === "set against" ? "compares with" : `is ${recentVsSplit}`} the fixed `
+      + `split's ${asPercent(cut4)} and ${asPercent(cut8)}${sameOutcomes ? " on the same outcomes" : ""}: the GRU refitted every `
+      + `year misses by ${points(recent4.maePct)} and ${points(recent8.maePct)} points there, where the one fitted once, on nothing `
+      + `realized after ${trainYear}, missed by ${points(shipped4.maePct)} and ${points(shipped8.maePct)}.`
+      + `${recent4.maePct > shipped4.maePct && recent8.maePct > shipped8.maePct ? " More recent data did not buy a better forecast of the correction." : ""}`
+    : "";
+  const walkReadings = [
+    recordCuts.length === 0 ? "" : `Against no change the GRU ${cutWords(recordCuts)}${recordBeyond}.${moreOrigins}`,
+    recentCutsAll.length === 0 || !recentStart
+      ? ""
+      : `On ${recentStart} onward alone it ${cutWords(recentCutsAll)}${recentPass}.${againstFixed}`,
+    [
+      walkWins.length === 0 ? "The GRU does not have the lowest error at any horizon." : `The GRU has the lowest error at ${horizonPhrase(walkWins)}.`,
+      edgeSentence(edges, walkHorizons.length),
+      edgeTest(edges, recordPaired),
+      ruleSentence(calls, walkHorizons.length, tied.length + 1),
+      beaten.length > 0
+        ? `${sentenceCase(joinList(beaten.map(proseName)))} ${beaten.length === 1 ? "is the one" : `are the ${inWords(beaten.length)}`} it beats at every horizon.`
+        : "",
+    ].filter((sentence) => sentence.length > 0).join(" "),
+    revision === null
+      ? ""
+      : `${revision.share < 0.05 ? "Revisions barely matter." : "Revisions matter here."} Read on today's index instead, the GRU's error `
+        + `moves by ${points(revision.error)} points or less at every horizon`
+        + `${revision.cut !== null ? ` and its cut against no change by ${revision.cut <= 1 ? "a point or less" : `up to ${points(revision.cut, 1)} points`}` : ""}.`
+        + `${revision.share < 0.05 ? " The honest reading costs almost nothing, which is itself worth knowing." : ""}`,
+  ].filter((reading) => reading.length > 0);
+
+  // the band replay's verdict, and the line the limits carry about it
+  const bandVerdict = bandPairsRecent.length === 0
+    ? ""
+    : [
+        `The online band ${bandWords(bandRule)}.`,
+        longPair && longWidth
+          ? `At ${horizonPhrase([longPair.horizon])} it is ${longWidth}${longGain !== null ? ` for ${longGain > 0 ? `${inWords(longGain)} more points of coverage` : "no more coverage"}` : ""}.`
+          : "",
+        stepping
+          ? `Each step moves the aimed miss rate by gamma times the gap between the nominal ${Math.round(missRate * 100)} percent and the share `
+            + `that missed, so a quarter in which every band missed moves it ${inWords(Math.round((1 - missRate) / missRate))} times further `
+            + `than a quarter in which none did, and misses across ${PANEL.metros} metros arrive together: the band widens fast in a turn `
+            + "and narrows slowly after it."
+          : "",
+        `The static band keeps its small look-ahead in this comparison, which leans the comparison its way`
+          + `${bandRule.higher.length > 0 && bandRule.higher.length === bandRule.horizons.length ? ", and it still wins at every horizon" : ""}.`,
+        bandRule.replaces
+          ? "By the rule written first, the online band replaces the static one."
+          : "So the static band stays, and the under-coverage stays in the limits below.",
+      ].filter((sentence) => sentence.length > 0).join(" ");
+  const shiftTried = bandPairsRecent.length > 0
+    ? ` A conformal method built for distribution shift, one that reads only outcomes realized by each origin, is tried in the walk-forward `
+      + `record above: it ${bandWords(bandRule)}${longPair && longWidth ? `, with ${longWidth} at ${horizonPhrase([longPair.horizon])}` : ""}.`
+    : " A wider held out period, or a conformal method built for distribution shift, is the real answer.";
+  // the pipeline picks the gru between the two networks, and the record is
+  // where ridge and the average were weighed against it
+  const weighed = calls.length === 0
+    ? ""
+    : ` The walk-forward record above does weigh ${joinList(calls.map((call) => proseName(call.against)))} against it, by a rule written `
+      + `before the run, and ${promoted.length > 0
+        ? `the rule says ${joinList(promoted.map(proseName))} should replace it`
+        : `the rule keeps the GRU${tied.length > 0 ? `, one of ${inWords(tied.length + 1)} tied models` : ""}`}.`;
+
   return (
     <main className="model-page">
       <div className="model-inner">
@@ -176,22 +415,27 @@ export function ModelPage({ data }: ViewProps) {
             and how sure can it be. This page is the case for believing those numbers, including the
             places where the model loses.
           </p>
+          {headline && <p className="model-lead">{headline}</p>}
           <ul className="model-stats">
             <li>
-              <span className="value">{cut4 !== null ? `${asPercent(Math.abs(cut4))}%` : "-"}</span>
-              <span className="label">{cut4 !== null && cut4 < 0 ? "more" : "less"} error at four quarters</span>
-              <span className="note">in the backtest, against the rule that says nothing changes</span>
+              <span className="value">{recordCut4 !== null ? `${asPercent(Math.abs(recordCut4))}%` : "-"}</span>
+              <span className="label">{recordCut4 !== null && recordCut4 < 0 ? "more" : "less"} error at four quarters</span>
+              <span className="note">
+                refitted every year
+                {recordOrigins !== null && recordStart ? `, over the ${recordOrigins} origins from ${recordStart} on` : ""}, against
+                the rule that says nothing changes
+              </span>
             </li>
             <li>
               <span className="value">{band4 !== null ? `${asPercent(Math.abs(band4))}%` : "-"}</span>
               <span className="label">{band4 !== null && band4 < 0 ? "wider" : "narrower"} band at four quarters</span>
-              <span className="note">in the backtest, against the metro's own long run average</span>
+              <span className="note">in the fixed split, against the metro's own long run average</span>
             </li>
             <li>
               <span className="value">{points(cover8)}</span>
               <span className="label">band coverage at eight quarters</span>
               <span className="note">
-                in the backtest, against a nominal {points(NOMINAL_COVERAGE)}
+                in the fixed split, against a nominal {points(NOMINAL_COVERAGE)}
                 {cover8 === null ? "" : misses8 ? ", and that is a miss" : ", and that holds"}
               </span>
             </li>
@@ -374,6 +618,11 @@ export function ModelPage({ data }: ViewProps) {
 
         <section className="model-section">
           <h3>The results, 2022Q1 onward</h3>
+          <p>
+            One split: every model fitted once, with nothing realized after {trainYear} in its fit, and scored once
+            on the test block. Here the GRU {cutPhrase(cut4, cut8)}{fixedP}, and {bandPhrase(band4, band8)}.
+            {record.length > 0 ? " The walk-forward record below replays the same models refitted every year." : ""}
+          </p>
           <div className="model-scroll">
             <table className="model-table board">
               <caption>
@@ -470,6 +719,141 @@ export function ModelPage({ data }: ViewProps) {
           <ModelFigure id="calibration" />
         </section>
 
+        {record.length > 0 && recordFrom && (
+          <section className="model-section">
+            <h3>The walk-forward record, {recordFrom} onward</h3>
+            <p>
+              The split above is not how a forecaster lives. Its models never learn from anything realized after{" "}
+              {trainYear}, its paired test has {origins !== null ? `${origins} origins` : "the origins"} from one cycle,
+              and it reads FHFA's index as FHFA prints it today, when every release revises past quarters. The
+              walk-forward record replays the forecasts instead. Every model is refitted once a year from {REFIT_FROM}:
+              the model for a year fits on outcomes realized by the end of the year before and forecasts every origin
+              in its year, so each forecast is out of sample for the model that made it. Every forecast and every refit
+              reads FHFA's index as the release of its day printed it, out of ALFRED's archive of those releases, and
+              scoring keeps today's index as the truth.
+              {joined.includes(AVERAGE)
+                ? ` One model joins the ${inWords(modelsIn(rows).length)} above: the GRU and ridge averaged quantile by quantile, called the average below.`
+                : ""}
+            </p>
+            <div className="model-scroll">
+              <table className="model-table board">
+                <caption>
+                  Mean absolute error of the median forecast
+                  {recordOrigins !== null ? ` over the ${recordOrigins} origins` : ""} whose outcomes land from {recordFrom} on
+                  {recordN !== null ? `, ${recordN.toLocaleString("en-US")} samples at each horizon` : ""}, read from the
+                  vintages, in percentage points of growth, so lower is better. Under it: the p value of the paired test of
+                  that model against the sequence GRU.
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">model</th>
+                    {walkHorizons.map((horizon) => (
+                      <th key={horizon} scope="col" className="v">{horizon} {horizon === 1 ? "quarter" : "quarters"}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {walkBoard.map((row) => (
+                    <tr key={row.model}>
+                      <th scope="row">
+                        {row.label}
+                        {row.shipped && <span className="tag">on the map</span>}
+                      </th>
+                      {row.cells.map((cell, i) => {
+                        const horizon = walkHorizons[i];
+                        const lowest = walkWinners.get(horizon) === row.model;
+                        const p = pAt(recordPaired, row.model, horizon);
+                        return (
+                          <td key={horizon} className="v">
+                            {cell === null ? "-" : (
+                              <>
+                                <span className={lowest ? "mae best" : "mae"}>
+                                  {points(cell.maePct)}
+                                  {lowest && <span className="sr"> lowest error at this horizon</span>}
+                                </span>
+                                {p !== null && <span className="sub">p {pText(p)}</span>}
+                              </>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {walkReadings.length > 0 && (
+              <>
+                <h4>{sentenceCase(inWords(walkReadings.length))} readings</h4>
+                <ul className="model-readings">
+                  {walkReadings.map((reading) => <li key={reading}>{reading}</li>)}
+                </ul>
+              </>
+            )}
+            {bandPairsRecent.length > 0 && recentFrom && (
+              <>
+                <p>
+                  The band gets the same replay. The fixed calibration window
+                  {misses8 ? " under-covers at eight quarters, and it also" : ""} looks ahead a little: its 2020 and 2021
+                  outcomes calibrate test forecasts made at 2020 and 2021 origins. The online band is the one a
+                  forecaster living through the record could have run. At each origin its margin is the conformal
+                  quantile of every score realized by then, over a trailing window or all of them, and the miss rate it
+                  aims for moves with the misses as they land, adaptive conformal inference after Gibbs and Candes
+                  (2021). An optional per-metro scale, the metro's trailing volatility of quarterly growth, widens a
+                  volatile metro's band against a quiet one's. The settings are chosen by mean interval score on outcomes
+                  from {BAND_TUNE[0]} to {BAND_TUNE[1]} and nothing later{settings ? `, and for the GRU they are ${settings}` : ""}.
+                  The rule, again written first: the online band replaces the static one only if its interval score is
+                  lower at {inWords(RULE_HORIZONS)} of the {inWords(bandPairsRecent.length)} horizons on {recentStart} onward.
+                </p>
+                <div className="model-scroll">
+                  <table className="model-table">
+                    <caption>
+                      The sequence GRU's two bands
+                      {recentOrigins !== null ? ` over the ${recentOrigins} origins` : ""} whose outcomes land from {recentFrom} on,
+                      read from the vintages. The first number is the band's mean interval score: its width plus{" "}
+                      {Math.round(2 / missRate)} times the distance by which an outcome lands outside it, so lower is
+                      better. Under it: the share of outcomes inside the {Math.round(NOMINAL_COVERAGE * 100)} percent
+                      band, and its mean width. The score and the width are in log growth units.
+                    </caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">band</th>
+                        {bandPairsRecent.map((pair) => (
+                          <th key={pair.horizon} scope="col" className="v">{pair.horizon} {pair.horizon === 1 ? "quarter" : "quarters"}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(["static", "online"] as const).map((band) => (
+                        <tr key={band}>
+                          <th scope="row">{band}</th>
+                          {bandPairsRecent.map((pair) => {
+                            const cell = pair[band];
+                            const other = pair[band === "static" ? "online" : "static"];
+                            const lower = scored(cell.intervalScore) && scored(other.intervalScore) && cell.intervalScore < other.intervalScore;
+                            return (
+                              <td key={pair.horizon} className="v">
+                                <span className={lower ? "mae best" : "mae"}>
+                                  {points(cell.intervalScore, 3)}
+                                  {lower && <span className="sr"> lower interval score at this horizon</span>}
+                                </span>
+                                <span className="sub">
+                                  cover {points(cell.coverage)}, width {points(cell.width, 3)}
+                                </span>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {bandVerdict && <p>{bandVerdict}</p>}
+              </>
+            )}
+          </section>
+        )}
+
         <section className="model-section">
           <h3>The shipped forecast</h3>
           <p>
@@ -485,8 +869,9 @@ export function ModelPage({ data }: ViewProps) {
             on the calibration block at four quarters goes on the map, and ridge and the other classical rules
             are never in that choice.
             {ridgeAll
-              ? " So the map carries a model that ridge matches or beats at every horizon on the table above, on error and on band width."
+              ? " So the map carries a model that ridge matches or beats at every horizon on the fixed split's table, on error and on band width."
               : ""}
+            {weighed}
           </p>
           {near && (
             <p>
@@ -553,7 +938,7 @@ export function ModelPage({ data }: ViewProps) {
               second.
               {/* a repair is only worth ruling out while there is a miss to repair */}
               {misses8
-                ? " Rolling the calibration window forward would fix the number by calibrating on the period being scored, which is leakage, so it is reported rather than repaired. A wider held out period, or a conformal method built for distribution shift, is the real answer."
+                ? ` Rolling the calibration window forward would fix the number by calibrating on the period being scored, which is leakage, so it is reported rather than repaired.${shiftTried}`
                 : " Rolling the calibration window forward would calibrate on the period being scored, which is leakage, so the window stays where it is."}
             </li>
             <li>
@@ -611,9 +996,9 @@ export function ModelPage({ data }: ViewProps) {
         </section>
 
         <p className="model-foot">
-          The leaderboard, the panel's facts and every number the figures' descriptions give are generated
-          from ml/results at build time, and the forecast prose is measured off the same data file the map
-          draws, so a retrain or a fresh export moves this page with it. The full walkthrough, with the
+          The leaderboard, the walk-forward record, the panel's facts and every number the figures'
+          descriptions give are generated from ml/results at build time, and the forecast prose is measured off
+          the same data file the map draws, so a retrain or a fresh export moves this page with it. The full walkthrough, with the
           input hashes and the commands that reproduce every figure, is ml/README.md in the repository.
         </p>
       </div>

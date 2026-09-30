@@ -14,6 +14,8 @@
 
 .model-head h2 { font-size: 1.07rem; margin: 0 0 4px; }
 .model-page .model-lead { font-size: 0.95rem; }
+/* the headline under the lead, set apart from it */
+.model-page .model-lead + .model-lead { margin-top: 0.6rem; }
 .model-page p { font-size: 0.9rem; line-height: 1.6; margin: 0; color: var(--ink); }
 .model-page h3 { font-size: 1rem; margin: 0; }
 .model-page h4 { font-size: 0.9rem; margin: 0; color: var(--ink-2); }

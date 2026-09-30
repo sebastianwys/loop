@@ -1,13 +1,17 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
-  ADMISSION as ADMISSION_FILES, BACKTEST_FILES, FIGURES, PAIRED as PAIRED_FILE, REQUIRED, admissionRows, calibrationSize,
-  carriedCoverage, forecastFacts, leaderboard, missingInputs, pairedRows, parseBacktest, parseQuoted, pngSize, rawBand, readCoverage,
-  readPanel, renderModule, testRows, trainingFacts, writeNumbers,
+  ADMISSION as ADMISSION_FILES, BACKTEST_FILES, FIGURES, PAIRED as PAIRED_FILE, REQUIRED, WALKFORWARD as WALK_FILE,
+  WALKFORWARD_BANDS as BANDS_FILE, WALKFORWARD_LATEST as LATEST_FILE, WALKFORWARD_PAIRED as WALK_PAIRED_FILE, admissionRows,
+  calibrationSize, carriedCoverage, firstSpan, forecastFacts, leaderboard, missingInputs, pairedRows, parseBacktest, parseQuoted,
+  pngSize, rawBand, readCoverage, readPanel, renderModule, shownBands, shownLatest, shownPaired, shownWalk, testRows,
+  trainingFacts, walkBands, walkPairedRows, walkRows, writeNumbers,
 } from "./model-assets.mjs";
 import { points } from "../src/lib/model.ts";
 import { FIGURES as PAGE_FIGURES, FIGURE_FILES, FIGURE_IDS } from "../src/lib/modelFigures.ts";
-import { ADMISSION, BACKTEST, PAIRED, RAW_BAND } from "../src/lib/modelNumbers.ts";
+import {
+  ADMISSION, BACKTEST, PAIRED, RAW_BAND, WALKFORWARD, WALKFORWARD_BANDS, WALKFORWARD_LATEST, WALKFORWARD_PAIRED,
+} from "../src/lib/modelNumbers.ts";
 
 const CSV = [
   "model,horizon,block,n,mae,coverage,width,mae_pct",
@@ -152,6 +156,10 @@ describe("a build missing a file the module is generated from", () => {
     expect(REQUIRED).toContain("panel_manifest.json");
     expect(REQUIRED).toContain("backtest/paired.csv");
     expect(REQUIRED).toEqual(expect.arrayContaining(["admission.csv", "admission_pairs.csv"]));
+    expect(REQUIRED).toEqual(expect.arrayContaining([
+      "walkforward/vintage/summary.csv", "walkforward/latest/summary.csv", "walkforward/vintage/bands.csv",
+      "walkforward/vintage/paired.csv",
+    ]));
     expect(missingInputs(gone)).toEqual(REQUIRED);
   });
 
@@ -166,6 +174,13 @@ describe("a build missing a file the module is generated from", () => {
   it("names the paired test and the admission run when they are missing", () => {
     expect(() => writeNumbers(gone, new URL("modelNumbers.ts", gone), gone)).toThrow(/ml\/results\/backtest\/paired\.csv/);
     expect(() => writeNumbers(gone, new URL("modelNumbers.ts", gone), gone)).toThrow(/ml\/results\/admission\.csv, ml\/results\/admission_pairs\.csv/);
+  });
+
+  // the headline is read off the walk-forward record, so a build without it
+  // fails rather than leading with the fixed split as if nothing had changed
+  it("names the walk-forward record's files when they are missing", () => {
+    const named = [WALK_FILE, LATEST_FILE, BANDS_FILE, WALK_PAIRED_FILE].map((name) => `ml/results/${name}`).join(", ");
+    expect(() => writeNumbers(gone, new URL("modelNumbers.ts", gone), gone)).toThrow(named);
   });
 });
 
@@ -272,6 +287,79 @@ describe("the rest of what the module carries", () => {
     expect(module).toContain('{ arm: "nine, what the shipped gate could see", seed: 20260915, loss: 0.01337 },');
   });
 
+  // one row per model, horizon, span and band, sorted so a rebuild does not
+  // churn the file, and a blank cell stays missing
+  it("reads the walk-forward record a model, horizon, span and band at a time", () => {
+    const text = [
+      "model,horizon,span,band,n,origins,mae_pct,coverage,width,interval_score",
+      "seqgru,8,2022Q1,static,7378,18,11.465637659246884,0.5447275684467335,0.1915009006404455,0.8313823131982292",
+      "seqgru,8,2018Q1,online,13938,34,8.20330583055987,0.7198306787200459,0.45085531433991743,0.9408117101966449",
+      "seqgru,8,2022Q1,online,7378,18,11.465637659246884,0.6457034426673895,0.7242872751798493,",
+      "no_change,1,2018Q1,online,13938,34,2.2527086060019865,0.8523461041756349,0.07463377485625412,0.12854470833945222",
+      ",1,2018Q1,online,13938,34,1,0.9,0.1,0.1",
+    ].join("\n");
+    const rows = walkRows(text);
+    expect(rows.map((r) => `${r.model} ${r.horizon} ${r.span} ${r.band}`)).toEqual([
+      "no_change 1 2018Q1 online", "seqgru 8 2018Q1 online", "seqgru 8 2022Q1 online", "seqgru 8 2022Q1 static",
+    ]);
+    expect(rows[1]).toEqual({
+      model: "seqgru", horizon: 8, span: "2018Q1", band: "online", n: 13938, origins: 34, maePct: 8.20330583055987,
+      coverage: 0.7198306787200459, width: 0.45085531433991743, intervalScore: 0.9408117101966449,
+    });
+    expect(rows[2].intervalScore).toBeNull();
+    const module = renderModule(leaderboard([CSV]), null, { walk: rows, walkLatest: rows.slice(0, 1) });
+    expect(module).toContain('import type { BacktestRow, WalkRow } from "./model";');
+    expect(module).toContain("export const WALKFORWARD: WalkRow[] = [");
+    expect(module).toContain("export const WALKFORWARD_LATEST: WalkRow[] = [");
+    expect(module).toContain('{ model: "seqgru", horizon: 8, span: "2022Q1", band: "online", n: 7378, origins: 18, '
+      + "maePct: 11.465637659246884, coverage: 0.6457034426673895, width: 0.7242872751798493, intervalScore: NaN },");
+  });
+
+  // pandas writes a boolean as True or False, and a window of 0 is every
+  // outcome realized so far
+  it("reads the online band's settings, a model and a horizon at a time", () => {
+    const text = [
+      "model,horizon,gamma,window,scaled,tune_interval_score",
+      "seqgru,2,0.05,16,True,0.09630352179374473",
+      "seqgru,1,0.05,40,True,0.07113710078837733",
+      "momentum,1,0.0,0,False,0.07591639632242511",
+      "gbm,4,0.05,16,,0.15969016296619606",
+    ].join("\n");
+    expect(walkBands(text)).toEqual([
+      { model: "gbm", horizon: 4, gamma: 0.05, window: 16, scaled: null },
+      { model: "momentum", horizon: 1, gamma: 0, window: 0, scaled: false },
+      { model: "seqgru", horizon: 1, gamma: 0.05, window: 40, scaled: true },
+      { model: "seqgru", horizon: 2, gamma: 0.05, window: 16, scaled: true },
+    ]);
+    const module = renderModule(leaderboard([CSV]), null, { bands: walkBands(text) });
+    expect(module).toContain('import type { BacktestRow, WalkBand } from "./model";');
+    expect(module).toContain('{ model: "gbm", horizon: 4, gamma: 0.05, window: 16, scaled: null },');
+    expect(module).toContain('{ model: "momentum", horizon: 1, gamma: 0, window: 0, scaled: false },');
+    expect(module).not.toContain("tune");
+  });
+
+  it("reads the walk-forward paired test a span, a rival and a horizon at a time", () => {
+    const text = [
+      "horizon,origins,samples,difference,statistic,p_value,model,against,span",
+      "4,18,7378,-2.742600944259156,-2.132650175406005,0.0478306122208408,seqgru,no_change,2022Q1",
+      "1,34,13938,0.08790206374109598,2.4322976715976083,0.020591865891135028,seqgru,ensemble,2018Q1",
+      "4,34,13938,-3.2301629168365023,-4.654436520107745,5.087926986421008e-05,seqgru,no_change,2018Q1",
+      "8,34,13938,0.1,,,seqgru,ridge,2018Q1",
+      "1,34,13938,0.3,1.2,0.2,windowmlp,ridge,2018Q1",
+    ].join("\n");
+    const rows = walkPairedRows(text);
+    expect(rows.map((r) => `${r.span} ${r.against} ${r.horizon}`)).toEqual([
+      "2018Q1 ensemble 1", "2018Q1 no_change 4", "2018Q1 ridge 8", "2022Q1 no_change 4",
+    ]);
+    expect(rows[1]).toEqual({
+      span: "2018Q1", against: "no_change", horizon: 4, origins: 34, difference: -3.2301629168365023, pValue: 5.087926986421008e-05,
+    });
+    expect(rows[2].pValue).toBeNull();
+    const module = renderModule(leaderboard([CSV]), null, { walkPaired: rows });
+    expect(module).toContain('import type { BacktestRow, WalkPairedRow } from "./model";');
+    expect(module).toContain('{ span: "2018Q1", against: "ridge", horizon: 8, origins: 34, difference: 0.1, pValue: NaN },');
+  });
+
   // the tracked module against the files it was written from. a blank the
   // readers hand back as null is written into the module as NaN
   it("carries the paired test and the admission run as ml/results has them", () => {
@@ -281,6 +369,51 @@ describe("the rest of what the module carries", () => {
     expect(PAIRED).toEqual(written(pairedRows(readFileSync(new URL(PAIRED_FILE, results), "utf8"))));
     if (!ADMISSION_FILES.every((name) => existsSync(new URL(name, results)))) return;
     expect(ADMISSION).toEqual(written(ADMISSION_FILES.flatMap((name) => admissionRows(readFileSync(new URL(name, results), "utf8")))));
+  });
+
+  // the page reads every model over the record and, after it, only the
+  // shipped model and no change, so the module carries those rows and no
+  // others. every one it drops would have shipped in the bundle unread
+  it("keeps only the walk-forward rows the page reads", () => {
+    const row = (model, span, band) => ({ model, horizon: 4, span, band });
+    const summary = [
+      row("gbm", "2018Q1", "online"), row("seqgru", "2018Q1", "online"), row("no_change", "2018Q1", "online"),
+      row("gbm", "2022Q1", "online"), row("gbm", "2022Q1", "static"), row("seqgru", "2022Q1", "online"),
+      row("seqgru", "2022Q1", "static"), row("no_change", "2022Q1", "online"), row("no_change", "2022Q1", "static"),
+    ];
+    const named = (rows) => rows.map((r) => `${r.model} ${r.span} ${r.band}`);
+    expect(firstSpan([...summary].reverse())).toBe("2018Q1");
+    expect(firstSpan([{ span: "record" }])).toBeNull();
+    expect(named(shownWalk(summary))).toEqual([
+      "gbm 2018Q1 online", "seqgru 2018Q1 online", "no_change 2018Q1 online",
+      "seqgru 2022Q1 online", "seqgru 2022Q1 static", "no_change 2022Q1 online",
+    ]);
+    expect(named(shownLatest(summary))).toEqual(["seqgru 2018Q1 online", "no_change 2018Q1 online"]);
+    expect(shownBands([{ model: "gbm", horizon: 1 }, { model: "seqgru", horizon: 1 }])).toEqual([{ model: "seqgru", horizon: 1 }]);
+    const tests = [["2018Q1", "gbm"], ["2018Q1", "no_change"], ["2022Q1", "gbm"], ["2022Q1", "no_change"]]
+      .map(([span, against]) => ({ span, against, horizon: 1 }));
+    expect(shownPaired(tests).map((r) => `${r.span} ${r.against}`)).toEqual(["2018Q1 gbm", "2018Q1 no_change", "2022Q1 no_change"]);
+  });
+
+  // the same for the walk-forward record: the tracked module is the files as
+  // ml/results has them, cut down to the rows the page reads. an unrecorded
+  // scale stays null in the module
+  it("carries the walk-forward record as ml/results has it", () => {
+    const results = new URL("../../ml/results/", import.meta.url);
+    const files = [WALK_FILE, LATEST_FILE, BANDS_FILE, WALK_PAIRED_FILE];
+    if (!files.every((name) => existsSync(new URL(name, results)))) return;
+    const read = (name) => readFileSync(new URL(name, results), "utf8");
+    const written = (rows) => rows.map((row) => Object.fromEntries(Object.entries(row)
+      .map(([k, v]) => [k, v === null && k !== "scaled" ? Number.NaN : v])));
+    const summary = walkRows(read(WALK_FILE));
+    const record = firstSpan(summary);
+    expect(WALKFORWARD).toEqual(written(shownWalk(summary, record)));
+    expect(WALKFORWARD_LATEST).toEqual(written(shownLatest(walkRows(read(LATEST_FILE)), record)));
+    expect(WALKFORWARD_BANDS).toEqual(written(shownBands(walkBands(read(BANDS_FILE)))));
+    expect(WALKFORWARD_PAIRED).toEqual(written(shownPaired(walkPairedRows(read(WALK_PAIRED_FILE)), record)));
+    expect(WALKFORWARD.some((row) => row.model === "seqgru")).toBe(true);
+    // the cut is real: fewer rows than the files carry
+    expect(WALKFORWARD.length).toBeLessThan(summary.length);
   });
 
   // ci has no ml venv and no parquet, so the coverage the last full build

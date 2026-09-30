@@ -99,6 +99,37 @@ export interface AdmissionRow {
   loss: number;
 }
 
+// one row of the walk-forward record: a model at a horizon, refitted once a
+// year, scored over one span of outcomes with its band set one way. span is
+// the first outcome quarter scored. band is online, the band a forecaster
+// could have run through the record, or static, set once on the fixed split's
+// calibration block. intervalScore is the band's mean interval score, its
+// width plus a penalty for every outcome that lands outside it
+export interface WalkRow extends BacktestRow {
+  span: string;
+  band: string;
+  origins: number;
+  intervalScore: number;
+}
+
+// the online band's settings for one model and horizon: gamma, the step its
+// aimed miss rate moves by, the trailing window of outcomes in quarters, 0
+// for all of them, and whether each metro's score is scaled by its own
+// volatility, null where the run did not say
+export interface WalkBand {
+  model: string;
+  horizon: number;
+  gamma: number;
+  window: number;
+  scaled: boolean | null;
+}
+
+// the paired test of the shipped model against one other model at one
+// horizon, over one span of the walk-forward record
+export interface WalkPairedRow extends PairedRow {
+  span: string;
+}
+
 // the model that ships to the map, and the two it is read against: the rule
 // that says nothing changes, and the metro's own long run average
 export const SHIPPED = "seqgru";
@@ -151,6 +182,7 @@ const LABELS: Record<string, string> = {
   gbm: "gradient boosting",
   windowmlp: "window mlp",
   seqgru: "sequence gru",
+  ensemble: "gru and ridge averaged",
 };
 
 export function modelLabel(model: string): string {
@@ -166,6 +198,7 @@ const PROSE: Record<string, string> = {
   gbm: "gradient boosting",
   windowmlp: "the window MLP",
   seqgru: "the sequence GRU",
+  ensemble: "the average",
 };
 
 export const proseName = (model: string): string => PROSE[model] ?? modelLabel(model);
@@ -427,6 +460,347 @@ export function meanVerdict(rows: PairedRow[], level = PAIRED_LEVEL): string {
     + `${chance.length > 0 ? `, and puts ${horizonPhrase(chance)} down to chance` : ""}.`;
 }
 
+// the walk-forward design, ml/walkforward.py: the first year a model is
+// refitted for, the years whose outcomes chose the online band's settings,
+// and the one model the run adds, the gru and ridge averaged quantile by
+// quantile. settled, not results
+export const REFIT_FROM = 2008;
+export const BAND_TUNE = [2012, 2017] as const;
+export const AVERAGE = "ensemble";
+
+// the two rules the walk-forward run was held to, both written before it ran.
+// ridge or the average replaces the gru only if the paired test on the record
+// finds it better at three of the four horizons at 5 percent and worse at
+// none, and the online band replaces the static one only if its interval
+// score is lower at three of the four horizons on 2022 onward
+export const CHALLENGERS = ["ridge", AVERAGE];
+export const RULE_HORIZONS = 3;
+
+// the spans the record is scored over, earliest first: the whole record, then
+// 2022 onward, the outcomes the fixed split scores
+export function spansIn(rows: { span: string }[]): string[] {
+  return [...new Set(rows.map((row) => row.span))]
+    .filter((span) => quarterSlot(span) !== null)
+    .sort((a, b) => quarterSlot(a)! - quarterSlot(b)!);
+}
+
+// "2018Q1" as "2018", the way prose names a span that opens with its year
+export function spanStart(quarter: string): string {
+  return /^\d{4}Q1$/.test(quarter) ? quarter.slice(0, 4) : quarter;
+}
+
+// the rows over one span with one band. a band does not move the median, so
+// the error is the same with either, and only 2022 onward has a static band
+export function spanRows(rows: WalkRow[], span: string | null, band = "online"): WalkRow[] {
+  return rows.filter((row) => row.span === span && row.band === band);
+}
+
+export function spanPaired(rows: WalkPairedRow[], span: string | null): WalkPairedRow[] {
+  return rows.filter((row) => row.span === span);
+}
+
+// the cut against another model at every horizon both were scored at
+export function errorCuts(rows: BacktestRow[], model: string, over: string): { horizon: number; cut: number }[] {
+  return horizonsIn(rows).flatMap((horizon) => {
+    const cut = errorCut(rows, model, over, horizon);
+    return cut === null ? [] : [{ horizon, cut }];
+  });
+}
+
+// "cuts the error 24, 34, 43 and 47 percent", a horizon at a time, or what it
+// adds to the error where the model is the worse of the two
+export function cutWords(cuts: { horizon: number; cut: number }[]): string {
+  const list = (part: { cut: number }[]) => `${joinList(part.map((c) => asPercent(Math.abs(c.cut)) ?? "-"))} percent`;
+  const down = cuts.filter((c) => c.cut >= 0);
+  const up = cuts.filter((c) => c.cut < 0);
+  if (cuts.length === 0) return "";
+  if (up.length === 0) return `cuts the error ${list(down)}`;
+  if (down.length === 0) return `adds ${list(up)} to the error`;
+  return `cuts the error ${list(down)} at ${horizonPhrase(down.map((c) => c.horizon))} and adds ${list(up)} to it at `
+    + horizonPhrase(up.map((c) => c.horizon));
+}
+
+// the p value the paired test gave one rival at one horizon, null where it
+// gave none
+export function pAt(rows: PairedRow[], against: string, horizon: number): number | null {
+  const row = rows.find((r) => r.against === against && r.horizon === horizon);
+  return row && scored(row.pValue) ? row.pValue : null;
+}
+
+// a p value the way the walk-forward table prints it: two places, three under
+// 0.01 or where two would land it on the other side of the level, and
+// "<0.001" below that
+export function pText(p: number | null | undefined, level = PAIRED_LEVEL): string {
+  if (!scored(p)) return "-";
+  if (p < 0.001) return "<0.001";
+  if (p < 0.01) return p.toFixed(3);
+  return (p < level) === (Number(p.toFixed(2)) < level) ? p.toFixed(2) : p.toFixed(3);
+}
+
+// "p 0.02", or "p 0.02 and 0.03" for several
+export function pList(values: number[], level = PAIRED_LEVEL): string {
+  return `p ${joinList(values.map((p) => pText(p, level)))}`;
+}
+
+// the round figure every one of these p values is below: "0.002" for a
+// largest of 0.0012. null when there is none to bound
+export function pBound(values: number[]): string | null {
+  const found = values.filter(scored);
+  if (found.length === 0) return null;
+  const top = Math.max(...found);
+  if (top < 0.001) return "0.001";
+  const digits = Math.max(1, Math.ceil(-Math.log10(top)));
+  const step = 10 ** -digits;
+  let bound = Math.ceil(top / step) * step;
+  if (bound <= top) bound += step;
+  return bound.toFixed(digits);
+}
+
+// the horizons where the paired test puts the gap past chance with this side
+// the closer: shipped where the gru's error is the lower, rival where the
+// other model's is
+export function closerAt(rows: PairedRow[], against: string, side: "shipped" | "rival", level = PAIRED_LEVEL): number[] {
+  return pairedWith(rows, against)
+    .filter((row) => row.pValue < level && (side === "shipped" ? row.difference < 0 : row.difference > 0))
+    .map((row) => row.horizon);
+}
+
+// what the rule for replacing the gru makes of one rival: the horizons where
+// the paired test finds it better past chance, the ones where it finds it
+// worse, and whether that is enough to replace the gru
+export interface RuleCall {
+  against: string;
+  better: number[];
+  worse: number[];
+  replaces: boolean;
+}
+
+export function ruleCall(rows: PairedRow[], against: string, level = PAIRED_LEVEL): RuleCall {
+  const better = closerAt(rows, against, "rival", level);
+  const worse = closerAt(rows, against, "shipped", level);
+  return { against, better, worse, replaces: better.length >= RULE_HORIZONS && worse.length === 0 };
+}
+
+// the rule and what it found, as the page states it. tied counts the gru
+// among the models the table cannot tell apart
+export function ruleSentence(calls: RuleCall[], horizons: number, tied: number): string {
+  if (calls.length === 0) return "";
+  const rule = `The rule for replacing the GRU was written before the run: ${joinList(calls.map((call) => proseName(call.against)), "or")} `
+    + `replaces it only if better at ${inWords(RULE_HORIZONS)} of ${inWords(horizons)} horizons at ${Math.round(PAIRED_LEVEL * 100)} `
+    + "percent and worse at none.";
+  const up = calls.filter((call) => call.replaces).map((call) => proseName(call.against));
+  if (up.length > 0) {
+    return `${rule} ${sentenceCase(joinList(up))} ${up.length === 1 ? "is, so by that rule it replaces" : "are, so by that rule one of them replaces"} the GRU.`;
+  }
+  const none = calls.length === 1 ? "It is not" : calls.length === 2 ? "Neither is" : "None is";
+  const table = tied > 1 ? `, and what the table says is that ${inWords(tied)} models are tied, not that the GRU won` : "";
+  return `${rule} ${none}, so the GRU stays${table}.`;
+}
+
+// the rivals the record cannot tell from the gru: lower than it at some
+// horizon, tested wherever both were scored, never worse than it past chance,
+// and better past chance at fewer horizons than the rule asks for. these and
+// the gru are the models the table calls tied
+export function tiedWith(rows: BacktestRow[], paired: PairedRow[], level = PAIRED_LEVEL): string[] {
+  return modelsIn(rows).filter((rival) => {
+    if (rival === SHIPPED || aheadOf(rows, rival, SHIPPED).length === 0) return false;
+    const tested = pairedWith(paired, rival).map((row) => row.horizon);
+    if (!bothScored(rows, rival, SHIPPED).every((horizon) => tested.includes(horizon))) return false;
+    const call = ruleCall(paired, rival, level);
+    return call.worse.length === 0 && call.better.length < RULE_HORIZONS;
+  });
+}
+
+// every rival lower than the gru somewhere on the table: the horizons it is
+// lower at, and the smallest and largest of those gaps in points
+export interface Edge {
+  model: string;
+  horizons: number[];
+  low: number;
+  high: number;
+}
+
+export function edgesOver(rows: BacktestRow[]): Edge[] {
+  return modelsIn(rows).flatMap((rival) => {
+    const at = rival === SHIPPED ? [] : aheadOf(rows, rival, SHIPPED);
+    if (at.length === 0) return [];
+    const gaps = at.map((horizon) => round(rowAt(rows, SHIPPED, horizon)!.maePct - rowAt(rows, rival, horizon)!.maePct, 4));
+    return [{ model: rival, horizons: at, low: Math.min(...gaps), high: Math.max(...gaps) }];
+  });
+}
+
+// "Gradient boosting is lower at all four, by 0.03 to 0.19 points, and ridge
+// and the average at three." the rivals lower at the most horizons first
+export function edgeSentence(edges: Edge[], horizons: number): string {
+  if (edges.length === 0) return "";
+  const counts = [...new Set(edges.map((edge) => edge.horizons.length))].sort((a, b) => b - a);
+  const [first, ...rest] = counts.map((count) => edges.filter((edge) => edge.horizons.length === count));
+  const names = (group: Edge[]) => joinList(group.map((edge) => proseName(edge.model)));
+  const low = points(Math.min(...first.map((edge) => edge.low)));
+  const high = points(Math.max(...first.map((edge) => edge.high)));
+  const count = first[0].horizons.length;
+  const at = count === horizons ? `all ${inWords(horizons)}` : `${inWords(count)} of the ${inWords(horizons)}`;
+  const lead = `${names(first)} ${first.length === 1 ? "is" : "are"} lower at ${at}, by ${low === high ? low : `${low} to ${high}`} points`;
+  const tail = rest.map((group) => `${names(group)} at ${inWords(group[0].horizons.length)}`);
+  return `${sentenceCase(lead)}${tail.length > 0 ? `, and ${joinList(tail)}` : ""}.`;
+}
+
+// what the paired test makes of those rivals: "The paired test separates none
+// of them from the GRU except the average at one quarter (p 0.02)." a gap it
+// separates with the gru the closer says so
+export function edgeTest(edges: Edge[], paired: PairedRow[], level = PAIRED_LEVEL): string {
+  if (edges.length === 0) return "";
+  const parts = edges.flatMap((edge) => {
+    const apart = pairedWith(paired, edge.model).filter((row) => row.pValue < level);
+    const part = (rows: PairedRow[], note: string) => (rows.length === 0
+      ? []
+      : [`${proseName(edge.model)} at ${horizonPhrase(rows.map((row) => row.horizon))}${note} (${pList(rows.map((row) => row.pValue), level)})`]);
+    return [...part(apart.filter((row) => !(row.difference < 0)), ""), ...part(apart.filter((row) => row.difference < 0), ", the GRU the closer")];
+  });
+  if (parts.length === 0) {
+    return edges.length === 1
+      ? `The paired test does not separate ${proseName(edges[0].model)} from the GRU.`
+      : "The paired test separates none of them from the GRU.";
+  }
+  return edges.length === 1
+    ? `The paired test separates ${joinList(parts)} from the GRU.`
+    : `The paired test separates none of them from the GRU except ${joinList(parts)}.`;
+}
+
+// the rivals the paired test puts behind the gru past chance at every horizon
+export function beatenEverywhere(paired: PairedRow[], horizons: number[], level = PAIRED_LEVEL): string[] {
+  if (horizons.length === 0) return [];
+  return inOrder(paired.map((row) => row.against)).filter((against) => {
+    const at = closerAt(paired, against, "shipped", level);
+    return horizons.every((horizon) => at.includes(horizon));
+  });
+}
+
+// how far the gru's record moves when the index as fhfa prints it today
+// replaces the vintages: the largest change in its error at any horizon, in
+// points, that change as a share of the error it moved, and the largest
+// change in its cut against no change, in percentage points. null when the
+// two readings share no scored horizon
+export interface Revision {
+  error: number;
+  share: number;
+  cut: number | null;
+}
+
+export function revisionOf(vintage: BacktestRow[], latest: BacktestRow[]): Revision | null {
+  let found = false;
+  let error = 0;
+  let share = 0;
+  let cut: number | null = null;
+  for (const horizon of horizonsIn(vintage)) {
+    const was = rowAt(vintage, SHIPPED, horizon)?.maePct;
+    const now = rowAt(latest, SHIPPED, horizon)?.maePct;
+    if (!scored(was) || !scored(now) || was === 0) continue;
+    const move = Math.abs(was - now);
+    found = true;
+    error = Math.max(error, move);
+    share = Math.max(share, move / was);
+    const before = errorCut(vintage, SHIPPED, NO_CHANGE, horizon);
+    const after = errorCut(latest, SHIPPED, NO_CHANGE, horizon);
+    if (before !== null && after !== null) cut = Math.max(cut ?? 0, Math.abs(before - after) * 100);
+  }
+  return found ? { error, share, cut } : null;
+}
+
+// the gru's two bands over one span, a horizon at a time: static, set once on
+// the fixed split's calibration block, and online
+export interface BandPair {
+  horizon: number;
+  static: WalkRow;
+  online: WalkRow;
+}
+
+export function bandPairs(rows: WalkRow[], span: string | null): BandPair[] {
+  const mine = rows.filter((row) => row.model === SHIPPED && row.span === span);
+  return horizonsIn(mine).flatMap((horizon) => {
+    const fixed = mine.find((row) => row.horizon === horizon && row.band === "static");
+    const online = mine.find((row) => row.horizon === horizon && row.band === "online");
+    return fixed && online ? [{ horizon, static: fixed, online }] : [];
+  });
+}
+
+// what the band rule makes of the two: the horizons where the online band
+// covers more, where its interval score is lower and where it is higher, and
+// whether it is lower at enough of them to replace the static band. a cell
+// either band left unscored counts for neither side
+export interface BandCall {
+  horizons: number[];
+  coversMore: number[];
+  lower: number[];
+  higher: number[];
+  replaces: boolean;
+}
+
+export function bandCall(pairs: BandPair[]): BandCall {
+  const where = (key: "coverage" | "intervalScore", keep: (online: number, fixed: number) => boolean) =>
+    pairs.filter((pair) => scored(pair.online[key]) && scored(pair.static[key]) && keep(pair.online[key], pair.static[key]))
+      .map((pair) => pair.horizon);
+  const lower = where("intervalScore", (online, fixed) => online < fixed);
+  return {
+    horizons: pairs.map((pair) => pair.horizon),
+    coversMore: where("coverage", (online, fixed) => online > fixed),
+    lower,
+    higher: where("intervalScore", (online, fixed) => online > fixed),
+    replaces: lower.length >= RULE_HORIZONS,
+  };
+}
+
+// "covers more and loses on interval score at every horizon", or where each
+// holds when that is not everywhere
+export function bandWords(call: BandCall): string {
+  const every = (list: number[]) => list.length > 0 && list.length === call.horizons.length;
+  if (every(call.coversMore) && every(call.higher)) return "covers more and loses on interval score at every horizon";
+  const at = (list: number[]) => (every(list) ? "at every horizon" : `at ${horizonPhrase(list)}`);
+  const covers = call.coversMore.length > 0 ? `covers more ${at(call.coversMore)}` : "covers no more at any horizon";
+  const loses = call.higher.length > 0 ? `loses on interval score ${at(call.higher)}` : "never loses on interval score";
+  return `${covers} and ${loses}`;
+}
+
+// how much wider the online band is than the static one, in words: "almost
+// four times the static width", "12 percent wider than the static band"
+export function widthAgainst(online: number, fixed: number): string | null {
+  if (!scored(online) || !scored(fixed) || fixed <= 0) return null;
+  const ratio = online / fixed;
+  if (ratio <= 1) return "no wider than the static band";
+  if (ratio < 1.5) {
+    const extra = Math.round((ratio - 1) * 100);
+    return extra === 0 ? "about as wide as the static band" : `${extra} percent wider than the static band`;
+  }
+  const whole = Math.round(ratio);
+  const hedge = Math.abs(ratio - whole) < 0.05 ? "" : ratio < whole ? "almost " : "more than ";
+  return `${hedge}${inWords(whole)} times the static width`;
+}
+
+// the gru's online band settings as the page states them: "a step of 0.05
+// and the per-metro scale at every horizon, with a 40 quarter window at one
+// quarter and a 16 quarter window at two, four and eight quarters". a setting
+// that differs by horizon is given a horizon at a time
+export function settingsPhrase(bands: WalkBand[]): string {
+  const mine = bands.filter((band) => band.model === SHIPPED).sort((a, b) => a.horizon - b.horizon);
+  const stepOf = (band: WalkBand) => (!scored(band.gamma) ? null : band.gamma > 0 ? `a step of ${band.gamma}` : "no step");
+  const scaleOf = (band: WalkBand) => (band.scaled === null ? null : band.scaled ? "the per-metro scale" : "no per-metro scale");
+  const windowOf = (band: WalkBand) =>
+    (!scored(band.window) ? null : band.window > 0 ? `a ${band.window} quarter window` : "every outcome realized so far");
+  const same: string[] = [];
+  const apart: string[] = [];
+  for (const describe of [stepOf, scaleOf, windowOf]) {
+    const groups = new Map<string, number[]>();
+    for (const band of mine) {
+      const text = describe(band);
+      if (text !== null) groups.set(text, [...(groups.get(text) ?? []), band.horizon]);
+    }
+    const [text] = [...groups.keys()];
+    if (groups.size === 1 && groups.get(text)!.length === mine.length) same.push(text);
+    else if (groups.size > 0) apart.push(joinList([...groups].map(([said, horizons]) => `${said} at ${horizonPhrase(horizons)}`)));
+  }
+  return [...(same.length > 0 ? [`${joinList(same)} at every horizon`] : []), ...apart].join(", with ");
+}
+
 // the admission run's arms, as ml/admit.py names them. the set that ships is
 // the nine the old gate could see plus permits and income
 export const ARMS = {
@@ -509,10 +883,10 @@ export const FEATURE_NAMES: Record<string, string> = {
 
 export const featureName = (column: string): string => FEATURE_NAMES[column] ?? column;
 
-// "a, b and c"
-export function joinList(items: string[]): string {
+// "a, b and c", or "a or b" with another word
+export function joinList(items: string[], word = "and"): string {
   if (items.length < 2) return items.join("");
-  return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+  return `${items.slice(0, -1).join(", ")} ${word} ${items[items.length - 1]}`;
 }
 
 export interface Loss {

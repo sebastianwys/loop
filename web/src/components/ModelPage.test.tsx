@@ -3,10 +3,13 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { SAMPLE } from "../lib/data";
 import {
-  EXPANDED_BEFORE, EXPANDED_FOR_ALL_FROM, FIT_END, LONG_RUN, NOMINAL_COVERAGE, SHIPPED, TRAIN_END, closestTo, featureName,
-  horizonPhrase, horizonsIn, inWords, joinList, lossSentence, lossesOf, modelsIn, points, proseName, rowAt, sentenceCase,
+  EXPANDED_BEFORE, EXPANDED_FOR_ALL_FROM, FIT_END, LONG_RUN, NOMINAL_COVERAGE, NO_CHANGE, REFIT_FROM, SHIPPED, TRAIN_END, closestTo,
+  featureName, horizonPhrase, horizonWord, horizonsIn, inWords, joinList, lossSentence, lossesOf, modelLabel, modelsIn, points,
+  proseName, rowAt, sentenceCase,
 } from "../lib/model";
-import { BACKTEST, INPUTS, PAIRED, PANEL, PANEL_COVERAGE } from "../lib/modelNumbers";
+import {
+  BACKTEST, INPUTS, PAIRED, PANEL, PANEL_COVERAGE, WALKFORWARD, WALKFORWARD_LATEST, WALKFORWARD_PAIRED,
+} from "../lib/modelNumbers";
 import type { LayoutMode } from "../lib/layout";
 import { FIGURE_IDS, FIGURES } from "../lib/modelFigures";
 import { DEFAULT_ROUTE } from "../lib/route";
@@ -93,9 +96,9 @@ describe("the model view", () => {
     expect(page).toContain(misses8 ? "and that is a miss" : "and that holds");
   });
 
-  it("follows the walkthrough: the panel, the design, the models, the results, the forecast, the limits", () => {
+  it("follows the walkthrough: the panel, the design, the models, the results, the record, the forecast, the limits", () => {
     for (const heading of [
-      "The panel", "The evaluation design", "The models", "The results", "The shipped forecast", "The limits",
+      "The panel", "The evaluation design", "The models", "The results", "The walk-forward record", "The shipped forecast", "The limits",
     ]) {
       expect(page, heading).toContain(heading);
     }
@@ -489,5 +492,208 @@ describe("what the paired test lets the page say", () => {
     expect(text).toContain(`The expanded index and the index error are drawn for all ${PANEL.metros} metros on either side of the `
       + `rule, as FHFA publishes them now, while the backtest reads them only for the ${EXPANDED_BEFORE} FHFA published them for `
       + `before its ${EXPANDED_FOR_ALL_FROM} report.`);
+  });
+});
+
+// the walk-forward record is what the page leads with. every check here reads
+// the rows itself rather than through the page's readers, and the ones that
+// matter move a p value, an error or a band in place, the way a rerun would,
+// and read the page again
+describe("what the walk-forward record lets the page say", () => {
+  const read = () => plain(render(METROS)).replace(/&lt;/g, "<");
+  const text = read();
+  const LEVEL = 0.05;
+  const spans = [...new Set(WALKFORWARD.map((r) => r.span))].sort();
+  const [first, last] = [spans[0], spans[spans.length - 1]];
+  const year = (span: string) => (span.endsWith("Q1") ? span.slice(0, 4) : span);
+  const online = (span: string) => WALKFORWARD.filter((r) => r.span === span && r.band === "online");
+  const at = (span: string, model: string, h: number) => online(span).find((r) => r.model === model && r.horizon === h)!;
+  const cut = (span: string, h: number) => Math.round((1 - at(span, SHIPPED, h).maePct / at(span, NO_CHANGE, h).maePct) * 100);
+  const fixedCut = (h: number) => Math.round((1 - rowAt(BACKTEST, SHIPPED, h)!.maePct / rowAt(BACKTEST, NO_CHANGE, h)!.maePct) * 100);
+  const tests = (span: string, against: string) => WALKFORWARD_PAIRED.filter((r) => r.span === span && r.against === against);
+  const test = (span: string, against: string, h: number) => tests(span, against).find((r) => r.horizon === h)!;
+  const HORIZONS = horizonsIn(online(first));
+  const rivals = modelsIn(online(first)).filter((m) => m !== SHIPPED);
+  // p the way a table of them is read: past three places it stops counting,
+  // and a p under the level never prints as the level
+  const p = (value: number) => (value < 0.001
+    ? "<0.001"
+    : value < 0.01 || (value < LEVEL && Number(value.toFixed(2)) >= LEVEL) ? value.toFixed(3) : value.toFixed(2));
+  // sets fields on rows for the length of a check, then puts them back
+  function holding<T extends object>(rows: T[], change: (row: T) => Partial<T>, check: () => void) {
+    const was = rows.map((row) => ({ ...row }));
+    rows.forEach((row) => Object.assign(row, change(row)));
+    try {
+      check();
+    } finally {
+      rows.forEach((row, i) => Object.assign(row, was[i]));
+    }
+  }
+  // the rivals the record cannot tell from the gru: lower than it somewhere,
+  // never behind it past chance, and ahead past chance at fewer than three
+  const tiedNow = () => rivals.filter((m) => {
+    const lower = HORIZONS.some((h) => at(first, m, h).maePct < at(first, SHIPPED, h).maePct);
+    const behind = tests(first, m).some((r) => r.pValue < LEVEL && r.difference < 0);
+    const ahead = tests(first, m).filter((r) => r.pValue < LEVEL && r.difference > 0).length;
+    return lower && !behind && ahead < 3;
+  });
+
+  it("puts the record after the fixed split and before the shipped forecast", () => {
+    const order = ["The results, 2022Q1 onward", `The walk-forward record, ${first} onward`, "The shipped forecast"].map((h) => text.indexOf(h));
+    expect(order.every((i) => i >= 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+  });
+
+  it("leads with the record: its cut against no change, over the origins it scored, and the test that backs it", () => {
+    const origins = at(first, SHIPPED, 4).origins;
+    expect(text).toContain(`Refitted once a year from ${REFIT_FROM} and fed FHFA's index as each release first printed it, the sequence GRU `
+      + `cuts the no-change error ${cut(first, 4)} percent at four quarters and ${cut(first, 8)} percent at eight, across the ${origins} `
+      + `quarterly origins whose outcomes land from ${year(first)} on`);
+    const past = tests(first, NO_CHANGE).every((r) => r.pValue < LEVEL && r.difference < 0);
+    const bound = /beyond chance at every horizon \(p below ([0-9.]+)\)/.exec(text);
+    expect(bound !== null).toBe(past);
+    if (bound) {
+      const worst = Math.max(...tests(first, NO_CHANGE).map((r) => r.pValue));
+      expect(worst).toBeLessThan(Number(bound[1]));
+      expect(Number(bound[1])).toBeLessThanOrEqual(worst * 10);
+    }
+    expect(page).toContain(`<span class="value">${cut(first, 4)}%</span>`);
+    expect(text).toContain(`refitted every year, over the ${origins} origins from ${year(first)} on, against the rule that says nothing changes`);
+  });
+
+  it("sets 2022 onward against the fixed split's cut and says which gaps pass there", () => {
+    const passes = tests(last, NO_CHANGE).filter((r) => r.pValue < LEVEL && r.difference < 0).map((r) => r.horizon);
+    const cuts = cut(last, 4) === cut(last, 8)
+      ? `the cut is ${cut(last, 4)} percent at both`
+      : `the cut is ${cut(last, 4)} percent at four quarters and ${cut(last, 8)} at eight`;
+    const below = cut(last, 4) < fixedCut(4) && cut(last, 8) < fixedCut(8);
+    if (below) expect(text).toContain(`${cuts}, below that split's ${fixedCut(4)} and ${fixedCut(8)}`);
+    if (passes.length === 1) expect(text).toContain(`only the ${horizonWord(passes[0])} quarter gap passes the test`);
+    expect(text).toContain(`One split: every model fitted once, with nothing realized after ${TRAIN_END.slice(0, 4)} in its fit`);
+    expect(text).toContain(`cuts the no-change error ${fixedCut(4)} percent at four quarters and ${fixedCut(8)} percent at eight`);
+  });
+
+  it("tables every model's error on the record with the p of the paired test against the gru", () => {
+    const table = plain(page.slice(page.indexOf("The walk-forward record,"), page.indexOf("</table>", page.indexOf("The walk-forward record,"))))
+      .replace(/&lt;/g, "<");
+    for (const model of rivals) {
+      for (const h of HORIZONS) {
+        const lowest = online(first).filter((r) => r.horizon === h).every((r) => r.model === model || r.maePct > at(first, model, h).maePct);
+        const cell = `${points(at(first, model, h).maePct)}${lowest ? " lowest error at this horizon" : ""} p ${p(test(first, model, h).pValue)}`;
+        expect(table, `${model} ${h}q`).toContain(cell);
+      }
+    }
+    expect(table).toContain(`${modelLabel(SHIPPED)} on the map`);
+  });
+
+  // the gru is one of the tied models, not the winner, and the page may not
+  // say otherwise anywhere
+  it("never calls the gru the best model, and counts the models the record cannot tell apart", () => {
+    const tied = tiedNow().length + 1;
+    expect(text).not.toMatch(/GRU (?:is|was) the best|best model|the GRU wins/i);
+    expect(text).toContain(`what the table says is that ${inWords(tied)} models are tied, not that the GRU won`);
+    expect(text).toContain(`so it ships as one of ${inWords(tied)} tied models, by a rule written before the run`);
+    expect(text).toContain(`the rule keeps the GRU, one of ${inWords(tied)} tied models`);
+    const lowest = HORIZONS.filter((h) => rivals.every((m) => at(first, m, h).maePct > at(first, SHIPPED, h).maePct));
+    expect(text.includes("The GRU does not have the lowest error at any horizon.")).toBe(lowest.length === 0);
+  });
+
+  // ridge or the average replaces the gru only if better at three of four
+  // horizons at 5 percent and worse at none
+  it("applies the rule written before the run as the p values have it", () => {
+    expect(text).toContain("ridge or the average replaces it only if better at three of four horizons at 5 percent and worse at none.");
+    const ahead = tests(first, "ridge").filter((r) => r.difference > 0);
+    const stays = !["ridge", "ensemble"].some((m) => {
+      const rows = tests(first, m);
+      return rows.filter((r) => r.pValue < LEVEL && r.difference > 0).length >= 3 && !rows.some((r) => r.pValue < LEVEL && r.difference < 0);
+    });
+    expect(text.includes("Neither is, so the GRU stays")).toBe(stays);
+    if (ahead.length < 3) return;
+    // a rerun that put ridge's gaps past chance at the horizons it leads
+    holding(ahead, () => ({ pValue: 0.01 }), () => {
+      const after = read();
+      expect(after).toContain("Ridge is, so by that rule it replaces the GRU.");
+      expect(after).toContain("A rule written before the run says ridge should replace it.");
+      expect(after).not.toContain("Neither is, so the GRU stays");
+    });
+  });
+
+  it("names the one gap between the gru and a tied model that the test separates, only while it does", () => {
+    const apart = tiedNow().flatMap((m) => tests(first, m).filter((r) => r.pValue < LEVEL));
+    expect(text.includes("The paired test separates none of them from the GRU except")).toBe(apart.length > 0);
+    if (apart.length === 0) return;
+    holding(apart, () => ({ pValue: 0.5 }), () => {
+      const after = read();
+      expect(after).toContain("The paired test separates none of them from the GRU.");
+      expect(after).toContain("are within chance of it, so it ships as one of");
+    });
+  });
+
+  it("says revisions barely matter only while the move is small against the error it moves", () => {
+    const latest = WALKFORWARD_LATEST.filter((r) => r.span === first && r.band === "online" && r.model === SHIPPED);
+    const moves = latest.map((r) => Math.abs(r.maePct - at(first, SHIPPED, r.horizon).maePct));
+    expect(text).toContain(`the GRU's error moves by ${points(Math.max(...moves))} points or less at every horizon`);
+    const small = latest.every((r) => Math.abs(r.maePct - at(first, SHIPPED, r.horizon).maePct) < 0.05 * at(first, SHIPPED, r.horizon).maePct);
+    expect(text.includes("Revisions barely matter.")).toBe(small);
+    holding(latest.filter((r) => r.horizon === 4), (r) => ({ maePct: r.maePct * 1.5 }), () => {
+      const after = read();
+      expect(after).toContain("Revisions matter here.");
+      expect(after).not.toContain("The honest reading costs almost nothing");
+    });
+  });
+
+  // the online band replaces the static one only if its interval score is
+  // lower at three of four horizons on 2022 onward
+  it("keeps the static band by the band rule, and would say so the other way", () => {
+    const bands = (kind: string) => WALKFORWARD.filter((r) => r.span === last && r.model === SHIPPED && r.band === kind)
+      .sort((a, b) => a.horizon - b.horizon);
+    const [fixed, moving] = [bands("static"), bands("online")];
+    const lower = moving.filter((r, i) => r.intervalScore < fixed[i].intervalScore).length;
+    expect(text.includes("So the static band stays, and the under-coverage stays in the limits below.")).toBe(lower < 3);
+    const far = moving.length - 1;
+    const ratio = moving[far].width / fixed[far].width;
+    const whole = Math.round(ratio);
+    const hedge = Math.abs(ratio - whole) < 0.05 ? "" : ratio < whole ? "almost " : "more than ";
+    expect(text).toContain(`${hedge}${inWords(whole)} times the static width at ${horizonPhrase([moving[far].horizon])}`);
+    // every cell of the band table: the score, marked where it is the lower, then coverage and width
+    const table = plain(page.slice(page.indexOf("two bands"), page.indexOf("</table>", page.indexOf("two bands"))));
+    const cell = (mine: (typeof fixed)[number], other: (typeof fixed)[number]) => `${mine.intervalScore.toFixed(3)}`
+      + `${mine.intervalScore < other.intervalScore ? " lower interval score at this horizon" : ""} cover ${points(mine.coverage)}, `
+      + `width ${mine.width.toFixed(3)}`;
+    fixed.forEach((row, i) => {
+      expect(table, `static ${row.horizon}q`).toContain(cell(row, moving[i]));
+      expect(table, `online ${row.horizon}q`).toContain(cell(moving[i], row));
+    });
+    holding(moving.slice(1), (r) => ({ intervalScore: fixed[moving.indexOf(r)].intervalScore / 2 }), () => {
+      expect(read()).toContain("By the rule written first, the online band replaces the static one.");
+    });
+  });
+
+  // the limits used to call a shift-aware band the real answer, untried
+  it("says in the limits that a band built for shift was tried in the record, and how it did", () => {
+    const limits = plain(page.slice(page.indexOf("model-limits"), page.indexOf("</section>", page.indexOf("model-limits"))));
+    expect(limits).not.toContain("is the real answer");
+    expect(limits).toContain("A conformal method built for distribution shift, one that reads only outcomes realized by each origin, "
+      + "is tried in the walk-forward record above: it covers more and loses on interval score at every horizon");
+  });
+
+  it("says the record is where ridge and the average were weighed against the gru", () => {
+    expect(text).toContain("The walk-forward record above does weigh ridge and the average against it, by a rule written before the run");
+    expect(text).toContain("on the fixed split's table, on error and on band width");
+  });
+
+  it("still stands up without the walk-forward record, on the fixed split's words", () => {
+    const saved = WALKFORWARD.splice(0, WALKFORWARD.length);
+    try {
+      const bare = read();
+      expect(bare).not.toContain("The walk-forward record,");
+      expect(bare).not.toContain("Refitted once a year");
+      expect(bare).not.toContain("does weigh ridge");
+      expect(bare.includes("is the real answer")).toBe(misses8);
+      expect(bare).not.toContain("undefined");
+      expect(bare).not.toContain("NaN");
+    } finally {
+      WALKFORWARD.push(...saved);
+    }
   });
 });
