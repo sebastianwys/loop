@@ -1,0 +1,44 @@
+[
+  {
+    "filename": "vintages.csv",
+    "file_format": "CSV",
+    "source": {
+      "url": "https://api.stlouisfed.org/fred/series/observations",
+      "provider": "Federal Reserve Bank of St. Louis, ALFRED",
+      "series": "ATNHPIUS<cbsa>Q, FHFA all-transactions house price index",
+      "access_method": "FRED API, every vintage from 2013-01-01"
+    },
+    "integrity": {
+      "sha256": "87fc42a75ebccefb37e68ef80c11741902319f6b6d52653e14f0268227c20085",
+      "size_kb": 138717.4,
+      "row_count": 2341628
+    },
+    "version": "2026-08-25",
+    "metros": 388,
+    "metros_without_a_series": [
+      "11200",
+      "11694",
+      "12054",
+      "14580",
+      "21794",
+      "25740",
+      "28450",
+      "29484",
+      "30500",
+      "31924",
+      "33500",
+      "37140",
+      "38240",
+      "41304",
+      "43640",
+      "45294",
+      "45900",
+      "46300",
+      "47664",
+      "47764",
+      "47930",
+      "48260"
+    ],
+    "downloaded_at": "2026-09-30T17:30:09Z"
+  }
+]

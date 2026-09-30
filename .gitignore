@@ -2,6 +2,11 @@
 # their sha256 and vintage, and the derived per-metro values ship in the map json
 data/raw/zillow/*.csv
 
+# every alfred vintage of fhfa's metro index, 140 MB, fetched again by
+# scripts/download_fhfa_vintages.py. the manifest records its sha256 and the
+# latest release it holds
+data/raw/fhfa_vintages/*.csv
+
 # snakemake run metadata and logs
 .snakemake/
 

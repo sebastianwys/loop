@@ -549,3 +549,63 @@ class TestPairedTest(unittest.TestCase):
         self.assertEqual(list(out.columns), backtest.PAIRED_COLUMNS)
         self.assertEqual(out[["model", "against"]].values.tolist(), [["seqgru", "ridge"]])
         self.assertLess(out["difference"].iloc[0], 0)
+
+
+# the online band by hand: one metro, horizon one, the raw band q10 to q90 is
+# zero wide around zero, so each score is just how far the outcome landed
+# from zero and each margin is a quantile of the scores realized by then
+class TestOnlineBands(unittest.TestCase):
+    def rows(self, outcomes, start="2010Q1", horizon=1, code="10000", model="m"):
+        quarters = [str(pd.Period(start, freq="Q") + i) for i in range(len(outcomes))]
+        return pd.DataFrame({"model": model, "cbsa_code": code, "quarter": quarters, "horizon": horizon,
+                             "block": "test", "y": outcomes, "q10": 0.0, "q50": 0.0, "q90": 0.0,
+                             "lo": np.nan, "hi": np.nan})
+
+    def test_no_band_before_a_realized_score_and_none_from_the_future(self):
+        # the outcome of origin i lands at i + 1. origin 0 has nothing realized
+        # to calibrate on; origin 1 sees only origin 0's miss of 0.1; the huge
+        # miss at origin 3 lands at 4 and reaches origin 4's band, not earlier.
+        # at alpha 0.2 the top score of four is the quantile, so it shows
+        out = backtest.online_bands(self.rows([0.1, 0.1, 0.1, 5.0, 0.1]), alpha=0.2)
+        self.assertTrue(np.isnan(out["lo"].iloc[0]))
+        self.assertAlmostEqual(out["hi"].iloc[1], 0.1)
+        self.assertAlmostEqual(out["hi"].iloc[3], 0.1)
+        self.assertGreater(out["hi"].iloc[4], 0.1)
+
+    def test_a_window_forgets_old_outcomes(self):
+        out = backtest.online_bands(self.rows([5.0, 0.1, 0.1, 0.1]), alpha=0.5, window=1)
+        self.assertAlmostEqual(out["hi"].iloc[1], 5.0)
+        self.assertAlmostEqual(out["hi"].iloc[3], 0.1)
+
+    # every band misses, so with gamma the miss rate falls and the band widens
+    # past what the same pool gives without it
+    def test_gamma_widens_the_band_after_misses(self):
+        outcomes = [0.1 * (i + 1) for i in range(12)]
+        still = backtest.online_bands(self.rows(outcomes), alpha=0.5)
+        moved = backtest.online_bands(self.rows(outcomes), alpha=0.5, gamma=0.2)
+        self.assertGreater(moved["hi"].iloc[-1], still["hi"].iloc[-1])
+
+    def test_a_scaled_score_scales_the_margin_back(self):
+        a = self.rows([0.2, 0.2, 0.2], code="10000")
+        b = self.rows([0.2, 0.2, 0.2], code="20000")
+        scale = {("10000", q): 1.0 for q in a["quarter"]} | {("20000", q): 2.0 for q in b["quarter"]}
+        out = backtest.online_bands(pd.concat([a, b], ignore_index=True), alpha=0.5, scale=scale)
+        last = out[out["quarter"] == a["quarter"].iloc[-1]].set_index("cbsa_code")["hi"]
+        self.assertAlmostEqual(last["20000"], 2 * last["10000"])
+
+    def test_the_interval_score_by_hand(self):
+        score = backtest.interval_score([0.0, -0.3, 0.5], [-0.1, -0.1, -0.1], [0.1, 0.1, 0.1], alpha=0.1)
+        np.testing.assert_allclose(score, [0.2, 0.2 + 20 * 0.2, 0.2 + 20 * 0.4])
+
+
+class TestTrailingVolatility(unittest.TestCase):
+    def test_it_reads_only_the_quarters_up_to_each_one(self):
+        quarters = [str(pd.Period("2000Q1", freq="Q") + i) for i in range(30)]
+        growth = np.r_[np.tile([0.01, -0.01], 10), np.full(10, 0.5)]
+        # a quieter metro beside it keeps the floor below the values checked
+        panel = pd.concat([pd.DataFrame({"cbsa_code": "10000", "quarter": quarters, "hpi_qoq": growth}),
+                           pd.DataFrame({"cbsa_code": "20000", "quarter": quarters,
+                                         "hpi_qoq": np.tile([0.001, -0.001], 15)})], ignore_index=True)
+        sigma = backtest.trailing_volatility(panel, quarters=20)
+        self.assertAlmostEqual(sigma[("10000", quarters[19])], np.std(growth[:20], ddof=1))
+        self.assertGreater(sigma[("10000", quarters[25])], sigma[("10000", quarters[19])])

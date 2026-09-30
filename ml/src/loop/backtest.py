@@ -213,6 +213,81 @@ def evaluate(predictions, model=None):
     return out.reset_index(drop=True)
 
 
+# how volatile each metro's price growth was over the `quarters` up to and
+# including each quarter, known at that quarter, as {(cbsa_code, quarter):
+# sigma}. a metro with too short a record takes the median, and every value
+# is floored at the tenth percentile so a quiet metro's band cannot vanish
+def trailing_volatility(panel, quarters=20):
+    p = panel[["cbsa_code", "quarter", "hpi_qoq"]].assign(
+        cbsa_code=panel["cbsa_code"].astype(str), quarter=panel["quarter"].astype(str))
+    p = p.sort_values(["cbsa_code", "quarter"])
+    p["sigma"] = p.groupby("cbsa_code")["hpi_qoq"].transform(lambda s: s.rolling(quarters, min_periods=8).std())
+    p["sigma"] = p["sigma"].fillna(p["sigma"].median()).clip(lower=p["sigma"].quantile(0.10))
+    return p.set_index(["cbsa_code", "quarter"])["sigma"]
+
+
+# the proper score of an interval: its width, plus 2 / alpha times how far an
+# outcome fell outside it. a band cannot improve it by being wide and missing
+# nothing, or by being narrow and missing a lot, so it is what the band's
+# settings are chosen on
+def interval_score(y, lo, hi, alpha=spec.ALPHA):
+    y, lo, hi = (np.asarray(v, dtype=float) for v in (y, lo, hi))
+    return (hi - lo) + (2.0 / alpha) * np.clip(lo - y, 0, None) + (2.0 / alpha) * np.clip(y - hi, 0, None)
+
+
+# a band for a forecaster living through the record instead of one fitted
+# after it. at each origin the margin is the conformal quantile of the scores
+# of every forecast whose outcome had already been realized, over the last
+# `window` quarters of outcomes, or all of them. after each quarter's outcomes
+# land, the miss rate a moves by gamma times the gap between the target and
+# the share of that quarter's bands that missed (adaptive conformal inference,
+# gibbs and candes 2021), so a run of misses widens the next bands. a scale
+# divides each score by the row's difficulty and multiplies the margin back,
+# so a volatile metro gets a wider band than a quiet one. a row is issued a
+# band only once there is a realized score to calibrate it on
+def online_bands(predictions, alpha=spec.ALPHA, gamma=0.0, window=None, scale=None):
+    frame = predictions.reset_index(drop=True).copy()
+    origin = pd.PeriodIndex(frame["quarter"].astype(str), freq="Q").asi8
+    frame["_o"] = origin
+    frame["_u"] = origin + frame["horizon"].to_numpy(dtype=np.int64)
+    if scale is None:
+        frame["_s"] = 1.0
+    else:
+        keys = list(zip(frame["cbsa_code"].astype(str), frame["quarter"].astype(str)))
+        frame["_s"] = pd.Series(scale).reindex(keys).to_numpy(dtype=float)
+        frame["_s"] = frame["_s"].fillna(float(pd.Series(scale).median()))
+    frame["_score"] = np.maximum(frame["q10"] - frame["y"], frame["y"] - frame["q90"]) / frame["_s"]
+    lo = np.full(len(frame), np.nan)
+    hi = np.full(len(frame), np.nan)
+    for _, group in frame.groupby(["model", "horizon"], sort=False):
+        level = alpha
+        by_outcome = {u: g.index.to_numpy() for u, g in group.groupby("_u")}
+        by_origin = {o: g.index.to_numpy() for o, g in group.groupby("_o")}
+        realized = group[group["y"].notna()]
+        for q in range(int(group["_o"].min()), int(group["_o"].max()) + 1):
+            landed = by_outcome.get(q)
+            if landed is not None and gamma:
+                issued = landed[~np.isnan(lo[landed])]
+                if issued.size:
+                    y = frame.loc[issued, "y"].to_numpy()
+                    missed = float(np.mean((y < lo[issued]) | (y > hi[issued])))
+                    level = float(np.clip(level + gamma * (alpha - missed), 0.005, 0.995))
+            rows = by_origin.get(q)
+            if rows is None:
+                continue
+            pool = realized[realized["_u"] <= q]
+            if window:
+                pool = pool[pool["_u"] > q - window]
+            scores = np.sort(pool["_score"].to_numpy())
+            if scores.size == 0:
+                continue
+            rank = min(int(np.ceil((scores.size + 1) * (1 - level))), scores.size)
+            margin = scores[rank - 1] * frame.loc[rows, "_s"].to_numpy()
+            lo[rows], hi[rows], _ = spec.apply_margin(frame.loc[rows, "q10"], frame.loc[rows, "q90"], margin)
+    frame["lo"], frame["hi"] = lo, hi
+    return frame.drop(columns=["_o", "_u", "_s", "_score"])
+
+
 # whether one model's median really is closer than another's, one row per
 # horizon over the samples both scored. a lower mean error can be luck, and
 # the samples are not independent draws: the metros at one origin share its
