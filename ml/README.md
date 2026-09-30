@@ -2,7 +2,7 @@
 
 Forecasting on top of the pipeline in the repo root. Given what is known about a metro at a quarter, how much does its house price index move over the next one, two, four and eight quarters, and how sure can the model be.
 
-Headline: scored only on what was published at each origin, a sequence GRU cuts the no-change error 41 percent at four quarters and 40 at eight on mean absolute error in percentage points, a gap a paired test over the 18 test origins puts beyond chance (p 0.02 at both), and runs bands 23 percent narrower at four quarters and 34 at eight than the metro's own long run average. Ridge regression's error is lower still at every horizon, but by gaps the same test cannot tell from chance, so the two are tied.
+Headline: refitted once a year from 2008 and fed FHFA's index as each release first printed it, a sequence GRU cuts the no-change error 43 percent at four quarters and 47 at eight on mean absolute error in percentage points, across the 34 quarterly origins whose outcomes land from 2018 on, and a paired test puts the gap beyond chance at every horizon (p below 0.002). On 2022 onward alone, the years the fixed split scores, the cut is 36 at both, below that split's 41 and 40, and only the four quarter gap passes the test. The GRU is not the lowest error on the record: gradient boosting, ridge and an average of the GRU and ridge are within chance of it, so it ships as one of four tied models, by a rule written before the run.
 
 ## The Input
 
@@ -147,6 +147,8 @@ Two cautions belong with that table. The scored block is the 2020 to 2021 boom, 
 
 ## The Results, 2022Q1 to 2026Q2
 
+One split: every model fitted once, nothing realized after 2017 in its fit, scored on outcomes from 2022Q1 on. Here the GRU cuts the no-change error 41 percent at four quarters and 40 at eight (p 0.02 at both) and runs bands 23 percent narrower at four quarters and 34 at eight than the metro's own long run average. The walk-forward record below replays the same models refitted every year.
+
 Mean absolute error of the median forecast, in percentage points of growth. Coverage is the share of outcomes inside the 90 percent band.
 
 | model | 1q | 2q | 4q | 8q | coverage 1q/2q/4q/8q |
@@ -174,6 +176,51 @@ Three honest readings of that table.
 
 The window MLP beats no change at every horizon but trails the metro's own long run average at every horizon. It is kept as the honest answer to what a plain perceptron does here.
 
+## The Walk-Forward Record, 2018Q1 to 2026Q2
+
+The split above is not how a forecaster lives. Its models never learn from anything after 2017, its paired test has 18 origins of one cycle, and it reads FHFA's index as FHFA prints it today, when every release revises past quarters: a quarter as first printed differs from today's by a median of 1.0 percent.
+
+`walkforward.py` replays the record instead. Every model is refitted once a year from 2008. The model for year Y fits on outcomes realized by the end of Y - 1 and forecasts every origin in Y, so each forecast is out of sample for the model that made it. The networks pick their epochs on the last three realized years, then refit on everything realized. `vintages.py` hands every model the index as the release it had printed it: a forecast at origin t reads the release that first printed t, and a refit learns outcomes as printed by the release that first printed the quarter before its year. The releases are ALFRED's archive, 56 of them from May 2013 to August 2026, pulled by `scripts/download_fhfa_vintages.py`. 379 of the 410 metros have their own series through the latest release, and the other 31 keep today's index. Origins the archive predates read its oldest release. Scoring keeps today's index as the truth.
+
+Mean absolute error on the 34 origins whose outcomes land from 2018Q1 on, read from the vintages. The p column is the paired test of each model against the GRU, at 1q / 2q / 4q / 8q.
+
+| model | 1q | 2q | 4q | 8q | p against the gru |
+|---|---|---|---|---|---|
+| no change | 2.25 | 3.88 | 7.46 | 15.49 | <0.001 / 0.001 / <0.001 / <0.001 |
+| momentum | 1.76 | 2.68 | 5.11 | 11.46 | 0.50 / 0.52 / 0.14 / 0.11 |
+| metro mean | 1.82 | 2.81 | 4.70 | 9.30 | 0.14 / 0.28 / 0.34 / 0.41 |
+| ridge | 1.60 | 2.36 | 4.70 | 8.04 | 0.11 / 0.30 / 0.35 / 0.46 |
+| gradient boosting | 1.60 | 2.36 | 4.19 | 8.12 | 0.25 / 0.40 / 0.93 / 0.92 |
+| window mlp | 1.80 | 2.82 | 5.18 | 10.79 | 0.02 / 0.04 / 0.02 / 0.04 |
+| sequence gru | 1.71 | 2.55 | 4.23 | 8.20 | |
+| gru and ridge averaged | 1.62 | 2.40 | 4.40 | 8.09 | 0.02 / 0.15 / 0.47 / 0.30 |
+
+Four readings.
+
+- Against no change the GRU cuts the error 24, 34, 43 and 47 percent, beyond chance at every horizon. Thirty-four origins through a boom and a correction give the test something to work with that eighteen from one cycle did not.
+- On 2022 onward alone the cut is 14, 26, 36 and 36 percent, and only the four quarter gap passes (p 0.048). That is below the fixed split's 41 and 40 on the same outcomes: the GRU refitted every year misses by 4.92 and 11.47 points at four and eight quarters, where the one fitted once through 2017 missed by 4.53 and 10.75. More recent data did not buy a better forecast of the correction.
+- The GRU does not have the lowest error at any horizon. Gradient boosting is lower at all four, by 0.03 to 0.19 points, and ridge and the average at three. The paired test separates none of them from the GRU except the average at one quarter (p 0.02). The rule for replacing the GRU was written before the run: ridge or the average replaces it only if better at three of four horizons at 5 percent and worse at none. Neither is, so the GRU stays, and what the table says is that four models are tied, not that the GRU won. No change and the window MLP are the two it beats at every horizon.
+- Revisions barely matter. Read on today's index instead, the GRU's error moves by 0.06 points or less at every horizon and the cut against no change by a point or less. The honest reading costs almost nothing, which is itself worth knowing.
+
+The band gets the same replay. The fixed calibration window under-covers at eight quarters, and it also looks ahead a little: its 2020 and 2021 outcomes calibrate test forecasts made at 2020 and 2021 origins. `backtest.online_bands` is the band a forecaster living through the record could have run. At each origin the margin is the conformal quantile of every score realized by then, over a trailing window or all of them. The miss rate it aims for moves with the misses as they land, adaptive conformal inference after Gibbs and Candes (2021). An optional per-metro scale, the metro's trailing volatility of quarterly growth, widens a volatile metro's band against a quiet one's. The settings are chosen by mean interval score on outcomes from 2012 to 2017 and nothing later: the fastest step in the grid, the scale, and a 16 quarter window at every horizon but one quarter, which took 40. The rule, again written first: the online band replaces the static one only if its interval score is lower at three of four horizons on 2022 onward. The GRU's bands on those years:
+
+| band | coverage 1q / 2q / 4q / 8q | width | interval score |
+|---|---|---|---|
+| static | 0.84 / 0.90 / 0.84 / 0.54 | 0.070 / 0.118 / 0.184 / 0.192 | 0.122 / 0.161 / 0.293 / 0.831 |
+| online | 0.91 / 1.00 / 0.89 / 0.65 | 0.097 / 0.259 / 0.525 / 0.724 | 0.123 / 0.259 / 0.692 / 1.480 |
+
+The online band covers more and loses at every horizon. At eight quarters it is almost four times the static width for ten more points of coverage. The step moves the aimed miss rate by gamma times the gap between the nominal 10 percent and the share that missed, so a quarter in which every band missed moves it nine times further than a quarter in which none did, and misses across 410 metros arrive together: the band widens fast in a turn and narrows slowly after it. The static band keeps its small look-ahead in this comparison, which leans the comparison its way, and it still wins by a wide margin. So the static band stays, and the under-coverage stays in The Limits.
+
+`results/walkforward/vintage/` and `results/walkforward/latest/` hold summary.csv, bands.csv and paired.csv. Rerun from the repo root, with `FRED_API_KEY` set for the download:
+
+```bash
+ml/.venv/bin/python scripts/download_fhfa_vintages.py
+ml/.venv/bin/python -m loop.walkforward --vintage
+ml/.venv/bin/python -m loop.walkforward
+```
+
+About 25 minutes a reading on an M4. Each model and year is cached in `data/walkforward/`, so a stopped run resumes where it was.
+
 ## The Shipped Forecast
 
 The GRU refitted on every outcome realized by 2026Q2, at the epoch count found above. Its band margin is out of sample: a second GRU fitted through 2021, calibrated on 2022 to 2026, and that margin applied to the final quantiles. The second GRU reads the expanded index only where FHFA had published it, so the margin comes from real time inputs and the shipped band is the conservative one.
@@ -197,10 +244,10 @@ The index error is not a forecast and is credited to FHFA, not to the model. It 
 
 ## The Limits
 
-- The calibration block is fixed at 2018 to 2021 by choice, and every model under-covers at eight quarters because of it, 0.54 to 0.70 against a nominal 0.90. Conformal coverage is guaranteed only for exchangeable samples. Calibration outcomes land in 2018 to 2021, which is the run up and the boom; test outcomes land in 2022 onward, which is the correction. The two regimes are not exchangeable and no margin fitted on the first covers the second. Rolling the calibration window forward would fix it by calibrating on the period being scored, which is leakage, so the number is reported rather than repaired. A wider held out period, or a conformal method built for distribution shift, is the real answer.
+- The calibration block is fixed at 2018 to 2021 by choice, and every model under-covers at eight quarters because of it, 0.54 to 0.70 against a nominal 0.90. Conformal coverage is guaranteed only for exchangeable samples. Calibration outcomes land in 2018 to 2021, which is the run up and the boom; test outcomes land in 2022 onward, which is the correction. The two regimes are not exchangeable and no margin fitted on the first covers the second. Rolling the calibration window forward would fix it by calibrating on the period being scored, which is leakage, so the number is reported rather than repaired. A conformal method built for distribution shift, one that reads only outcomes realized by each origin, is tried in the walk-forward record above: it covers more and loses on interval score at every horizon, by up to four times the width at eight quarters.
 - Zillow home values reach 2000 and cover 0.38 of the fitting block, so they are thin where the model learns. Unemployment and the mortgage rate used to be in that list and are not any more, because their sources could be pulled back further.
 - Rents, listing prices and inventory are in the panel and on the map but out of reach of every model, and keeping their monthly history would not change that. All three are 0.00 of the fitting block at any sampling rate, so the fix is a later fitting era, not a better collector, and a later fitting era buys fewer years to learn from. `admit.py` makes that trade once, on the 2020 to 2021 block: permits and income beat the set without them on every seed and ship, and rents and listing prices, added to that set, gain a tenth of the spread across seeds and stay out. Inventory starts 2020Q1 and cannot be measured at all without spending the block that would measure it.
-- The band is very nearly one national width. At four quarters it runs 19.4 to 22.3 percentage points across all 410 metros, a standard deviation of 0.5 on a median of 20.6. That is the conformal step doing what it was built to do: `spec.apply_margin` adds one scalar per horizon to every metro alike, so all the per-metro variation has to come from the quantile heads, and they barely provide any. The model is now handed a published measurement error per metro, which is precisely the quantity that should widen a thin market's band and narrow a deep one's, and none of it reaches the band. A conformal method with a per-metro score, or a margin scaled by the index error, is the obvious next thing to try, and it has not been tried.
+- The band is very nearly one national width. At four quarters it runs 19.4 to 22.3 percentage points across all 410 metros, a standard deviation of 0.5 on a median of 20.6. That is the conformal step doing what it was built to do: `spec.apply_margin` adds one scalar per horizon to every metro alike, so all the per-metro variation has to come from the quantile heads, and they barely provide any. The model is now handed a published measurement error per metro, which is precisely the quantity that should widen a thin market's band and narrow a deep one's, and none of it reaches the band. A per-metro score, each metro's trailing volatility, is tried in the walk-forward record above and is part of the online band that lost there. A margin scaled by the index error has not been tried.
 - A band that looks far too wide against one year is not too wide. The middle 90 percent of the misses at the 2025Q2 origin span about 9 points against a 19 point band, which invites the conclusion that the interval is doubled. It is not: the band has to cover where prices actually land, and across the whole test block the realized four quarter spread is 20.4 points against a median band of 19.4, which is why coverage is 0.87 and not 0.97. One origin's cross section is one draw of the cycle.
 - The model separates metros less than it misses them. The cross metro standard deviation of the four quarter forecast is 1.6 points, well under the size of a typical miss. It does now forecast a fall, which it never did before the input set was cut to eleven: five metros are negative at the 2026Q2 origin, and they are Cape Coral, Punta Gorda, Sherman-Denison, Austin and North Port, which is a plausible list rather than a scattered one. Five out of 410 is still a model that mostly cannot say a particular metro is about to decline.
 - The index standard error is FHFA's relative standard error, already a percent of the index, so the model and the map read the same number. An earlier version divided it by the index a second time for the map, which showed Denver at 0.05 percent where FHFA says 0.34.
@@ -220,6 +267,7 @@ MILESTONES.md  the build plan
 | wave | adds | status |
 |---|---|---|
 | forecasting | quarterly panel, backtest, five baselines, two torch models, conformal bands, map export | done |
+| walk-forward | yearly refits from 2008, fhfa vintages, an online band, a gru and ridge average, rules set before the run | done |
 | 1 baseline | features, ridge/lasso, gradient boosting, residual analysis | in progress |
 | 2 scenarios | conditional sampling, then a small VAE if it earns its place | planned |
 | 3 dashboard | streamlit app, public link | planned |
