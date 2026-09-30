@@ -138,6 +138,20 @@ describe("buildSources", () => {
     expect(report.rows[0].label).toBeNull();
   });
 
+  // the header drops its standalone rate once a national tile carries the
+  // mortgage rate, so the fred line names the header only on a build that
+  // shows it there. either way the forecast model reads it
+  it("names the header for the fred rate only when the header shows it", () => {
+    const tiled = buildSources(withProvenance([entry({ source: "fred" })])).rows[0].role!;
+    expect(SAMPLE.national!.indicators!.some((i) => (i as { id?: string }).id === "mortgage")).toBe(true);
+    expect(tiled).not.toContain("in the header");
+    expect(tiled).toContain("forecast model");
+    const bare = { ...withProvenance([entry({ source: "fred" })]), national: { ...SAMPLE.national!, indicators: [] } };
+    const header = buildSources(bare).rows[0].role!;
+    expect(header).toContain("in the header");
+    expect(header).toContain("forecast model");
+  });
+
   it("carries the site's display name for a folder that does build metrics", () => {
     const report = buildSources(withProvenance([entry({ source: "pep" })]));
     expect(report.rows[0].label).toBe(SOURCE_LABEL.pep);

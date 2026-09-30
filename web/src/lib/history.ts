@@ -1,5 +1,5 @@
 import type { AnnualSeries, Metro } from "../types";
-import { fieldAt } from "./metrics";
+import { dateAt, fieldAt } from "./metrics";
 
 export interface HistoryPoint {
   year: number;
@@ -59,7 +59,17 @@ const r1 = (v: number) => Math.round(v * 10) / 10;
 
 const grow = (level: number, pct: number | null) => (pct === null ? null : level * (1 + pct / 100));
 
-// the forecast fields of a metro, null when the model wrote no point
+// "2026-06" for "2026Q2", the month the export dates a forecast made there
+function quarterMonth(quarter: string | null | undefined): string | null {
+  const m = /^(\d{4})Q([1-4])$/.exec(String(quarter ?? ""));
+  return m ? `${m[1]}-${String(Number(m[2]) * 3).padStart(2, "0")}` : null;
+}
+
+// the forecast fields of a metro, null when the model wrote no point. the
+// chart grows them from the index at the series' as_of quarter, and they were
+// measured from the index at the forecast's own origin. the map rebuilds off
+// each fhfa release and the model is refit by hand, so when the two dates part
+// there is no level here to grow from and the path is left off
 export function forecastOf(metro: Metro): ForecastInput | null {
   const f: ForecastInput = {
     mid4: fieldAt(metro, "latest", "hpi_forecast_4q"),
@@ -69,7 +79,10 @@ export function forecastOf(metro: Metro): ForecastInput | null {
     lo8: fieldAt(metro, "latest", "hpi_forecast_8q_lo"),
     hi8: fieldAt(metro, "latest", "hpi_forecast_8q_hi"),
   };
-  return f.mid4 === null && f.mid8 === null ? null : f;
+  if (f.mid4 === null && f.mid8 === null) return null;
+  const origin = dateAt(metro, "latest", f.mid4 !== null ? "hpi_forecast_4q" : "hpi_forecast_8q");
+  const asOf = quarterMonth(metro?.series?.hpi?.as_of);
+  return origin !== null && asOf !== null && origin !== asOf ? null : f;
 }
 
 // the expected levels: the last level grown by each percent, one year out

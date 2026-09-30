@@ -19,7 +19,12 @@ const cpi = byId("cpi");
 const rate = SAMPLE.national.mortgage_rate;
 
 const one: Indicator = { ...cpi, id: "solo", label: "One month only", history: cpi.history.slice(-1) };
-const flat: Indicator = { ...cpi, id: "flat", label: "Held steady", change_12m: 0 };
+// the chip is read off the two levels the chart prints, so a steady series is
+// one whose history held its level over the year
+const flat: Indicator = {
+  ...cpi, id: "flat", label: "Held steady", change_12m: 0,
+  history: cpi.history.map((p) => ({ ...p, value: cpi.value })),
+};
 
 // a run of calendar months, for the deeper history the builder is raising
 // the strip to. the sample file still carries three years
@@ -73,7 +78,24 @@ describe("the strip", () => {
     expect(markup).toContain('<span class="value">2.9%</span>');
     expect(markup).toContain(">Aug 2026<");
     expect(markup).toContain('<span class="chip down">-0.2 pts<span class="word">down</span></span>');
-    expect(markup).toContain('<span class="chip up">+0.1 pts<span class="word">up</span></span>');
+    // a rate prints in the hundredths it is set in, the level and the chip alike
+    expect(markup).toContain('<span class="value">3.58%</span>');
+    expect(markup).toContain('<span class="chip down">-0.75 pts<span class="word">down</span></span>');
+    expect(markup).toContain('<span class="chip up">+0.10 pts<span class="word">up</span></span>');
+  });
+
+  // a daily rate's newest month is still running, so its chip is for the last
+  // finished month and says so on its face and in its name
+  it("labels a chip with the month its change is for when that is not the tile's", () => {
+    const fed = byId("fed_funds");
+    const running: Indicator = {
+      ...fed, value: 3.5, date: "2026-09", change_month: "2026-08",
+      history: [...fed.history, { date: "2026-09", value: 3.5 }],
+    };
+    const tile = html(<NationalStrip indicators={[running]} />);
+    expect(tile).toContain('<span class="month">to Aug 2026</span>');
+    expect(tile).toContain("over the twelve months to Aug 2026");
+    expect(tile).toContain(">Sep 2026<");
   });
 
   it("prints no change rather than a signed zero", () => {
@@ -179,7 +201,8 @@ describe("the span the chart is read at", () => {
   it("leaves the tile reading the whole history whatever the chart shows", () => {
     const strip = html(<NationalStrip indicators={[long]} />);
     expect(strip).toContain('aria-label="Long run, monthly, Nov 2010 to Aug 2026"');
-    expect(strip).toContain('<span class="chip down">-0.2 pts<span class="word">down</span></span>');
+    // the chip reads the whole history, a year back from its last month
+    expect(strip).toContain('<span class="chip up">+1.2 pts<span class="word">up</span></span>');
     expect(strip).not.toContain("ind-range");
   });
 });

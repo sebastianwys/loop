@@ -2,7 +2,7 @@ import type { Metro } from "../types";
 import { shortLabel } from "./compare";
 import { niceTicks } from "./history";
 import type { LayoutMode } from "./layout";
-import { isInherited, type Metric } from "./metrics";
+import { isInherited, withheldBecause, withheldWhy, type Metric, type Withheld } from "./metrics";
 
 // a line through four dots is a drawing, not a finding
 export const MIN_FIT = 5;
@@ -74,6 +74,13 @@ export interface ExploreCounts {
   missingX: number;
   missingY: number;
   missing: number;
+  // of the missing on each axis, how many the build withheld rather than
+  // nobody measuring them, and why. optional so a count built by hand reads
+  // as none withheld
+  withheldX?: number;
+  withheldY?: number;
+  whyX?: Withheld | null;
+  whyY?: Withheld | null;
 }
 
 export interface ExploreModel {
@@ -276,12 +283,30 @@ export function buildExplore(metros: Metro[], x: Metric, y: Metric, size: PlotSi
   let missingX = 0;
   let missingY = 0;
   let missing = 0;
+  let withheldX = 0;
+  let withheldY = 0;
+  let whyX: Withheld | null = null;
+  let whyY: Withheld | null = null;
   const rows: { metro: Metro; x: number; y: number; inherited: boolean }[] = [];
   for (const metro of metros) {
     const vx = x.accessor(metro);
     const vy = y.accessor(metro);
-    if (vx === null) missingX += 1;
-    if (vy === null) missingY += 1;
+    if (vx === null) {
+      missingX += 1;
+      const why = withheldWhy(metro, x);
+      if (why) {
+        withheldX += 1;
+        whyX = why;
+      }
+    }
+    if (vy === null) {
+      missingY += 1;
+      const why = withheldWhy(metro, y);
+      if (why) {
+        withheldY += 1;
+        whyY = why;
+      }
+    }
     if (vx === null || vy === null) {
       missing += 1;
       continue;
@@ -354,6 +379,10 @@ export function buildExplore(metros: Metro[], x: Metric, y: Metric, size: PlotSi
       missingX,
       missingY,
       missing,
+      withheldX,
+      withheldY,
+      whyX,
+      whyY,
     },
   };
 }
@@ -416,15 +445,25 @@ export function fitStrength(r: number): string {
 const be = (n: number) => (n === 1 ? "is" : "are");
 const has = (n: number) => (n === 1 ? "has" : "have");
 
+// "92 have no Median income growth, 2014 to 2024, 78 of them withheld because
+// the county lines moved". a withheld number and one nobody measured are
+// different claims, so the count says how many of the blanks are which
+function missingPart(count: number, label: string, withheld = 0, why: Withheld | null = null): string {
+  const part = `${count} ${has(count)} no ${label}`;
+  if (withheld <= 0 || why === null) return part;
+  const which = withheld === count ? (count === 1 ? "it withheld" : "all of them withheld") : `${withheld} of them withheld`;
+  return `${part}, ${which} because ${withheldBecause(why)}`;
+}
+
 // a scatter that quietly drops 45 metros is a lie, so the count is written out
 // wherever either metric is short of the full build
 export function plottedSentence(counts: ExploreCounts, xLabel: string, yLabel: string): string {
   if (counts.total === 0) return "There are no metros in this build.";
   if (counts.plotted === counts.total) return `All ${counts.total} metros carry both numbers and all ${counts.total} are drawn.`;
   const why: string[] = [];
-  if (counts.missingX > 0) why.push(`${counts.missingX} ${has(counts.missingX)} no ${xLabel}`);
-  if (counts.missingY > 0) why.push(`${counts.missingY} ${has(counts.missingY)} no ${yLabel}`);
-  const tail = why.length ? `: ${why.join(", ")}` : "";
+  if (counts.missingX > 0) why.push(missingPart(counts.missingX, xLabel, counts.withheldX, counts.whyX));
+  if (counts.missingY > 0) why.push(missingPart(counts.missingY, yLabel, counts.withheldY, counts.whyY));
+  const tail = why.length ? `: ${why.join("; ")}` : "";
   return `${counts.plotted} of ${counts.total} metros are drawn. ${counts.missing} ${be(counts.missing)} missing at least one of the two${tail}.`;
 }
 

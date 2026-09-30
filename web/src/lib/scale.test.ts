@@ -1,6 +1,31 @@
 import { describe, expect, it } from "vitest";
-import { buildScale } from "./scale";
+import { SAMPLE } from "./data";
+import { defById, resolveMetric } from "./metrics";
+import { buildScale, drawnPast, ownValues } from "./scale";
 import { DIVERGING, NULL_GRAY, SEQUENTIAL } from "./palette";
+
+// a division showing its parent's number would set the class edges once per
+// division of that parent. it is drawn in the scale's colours and fitted to
+// by nobody, the way it is kept out of the ranking and the fit
+describe("the values a map scale is fitted to", () => {
+  const metric = resolveMetric(defById("permits_units")!.def, "latest");
+  const hinesville = SAMPLE.metros.find((m) => m.cbsa === "25980")!;
+
+  it("leave out a number a division took from its parent", () => {
+    expect(hinesville.parent_metrics).toContain("permits_units");
+    expect(metric.accessor(hinesville)).not.toBeNull();
+    const own = ownValues(SAMPLE.metros, metric);
+    expect(own).toHaveLength(SAMPLE.metros.length - 1);
+    expect(own).toEqual(SAMPLE.metros.filter((m) => m !== hinesville).map(metric.accessor));
+  });
+
+  it("say when a drawn value sits past the edges the rest set", () => {
+    const scale = buildScale([1, 2, 3, 4, 5], "sequential");
+    expect(drawnPast(scale, [1, 5, null])).toBe(false);
+    expect(drawnPast(scale, [1, 9])).toBe(true);
+    expect(drawnPast(buildScale([null], "sequential"), [9])).toBe(false);
+  });
+});
 
 describe("sequential scale", () => {
   it("is empty for all nulls and colors everything gray", () => {

@@ -6,19 +6,29 @@ const usd = (v: number) =>
 // null renders as a plain dash everywhere so a missing value never looks like zero
 export function formatValue(value: number | null, format: ValueFormat, signed = false): string {
   if (value === null || !Number.isFinite(value)) return "-";
-  const sign = signed && value > 0 ? "+" : "";
+  // the sign goes on the number as printed, so a value that rounds to zero
+  // prints as an unsigned zero, never -0.0 or +0.0
+  const sign = (shown: number) => (signed && shown > 0 ? "+" : "");
+  const fixed = (v: number, digits: number) => {
+    const shown = Number(v.toFixed(digits)) || 0;
+    return `${sign(shown)}${shown.toFixed(digits)}`;
+  };
   switch (format) {
     case "pct":
-      return `${sign}${(value * 100).toFixed(1)}%`;
+      return `${fixed(value * 100, 1)}%`;
     case "rate":
-      return `${sign}${value.toFixed(1)}%`;
+      return `${fixed(value, 1)}%`;
+    case "rate2":
+      return `${fixed(value, 2)}%`;
     // a gap between two rates, which is points rather than percent
     case "points":
-      return `${sign}${value.toFixed(1)} pp`;
+      return `${fixed(value, 1)} pp`;
     case "ratio":
       return `${value.toFixed(1)}x`;
-    case "int":
-      return `${sign}${Math.round(value).toLocaleString("en-US")}`;
+    case "int": {
+      const shown = Math.round(value) || 0;
+      return `${sign(shown)}${shown.toLocaleString("en-US")}`;
+    }
     case "index":
       return value.toFixed(1);
     case "usd":
@@ -31,6 +41,6 @@ export function formatValue(value: number | null, format: ValueFormat, signed = 
     case "minutes":
       return `${value.toFixed(1)} min`;
     case "per_1000":
-      return `${sign}${value.toFixed(1)} per 1k`;
+      return `${fixed(value, 1)} per 1k`;
   }
 }

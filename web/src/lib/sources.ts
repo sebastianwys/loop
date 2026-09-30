@@ -1,4 +1,5 @@
 import type { MapData, Provenance } from "../types";
+import { nationalIndicators, showMortgageStat } from "./indicators";
 import { SOURCE_LABEL, visibleDefs, type MetricDef, type Source } from "./metrics";
 
 // the provenance rows are named after raw data folders, which are not the
@@ -16,9 +17,22 @@ const EXTRA_METRICS = ["inventory", "days_to_pending", "price_cut_share", "zhvf_
 const ROLE: Record<string, string> = {
   boundaries: "the metro outlines the map draws in shapes mode",
   gazetteer: "the centroid each metro's dot is placed at",
-  fred: "the 30 year mortgage rate in the header, a national figure rather than a metro metric",
+  fred: "the 30 year mortgage rate the forecast model reads as an input, a national figure rather than a metro metric",
   national: "the national indicators in the header strip, a second pull from the same publisher",
 };
+
+// the header shows the fred rate on its own only while no national tile
+// carries the mortgage rate, so the header is named only on a build where
+// that is so
+const FRED_IN_HEADER = "the 30 year mortgage rate in the header and among the forecast model's inputs, a national "
+  + "figure rather than a metro metric";
+
+function roleOf(folder: string, data: MapData | null | undefined): string | null {
+  if (folder === "fred" && showMortgageStat(data?.national?.mortgage_rate ?? null, nationalIndicators(data))) {
+    return FRED_IN_HEADER;
+  }
+  return ROLE[folder] ?? null;
+}
 
 // a query parameter whose name reads like a credential. no manifest in this
 // build carries one, and this is what keeps a later one off the page
@@ -94,7 +108,7 @@ export function buildSources(data: MapData | null | undefined): SourceReport {
         source,
         label: source === null ? null : SOURCE_LABEL[source],
         metrics,
-        role: metrics.length === 0 ? ROLE[entry.source] ?? null : null,
+        role: metrics.length === 0 ? roleOf(entry.source, data) : null,
       };
     });
 

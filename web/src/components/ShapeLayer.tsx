@@ -3,7 +3,7 @@ import * as L from "leaflet";
 import { useEffect, useRef } from "react";
 import { useMap } from "react-leaflet";
 import { shapeStyle, type BoundaryProps, type Shape } from "../lib/boundaries";
-import { isInherited } from "../lib/metrics";
+import { WITHHELD, isInherited, withheldShort, withheldWhy } from "../lib/metrics";
 import { formatValue } from "../lib/format";
 import type { Metric } from "../lib/metrics";
 import type { ColorScale } from "../lib/scale";
@@ -19,20 +19,36 @@ interface Props {
 }
 
 // name, value and the period the value belongs to, in one line. built with
-// textContent so a name is never parsed as html
-function tooltipContent(metro: Metro | undefined, metric: Metric): HTMLElement {
+// textContent so a name is never parsed as html. a blank the build withheld
+// says so, and a number a division took from its parent names the parent, the
+// way the dot's tooltip does
+export function tooltipContent(metro: Metro | undefined, metric: Metric): HTMLElement {
   const root = document.createElement("span");
   const n = document.createElement("span");
   n.className = "tn";
   n.textContent = metro?.name ?? "";
+  const value = metro ? metric.accessor(metro) : null;
+  const withheld = metro && value === null ? withheldWhy(metro, metric) : null;
   const v = document.createElement("span");
   v.className = "tv";
-  v.textContent = formatValue(metro ? metric.accessor(metro) : null, metric.format, metric.kind === "diverging");
+  v.textContent = withheld ? WITHHELD : formatValue(value, metric.format, metric.kind === "diverging");
   const p = document.createElement("span");
   p.className = "tp";
-  p.textContent = metro ? periodLabel(metric, metro) : "";
+  p.textContent = metro ? `${periodLabel(metric, metro)}${withheld ? `, ${withheldShort(withheld)}` : ""}` : "";
   root.append(n, document.createTextNode(" "), v, document.createTextNode(" "), p);
+  if (metro?.parent && value !== null && isInherited(metro, metric)) {
+    const from = document.createElement("span");
+    from.className = "tp";
+    from.textContent = ` from ${metro.parent.name}`;
+    root.append(from);
+  }
   return root;
+}
+
+// true when the build withheld the blank this shape holds, which it wears
+// differently from a blank nobody measured
+function isWithheld(metro: Metro | undefined, metric: Metric): boolean {
+  return !!metro && metric.accessor(metro) === null && withheldWhy(metro, metric) !== null;
 }
 
 // one leaflet geojson layer. created when the shapes change, restyled in
@@ -55,6 +71,7 @@ export function ShapeLayer({ shapes, metric, scale, selectedCbsa, onSelect }: Pr
         selected: cbsa === state.selectedCbsa,
         hover,
         inherited: !!metro && isInherited(metro, state.metric),
+        withheld: isWithheld(metro, state.metric),
       });
     };
 
@@ -98,6 +115,7 @@ export function ShapeLayer({ shapes, metric, scale, selectedCbsa, onSelect }: Pr
       path.setStyle(shapeStyle(value, scale, {
         selected: cbsa === selectedCbsa,
         inherited: !!metro && isInherited(metro, metric),
+        withheld: isWithheld(metro, metric),
       }));
       path.setTooltipContent(tooltipContent(metro, metric));
     }

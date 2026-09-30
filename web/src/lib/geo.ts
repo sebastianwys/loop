@@ -25,9 +25,29 @@ export function parentMetricsNote(metro: Metro): string | null {
   return `From the parent metro: ${labels.join(", ")}.`;
 }
 
-function peopleShare(value: number): string {
-  return value < 0.0001 ? "under 0.01 percent" : `${(value * 100).toFixed(2)} percent`;
+// the settled measure is a turnover: the people in the counties a metro gained
+// plus the people in the ones it lost, over what it held at the earlier
+// vintage. a complete swap comes to about two, which is not a share of anybody,
+// so past one the note says how many times over rather than a percent of
+// people no metro has
+function turnover(value: number): string {
+  if (value > 1) {
+    return `the people in the counties it gained and lost number ${value.toFixed(2)} times its population at the earlier vintage`;
+  }
+  const part = value < 0.0001 ? "under 0.01 percent" : `${(value * 100).toFixed(2)} percent`;
+  return `the counties it gained and lost held ${part} of its people`;
 }
+
+// a measured share is a finite number no smaller than zero
+const share = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value) && value >= 0;
+
+// the change table also holds fhfa's two price changes, and fhfa builds every
+// year of its index on today's county lines, so the note names the three acs
+// rates the moved lines touch rather than every change above it
+const DECADE_RATES = "the income, home value and population changes above";
+
+const WITHHELD_TAIL = `so ${DECADE_RATES} are withheld rather than measured across two different places. The year `
+  + "figures are each their own vintage's and stand on their own.";
 
 // omb tidies a metro's boundary far more often than it redraws one, and a
 // change too small to move the rate is reported rather than withheld. the note
@@ -35,20 +55,24 @@ function peopleShare(value: number): string {
 // metro's, over a footprint that is not quite the same in both vintages.
 //
 // past the tolerance the rate is withheld instead, and then the note carries
-// the whole weight: without it the blank reads as a metro nobody measured
+// the whole weight: without it the blank reads as a metro nobody measured. a
+// move nobody could weigh is withheld too, and says so rather than printing a
+// share it does not have
 export function footprintNote(metro: Metro): string | null {
+  if (metro.footprint_unweighed === true) {
+    return "The county lines of this metro were redrawn between the two vintages, and the share of its people "
+      + `that changed hands could not be weighed, ${WITHHELD_TAIL}`;
+  }
   const refused = metro.footprint_refused;
-  if (typeof refused === "number" && Number.isFinite(refused) && refused >= 0) {
-    return `The county lines of this metro were redrawn between the two vintages, carrying ${peopleShare(refused)} `
-      + "of its people, which is more than the two percent this map will report a change over, so the changes "
-      + "above are withheld rather than measured across two different places. The year figures are each their "
-      + "own vintage's and stand on their own.";
+  if (share(refused)) {
+    return `The county lines of this metro were redrawn between the two vintages: ${turnover(refused)}, which is `
+      + `past the two percent this map will report a change over, ${WITHHELD_TAIL}`;
   }
   const moved = metro.footprint_moved;
-  if (typeof moved !== "number" || !Number.isFinite(moved) || moved < 0) return null;
-  return `The county lines of this metro moved between the two vintages, carrying ${peopleShare(moved)} of its people, `
-    + "so the changes above compare footprints that are close rather than identical. A metro redrawn by more "
-    + "than two percent reports no change at all.";
+  if (!share(moved)) return null;
+  return `The county lines of this metro moved between the two vintages: ${turnover(moved)}, so ${DECADE_RATES} `
+    + "compare footprints that are close rather than identical. A metro redrawn by more than two percent reports "
+    + "no change at all.";
 }
 
 // the mark that rides next to one inherited figure. the footer note names the

@@ -57,6 +57,11 @@ export function readIndicator(raw: unknown): Indicator | null {
   if (!i || !id || value === null) return null;
   if (!INDICATOR_GROUPS.includes(i.group as IndicatorGroup)) return null;
   const format: IndicatorFormat = i.format === "rate" || i.format === "index" ? i.format : "pct";
+  // absent is an older build, whose change is for the tile's own month. null,
+  // or anything that is not a month, is a tile with no twelve month change
+  const changeMonth = i.change_month === undefined
+    ? undefined
+    : MONTH.test(text(i.change_month)) ? text(i.change_month).slice(0, 7) : null;
   return {
     id,
     label: text(i.label) || id,
@@ -67,6 +72,7 @@ export function readIndicator(raw: unknown): Indicator | null {
     value,
     date: text(i.date),
     change_12m: num(i.change_12m),
+    ...(changeMonth === undefined ? {} : { change_month: changeMonth }),
     history: readHistory(i.history),
   };
 }
@@ -95,9 +101,18 @@ export function groupIndicators(indicators: Indicator[]): IndicatorBlock[] {
 }
 
 // the values arrive in display units, so a percent uses the rate format,
-// which prints 2.9 as 2.9%. pct would multiply it by a hundred
+// which prints 2.9 as 2.9%. pct would multiply it by a hundred. a rate tile
+// is a level its publisher sets in hundredths, the fed funds target at 4.25,
+// and printed at one decimal it reads as a target nobody set and a chart
+// whose steps do not add up to the chip beside it
 export function displayFormat(format: IndicatorFormat): ValueFormat {
-  return format === "index" ? "index" : "rate";
+  if (format === "index") return "index";
+  return format === "rate" ? "rate2" : "rate";
+}
+
+// the decimals a series is set in, which is what its levels and its chip print at
+export function indicatorDigits(format: IndicatorFormat): number {
+  return format === "rate" ? 2 : 1;
 }
 
 export function indicatorValue(indicator: Indicator): string {
@@ -116,28 +131,65 @@ export interface ChangeChip {
   label: string;
 }
 
-// the change over twelve months in percentage or index points. a figure
-// that rounds to zero at the printed precision reads as no change, never
-// as a signed zero
-export function changeChip(change: number | null): ChangeChip {
+// the change over twelve months in percentage or index points, at the
+// decimals the series is set in. two unless the caller says the series is
+// coarser, since no national series is finer than hundredths and a default
+// that drops a digit prints a change the levels beside it do not add up to.
+// a figure that rounds to zero at the printed precision reads as no change,
+// never as a signed zero. month, when given, is the month the change is for
+export function changeChip(change: number | null, digits = 2, month: string | null = null): ChangeChip {
   const value = num(change);
+  const span = month ? `over the twelve months to ${monthLabel(month)}` : "over twelve months";
   if (value === null) {
     return { direction: "none", text: "not reported", word: "", label: "twelve month change not reported" };
   }
   // the magnitude is rounded first, so a rise and a fall of the same size
   // print the same figure
-  const rounded = Math.round(Math.abs(value) * 10) / 10;
+  const scale = 10 ** digits;
+  const rounded = Math.round(Math.abs(value) * scale) / scale;
   if (rounded === 0) {
-    return { direction: "flat", text: "no change", word: "", label: "no change over twelve months" };
+    return { direction: "flat", text: "no change", word: "", label: `no change ${span}` };
   }
   const up = value > 0;
-  const size = `${rounded.toFixed(1)} pts`;
+  const size = `${rounded.toFixed(digits)} pts`;
   return {
     direction: up ? "up" : "down",
     text: `${up ? "+" : "-"}${size}`,
     word: up ? "up" : "down",
-    label: `${up ? "up" : "down"} ${size} over twelve months`,
+    label: `${up ? "up" : "down"} ${size} ${span}`,
   };
+}
+
+// "2026-08" twelve months earlier
+function yearBefore(month: string): string | null {
+  const slot = monthSlot(month);
+  return slot === null ? null : slotDate(slot - 12);
+}
+
+// the change a tile's chip shows and the month it is for. it is measured off
+// the two levels the chart prints, at the decimals they print at, so the chip
+// is always the difference of two numbers a reader can find on the chart. a
+// daily rate's newest month is still running, and the build says which month
+// its change is for, or null when the tile has none. when either level is
+// missing from the history the build's own figure stands
+export function tileChange(indicator: Indicator): { change: number | null; month: string | null } {
+  if (indicator.change_month === null) return { change: indicator.change_12m, month: null };
+  const month = indicator.change_month ?? null;
+  const at = month ?? indicator.date;
+  const before = at ? yearBefore(at) : null;
+  const now = indicator.history.find((p) => p.date === at);
+  const then = before ? indicator.history.find((p) => p.date === before) : undefined;
+  if (!now || !then) return { change: indicator.change_12m, month };
+  const digits = indicatorDigits(indicator.format);
+  const printed = (v: number) => Number(v.toFixed(digits));
+  return { change: Number((printed(now.value) - printed(then.value)).toFixed(digits)), month };
+}
+
+// the chip a tile wears, at the decimals the series is set in, labelled with
+// its month when that is not the tile's own
+export function indicatorChip(indicator: Indicator): ChangeChip {
+  const { change, month } = tileChange(indicator);
+  return changeChip(change, indicatorDigits(indicator.format), month && month !== indicator.date ? month : null);
 }
 
 // "2026-08" reads as "Aug 2026", the same words the timeline uses
@@ -348,7 +400,7 @@ export function pointReadout(point: ChartPoint, format: IndicatorFormat): string
 export function tileReadout(indicator: Indicator): string {
   const when = monthLabel(indicator.date);
   const value = when ? `${indicatorValue(indicator)} in ${when}` : indicatorValue(indicator);
-  return `${indicator.label}, ${value}, ${changeChip(indicator.change_12m).label}`;
+  return `${indicator.label}, ${value}, ${indicatorChip(indicator).label}`;
 }
 
 // the chart's own name, with the span it covers. that is the whole history

@@ -37,6 +37,20 @@ describe("forecastLevels", () => {
     expect(forecastOf({} as Metro)).toBeNull();
     expect(forecastOf({ ...dallas, latest: { ...dallas.latest, hpi_forecast_4q: null } } as Metro)?.mid8).toBe(1.5);
   });
+
+  // the chart grows the percents from the series' as_of level, and they were
+  // measured from the level at the forecast's origin. when fhfa's release has
+  // moved past the model's origin there is no level to grow them from
+  it("leaves the path off when the forecast was made at another quarter than the series ends", () => {
+    const series = abilene.series!.hpi!;
+    expect(series.as_of).toBe("2026Q2");
+    expect(abilene.latest.hpi_forecast_4q_date).toBe("2026-06");
+    const later = { ...abilene, series: { hpi: { ...series, as_of: "2026Q3" } } } as Metro;
+    expect(forecastOf(later)).toBeNull();
+    // a build with no date on either side draws as before
+    const undated = { ...later, latest: { ...abilene.latest, hpi_forecast_4q_date: null } } as Metro;
+    expect(forecastOf(undated)).toEqual(full);
+  });
 });
 
 describe("ticks", () => {
@@ -148,11 +162,21 @@ describe("hover", () => {
   });
 });
 
-// the shipped map file and the fhfa quarterly master the bot builds it from.
-// both are optional in ci, so this block skips when either is absent
+// the shipped map file, the fhfa quarterly master the bot builds it from, and
+// the model's export the forecast fields come out of. all are optional in ci,
+// so this block skips when any is absent
 const MAP_PATH = new URL("../../public/data/metros.json", import.meta.url).pathname;
 const FHFA_PATH = new URL("../../../data/raw/fhfa/hpi_master.csv", import.meta.url).pathname;
-const REAL = existsSync(MAP_PATH) && existsSync(FHFA_PATH);
+const EXPORT_PATH = new URL("../../../ml/results/forecast/metrics.csv", import.meta.url).pathname;
+const REAL = existsSync(MAP_PATH) && existsSync(FHFA_PATH) && existsSync(EXPORT_PATH);
+
+// the value the model's export wrote for one metro and metric, read straight
+// out of its csv so the expectation never passes through the map build
+function exported(cbsa: string, metric: string): number {
+  const row = readFileSync(EXPORT_PATH, "utf8").split("\n").find((r) => r.startsWith(`${cbsa},${metric},`));
+  if (!row) throw new Error(`no ${metric} for ${cbsa} in the model's export`);
+  return Number(row.split(",")[3]);
+}
 
 // the index level one quarter carries in the source fhfa file, the same
 // series bot/build_map_data.py averages into the annual history
@@ -186,16 +210,20 @@ describe.skipIf(!REAL)("expected levels on the built data", () => {
 
     const f = forecastOf(metro);
     if (!f || f.mid4 === null || f.lo4 === null || f.hi4 === null) throw new Error("abilene has no four quarter forecast");
-    expect(f.mid4).toBe(7.0329);
+    // the growth is the model's, so it is read off its export rather than
+    // typed here: a retrain moves it, and the chart has to move with it
+    const [mid, lo, hi] = ["hpi_forecast_4q", "hpi_forecast_4q_lo", "hpi_forecast_4q_hi"].map((m) => exported("10180", m));
+    expect([f.mid4, f.lo4, f.hi4]).toEqual([mid, lo, hi]);
 
     const one = buildHistory(series, f).forecast[0];
     expect(one.year).toBe(2027);
-    // 381.69 grown by 7.0329, -2.3114 and 18.218 percent
-    expect(one.value).toBeCloseTo(origin * (1 + f.mid4 / 100), 4);
-    expect(one.lo).toBeCloseTo(origin * (1 + f.lo4 / 100), 4);
-    expect(one.hi).toBeCloseTo(origin * (1 + f.hi4 / 100), 4);
-    // what the detail panel prints, to one decimal
-    expect(Math.round(one.value * 10) / 10).toBe(408.5);
+    // 381.69 grown by the export's median, low and high percent
+    expect(one.value).toBeCloseTo(origin * (1 + mid / 100), 4);
+    expect(one.lo).toBeCloseTo(origin * (1 + lo / 100), 4);
+    expect(one.hi).toBeCloseTo(origin * (1 + hi / 100), 4);
+    // what the detail panel prints, to one decimal, worked out from the fhfa
+    // level and the export alone
+    expect(Math.round(one.value * 10) / 10).toBe(Math.round(origin * (1 + mid / 100) * 10) / 10);
   });
 });
 

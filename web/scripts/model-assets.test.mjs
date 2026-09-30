@@ -1,7 +1,13 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { FIGURES, leaderboard, parseBacktest, pngSize, renderModule, testRows } from "./model-assets.mjs";
+import {
+  ADMISSION as ADMISSION_FILES, BACKTEST_FILES, FIGURES, PAIRED as PAIRED_FILE, REQUIRED, admissionRows, calibrationSize,
+  carriedCoverage, forecastFacts, leaderboard, missingInputs, pairedRows, parseBacktest, parseQuoted, pngSize, rawBand, readCoverage,
+  readPanel, renderModule, testRows, trainingFacts, writeNumbers,
+} from "./model-assets.mjs";
+import { points } from "../src/lib/model.ts";
 import { FIGURES as PAGE_FIGURES, FIGURE_FILES, FIGURE_IDS } from "../src/lib/modelFigures.ts";
+import { ADMISSION, BACKTEST, PAIRED, RAW_BAND } from "../src/lib/modelNumbers.ts";
 
 const CSV = [
   "model,horizon,block,n,mae,coverage,width,mae_pct",
@@ -34,14 +40,18 @@ describe("reading a backtest csv", () => {
 
   it("carries the error, the coverage and the band width for each horizon", () => {
     expect(testRows(CSV)[0]).toEqual({
-      model: "ridge", horizon: 1, n: 7378, maePct: 1.8184, coverage: 0.76, width: 0.0517,
+      model: "ridge", horizon: 1, n: 7378, maePct: 1.818406125, coverage: 0.759962, width: 0.0517267,
     });
   });
 
-  // four places is finer than the page prints and keeps a retrain's diff to
-  // the numbers that actually moved
-  it("rounds to four places", () => {
-    expect(testRows(CSV)[1].maePct).toBe(10.4087);
+  // the page rounds once, at the precision it prints. rounded to four places
+  // here as well, 0.9049878 became 0.905 and printed as 0.91
+  it("keeps the csv's value, so the page rounds it once", () => {
+    expect(testRows(CSV)[1].maePct).toBe(10.40866653);
+    const edge = CSV.replace("ridge,1,test,7378,0.0178,0.7599620", "ridge,1,test,7378,0.0178,0.9049878015722418");
+    expect(points(testRows(edge)[0].coverage)).toBe("0.90");
+    const raw = ["model,horizon,block,coverage_raw", "seqgru,2,test,0.6249878"].join("\n");
+    expect(points(rawBand(raw)[0].coverage)).toBe("0.62");
   });
 
   it("sorts by model and horizon so a rebuild does not churn the file", () => {
@@ -65,8 +75,32 @@ describe("the module the build writes", () => {
   });
 
   it("writes one literal per row", () => {
-    expect(module).toContain('{ model: "ridge", horizon: 1, maePct: 1.8184, coverage: 0.76, width: 0.0517, n: 7378 },');
+    expect(module).toContain('{ model: "ridge", horizon: 1, maePct: 1.818406125, coverage: 0.759962, width: 0.0517267, n: 7378 },');
     expect(module.trimEnd().split("\n").filter((line) => line.startsWith("  { model:"))).toHaveLength(2);
+  });
+
+  // the tracked module against the csvs it was written from: every figure the
+  // page prints off the test block is the csv's value rounded once. carried at
+  // four places, the gru's two quarter coverage of 0.9049878 printed as 0.91
+  it("prints every test block value the way the csv rounds it", () => {
+    const dir = new URL("../../ml/results/backtest/", import.meta.url);
+    if (!BACKTEST_FILES.every((name) => existsSync(new URL(name, dir)))) return;
+    const printed = [["mae_pct", "maePct", 2], ["coverage", "coverage", 2], ["width", "width", 3]];
+    const wrong = [];
+    for (const name of BACKTEST_FILES) {
+      for (const row of parseBacktest(readFileSync(new URL(name, dir), "utf8")).filter((r) => r.block === "test")) {
+        const shipped = BACKTEST.find((r) => r.model === row.model && r.horizon === Number(row.horizon));
+        for (const [csv, key, digits] of printed) {
+          const once = Number(row[csv]).toFixed(digits);
+          if (points(shipped?.[key], digits) !== once) wrong.push(`${row.model} ${row.horizon}q ${csv}: ${points(shipped?.[key], digits)} for ${once}`);
+        }
+        if (row.model === "seqgru") {
+          const raw = RAW_BAND.find((r) => r.horizon === Number(row.horizon));
+          if (points(raw?.coverage) !== Number(row.coverage_raw).toFixed(2)) wrong.push(`seqgru ${row.horizon}q coverage_raw`);
+        }
+      }
+    }
+    expect(wrong).toEqual([]);
   });
 });
 
@@ -104,5 +138,159 @@ describe("the figures the build copies", () => {
       if (!existsSync(path)) continue;
       expect(pngSize(readFileSync(path)), figure.file).toEqual({ width: figure.width, height: figure.height });
     }
+  });
+});
+
+describe("a build missing a file the module is generated from", () => {
+  // a folder that is not there stands in for an ml/results that lost its
+  // files, so nothing is written anywhere to check this
+  const gone = new URL("file:///loop-results-that-do-not-exist/");
+
+  it("names every file it needs, the shipped model's backtest first among them", () => {
+    expect(REQUIRED).toContain("backtest/seqgru.csv");
+    expect(REQUIRED).toContain("forecast/forecasts.csv");
+    expect(REQUIRED).toContain("panel_manifest.json");
+    expect(REQUIRED).toContain("backtest/paired.csv");
+    expect(REQUIRED).toEqual(expect.arrayContaining(["admission.csv", "admission_pairs.csv"]));
+    expect(missingInputs(gone)).toEqual(REQUIRED);
+  });
+
+  // it used to write the leaderboard from whichever csvs it found, so a build
+  // without seqgru.csv published a page without the model the map draws
+  it("fails by name rather than writing a smaller module", () => {
+    expect(() => writeNumbers(gone, new URL("modelNumbers.ts", gone), gone)).toThrow(/ml\/results\/backtest\/seqgru\.csv/);
+  });
+
+  // the page's sentences about luck and about the admission run are read off
+  // these, so a build without them fails rather than dropping the sentences
+  it("names the paired test and the admission run when they are missing", () => {
+    expect(() => writeNumbers(gone, new URL("modelNumbers.ts", gone), gone)).toThrow(/ml\/results\/backtest\/paired\.csv/);
+    expect(() => writeNumbers(gone, new URL("modelNumbers.ts", gone), gone)).toThrow(/ml\/results\/admission\.csv, ml\/results\/admission_pairs\.csv/);
+  });
+});
+
+describe("the rest of what the module carries", () => {
+  it("writes a cell the backtest could not score as NaN, so the module still types", () => {
+    const blank = CSV.replace("ridge,8,test,7378,0.0873,0.6427216,0.1960825,10.40866653", "ridge,8,test,7378,0.0873,,0.1960825,10.40866653");
+    const module = renderModule(leaderboard([blank]));
+    expect(testRows(blank)[1].coverage).toBeNull();
+    expect(module).toContain("coverage: NaN");
+    expect(module).not.toContain("null");
+  });
+
+  it("reads the panel's size and span off the manifest", () => {
+    const manifest = JSON.stringify({ rows: 71072, metros: 410, first_quarter: "1975Q1", last_quarter: "2026Q2" });
+    expect(readPanel(manifest)).toEqual({ rows: 71072, metros: 410, first: "1975Q1", last: "2026Q2" });
+    expect(readPanel("{}")).toBeNull();
+  });
+
+  it("keeps the shipped model's raw band, test block only", () => {
+    const text = [
+      "model,horizon,block,coverage_raw,coverage",
+      "seqgru,1,cal,0.77,0.90",
+      "seqgru,1,test,0.5909460558,0.80",
+      "seqgru,8,test,0.604635,0.66",
+      "ridge,1,test,0.7,0.76",
+    ].join("\n");
+    expect(rawBand(text)).toEqual([{ horizon: 1, coverage: 0.5909460558 }, { horizon: 8, coverage: 0.604635 }]);
+  });
+
+  // the page says every horizon's band was set on the same samples only when
+  // the backtest says so
+  it("counts the calibration samples only when every horizon has the same", () => {
+    const same = ["model,horizon,block,n", "seqgru,1,cal,6560", "seqgru,8,cal,6560", "seqgru,1,test,7378"].join("\n");
+    const differ = ["model,horizon,block,n", "seqgru,1,cal,6560", "seqgru,8,cal,3280"].join("\n");
+    expect(calibrationSize(same)).toBe(6560);
+    expect(calibrationSize(differ)).toBeNull();
+    expect(renderModule([], null, { calibration: 6560 })).toContain("export const CALIBRATION_N: number | null = 6560;");
+  });
+
+  it("reads where a network stopped and what its losses did after", () => {
+    const text = [
+      "epoch,train_loss,val_loss",
+      "1,0.0106,0.00699",
+      "2,0.0093,0.00686",
+      "3,0.0091,0.00713",
+      "4,0.0090,0.00715",
+    ].join("\n");
+    expect(trainingFacts("windowmlp", text)).toEqual({ model: "windowmlp", stop: 2, last: 4, flatFrom: null, trainFalls: true });
+  });
+
+  // within one percent of the low from an epoch on means every epoch after it
+  it("says validation settled only from the epoch it stays settled", () => {
+    const text = ["epoch,train_loss,val_loss", "1,0.012,0.0070", "2,0.011,0.0062", "3,0.011,0.0065", "4,0.011,0.0061", "5,0.011,0.0061"].join("\n");
+    expect(trainingFacts("seqgru", text)).toMatchObject({ stop: 4, flatFrom: 4 });
+  });
+
+  it("measures the forecast the two forecast figures draw", () => {
+    const rows = ["cbsa_code,origin,horizon,q50_pct,lo_pct,hi_pct"];
+    for (let i = 0; i < 11; i += 1) rows.push(`${10000 + i},2026Q2,4,${i - 1},${i - 5},${i + 3}`);
+    rows.push("16984,2026Q2,8,13.1,-5.5,38.7");
+    const facts = forecastFacts(rows.join("\n"));
+    expect(facts).toMatchObject({ origin: "2026Q2", end: "2028Q2", far: 8, count: 11, lowest: -1, highest: 9, falling: 1 });
+    expect(facts.median).toBe(4);
+    expect(facts.p10).toBeCloseTo(0, 10);
+    expect(facts.p90).toBeCloseTo(8, 10);
+    expect(facts.fans).toEqual([{ cbsa: "16984", median: 13.1, lo: -5.5, hi: 38.7 }]);
+  });
+
+  // one row per rival and horizon, and a p value the test could not compute
+  // stays missing rather than reading as a zero that passes every test
+  it("reads the paired test a rival and a horizon at a time", () => {
+    const text = [
+      "model,against,horizon,origins,samples,difference,statistic,p_value",
+      "seqgru,ridge,8,18,7378,0.2041822,0.3683901,0.7171296",
+      "seqgru,ridge,1,18,7378,0.0846284,0.8682991,0.3973231",
+      "seqgru,no_change,4,18,7378,-3.1263305,-2.6439219,0.0170546",
+      "seqgru,momentum,1,2,7378,-0.1,,",
+      "windowmlp,ridge,1,18,7378,0.3,1.2,0.2",
+    ].join("\n");
+    const rows = pairedRows(text);
+    expect(rows.map((r) => `${r.against} ${r.horizon}`)).toEqual(["momentum 1", "no_change 4", "ridge 1", "ridge 8"]);
+    expect(rows[1]).toEqual({ against: "no_change", horizon: 4, origins: 18, difference: -3.1263305, pValue: 0.0170546 });
+    expect(rows[0].pValue).toBeNull();
+    const module = renderModule(leaderboard([CSV]), null, { paired: rows });
+    expect(module).toContain('import type { BacktestRow, PairedRow } from "./model";');
+    expect(module).toContain('{ against: "momentum", horizon: 1, origins: 2, difference: -0.1, pValue: NaN },');
+  });
+
+  // admit.py names an arm in words with commas in it, so the csv quotes it
+  it("reads the admission run's quoted arm names, a seed at a time", () => {
+    const text = [
+      "arm,series,seed,validation loss,epoch",
+      '"nine, what the shipped gate could see",9,20260915,0.01337,7',
+      '"eleven, without zori and listings",11,20260915,0.013195,7',
+      '"a ""quoted"" arm",9,20260916,0.0134,5',
+    ].join("\n");
+    expect(parseQuoted(text)[0].arm).toBe("nine, what the shipped gate could see");
+    expect(admissionRows(text)).toEqual([
+      { arm: "nine, what the shipped gate could see", seed: 20260915, loss: 0.01337 },
+      { arm: "eleven, without zori and listings", seed: 20260915, loss: 0.013195 },
+      { arm: 'a "quoted" arm', seed: 20260916, loss: 0.0134 },
+    ]);
+    const module = renderModule(leaderboard([CSV]), null, { admission: admissionRows(text) });
+    expect(module).toContain('{ arm: "nine, what the shipped gate could see", seed: 20260915, loss: 0.01337 },');
+  });
+
+  // the tracked module against the files it was written from. a blank the
+  // readers hand back as null is written into the module as NaN
+  it("carries the paired test and the admission run as ml/results has them", () => {
+    const results = new URL("../../ml/results/", import.meta.url);
+    const written = (rows) => rows.map((row) => Object.fromEntries(Object.entries(row).map(([k, v]) => [k, v === null ? Number.NaN : v])));
+    if (!existsSync(new URL(PAIRED_FILE, results))) return;
+    expect(PAIRED).toEqual(written(pairedRows(readFileSync(new URL(PAIRED_FILE, results), "utf8"))));
+    if (!ADMISSION_FILES.every((name) => existsSync(new URL(name, results)))) return;
+    expect(ADMISSION).toEqual(written(ADMISSION_FILES.flatMap((name) => admissionRows(readFileSync(new URL(name, results), "utf8")))));
+  });
+
+  // ci has no ml venv and no parquet, so the coverage the last full build
+  // measured rides along in the module and is read back out of it
+  it("carries the panel coverage over from the module it is rewriting", () => {
+    const coverage = { fitEnd: "2014Q4", first: 1975, last: 2026, series: [{ label: "zori", first: 2015, emptyBeforeFit: true }], features: 11, unseen: ["income_growth"] };
+    const module = renderModule(leaderboard([CSV]), null, { coverage });
+    expect(carriedCoverage(module)).toEqual(coverage);
+    expect(carriedCoverage(renderModule(leaderboard([CSV]), null, { coverage: null }))).toBeNull();
+    expect(carriedCoverage("")).toBeNull();
+    expect(readCoverage("not json")).toBeNull();
   });
 });

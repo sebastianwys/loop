@@ -94,6 +94,7 @@
 .compare-table .v { text-align: right; font-variant-numeric: tabular-nums; }
 .compare-table .date { display: block; font-size: 0.72rem; font-weight: 400; color: var(--muted); }
 .compare-table .taken { display: block; font-size: 0.72rem; font-weight: 400; color: var(--muted); }
+.compare-table .withheld { color: var(--muted); font-style: italic; }
 .compare-foot { margin: 0; font-size: 0.78rem; color: var(--muted); }
 
 /* the table is the one thing here that cannot narrow further, so on a phone

@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { loadBoundaries, type BoundaryIndex } from "../lib/boundaries";
 import { closesOnSelect, legendStartsOpen } from "../lib/layout";
-import { isInherited, metricCaption, visibleDefs } from "../lib/metrics";
+import { isInherited, metricCaption, visibleDefs, withheldWhy } from "../lib/metrics";
 import { routeMetric } from "../lib/route";
-import { buildScale } from "../lib/scale";
+import { buildScale, drawnPast, ownValues } from "../lib/scale";
 import { buildDeepTimeline, deepCaption, frameAt, yearMetric } from "../lib/timeline";
 import type { ViewProps } from "../lib/views";
 import { DetailPanel } from "./DetailPanel";
@@ -90,9 +90,12 @@ export function MapPage({ data, route, go, viewport, shell }: ViewProps) {
   // scale rebuilt per year would recolour the map under the reader and make
   // 1990 and 2010 incomparable, and it would churn a prop 410 markers read
   const scale = useMemo(
-    () => (deep ? buildScale([-deep.cap, deep.cap], "diverging") : buildScale(metros.map(metric.accessor), metric.kind)),
+    () => (deep ? buildScale([-deep.cap, deep.cap], "diverging") : buildScale(ownValues(metros, metric), metric.kind)),
     [deep, metros, metric],
   );
+  // a parent's number on a division can sit past the edges the metros' own
+  // numbers set, and the end class that takes it says so
+  const past = useMemo(() => !deep && drawnPast(scale, metros.map(metric.accessor)), [deep, scale, metros, metric]);
   const caption = useMemo(
     () => (deep ? deepCaption(metric.def, deep, shownYear) : metricCaption(metric, metros)),
     [deep, shownYear, metric, metros],
@@ -102,6 +105,14 @@ export function MapPage({ data, route, go, viewport, shell }: ViewProps) {
     () => metros.some((m) => isInherited(m, shown) && shown.accessor(m) !== null),
     [metros, shown],
   );
+  // and the withheld mark the same way, keyed by why those metros are blank
+  const withheld = useMemo(() => {
+    for (const m of metros) {
+      const why = shown.accessor(m) === null ? withheldWhy(m, shown) : null;
+      if (why) return why;
+    }
+    return null;
+  }, [metros, shown]);
   // the year is route state like the metric, so a link carries the frame the
   // reader was looking at. it is the fastest changing key the address bar has,
   // a new one every quarter second while the run plays, which is why route.ts
@@ -177,7 +188,8 @@ export function MapPage({ data, route, go, viewport, shell }: ViewProps) {
           open={legendOpen}
           onToggle={() => setLegendOpen((was) => !was)}
           inherited={anyInherited}
-          clipped={deep !== null || scale.clipped}
+          withheld={withheld}
+          clipped={deep !== null || scale.clipped || past}
         />
         {selectedMetro && <DetailPanel metro={selectedMetro} metros={metros} onClose={() => go({ metro: null })} />}
       </div>

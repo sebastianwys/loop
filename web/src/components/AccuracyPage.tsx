@@ -1,11 +1,13 @@
 import { useMemo, useRef, useState } from "react";
 import {
   MIN_STATE, NORMAL_TAIL, barAt, buildHistogram, buildScatter, chartBox, collectMisses, coverage,
-  extremes, histogramTitle, nearestMetro, openMetro, originOf, scatterTitle, sizeFit, stance, stateSpread,
-  summarize,
+  extremes, grownTo, histogramTitle, largerSide, nearestMetro, openMetro, originOf, scatterTitle, sizeFit, stance,
+  stateSpread, summarize,
   type HistogramBar, type Miss, type ScatterPoint,
 } from "../lib/accuracy";
 import { formatValue } from "../lib/format";
+import { FIT_END, NOMINAL_COVERAGE, SHIPPED, quarterLabel, rowAt, scored } from "../lib/model";
+import { BACKTEST } from "../lib/modelNumbers";
 import { dateLabel } from "../lib/timeline";
 import type { Go } from "../lib/route";
 import type { ViewProps } from "../lib/views";
@@ -93,6 +95,7 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
   const now = useMemo(() => stance(metros), [metros]);
   const size4 = useMemo(() => sizeFit(misses), [misses]);
   const origin = useMemo(() => originOf(metros), [metros]);
+  const grown = useMemo(() => grownTo(metros), [metros]);
 
   const [bar, setBar] = useState<HistogramBar | null>(null);
   const [dot, setDot] = useState<ScatterPoint | null>(null);
@@ -140,12 +143,35 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
   const fit = cloud.fit;
   const bins = cloud.marks;
   const asOf = dateLabel(origin) ?? origin;
+  const until = dateLabel(grown) ?? grown;
   const repeat = now === null ? null : now.median + stats.median;
   const tail = stats.p95 - stats.p05;
   const skewWord = stats.skew > 0 ? "positive" : stats.skew < 0 ? "negative" : "flat";
-  const longTail = stats.skew > 0
-    ? "beat the model beat it by more than the metros that fell short fell short of it"
-    : "fell short of the model fell short by more than the metros that beat it beat it";
+  // skewness is measured about the average miss, so it says which way the
+  // misses spread from that average. which side of the call missed by more is
+  // a different question, measured from zero, and read off the two sides
+  const skewReading = stats.skew > 0
+    ? "misses above the average miss run further out than misses below it"
+    : stats.skew < 0
+      ? "misses below the average miss run further out than misses above it"
+      : "misses spread about as far either side of the average miss";
+  const larger = largerSide(stats.beats, stats.shortfalls);
+  const sides = stats.beats.mean !== null && stats.shortfalls.mean !== null && stats.beats.max !== null && stats.shortfalls.max !== null
+    ? { beat: stats.beats.mean, short: stats.shortfalls.mean, beatMax: stats.beats.max, shortMax: stats.shortfalls.max }
+    : null;
+  const whichSide = sides === null
+    ? ""
+    : larger === "shortfalls"
+      ? ` Measured from the call itself, the metros that fell short of the model fell short by more than the metros that beat it beat it: ${sides.short.toFixed(2)} points on average against ${sides.beat.toFixed(2)}, and ${sides.shortMax.toFixed(2)} at the worst against ${sides.beatMax.toFixed(2)}.`
+      : larger === "beats"
+        ? ` Measured from the call itself, the metros that beat the model beat it by more than the metros that fell short fell short of it: ${sides.beat.toFixed(2)} points on average against ${sides.short.toFixed(2)}, and ${sides.beatMax.toFixed(2)} at the worst against ${sides.shortMax.toFixed(2)}.`
+        : ` Measured from the call itself, neither side missed by more on both counts: the metros that beat the model beat it by ${sides.beat.toFixed(2)} points on average and ${sides.beatMax.toFixed(2)} at the worst, and the ones that fell short fell short by ${sides.short.toFixed(2)} and ${sides.shortMax.toFixed(2)}.`;
+  // the scored calls are the backtest's, and the coverage the band section
+  // quotes is the backtest band's. the band on the map is the shipped one,
+  // with a margin set separately, so the page says whose number it is
+  const made = quarterLabel(origin);
+  const backtest4 = rowAt(BACKTEST, SHIPPED, 4);
+  const cover4 = backtest4 && scored(backtest4.coverage) ? backtest4.coverage : null;
   const tailWord = stats.kurtosis > 0 ? "fatter tails than a normal curve" : stats.kurtosis < 0 ? "thinner tails than a normal curve" : "tails about as heavy as a normal curve";
   // the test the lean is judged by, stated on the page rather than assumed:
   // is the average miss further from zero than twice the standard error that
@@ -172,10 +198,13 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
         <div className="acc-head">
           <h2>How wrong was the model</h2>
           <p className="acc-note">
-            A year ago the model published an expected four quarter growth for every metro. Those four quarters
-            have now happened, so every one of those calls can be scored against what the index actually did.
-            The gap is the miss: what the metro grew, minus what the model said it would.
-            {" "}It is measured only on test block metros, so none of it was in the model's training data.
+            These are the backtest's calls: the sequence GRU as the backtest fitted it, on outcomes through
+            {" "}{FIT_END}, predicting four quarter growth for every metro from the {made ?? "scored"} origin. Nothing
+            was published then. The calls were made afterwards, out of sample, and those four quarters have now
+            happened, so every one of them can be scored against what the index actually did. The gap is the
+            miss: what the metro grew, minus what the model said it would. The calls come from the test block,
+            so none of those outcomes was in the model's training data. The forecast the map draws is a refit on
+            everything since, and it has no scored calls yet.
           </p>
         </div>
 
@@ -210,8 +239,8 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
             )}
           </p>
           <p>
-            The miss is also not symmetric. Skewness is {stats.skew.toFixed(2)}, {skewWord}, so the metros that
-            {" "}{longTail}. Excess kurtosis is {stats.kurtosis.toFixed(2)}, meaning {tailWord}:
+            The miss is also not symmetric. Skewness is {stats.skew.toFixed(2)}, {skewWord}, so {skewReading}.
+            {whichSide} Excess kurtosis is {stats.kurtosis.toFixed(2)}, meaning {tailWord}:
             {" "}{share1(stats.outliers)} of metros sit more than two standard deviations from the mean where a normal
             curve would put {share1(NORMAL_TAIL)}. A summary that assumes a bell curve will
             {" "}{stats.kurtosis > 0 ? "understate" : "overstate"} how often this model is badly wrong about one place.
@@ -328,8 +357,9 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
             />
           </div>
           <p className="acc-foot">
-            Growth figures are percent change in the FHFA index over the four quarters to the origin. The miss is
-            their difference, so it is in percentage points. Rounding means a row can look a tenth off.
+            Growth figures are percent change in the FHFA index over the four quarters from the origin
+            {asOf && until ? `, ${asOf} to ${until}` : ""}. The miss is their difference, so it is in percentage
+            points. Rounding means a row can look a tenth off.
           </p>
         </section>
 
@@ -516,21 +546,25 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
               The live call is {pct(now.median)} for the median metro over the next four quarters, with the middle half
               of metros between {pct(now.q1)} and {pct(now.q3)}
               {now.median8 === null ? "" : `, and ${pct(now.median8)} over eight quarters`}. Read that against the
-              scorecard above, not on its own. If the model missed the same way again, that {pct(now.median)} would
-              land nearer {pct(repeat)}. That is not a correction anyone should apply: it is one year of bias
-              projected onto the next, which is exactly the reasoning this page is arguing against.
+              scorecard above, not on its own, and read it knowing the two are different fits: the scorecard is the
+              backtest's model, the live call is the refit's. If the refit missed the way the backtest did, that
+              {" "}{pct(now.median)} would land nearer {pct(repeat)}. That is not a correction anyone should apply: it
+              is one model's year of bias projected onto another model's next year, which is exactly the reasoning
+              this page is arguing against.
             </p>
             {now.bandWidth !== null && now.bandMin !== null && now.bandMax !== null && (
               <p>
-                The band is the clearer warning, though not for the reason a single year makes it look.
+                The band is the clearer warning{tail < now.bandWidth ? ", though not for the reason a single year makes it look" : ""}.
                 The model publishes a 90 percent interval a median
                 {" "}{now.bandWidth.toFixed(1)} points wide, running from {now.bandMin.toFixed(1)} to
-                {" "}{now.bandMax.toFixed(1)} points across all {now.bandN} metros that carry one. The middle 90
-                percent of last year's actual misses spanned only {tail.toFixed(1)} points, which makes the
-                interval look far too wide. It is not: the band has to cover where a metro's prices actually
-                land, and across the whole 2022 to 2026 test block that spread is wider than the band, which
-                is why the model covers 87 percent of outcomes at four quarters against the 90 it aims at. One
-                year's misses bunching together is one draw of the cycle, not a measurement of the band.
+                {" "}{now.bandMax.toFixed(1)} points across all {now.bandN} metros that carry one.
+                {/* whether one year's misses make the band look too wide is read off the two widths */}
+                {tail < now.bandWidth
+                  ? ` The middle 90 percent of last year's actual misses spanned only ${tail.toFixed(1)} points, which makes the interval look far too wide. It is not: the band has to cover where a metro's prices actually land, not how far one year's calls missed. One year's misses bunching together is one draw of the cycle, not a measurement of the band.`
+                  : ` The middle 90 percent of last year's actual misses spanned ${tail.toFixed(1)} points, as wide as the interval or wider. That is one draw of the cycle, not a measurement of the band either way.`}
+                {cover4 !== null
+                  ? ` Across the whole test block from 2022 on, the backtest's own band, calibrated on 2018 to 2021, held ${Math.round(cover4 * 100)} percent of outcomes at four quarters ${cover4 < NOMINAL_COVERAGE ? "against" : "and reached"} the ${Math.round(NOMINAL_COVERAGE * 100)} it aims at. The band printed here is the shipped one, its margin set separately on outcomes from 2022 on, so that is the backtest band's number, not a score of this one.`
+                  : ""}
                 {" "}{flatBand
                   ? "The real problem is that the band is close to a single national width rather than a judgement about each metro. A scalar conformal margin is added to every metro alike, so almost none of the width is telling two metros apart, even though the model is handed a published measurement error per metro that says which ones are hardest to pin down."
                   : "Its width varies enough between metros to carry some signal about which ones the model is least sure of."}
@@ -550,7 +584,11 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
           {" "}{stats.n} of {seen.metros} metros carry a scored call
           {seen.unscored > 0 ? `; the other ${seen.unscored} are not counted anywhere on this page` : ""}.
           {seen.withError < stats.n ? ` ${stats.n - seen.withError} of them carry no index standard error and sit out of section 3.` : ""}
-          {seen.divisions > 0 ? ` ${seen.divisions} of the scored areas are metropolitan divisions inside a larger metro, so a few big places are counted twice, once whole and once in parts.` : ""}
+          {seen.divisions > 0
+            ? seen.overlap > 0
+              ? ` ${seen.overlap} of the scored areas are metropolitan divisions whose parent metro is scored too, so a few big places are counted twice, once whole and once in parts.`
+              : ` ${seen.divisions} of the scored areas are metropolitan divisions, the pieces of ${seen.parents} larger ${seen.parents === 1 ? "metro" : "metros"} scored in parts rather than whole, so no place is counted twice.`
+            : ""}
           {" "}The index standard error is FHFA's own figure, not the model's.
         </p>
       </div>

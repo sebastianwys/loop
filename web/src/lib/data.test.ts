@@ -22,7 +22,7 @@ describe("loadMapData", () => {
     const mod = await fresh();
     const { data, sample } = await mod.loadMapData();
     expect(sample).toBe(false);
-    expect(data.metros).toHaveLength(2);
+    expect(data?.metros).toHaveLength(2);
   });
 
   it("flags the sample when the file is missing", async () => {
@@ -49,6 +49,32 @@ describe("loadMapData", () => {
       expect(sample, JSON.stringify(body)).toBe(true);
       expect(data).toBe(mod.SAMPLE);
     }
+  });
+
+  // a deployed page answered one dropped request with the three metro fixture
+  // for the life of the tab. outside dev a failure is a failure, with a reason
+  it("never hands a deployed page the sample, whatever went wrong", async () => {
+    const cases: [string, () => Promise<Response>][] = [
+      ["offline", () => Promise.reject(new TypeError("Failed to fetch"))],
+      ["missing", () => respond(null, false)],
+      ["not a build", () => respond({ metros: null })],
+    ];
+    for (const [name, answer] of cases) {
+      vi.stubGlobal("fetch", vi.fn(answer));
+      const mod = await fresh();
+      const result = await mod.loadMapData(false);
+      expect(result.data, name).toBeNull();
+      expect(result.sample, name).toBe(false);
+      expect(result.error, name).toMatch(/\w/);
+    }
+  });
+
+  it("still hands a deployed page the build when it lands", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => respond(built)));
+    const mod = await fresh();
+    const result = await mod.loadMapData(false);
+    expect(result.sample).toBe(false);
+    expect(result.data?.metros).toHaveLength(2);
   });
 
   // the substitution is only safe because the fixture is a real build shape

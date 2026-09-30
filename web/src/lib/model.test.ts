@@ -1,11 +1,19 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { ModelPage } from "../components/ModelPage";
+import { SAMPLE } from "./data";
 import {
-  LONG_RUN, NOMINAL_COVERAGE, NO_CHANGE, SHIPPED, allUnderCover, asPercent, bandCut, bandExtremes,
-  bestAt, closestTo, coverageRange, errorCut, horizonPhrase, horizonsIn, leaderboard, lossSentence,
-  lossesOf, modelLabel, modelsIn, points, quantile, quarterLabel, rowAt, sentenceCase, spreadOf,
-  type BacktestRow,
+  ARMS, LONG_RUN, NOMINAL_COVERAGE, NO_CHANGE, SHIPPED, WHY_SHIPPED, admissionSentences, allUnderCover, armGap, asPercent, bandCut,
+  bandExtremes, bestAt, closestTo, coverageRange, errorCut, extraFit, horizonPhrase, horizonsIn, leaderboard, lossSentence,
+  lossesOf, matchedBy, matchedEverywhere, matchedPhrase, meanVerdict, modelLabel, modelsIn, pPhrase, pRange, pairedOrigins,
+  pairedWith, points, proseName, quantile, quarterLabel, ridgeVerdict, rowAt, sentenceCase, separatedAt, separatedSentence,
+  separations, shiftQuarter, spreadOf, winsAt,
+  type AdmissionRow, type BacktestRow, type Loss, type PairedRow,
 } from "./model";
 import { BACKTEST } from "./modelNumbers";
+import { DEFAULT_ROUTE } from "./route";
+import type { Shell } from "./views";
 import type { Metro, YearValues } from "../types";
 
 const row = (model: string, horizon: number, maePct: number, coverage = 0.8, width = 0.1): BacktestRow =>
@@ -102,6 +110,19 @@ describe("reading a winner off the table", () => {
     expect(lossesOf(TABLE, SHIPPED)).toEqual([{ horizon: 1, winner: "ridge", margin: 0.11 }]);
     expect(lossesOf(TABLE, "ridge")).toEqual([{ horizon: 4, winner: SHIPPED, margin: 0.27 }]);
   });
+
+  // the csvs sort by model name, so ridge's row comes first. a tie read as a
+  // defeat for whoever came second said "ahead by 0.00 points"
+  it("counts a tie as neither side's loss nor win, in either row order", () => {
+    const tied = [row("ridge", 1, 1.8093), row(SHIPPED, 1, 1.8093), row(NO_CHANGE, 1, 2.3)];
+    for (const rows of [tied, [tied[1], tied[0], tied[2]]]) {
+      expect(lossesOf(rows, SHIPPED)).toEqual([]);
+      expect(lossesOf(rows, "ridge")).toEqual([]);
+      expect(winsAt(rows, SHIPPED)).toEqual([]);
+      expect(winsAt(rows, "ridge")).toEqual([]);
+    }
+    expect(winsAt([row("ridge", 1, 1.8), row(SHIPPED, 1, 1.81)], "ridge")).toEqual([1]);
+  });
 });
 
 describe("measuring one model against another", () => {
@@ -118,6 +139,24 @@ describe("measuring one model against another", () => {
     expect(errorCut(TABLE, SHIPPED, "transformer", 4)).toBeNull();
     expect(bandCut(TABLE, "transformer", LONG_RUN, 4)).toBeNull();
     expect(asPercent(null)).toBeNull();
+  });
+
+  // the page says "matches or beats", so a rival level with the model counts
+  it("finds where a rival is level with or ahead of a model, on error and on band width apart", () => {
+    const ridge = matchedBy(TABLE, "ridge", SHIPPED);
+    expect(ridge).toEqual({ horizons: [1, 4], error: [1], width: [1, 4] });
+    expect(matchedEverywhere(ridge)).toBe(false);
+    expect(matchedPhrase(ridge)).toBe("on error at one quarter and on band width at every horizon");
+    const level = [row("ridge", 1, 1.92, 0.8, 0.063), row(SHIPPED, 1, 1.92, 0.8, 0.063)];
+    expect(matchedEverywhere(matchedBy(level, "ridge", SHIPPED))).toBe(true);
+    expect(matchedPhrase(matchedBy(level, "ridge", SHIPPED))).toBe("at every horizon, on error and on band width");
+    expect(matchedPhrase(matchedBy(TABLE, NO_CHANGE, SHIPPED))).toBeNull();
+  });
+
+  it("claims nothing for a horizon where either side went unscored", () => {
+    const blank = [...TABLE.filter((r) => !(r.model === "ridge" && r.horizon === 4)), row("ridge", 4, Number.NaN, 0.86, 0.1)];
+    expect(matchedBy(blank, "ridge", SHIPPED).error).toEqual([1]);
+    expect(matchedEverywhere(matchedBy([row("ridge", 1, 1.8, 0.8, Number.NaN), row(SHIPPED, 1, 1.9)], "ridge", SHIPPED))).toBe(false);
   });
 });
 
@@ -242,9 +281,44 @@ describe("printing a number", () => {
   });
 });
 
+// the model page over the shipped backtest, as a reader hears it
+const shell: Shell = {
+  drawer: false, open: true, condensed: false, width: null,
+  setOpen: () => {}, resize: () => {}, commit: () => {}, reset: () => {}, measure: () => 320,
+};
+const HTML = renderToStaticMarkup(createElement(ModelPage, {
+  data: SAMPLE,
+  route: { ...DEFAULT_ROUTE, view: "model" },
+  go: () => {},
+  viewport: { width: 1440, height: 900, mode: "wide", coarse: false, reducedMotion: false },
+  shell,
+}));
+const plain = (html: string) =>
+  html.replace(/<[^>]+>/g, " ").replace(/&#x27;/g, "'").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
+const PAGE = plain(HTML);
+// the stretch of the page from an opening marker to the tag that closes it
+const part = (open: string, close: string) => {
+  const from = HTML.indexOf(open);
+  return from < 0 ? "" : plain(HTML.slice(from, HTML.indexOf(close, from)));
+};
+const READINGS = part('<ul class="model-readings">', "</ul>");
+const LIMITS = part("model-limits", "</section>");
+
+// the scored rows at a horizon, lowest error first, and the horizons where the
+// gru is strictly lowest. worked out here rather than through the page's own
+// readers, so a reader that went wrong could not vouch for itself
+const ranked = (horizon: number) =>
+  BACKTEST.filter((r) => r.horizon === horizon && Number.isFinite(r.maePct)).sort((a, b) => a.maePct - b.maePct);
+const gruLowest = () => horizonsIn(BACKTEST).filter((h) => {
+  const [first, second] = ranked(h);
+  return first?.model === SHIPPED && (!second || second.maePct > first.maePct);
+});
+
 // these read the numbers the page actually publishes. they are here so that a
-// retrain cannot quietly turn a sentence on the page into a false one: if one
-// of these fails, the backtest moved and the prose it names has to move too
+// retrain cannot quietly turn a sentence on the page into a false one: the
+// ones about who wins and whether a band holds render the page and check what
+// it says against what the numbers say, so whichever way a retrain lands the
+// page has to say that, and the rest are drift alarms on the prose around them
 describe("the claims the model page makes about the shipped backtest", () => {
   it("has a row for every model at every horizon it scored", () => {
     const horizons = horizonsIn(BACKTEST);
@@ -261,14 +335,44 @@ describe("the claims the model page makes about the shipped backtest", () => {
     }
   });
 
-  it("has the sequence gru winning four and eight quarters, which the results section says", () => {
-    expect(bestAt(BACKTEST, 4)?.model).toBe(SHIPPED);
-    expect(bestAt(BACKTEST, 8)?.model).toBe(SHIPPED);
+  it("names the horizons where the sequence gru has the lowest error, which the results section says", () => {
+    const lowest = gruLowest();
+    expect(READINGS).toContain(lowest.length > 0
+      ? `The sequence GRU has the lowest error at ${horizonPhrase(lowest)}.`
+      : "The sequence GRU has the lowest error at no horizon in this build.");
   });
 
-  it("has ridge ahead at one and two quarters, which the limits say out loud", () => {
-    expect(lossesOf(BACKTEST, SHIPPED).map((loss) => [loss.horizon, loss.winner]))
-      .toEqual([[1, "ridge"], [2, "ridge"]]);
+  it("names every horizon another model is ahead of the gru, and who and by how much, which the limits say out loud", () => {
+    const behind: Loss[] = horizonsIn(BACKTEST).flatMap((h) => {
+      const at = ranked(h);
+      const mine = at.find((r) => r.model === SHIPPED);
+      if (!mine || at[0].model === SHIPPED || at[0].maePct === mine.maePct) return [];
+      return [{ horizon: h, winner: at[0].model, margin: Math.round((mine.maePct - at[0].maePct) * 1e4) / 1e4 }];
+    });
+    if (behind.length === 0) {
+      expect(LIMITS).toContain("It loses no horizon.");
+      return;
+    }
+    const at = behind.map((loss) => loss.horizon);
+    const wins = gruLowest();
+    const heading = at.length === horizonsIn(BACKTEST).length
+      ? "It loses every horizon."
+      : wins.length > 0 && Math.max(...at) < Math.min(...wins) ? "It loses the short horizons." : `It loses at ${horizonPhrase(at)}.`;
+    expect(READINGS).toContain(`It loses at ${horizonPhrase(at)}, where ${lossSentence(behind)}.`);
+    expect(LIMITS).toContain(`${heading} ${sentenceCase(lossSentence(behind))}.`);
+  });
+
+  // the pipeline never weighs ridge against the gru, so the page says where
+  // ridge stands rather than letting the gru's place on the map read as a win
+  // over it
+  it("says ridge matches or beats the gru at every horizon only while it does, and why the gru ships either way", () => {
+    const everywhere = horizonsIn(BACKTEST).every((h) => {
+      const ridge = rowAt(BACKTEST, "ridge", h);
+      const gru = rowAt(BACKTEST, SHIPPED, h);
+      return ridge !== null && gru !== null && ridge.maePct <= gru.maePct && ridge.width <= gru.width;
+    });
+    expect(PAGE.includes("Ridge matches or beats the GRU at every horizon, on error and on band width.")).toBe(everywhere);
+    expect(PAGE).toContain("The GRU ships because the pipeline picks between the two networks, not against ridge.");
   });
 
   it("has ridge as the nearest rival at eight quarters, by a gap worth the caveat", () => {
@@ -291,10 +395,17 @@ describe("the claims the model page makes about the shipped backtest", () => {
     }
   });
 
-  it("has no model reaching the nominal band at eight quarters, and all of them reaching it nowhere else by luck", () => {
-    expect(allUnderCover(BACKTEST, 8)).toBe(true);
-    expect(rowAt(BACKTEST, SHIPPED, 8)!.coverage).toBeLessThan(NOMINAL_COVERAGE);
-    expect(points(rowAt(BACKTEST, SHIPPED, 8)!.coverage)).toBe("0.66");
+  it("says the eight quarter band fails, and that no model escapes it, only while the backtest says so", () => {
+    const shipped = rowAt(BACKTEST, SHIPPED, 8)!;
+    const misses = shipped.coverage < NOMINAL_COVERAGE;
+    const field = BACKTEST.filter((r) => r.horizon === 8 && Number.isFinite(r.coverage)).sort((a, b) => a.coverage - b.coverage);
+    const [low, high] = [field[0], field[field.length - 1]];
+    expect(LIMITS).toContain(misses ? "The bands fail at eight quarters." : "The bands hold at eight quarters in this build.");
+    expect(LIMITS).toContain(`covers ${points(shipped.coverage)} of outcomes there against a nominal ${points(NOMINAL_COVERAGE)}`);
+    expect(LIMITS).toContain(`the field runs ${points(low.coverage)} for ${modelLabel(low.model)} to ${points(high.coverage)} for ${modelLabel(high.model)}`);
+    expect(LIMITS.includes("no model on the table escapes it")).toBe(field.every((r) => r.coverage < NOMINAL_COVERAGE));
+    // a repair is ruled out only while there is a miss to repair
+    expect(LIMITS.includes("would fix the number")).toBe(misses);
   });
 
   it("has the shipped model cutting the no-change error by more than a third at both long horizons", () => {
@@ -305,5 +416,137 @@ describe("the claims the model page makes about the shipped backtest", () => {
   it("has the shipped band narrower than the long run average at both long horizons", () => {
     expect(bandCut(BACKTEST, SHIPPED, LONG_RUN, 4)!).toBeGreaterThan(0);
     expect(bandCut(BACKTEST, SHIPPED, LONG_RUN, 8)!).toBeGreaterThan(0);
+  });
+});
+
+// the page counts quarters rather than typing them, so a moved block edge
+// moves the sentences that name it
+describe("the quarters the page counts", () => {
+  it("moves a quarter on and back across the turn of a year", () => {
+    expect(shiftQuarter("2014Q4", 1)).toBe("2015Q1");
+    expect(shiftQuarter("2015Q1", -8)).toBe("2013Q1");
+    expect(shiftQuarter("2015Q1", 0)).toBe("2015Q1");
+    expect(shiftQuarter("2015", 1)).toBeNull();
+  });
+
+  // ridge fits the whole train block, the networks stop at the fit end
+  it("says how much more of the train block ridge fits on than the networks", () => {
+    expect(extraFit("2014Q4", "2017Q4")).toBe("three more years");
+    expect(extraFit("2016Q4", "2017Q4")).toBe("one more year");
+    expect(extraFit("2015Q2", "2017Q4")).toBe("ten more quarters");
+    expect(extraFit("2017Q4", "2017Q4")).toBeNull();
+    expect(extraFit("not a quarter", "2017Q4")).toBeNull();
+  });
+});
+
+
+// a gap on the table can be luck. the paired test says which are not, and
+// every sentence the page builds from it is chosen by the p values it read
+describe("reading the paired test", () => {
+  const pair = (against: string, horizon: number, pValue: number, difference = -0.1, origins = 18): PairedRow =>
+    ({ against, horizon, origins, difference, pValue });
+  // the shape of the shipped test: ridge ahead and within chance everywhere,
+  // no change and the window MLP separated at two horizons each
+  const shipped = [
+    pair("ridge", 1, 0.397, 0.08), pair("ridge", 2, 0.1325, 0.13), pair("ridge", 4, 0.9433, 0.03), pair("ridge", 8, 0.717, 0.2),
+    pair(NO_CHANGE, 1, 0.091), pair(NO_CHANGE, 2, 0.095), pair(NO_CHANGE, 4, 0.017), pair(NO_CHANGE, 8, 0.018),
+    pair(LONG_RUN, 1, 0.548), pair(LONG_RUN, 2, 0.539), pair(LONG_RUN, 4, 0.483), pair(LONG_RUN, 8, 0.555),
+    pair("windowmlp", 1, 0.0075), pair("windowmlp", 2, 0.0185), pair("windowmlp", 4, 0.06), pair("windowmlp", 8, 0.144),
+  ];
+  const HORIZONS = [1, 2, 4, 8];
+
+  it("reads a rival's rows by horizon, leaves out a p the test could not compute, and says where it passes", () => {
+    const rows = [pair("ridge", 4, Number.NaN), ...shipped];
+    expect(pairedWith(rows, "ridge").map((r) => r.horizon)).toEqual([1, 2, 4, 8]);
+    expect(pairedWith([pair("gbm", 1, Number.NaN)], "gbm")).toEqual([]);
+    expect(separatedAt(shipped, NO_CHANGE)).toEqual([4, 8]);
+    expect(separatedAt(shipped, "ridge")).toEqual([]);
+    expect(separatedAt(shipped, "ridge", 0.2)).toEqual([2]);
+  });
+
+  it("gives a rival's p values as a range, and the origins the test averaged over", () => {
+    expect(pRange(shipped, "ridge")).toEqual({ low: 0.1325, high: 0.9433 });
+    expect(pRange(shipped, "gbm")).toBeNull();
+    expect(pPhrase({ low: 0.1325, high: 0.9433 })).toBe("p 0.13 to 0.94");
+    expect(pPhrase({ low: 0.401, high: 0.404 })).toBe("p 0.40");
+    expect(pairedOrigins(shipped)).toBe(18);
+    expect(pairedOrigins([...shipped, pair("gbm", 8, 0.5, -0.1, 17)])).toBeNull();
+  });
+
+  it("lists what it separates from chance in the table's order, with the side that is closer", () => {
+    expect(separations(shipped)).toEqual([
+      { against: NO_CHANGE, horizons: [4, 8], closer: "shipped" },
+      { against: "windowmlp", horizons: [1, 2], closer: "shipped" },
+    ]);
+    expect(separations([pair("ridge", 2, 0.01, 0.13)])).toEqual([{ against: "ridge", horizons: [2], closer: "rival" }]);
+  });
+
+  it("says what it separates and that it separates nothing else, only as the p values have it", () => {
+    expect(separatedSentence(shipped)).toBe("At the 5 percent level it separates the GRU from no change at four and eight quarters and "
+      + "from the window MLP at one and two quarters, with the GRU closer every time, and it separates nothing else.");
+    const none = shipped.map((r) => ({ ...r, pValue: 0.5 }));
+    expect(separatedSentence(none)).toBe("At the 5 percent level it separates no gap on the table from chance.");
+    const either = [pair(NO_CHANGE, 4, 0.01), pair("ridge", 1, 0.02, 0.08)];
+    expect(separatedSentence(either)).toBe("At the 5 percent level it separates the GRU from no change at four quarters, where the GRU "
+      + "is closer and from ridge at one quarter, where ridge is closer, and it separates nothing else.");
+    expect(separatedSentence([pair("ridge", 1, Number.NaN)])).toBe("");
+  });
+
+  it("calls ridge and the gru tied only while it puts every gap between them down to chance", () => {
+    expect(ridgeVerdict(shipped, HORIZONS)).toBe("The paired test above puts every gap between ridge and the GRU down to chance, "
+      + `p 0.13 to 0.94, so the two are tied, and the GRU ships because ${WHY_SHIPPED}.`);
+    const apart = shipped.map((r) => (r.against === "ridge" && r.horizon === 2 ? { ...r, pValue: 0.01 } : r));
+    expect(ridgeVerdict(apart, HORIZONS)).toBe("A penalised linear model is the one to beat on this table: the paired test above "
+      + "separates ridge from the GRU at two quarters and puts one, four and eight quarters down to chance.");
+    // a horizon the test did not score cannot be called a tie
+    expect(ridgeVerdict(shipped.filter((r) => !(r.against === "ridge" && r.horizon === 8)), HORIZONS))
+      .toBe("A penalised linear model is the one to beat on this table.");
+  });
+
+  it("says no gap against the long run average passes it only while none does", () => {
+    expect(meanVerdict(shipped)).toBe("No gap between the GRU and that average passes the paired test above, p 0.48 to 0.56.");
+    const far = shipped.map((r) => (r.against === LONG_RUN && r.horizon === 8 ? { ...r, pValue: 0.03 } : r));
+    expect(meanVerdict(far)).toBe("The paired test above separates the GRU from that average at eight quarters, the GRU the closer, "
+      + "and puts one, two and four quarters down to chance.");
+    expect(meanVerdict(shipped.filter((r) => r.against !== LONG_RUN))).toBe("");
+  });
+
+  it("names a model mid sentence with its article", () => {
+    expect(proseName("windowmlp")).toBe("the window MLP");
+    expect(proseName(LONG_RUN)).toBe("the metro mean");
+    expect(proseName("transformer")).toBe("transformer");
+  });
+});
+
+// the admission run is compared seed for seed, and a gain is read against how
+// far one set's own seeds spread
+describe("reading the admission run", () => {
+  const SEEDS = [20260915, 20260916, 20260917, 20260918, 20260919];
+  const arm = (name: string, losses: number[]): AdmissionRow[] => losses.map((loss, i) => ({ arm: name, seed: SEEDS[i], loss }));
+  // the losses ml/admit.py wrote on its last run
+  const run = [
+    ...arm(ARMS.nine, [0.01337, 0.013552, 0.013433, 0.013404, 0.013502]),
+    ...arm(ARMS.shipped, [0.013195, 0.01345, 0.013297, 0.013261, 0.013183]),
+    ...arm(ARMS.rents, [0.013274, 0.013307, 0.013364, 0.013344, 0.013418]),
+    ...arm(ARMS.all, [0.013174, 0.013355, 0.013255, 0.013204, 0.013261]),
+  ];
+
+  it("counts seed for seed, and reads the gain against the wider spread of the two arms", () => {
+    const added = armGap(run, ARMS.all, ARMS.shipped)!;
+    expect(added.seeds).toBe(5);
+    expect(added.wins).toBe(4);
+    expect(added.gain).toBeCloseTo(0.0000274, 9);
+    expect(added.spread).toBeCloseTo(0.000267, 9);
+    expect(armGap(run, ARMS.all, "an arm nobody ran")).toBeNull();
+  });
+
+  it("keeps rents and listing prices out, and says why, only while their gain is inside the spread", () => {
+    expect(admissionSentences(run)).toBe("Permits and income beat the set without them on every seed, and ship. Rents and listing "
+      + "prices beat the set without them on every seed as well, but added to the shipped set they lower the validation loss by "
+      + "less than the spread across one set's seeds, winning on four of five seeds, so they stay out.");
+    const clear = run.map((r) => (r.arm === ARMS.all ? { ...r, loss: r.loss - 0.001 } : r));
+    expect(admissionSentences(clear)).toContain("by more than the spread across one set's seeds, winning on every seed, though they are not in the shipped set yet.");
+    const worse = run.map((r) => (r.arm === ARMS.all ? { ...r, loss: r.loss + 0.001 } : r));
+    expect(admissionSentences(worse)).toContain("they do not lower the validation loss at all, so they stay out.");
   });
 });

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  CHART_W, DETAIL_ID, SPARK_H, SPARK_W, changeChip, chartTitle, groupIndicators, indicatorSpark, indicatorValue,
-  monthLabel, sourceLine, tileId, tileReadout,
+  CHART_W, DETAIL_ID, SPARK_H, SPARK_W, chartTitle, groupIndicators, indicatorChip, indicatorSpark, indicatorValue,
+  monthLabel, sourceLine, tileChange, tileId, tileReadout,
 } from "../lib/indicators";
 import { scrollEdges, type ScrollEdges } from "../lib/layout";
 import type { Indicator } from "../types";
@@ -15,9 +15,13 @@ interface TileProps {
 
 // one national figure: the label, the value, how far it moved over a year
 // and the shape of the history. the chip names the direction in a word, so
-// its color only repeats what the text already says
+// its color only repeats what the text already says. a daily rate's newest
+// month is still running, so its chip is for the last finished month and
+// says which
 function Tile({ indicator, expanded, onToggle }: TileProps) {
-  const chip = changeChip(indicator.change_12m);
+  const chip = indicatorChip(indicator);
+  const { month } = tileChange(indicator);
+  const chipMonth = month && month !== indicator.date ? monthLabel(month) : "";
   const spark = indicatorSpark(indicator.history);
   const newest = spark?.points[spark.points.length - 1];
   const title = chartTitle(indicator);
@@ -55,6 +59,7 @@ function Tile({ indicator, expanded, onToggle }: TileProps) {
         <span className={`chip ${chip.direction}`}>
           {chip.text}
           {chip.word && <span className="word">{chip.word}</span>}
+          {chipMonth && <span className="month">to {chipMonth}</span>}
         </span>
         <span className="when">{monthLabel(indicator.date)}</span>
       </span>

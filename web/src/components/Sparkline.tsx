@@ -1,5 +1,5 @@
 import { formatValue } from "../lib/format";
-import type { ValueFormat } from "../lib/metrics";
+import { WITHHELD, type ValueFormat } from "../lib/metrics";
 import { buildSparkline } from "../lib/sparkline";
 
 interface Props {
@@ -56,17 +56,22 @@ interface InlineProps {
   labels: string[];
   format: ValueFormat;
   signed?: boolean;
+  // true where the blank is one the build withheld, which reads differently
+  // from a value nobody measured
+  withheld?: boolean[];
 }
 
 const IW = 44;
 const IH = 14;
 
 // a hint of the shape across a table row's periods, no axis or labels. the
-// title reads the values out in full
-export function InlineSpark({ values, labels, format, signed = false }: InlineProps) {
+// title reads the values out in full, and a withheld blank says so
+export function InlineSpark({ values, labels, format, signed = false, withheld = [] }: InlineProps) {
   const spark = buildSparkline(values, IW, IH, 3);
   if (spark.points.length === 0) return null;
-  const text = labels.map((label, i) => `${label} ${formatValue(values[i] ?? null, format, signed)}`).join(", ");
+  const text = labels
+    .map((label, i) => `${label} ${withheld[i] && values[i] == null ? WITHHELD : formatValue(values[i] ?? null, format, signed)}`)
+    .join(", ");
   return (
     <svg className="spark-inline" width={IW} height={IH} viewBox={`0 0 ${IW} ${IH}`} role="img" aria-label={text}>
       <title>{text}</title>

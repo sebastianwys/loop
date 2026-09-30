@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import { footprintNote, geoNote, inheritedFrom, parentMetricsNote } from "../lib/geo";
-import { forecastExplainer, forecastLines } from "../lib/forecast";
+import { forecastExplainer, forecastLines, indexErrorLine } from "../lib/forecast";
 import { formatValue } from "../lib/format";
 import { forecastOf } from "../lib/history";
-import { DEFS, GROUPS, defDate, type MetricDef } from "../lib/metrics";
+import { DEFS, GROUPS, WITHHELD, defById, defDate, withheldReason, withheldWhy, type MetricDef } from "../lib/metrics";
 import { dateLabel, laterStartsNote, latestColumn, publishedPeriods } from "../lib/timeline";
 import type { AnnualSeries, Growth, Metro, Period, YearKey } from "../types";
 import { Explainer } from "./Explainer";
@@ -29,7 +29,8 @@ export function yearRows(metro: Metro, group: string): MetricDef[] {
 }
 
 // definitions with a latest value for this metro. the forecasts have a
-// section of their own, with the bands
+// section of their own, with the bands, and the index standard error sits in
+// it beside them
 export function latestRows(metro: Metro): MetricDef[] {
   return DEFS.filter((d) => d.group !== "Forecasts" && d.periods.includes("latest") && d.valueAt(metro, "latest") !== null);
 }
@@ -65,7 +66,13 @@ function Cell({ def, metro, period, published, date }: CellProps) {
     );
   }
   const value = def.valueAt(metro, period);
-  if (value === null) return <td title="no value for this metro">-</td>;
+  if (value === null) {
+    // a number the build withheld is a different claim from one nobody made
+    const withheld = withheldWhy(metro, def, period);
+    return withheld
+      ? <td className="withheld" title={withheldReason(withheld)}>{WITHHELD}</td>
+      : <td title="no value for this metro">-</td>;
+  }
   return (
     <td>
       {formatValue(value, def.format, def.kind === "diverging")}
@@ -86,6 +93,7 @@ export function DetailPanel({ metro, metros, onClose }: Props) {
   const history = metro.series?.hpi ?? null;
   const forecast = forecastOf(metro);
   const forecasts = forecastLines(metro);
+  const indexError = indexErrorLine(metro);
   const explainer = forecastExplainer(metro);
   const inherited = parentMetricsNote(metro);
   const footprint = footprintNote(metro);
@@ -145,6 +153,9 @@ export function DetailPanel({ metro, metros, onClose }: Props) {
                 {rows.map((d) => {
                   const periods = published[d.id] ?? d.periods;
                   const labels = periods.map((p) => (p === "latest" ? (column.dates[d.id] ?? "latest") : p));
+                  const values = periods.map((p) => d.valueAt(metro, p));
+                  // the trend's reading says withheld wherever the cell beside it does
+                  const withheld = periods.map((p, i) => values[i] === null && withheldWhy(metro, d, p) !== null);
                   return (
                     <tr key={d.id}>
                       <td>
@@ -152,7 +163,7 @@ export function DetailPanel({ metro, metros, onClose }: Props) {
                         {inheritedFrom(metro, d) && <span className="date">{inheritedFrom(metro, d)}</span>}
                       </td>
                       <td className="trend">
-                        <InlineSpark values={periods.map((p) => d.valueAt(metro, p))} labels={labels} format={d.format} signed={d.kind === "diverging"} />
+                        <InlineSpark values={values} labels={labels} format={d.format} signed={d.kind === "diverging"} withheld={withheld} />
                       </td>
                       {columns.map((p) => (
                         <Cell
@@ -176,17 +187,25 @@ export function DetailPanel({ metro, metros, onClose }: Props) {
       <h3>Change</h3>
       <table>
         <tbody>
-          {GROWTH.map((g) => (
-            <tr key={g.key}>
-              <td>{g.label}</td>
-              <td>{formatValue(metro.growth?.[g.key] ?? null, "pct", true)}</td>
-            </tr>
-          ))}
+          {GROWTH.map((g) => {
+            const value = metro.growth?.[g.key] ?? null;
+            const def = defById(g.key)?.def;
+            // the note under the table says why, and the cell says which
+            const withheld = value === null && def ? withheldWhy(metro, def) : null;
+            return (
+              <tr key={g.key}>
+                <td>{g.label}</td>
+                {withheld
+                  ? <td className="withheld" title={withheldReason(withheld)}>{WITHHELD}</td>
+                  : <td>{formatValue(value, "pct", true)}</td>}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
       {footprint && <p className="geo-note">{footprint}</p>}
 
-      {forecasts.length > 0 && (
+      {(forecasts.length > 0 || indexError) && (
         <>
           <h3>
             Forecasts
@@ -199,10 +218,23 @@ export function DetailPanel({ metro, metros, onClose }: Props) {
             <tbody>
               {forecasts.map((line) => (
                 <tr key={line.id}>
-                  <td>{line.label}</td>
+                  <td>
+                    {line.label}
+                    {line.source && <span className="date">{line.source}</span>}
+                    {line.date && <span className="date">origin {line.date}</span>}
+                  </td>
                   <td>{line.text}</td>
                 </tr>
               ))}
+              {indexError && (
+                <tr>
+                  <td>
+                    {indexError.label}
+                    <span className="date">{indexError.source}, percent of the index</span>
+                  </td>
+                  <td>{indexError.text}</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </>

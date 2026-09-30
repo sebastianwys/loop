@@ -14,12 +14,129 @@ export interface BacktestRow {
   n: number;
 }
 
+// the rest of what scripts/model-assets.mjs compiles out of ml/results, so the
+// figures' alt text and the page's prose read numbers rather than carry them.
+//
+// the shipped model's raw 10 to 90 band on the test block, before the margin
+export interface RawBand {
+  horizon: number;
+  coverage: number;
+}
+
+// a network's training history: the epoch validation loss was lowest, where
+// training stopped, the last epoch run, the epoch from which validation stays
+// within one percent of that low, null when it does not settle there, and
+// whether the fitting loss kept falling after the low
+export interface TrainingFacts {
+  model: string;
+  stop: number;
+  last: number;
+  flatFrom: number | null;
+  trainFalls: boolean;
+}
+
+// one metro's far band in the fans figure, percent
+export interface FanFacts {
+  cbsa: string;
+  median: number;
+  lo: number;
+  hi: number;
+}
+
+// the shipped forecast as forecasts.csv has it: the median four quarter call
+// across every metro, the tallest bar of the figure's thirty, and the fans
+export interface ForecastFacts {
+  origin: string | null;
+  end: string | null;
+  far: number;
+  count: number;
+  p10: number;
+  median: number;
+  p90: number;
+  lowest: number;
+  highest: number;
+  falling: number;
+  peak: { from: number; to: number; count: number };
+  fans: FanFacts[];
+}
+
+// the panel's size and span, from its manifest
+export interface PanelFacts {
+  rows: number;
+  metros: number;
+  first: string;
+  last: string;
+}
+
+// what the coverage figure shows: each row's first year with a value, and
+// whether it has nothing at all left of the rule the model fits up to. unseen
+// is the features the backtest's fitting block never observes
+export interface PanelCoverage {
+  fitEnd: string;
+  first: number;
+  last: number;
+  series: { label: string; first: number | null; emptyBeforeFit: boolean }[];
+  features: number | null;
+  unseen: string[];
+}
+
+// the paired test of the shipped model against one other model at one
+// horizon, over the test block's origins. difference is the shipped model's
+// mean error less the other's, in percentage points, so a negative one has
+// the shipped model closer. pValue is NaN where the test could not be run
+export interface PairedRow {
+  against: string;
+  horizon: number;
+  origins: number;
+  difference: number;
+  pValue: number;
+}
+
+// one arm and seed of the admission run, and the validation loss it reached
+export interface AdmissionRow {
+  arm: string;
+  seed: number;
+  loss: number;
+}
+
 // the model that ships to the map, and the two it is read against: the rule
-// that says nothing changes, and the metro's own fifty year average
+// that says nothing changes, and the metro's own long run average
 export const SHIPPED = "seqgru";
 export const NO_CHANGE = "no_change";
 export const LONG_RUN = "metro_mean";
 export const NOMINAL_COVERAGE = 0.9;
+
+// the block design, spec.FIT_END and spec.TRAIN_END in the ml folder. these
+// are settled, not results, and the page reads the fit end off the panel's
+// own coverage when it has it
+export const FIT_END = "2014Q4";
+export const TRAIN_END = "2017Q4";
+
+// "2014Q4" as a count of quarters, or null for anything that is not a quarter
+function quarterSlot(quarter: string): number | null {
+  const match = /^(\d{4})Q([1-4])$/.exec(quarter);
+  return match ? Number(match[1]) * 4 + Number(match[2]) - 1 : null;
+}
+
+// "2014Q4" moved on by a count of quarters, back for a negative count
+export function shiftQuarter(quarter: string, count: number): string | null {
+  const at = quarterSlot(quarter);
+  if (at === null) return null;
+  const slot = at + count;
+  return `${Math.floor(slot / 4)}Q${(slot % 4) + 1}`;
+}
+
+// how much more of the train block ridge and gradient boosting fit on than the
+// two networks, which stop at the fit end and hold the rest back to choose
+// their epochs: "three more years"
+export function extraFit(fitEnd: string, trainEnd: string = TRAIN_END): string | null {
+  const from = quarterSlot(fitEnd);
+  const to = quarterSlot(trainEnd);
+  if (from === null || to === null || to <= from) return null;
+  const quarters = to - from;
+  const [count, unit] = quarters % 4 === 0 ? [quarters / 4, "year"] : [quarters, "quarter"];
+  return `${inWords(count)} more ${unit}${count === 1 ? "" : "s"}`;
+}
 
 // reading order for the table: the classical rules first, weakest to
 // strongest, then the two networks. a model the csvs add later still shows,
@@ -40,6 +157,19 @@ export function modelLabel(model: string): string {
   return LABELS[model] ?? model;
 }
 
+// how a model is named mid sentence, article and all
+const PROSE: Record<string, string> = {
+  no_change: "no change",
+  momentum: "momentum",
+  metro_mean: "the metro mean",
+  ridge: "ridge",
+  gbm: "gradient boosting",
+  windowmlp: "the window MLP",
+  seqgru: "the sequence GRU",
+};
+
+export const proseName = (model: string): string => PROSE[model] ?? modelLabel(model);
+
 export function rowAt(rows: BacktestRow[], model: string, horizon: number): BacktestRow | null {
   return rows.find((row) => row.model === model && row.horizon === horizon) ?? null;
 }
@@ -51,7 +181,12 @@ export function horizonsIn(rows: BacktestRow[]): number[] {
 }
 
 export function modelsIn(rows: BacktestRow[]): string[] {
-  const present = new Set(rows.map((row) => row.model));
+  return inOrder(rows.map((row) => row.model));
+}
+
+// model names in the table's reading order, any the order does not know last
+function inOrder(names: string[]): string[] {
+  const present = new Set(names);
   const known = ORDER.filter((model) => present.has(model));
   const rest = [...present].filter((model) => !ORDER.includes(model)).sort();
   return [...known, ...rest];
@@ -74,6 +209,18 @@ export function leaderboard(rows: BacktestRow[]): LeaderboardRow[] {
   }));
 }
 
+// a metric the backtest could not score reaches the page as null or NaN. it
+// is missing: it never wins, never loses, never sets a gap and never counts
+// as under or over the nominal coverage. read as a number it would be a zero
+export function scored(value: number | null | undefined): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+// the rows at a horizon that carry this metric, lowest first
+function scoredAt(rows: BacktestRow[], horizon: number, key: "maePct" | "coverage"): BacktestRow[] {
+  return rows.filter((row) => row.horizon === horizon && scored(row[key])).sort((a, b) => a[key] - b[key]);
+}
+
 // the lowest error at a horizon and how far back the next model is. a tie
 // leaves the margin at zero rather than picking a winner by row order
 export interface Standing {
@@ -84,7 +231,7 @@ export interface Standing {
 }
 
 export function bestAt(rows: BacktestRow[], horizon: number): Standing | null {
-  const at = rows.filter((row) => row.horizon === horizon).sort((a, b) => a.maePct - b.maePct);
+  const at = scoredAt(rows, horizon, "maePct");
   if (at.length === 0) return null;
   const [first, second] = at;
   return {
@@ -100,14 +247,272 @@ export function bestAt(rows: BacktestRow[], horizon: number): Standing | null {
 // statement the page recomputes rather than remembers
 export function closestTo(rows: BacktestRow[], model: string, horizon: number): { model: string; gap: number } | null {
   const mine = rowAt(rows, model, horizon);
-  if (!mine) return null;
+  if (!mine || !scored(mine.maePct)) return null;
   let best: { model: string; gap: number } | null = null;
-  for (const row of rows) {
-    if (row.horizon !== horizon || row.model === model) continue;
+  for (const row of scoredAt(rows, horizon, "maePct")) {
+    if (row.model === model) continue;
     const gap = round(Math.abs(row.maePct - mine.maePct), 4);
     if (!best || gap < best.gap) best = { model: row.model, gap };
   }
   return best;
+}
+
+// the horizons where this model has the lowest error of all. a tie at the top
+// is nobody's win, so the list does not turn on which row the csvs put first
+export function winsAt(rows: BacktestRow[], model: string): number[] {
+  return horizonsIn(rows).filter((horizon) => {
+    const best = bestAt(rows, horizon);
+    return best?.model === model && best.margin !== 0;
+  });
+}
+
+// the horizons where both models are scored and this one has the lower error
+export function aheadOf(rows: BacktestRow[], model: string, rival: string): number[] {
+  return horizonsIn(rows).filter((horizon) => {
+    const mine = rowAt(rows, model, horizon)?.maePct;
+    const theirs = rowAt(rows, rival, horizon)?.maePct;
+    return scored(mine) && scored(theirs) && mine < theirs;
+  });
+}
+
+// the horizons where both models are scored
+export function bothScored(rows: BacktestRow[], model: string, rival: string): number[] {
+  return horizonsIn(rows).filter((horizon) => scored(rowAt(rows, model, horizon)?.maePct) && scored(rowAt(rows, rival, horizon)?.maePct));
+}
+
+// the horizons where a rival's error, and apart from that its band width, is
+// level with or below this model's, out of every horizon the backtest scored.
+// the pipeline picks the shipped network against the other network only and
+// never against ridge, so this is what the page and the map read to say how
+// ridge compares rather than leaving the choice to look like a contest
+export interface Matched {
+  horizons: number[];
+  error: number[];
+  width: number[];
+}
+
+export function matchedBy(rows: BacktestRow[], rival: string, model: string): Matched {
+  const horizons = horizonsIn(rows);
+  const level = (key: "maePct" | "width") => horizons.filter((horizon) => {
+    const theirs = rowAt(rows, rival, horizon)?.[key];
+    const mine = rowAt(rows, model, horizon)?.[key];
+    return scored(theirs) && scored(mine) && theirs <= mine;
+  });
+  return { horizons, error: level("maePct"), width: level("width") };
+}
+
+// true when the rival is level or ahead at every scored horizon on both counts
+export function matchedEverywhere(matched: Matched): boolean {
+  const every = (list: number[]) => list.length > 0 && list.length === matched.horizons.length;
+  return every(matched.error) && every(matched.width);
+}
+
+// "at every horizon, on error and on band width", or the horizons where each
+// holds when that is not everywhere. null when the rival matches it nowhere
+export function matchedPhrase(matched: Matched): string | null {
+  if (matchedEverywhere(matched)) return "at every horizon, on error and on band width";
+  const at = (list: number[]) => (list.length === matched.horizons.length ? "every horizon" : horizonPhrase(list));
+  const parts = [
+    matched.error.length > 0 ? `on error at ${at(matched.error)}` : null,
+    matched.width.length > 0 ? `on band width at ${at(matched.width)}` : null,
+  ].filter((part): part is string => part !== null);
+  return parts.length === 0 ? null : parts.join(" and ");
+}
+
+// why the gru is the model on the map, which no retrain changes: the pipeline
+// ships whichever network has the lower calibration error at four quarters
+export const WHY_SHIPPED = "the pipeline picks between the two networks, not against ridge";
+
+// a gap between two models' errors counts as more than chance when the paired
+// test's p value falls under this
+export const PAIRED_LEVEL = 0.05;
+
+// the paired test's rows for one rival, by horizon, where it gave a p value
+export function pairedWith(rows: PairedRow[], against: string): PairedRow[] {
+  return rows.filter((row) => row.against === against && scored(row.pValue)).sort((a, b) => a.horizon - b.horizon);
+}
+
+// the horizons where the paired test puts the gap between the two past chance
+export function separatedAt(rows: PairedRow[], against: string, level = PAIRED_LEVEL): number[] {
+  return pairedWith(rows, against).filter((row) => row.pValue < level).map((row) => row.horizon);
+}
+
+// the lowest and highest p value the test gave one rival
+export function pRange(rows: PairedRow[], against: string): { low: number; high: number } | null {
+  const values = pairedWith(rows, against).map((row) => row.pValue);
+  return values.length === 0 ? null : { low: Math.min(...values), high: Math.max(...values) };
+}
+
+// "p 0.13 to 0.94", or one p where both ends print alike
+export function pPhrase(range: { low: number; high: number }): string {
+  const low = points(range.low);
+  const high = points(range.high);
+  return low === high ? `p ${low}` : `p ${low} to ${high}`;
+}
+
+// how many origins the test averaged over, when every row it scored had the same
+export function pairedOrigins(rows: PairedRow[]): number | null {
+  const counts = new Set(rows.filter((row) => scored(row.pValue)).map((row) => row.origins));
+  return counts.size === 1 ? [...counts][0] : null;
+}
+
+// a comparison the paired test separates from chance: the rival, the horizons,
+// and which side is the closer at them
+export interface Separation {
+  against: string;
+  horizons: number[];
+  closer: "shipped" | "rival" | "mixed";
+}
+
+// every comparison the test separates from chance, in the table's reading order
+export function separations(rows: PairedRow[], level = PAIRED_LEVEL): Separation[] {
+  return inOrder(rows.map((row) => row.against)).flatMap((against) => {
+    const apart = pairedWith(rows, against).filter((row) => row.pValue < level);
+    if (apart.length === 0) return [];
+    const closer: Separation["closer"] = apart.every((row) => row.difference < 0)
+      ? "shipped"
+      : apart.every((row) => row.difference > 0) ? "rival" : "mixed";
+    return [{ against, horizons: apart.map((row) => row.horizon), closer }];
+  });
+}
+
+// what the paired test separates from chance, and on whose side, as the page
+// states it: "At the 5 percent level it separates the GRU from no change at
+// four and eight quarters, with the GRU closer every time, and it separates
+// nothing else." empty when the test scored nothing
+export function separatedSentence(rows: PairedRow[], level = PAIRED_LEVEL): string {
+  if (!rows.some((row) => scored(row.pValue))) return "";
+  const at = `At the ${Math.round(level * 100)} percent level`;
+  const found = separations(rows, level);
+  if (found.length === 0) return `${at} it separates no gap on the table from chance.`;
+  const one = found.every((s) => s.closer === found[0].closer) && found[0].closer !== "mixed";
+  const side = (s: Separation) => (s.closer === "shipped"
+    ? ", where the GRU is closer"
+    : s.closer === "rival" ? `, where ${proseName(s.against)} is closer` : ", with each closer at some of them");
+  const parts = found.map((s) => `from ${proseName(s.against)} at ${horizonPhrase(s.horizons)}${one ? "" : side(s)}`);
+  const closing = one ? (found[0].closer === "shipped" ? ", with the GRU closer every time" : ", with the other model closer every time") : "";
+  return `${at} it separates the GRU ${joinList(parts)}${closing}, and it separates nothing else.`;
+}
+
+// the gru against ridge where ridge matches or beats it on the table. when the
+// paired test puts every gap between them down to chance the two are tied and
+// the pipeline's pick stands; where it separates them it says where
+export function ridgeVerdict(rows: PairedRow[], horizons: number[], level = PAIRED_LEVEL): string {
+  const tested = pairedWith(rows, "ridge");
+  const range = pRange(rows, "ridge");
+  if (!range || horizons.length === 0 || !horizons.every((h) => tested.some((row) => row.horizon === h))) {
+    return "A penalised linear model is the one to beat on this table.";
+  }
+  const apart = tested.filter((row) => row.pValue < level);
+  if (apart.length === 0) {
+    return `The paired test above puts every gap between ridge and the GRU down to chance, ${pPhrase(range)}, so the two are tied, `
+      + `and the GRU ships because ${WHY_SHIPPED}.`;
+  }
+  const chance = tested.filter((row) => row.pValue >= level).map((row) => row.horizon);
+  const lead = apart.every((row) => row.difference > 0) ? "A penalised linear model is the one to beat on this table" : "The two are not tied";
+  return `${lead}: the paired test above separates ridge from the GRU at ${horizonPhrase(apart.map((row) => row.horizon))}`
+    + `${chance.length > 0 ? ` and puts ${horizonPhrase(chance)} down to chance` : ""}.`;
+}
+
+// the gru against the metro's own long run average, as the paired test reads it
+export function meanVerdict(rows: PairedRow[], level = PAIRED_LEVEL): string {
+  const range = pRange(rows, LONG_RUN);
+  if (!range) return "";
+  const tested = pairedWith(rows, LONG_RUN);
+  const apart = tested.filter((row) => row.pValue < level);
+  if (apart.length === 0) return `No gap between the GRU and that average passes the paired test above, ${pPhrase(range)}.`;
+  const chance = tested.filter((row) => row.pValue >= level).map((row) => row.horizon);
+  const side = apart.every((row) => row.difference < 0) ? ", the GRU the closer" : apart.every((row) => row.difference > 0) ? ", the average the closer" : "";
+  return `The paired test above separates the GRU from that average at ${horizonPhrase(apart.map((row) => row.horizon))}${side}`
+    + `${chance.length > 0 ? `, and puts ${horizonPhrase(chance)} down to chance` : ""}.`;
+}
+
+// the admission run's arms, as ml/admit.py names them. the set that ships is
+// the nine the old gate could see plus permits and income
+export const ARMS = {
+  nine: "nine, what the shipped gate could see",
+  shipped: "eleven, without zori and listings",
+  rents: "eleven, without permits and income",
+  all: "thirteen, plus rents listings permits income",
+} as const;
+
+// one arm against another, seed for seed over the seeds both ran: how many the
+// first has the lower loss on, how much lower its mean loss is, and the wider
+// of the two arms' spreads across their own seeds
+export interface ArmGap {
+  seeds: number;
+  wins: number;
+  gain: number;
+  spread: number;
+}
+
+export function armGap(rows: AdmissionRow[], arm: string, base: string): ArmGap | null {
+  const losses = (name: string) =>
+    new Map(rows.filter((row) => row.arm === name && scored(row.loss)).map((row) => [row.seed, row.loss] as const));
+  const mine = losses(arm);
+  const theirs = losses(base);
+  const seeds = [...mine.keys()].filter((seed) => theirs.has(seed));
+  if (seeds.length === 0) return null;
+  const mean = (values: number[]) => values.reduce((a, b) => a + b, 0) / values.length;
+  const spread = (by: Map<number, number>) => Math.max(...by.values()) - Math.min(...by.values());
+  return {
+    seeds: seeds.length,
+    wins: seeds.filter((seed) => mine.get(seed)! < theirs.get(seed)!).length,
+    gain: mean(seeds.map((seed) => theirs.get(seed)!)) - mean(seeds.map((seed) => mine.get(seed)!)),
+    spread: Math.max(spread(mine), spread(theirs)),
+  };
+}
+
+// what the admission run found for the four inputs the old gate could not
+// see, chosen by the losses it wrote. permits and income against the nine,
+// rents and listing prices against the nine, then those two added to the set
+// that ships, read against how far one set's own seeds spread
+export function admissionSentences(rows: AdmissionRow[]): string {
+  const on = (gap: ArmGap) => (gap.wins === gap.seeds ? "on every seed" : `on ${inWords(gap.wins)} of ${inWords(gap.seeds)} seeds`);
+  const permits = armGap(rows, ARMS.shipped, ARMS.nine);
+  const rents = armGap(rows, ARMS.rents, ARMS.nine);
+  const added = armGap(rows, ARMS.all, ARMS.shipped);
+  const out: string[] = [];
+  if (permits) out.push(`Permits and income beat the set without them ${on(permits)}, and ship.`);
+  if (rents && added) {
+    const then = added.gain <= 0
+      ? "but added to the shipped set they do not lower the validation loss at all, so they stay out"
+      : added.gain < added.spread
+        ? `but added to the shipped set they lower the validation loss by less than the spread across one set's seeds, winning ${on(added)}, so they stay out`
+        : `and added to the shipped set they lower the validation loss by more than the spread across one set's seeds, winning ${on(added)}, though they are not in the shipped set yet`;
+    out.push(`Rents and listing prices beat the set without them ${on(rents)} as well, ${then}.`);
+  }
+  return out.join(" ");
+}
+
+// fhfa published its expanded-data index for 50 metros until its 2026Q1
+// report and for every metro since (fhfa technical note 2026m01). the ml
+// folder masks it for the rest before that quarter, spec.EXPANDED_BEFORE_2026,
+// and the page says so. these are fhfa's facts, not a model's result
+export const EXPANDED_BEFORE = 50;
+export const EXPANDED_FOR_ALL_FROM = "2026Q1";
+
+// the model's features as the prose names them, keyed as the panel does
+export const FEATURE_NAMES: Record<string, string> = {
+  hpi_qoq: "quarterly price growth",
+  hpi_yoy: "yearly price growth",
+  unemp: "unemployment",
+  mortgage: "the mortgage rate",
+  zhvi_yoy: "Zillow home values",
+  hpi_exp_yoy: "the expanded index",
+  hpi_rstderr: "the index error",
+  permits_per_1000: "permits",
+  pop_growth: "population growth",
+  domestic_migration_rate: "migration",
+  income_growth: "income",
+};
+
+export const featureName = (column: string): string => FEATURE_NAMES[column] ?? column;
+
+// "a, b and c"
+export function joinList(items: string[]): string {
+  if (items.length < 2) return items.join("");
+  return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
 }
 
 export interface Loss {
@@ -117,14 +522,16 @@ export interface Loss {
 }
 
 // every horizon where some other model is ahead of this one, with the model
-// that is ahead and by how much. the page reads its own defeats off the table
+// that is ahead and by how much. the page reads its own defeats off the table.
+// a model level with the best is not behind it, whichever row came first
 export function lossesOf(rows: BacktestRow[], model: string): Loss[] {
   const losses: Loss[] = [];
   for (const horizon of horizonsIn(rows)) {
     const mine = rowAt(rows, model, horizon);
     const best = bestAt(rows, horizon);
-    if (!mine || !best || best.model === model) continue;
-    losses.push({ horizon, winner: best.model, margin: round(mine.maePct - best.maePct, 4) });
+    if (!mine || !scored(mine.maePct) || !best || best.model === model) continue;
+    const margin = round(mine.maePct - best.maePct, 4);
+    if (margin !== 0) losses.push({ horizon, winner: best.model, margin });
   }
   return losses;
 }
@@ -177,14 +584,15 @@ export function bandCut(rows: BacktestRow[], model: string, over: string, horizo
 // the spread of coverage at a horizon, worst and best, for the limits: every
 // model under-covers at eight quarters and the page has to say by how much
 export function coverageRange(rows: BacktestRow[], horizon: number): { low: BacktestRow; high: BacktestRow } | null {
-  const at = rows.filter((row) => row.horizon === horizon).sort((a, b) => a.coverage - b.coverage);
+  const at = scoredAt(rows, horizon, "coverage");
   return at.length === 0 ? null : { low: at[0], high: at[at.length - 1] };
 }
 
 // true when no model at this horizon reaches the nominal coverage, which is
-// the claim the limits section makes about eight quarters
+// the claim the limits section makes about eight quarters. a model with no
+// coverage cannot vouch for it either way, and a horizon with none is false
 export function allUnderCover(rows: BacktestRow[], horizon: number, nominal = NOMINAL_COVERAGE): boolean {
-  const at = rows.filter((row) => row.horizon === horizon);
+  const at = scoredAt(rows, horizon, "coverage");
   return at.length > 0 && at.every((row) => row.coverage < nominal);
 }
 

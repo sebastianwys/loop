@@ -22,6 +22,10 @@ export type { ShapesStatus } from "./components/MapPage";
 
 export function App() {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
+  // why the last load failed, and a count that asks for another one. a
+  // deployed page never falls back to the fixture, so this is all it has
+  const [failed, setFailed] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const { route, go } = useRoute();
 
   const viewport = useViewport();
@@ -62,13 +66,27 @@ export function App() {
   }, [drawer]);
 
   useEffect(() => {
-    loadMapData().then(setLoaded);
+    let live = true;
+    loadMapData().then((result) => {
+      if (!live) return;
+      if (result.data) setLoaded({ data: result.data, sample: result.sample });
+      else setFailed(result.error);
+    });
+    return () => {
+      live = false;
+    };
+  }, [attempt]);
+
+  const retry = useCallback(() => {
+    setFailed(null);
+    setAttempt((n) => n + 1);
   }, []);
 
   // a link can name a metro this build does not have. the address bar is
-  // tidied the moment the data says so, rather than pointing at nothing
+  // tidied the moment the data says so, rather than pointing at nothing. the
+  // sample is not this build, so a link is never pruned against its codes
   useEffect(() => {
-    if (!loaded) return;
+    if (!loaded || loaded.sample) return;
     const known = new Set(loaded.data.metros.map((m) => m.cbsa));
     go((current) => pruneMetros(current, known));
   }, [loaded, go]);
@@ -97,11 +115,20 @@ export function App() {
     `view-${view.id}`,
   ].filter(Boolean).join(" ");
 
+  // the address bar is left alone while there is no data, so the link the
+  // reader came in on is still there to reload once the network is back
   if (!loaded) {
     return (
       <div className={className}>
         <Header rate={null} sample={false} />
-        <p style={{ padding: 16 }}>loading</p>
+        {failed === null ? (
+          <p style={{ padding: 16 }}>loading</p>
+        ) : (
+          <div className="load-failed" role="alert">
+            <p>The map data did not load ({failed}), so there is nothing to draw yet.</p>
+            <button type="button" onClick={retry}>try again</button>
+          </div>
+        )}
       </div>
     );
   }

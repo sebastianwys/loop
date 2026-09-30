@@ -36,7 +36,17 @@ export type EnrichmentKey =
 export type EnrichmentValues = { [K in EnrichmentKey]?: number | null };
 export type EnrichmentDates = { [K in EnrichmentKey as `${K}_date`]?: string | null };
 
-export interface YearValues extends EnrichmentValues {
+// set on a panel whose permits and population were counted over county sets
+// that differ by more than the footprint tolerance, as the share of people
+// that differs, or marked unweighed when nobody could weigh the difference.
+// the permit rate is withheld there rather than divided across two different
+// places. absent everywhere the two agree
+export interface PanelMarks {
+  permits_footprint?: number | null;
+  permits_unweighed?: boolean | null;
+}
+
+export interface YearValues extends EnrichmentValues, PanelMarks {
   hpi: number | null;
   income: number | null;
   pop: number | null;
@@ -49,7 +59,7 @@ export interface YearValues extends EnrichmentValues {
   unemp: number | null;
 }
 
-export interface Latest extends EnrichmentValues, EnrichmentDates {
+export interface Latest extends EnrichmentValues, EnrichmentDates, PanelMarks {
   zhvi: number | null;
   zhvi_date: string | null;
   zori: number | null;
@@ -105,6 +115,10 @@ export interface Metro {
   // set instead when there were rates to report and the move was too far for
   // them, so the blank cells say withheld rather than never measured
   footprint_refused?: number;
+  // true when the county lines moved and nobody could weigh by how much. the
+  // rates are withheld then too, and the two shares above carry only a move
+  // that was measured, never a stand in for one that was not
+  footprint_unweighed?: boolean;
   lat: number;
   lon: number;
   years: Record<YearKey, YearValues>;
@@ -146,6 +160,12 @@ export interface Indicator {
   value: number;
   date: string;
   change_12m: number | null;
+  // the month the twelve month change is for, "2026-08". a daily or weekly
+  // rate's newest month is still in progress, so its change is measured over
+  // the last finished month instead and dated here. null when the tile has no
+  // twelve month change, and absent from builds older than the field, whose
+  // change is for the tile's own month
+  change_month?: string | null;
   history: IndicatorPoint[];
 }
 

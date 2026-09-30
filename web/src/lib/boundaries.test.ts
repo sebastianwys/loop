@@ -3,14 +3,24 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   NULL_FILL_OPACITY,
   SHAPE_FILL_OPACITY,
+  WITHHELD_FILL_OPACITY,
   decodeBoundaries,
   featureFor,
+  markStyle,
   shapeStyle,
   studyShapes,
 } from "./boundaries";
 import { INK, INK_2, NULL_GRAY, SEQUENTIAL, SURFACE } from "./palette";
 import { buildScale } from "./scale";
+import { tooltipContent } from "../components/ShapeLayer";
+import { SAMPLE } from "./data";
+import { defById, metricById, resolveMetric } from "./metrics";
 import type { Metro } from "../types";
+
+// the shape layer reads window through leaflet at import, and its tooltip is
+// all this file needs from it, so the map library is stubbed out
+vi.mock("leaflet", () => ({}));
+vi.mock("react-leaflet", () => ({ useMap: () => ({}) }));
 
 // one square arc shared by a metro and a division, no quantization transform
 const topology: Topology = {
@@ -124,6 +134,87 @@ describe("shapeStyle, a value taken from the parent metro", () => {
 
   it("is ignored when there is no value to attribute", () => {
     expect(shapeStyle(null, scale, { inherited: true })).toEqual(shapeStyle(null, scale));
+  });
+});
+
+// a number the build withheld is a different claim from one nobody measured,
+// so the two blanks never share a mark
+// the dots tooltip names the parent a division's number belongs to, and the
+// shape drawn for the same number says the same thing
+describe("a shape's tooltip on a number taken from the parent metro", () => {
+  // just enough of a document for a tooltip built with textContent
+  class Node {
+    children: Node[] = [];
+    className = "";
+    constructor(private own = "") {}
+    get textContent(): string {
+      return this.children.length ? this.children.map((c) => c.textContent).join("") : this.own;
+    }
+    set textContent(value: string) {
+      this.own = value;
+      this.children = [];
+    }
+    append(...nodes: Node[]) {
+      this.children.push(...nodes);
+    }
+  }
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("names the parent, and says nothing of one on a metro's own number", () => {
+    vi.stubGlobal("document", { createElement: () => new Node(), createTextNode: (text: string) => new Node(text) });
+    const metric = resolveMetric(defById("permits_units")!.def, "latest");
+    const division = SAMPLE.metros[2];
+    expect(division.parent_metrics).toContain("permits_units");
+    const taken = tooltipContent(division, metric).textContent;
+    expect(taken).toContain(`from ${division.parent!.name}`);
+    expect(tooltipContent(SAMPLE.metros[0], metric).textContent).not.toContain("from ");
+  });
+
+  // a blank the build withheld reads withheld in the shape's tooltip, with why,
+  // where a blank nobody measured keeps the dash, as the dots tooltip does
+  it("says withheld for a blank the build withheld, and the dash for one nobody measured", () => {
+    vi.stubGlobal("document", { createElement: () => new Node(), createTextNode: (text: string) => new Node(text) });
+    const abilene = SAMPLE.metros[0];
+    const blank = { ...abilene.growth, income_14_24: null };
+    const income = metricById("income_14_24");
+    const refused: Metro = { ...abilene, growth: blank, footprint_refused: 0.047 };
+    expect(tooltipContent(refused, income).textContent).toBe("Abilene, TX withheld 2014 to 2024, county lines moved");
+    expect(tooltipContent({ ...abilene, growth: blank }, income).textContent).toBe("Abilene, TX - 2014 to 2024");
+
+    const permits = metricById("permits_per_1000_2014");
+    const marked: Metro = { ...abilene, years: { ...abilene.years, "2014": { ...abilene.years["2014"], permits_footprint: 0.378 } } };
+    expect(tooltipContent(marked, permits).textContent).toBe("Abilene, TX withheld 2014, counted over different counties");
+  });
+});
+
+describe("shapeStyle, a value the build withheld", () => {
+  const scale = buildScale([0, 10], "sequential");
+
+  it("is hollow like no data but ringed solid in ink", () => {
+    const none = shapeStyle(null, scale);
+    const withheld = shapeStyle(null, scale, { withheld: true });
+    expect(withheld.fillColor).toBe(none.fillColor);
+    expect(withheld.color).toBe(INK_2);
+    expect(withheld.color).not.toBe(none.color);
+    expect(withheld.dashArray).toBeUndefined();
+    expect(withheld.fillOpacity).toBe(WITHHELD_FILL_OPACITY);
+  });
+
+  it("does not wear the inherited mark either", () => {
+    const taken = shapeStyle(10, scale, { inherited: true });
+    const withheld = shapeStyle(null, scale, { withheld: true });
+    expect(withheld.dashArray).not.toBe(taken.dashArray);
+    expect(withheld.fillColor).not.toBe(taken.fillColor);
+  });
+
+  it("is ignored when the value is there", () => {
+    expect(shapeStyle(10, scale, { withheld: true })).toEqual(shapeStyle(10, scale));
+  });
+
+  it("gives a dot the same marks through markStyle", () => {
+    expect(markStyle(true, false, true)).toEqual({ color: INK_2, dashArray: undefined, fillOpacity: WITHHELD_FILL_OPACITY });
+    expect(markStyle(true, false, false).dashArray).toBe("3 3");
   });
 });
 

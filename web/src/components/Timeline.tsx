@@ -186,7 +186,8 @@ function Years({ deep, year, onYearChange, reducedMotion }: YearsProps) {
         <span>{last.year}</span>
       </div>
       <p className="mode-note">
-        year over year change, since the index is rebased per metro. a metro with no index that year is
+        year over year change, since an index level is growth from one base quarter every metro shares, not
+        a price. a metro with no index that year is
         drawn as no data, not as zero. one colour scale for every year, clipped at plus or minus {deep.cap} percent.
       </p>
     </div>

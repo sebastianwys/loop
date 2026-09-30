@@ -68,6 +68,19 @@ export const NULL_FILL_OPACITY = 0.35;
 export const INHERITED_FILL_OPACITY = 0.5;
 // no data already owns "3 3" on the null gray, so this reads differently
 export const INHERITED_DASH = "1 3";
+// a value the build withheld. hollow like no data, since there is no number
+// to colour, but ringed solid in ink, so a withheld rate and one nobody
+// measured never look alike on the map
+export const WITHHELD_FILL_OPACITY = 0.12;
+
+// the outline, dash and fill a dot or shape wears for what its value is: a
+// measurement, the parent's number, withheld, or nothing at all
+export function markStyle(missing: boolean, taken: boolean, withheld: boolean): { color: string; dashArray: string | undefined; fillOpacity: number } {
+  if (missing && withheld) return { color: INK_2, dashArray: undefined, fillOpacity: WITHHELD_FILL_OPACITY };
+  if (missing) return { color: NULL_GRAY, dashArray: "3 3", fillOpacity: NULL_FILL_OPACITY };
+  if (taken) return { color: INK_2, dashArray: INHERITED_DASH, fillOpacity: INHERITED_FILL_OPACITY };
+  return { color: SURFACE, dashArray: undefined, fillOpacity: SHAPE_FILL_OPACITY };
+}
 
 // the fill a dot would get. a surface colored hairline is the gap between
 // touching fills. null is gray, faint and dashed, so no data never rides on
@@ -75,24 +88,27 @@ export const INHERITED_DASH = "1 3";
 export function shapeStyle(
   value: number | null,
   scale: ColorScale,
-  state: { selected?: boolean; hover?: boolean; inherited?: boolean } = {},
+  state: { selected?: boolean; hover?: boolean; inherited?: boolean; withheld?: boolean } = {},
 ): PathOptions {
   const missing = value === null || !Number.isFinite(value);
   // an inherited number is real, so it keeps the colour of its value. only the
   // outline and the lighter fill say the measurement is the parent metro's.
-  // with nothing to attribute the flag means nothing
+  // with nothing to attribute the flag means nothing, and the same goes for a
+  // withheld flag on a value that is there
   const taken = !missing && !!state.inherited;
+  const withheld = missing && !!state.withheld;
+  const mark = markStyle(missing, taken, withheld);
   const style: PathOptions = {
     fillColor: scale.color(value),
-    fillOpacity: missing ? NULL_FILL_OPACITY : taken ? INHERITED_FILL_OPACITY : SHAPE_FILL_OPACITY,
-    color: missing ? NULL_GRAY : taken ? INK_2 : SURFACE,
-    weight: 1,
-    dashArray: missing ? "3 3" : taken ? INHERITED_DASH : undefined,
+    fillOpacity: mark.fillOpacity,
+    color: mark.color,
+    weight: withheld ? 1.5 : 1,
+    dashArray: mark.dashArray,
   };
   if (state.hover) {
     style.color = INK_2;
     style.weight = 1.5;
-    style.fillOpacity = missing ? NULL_FILL_OPACITY + 0.1 : taken ? INHERITED_FILL_OPACITY + 0.13 : SHAPE_FILL_OPACITY + 0.13;
+    style.fillOpacity = mark.fillOpacity + (missing ? 0.1 : 0.13);
   }
   if (state.selected) {
     style.color = INK;

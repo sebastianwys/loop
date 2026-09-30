@@ -140,6 +140,14 @@ describe("buildTimeline", () => {
     expect(tick("pop_estimate", "latest").label).toBe("2025");
   });
 
+  // the year panels of a fiscal year publisher are fiscal years too, on the
+  // tick and in the tooltip, the way latest is
+  it("labels a hud year panel as a fiscal year", () => {
+    expect(tick("fmr_2br", "2024").label).toBe("FY 2024");
+    expect(tick("income", "2024").label).toBe("2024");
+    expect(periodLabel(resolveMetric(def("fmr_2br"), "2019"), abilene)).toBe("FY 2019");
+  });
+
   it("keeps the count under each tick", () => {
     expect(tick("irs_net_returns", "2014").count).toBe(2);
     expect(tick("irs_net_returns", "2024")).toMatchObject({ count: 0, available: false });
@@ -230,9 +238,12 @@ describe("labels", () => {
   it("names why a late source is late, once, and only when it is late", () => {
     const hud = { label: "Median family income", periods: ["2019", "2024", "latest"] as Period[], source: "hud" as const };
     const rent = { label: "Fair market rent, two bedroom", periods: ["2019", "2024"] as Period[], source: "hud" as const };
+    // the floor is the api's, and hud's own history goes back further, so the
+    // blank is said to be uncollected rather than unpublished
     expect(laterStartsNote([hud, rent])).toBe(
       "From 2019: Median family income, Fair market rent, two bedroom. "
-      + "HUD publishes no fair market rents or income limits before fiscal 2017.",
+      + "The HUD API this build reads has no fair market rents or income limits before fiscal 2017, "
+      + "so the earlier years are not collected here.",
     );
     const early = { label: "House price index", periods: ["2014", "2019"] as Period[], source: "fhfa" as const };
     expect(laterStartsNote([early])).toBeNull();
@@ -467,8 +478,8 @@ describe("a metric read at one year of its history", () => {
 
   it("colours by the change into the year, not by the level", () => {
     const metric = yearMetric(hpi, deep, 2021);
-    // the index is rebased to 100 at each metro's own first quarter, so a
-    // level of 259 in one metro and 259 in another are not the same thing
+    // a level is growth since fhfa's base quarter rather than a price, so 259
+    // in one metro and 259 in another are not the same house price
     expect(metric.accessor(abilene)).toBeCloseTo(9.8263, 3);
     expect(metric.format).toBe("rate");
     expect(metric.kind).toBe("diverging");

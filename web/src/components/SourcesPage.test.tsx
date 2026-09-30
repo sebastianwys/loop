@@ -142,6 +142,23 @@ describe("the sources view", () => {
     expect(model).not.toContain("<li>Index standard error</li>");
   });
 
+  // realized growth rides in the model's export but is what the fhfa index
+  // did, so it is listed under fhfa and kept off the model's list
+  it("credits realized growth to fhfa and not to the model", () => {
+    const feeds = page.slice(page.indexOf("what it builds"), page.indexOf("sources-model"));
+    const row = (folder: string) => {
+      const from = feeds.indexOf(`<code>${folder}</code>`);
+      return feeds.slice(from, feeds.indexOf("</tr>", from));
+    };
+    expect(page).toContain("what the FHFA index did up to the origin");
+    for (const label of ["HPI growth, last 4 quarters", "HPI growth, 5 year annualized"]) {
+      expect(row("fhfa"), label).toContain(`<li>${label}</li>`);
+      expect(row("forecast"), label).not.toContain(label);
+      expect(page.slice(page.indexOf("sources-model")), label).not.toContain(`<li>${label}</li>`);
+    }
+    expect(row("forecast")).toContain("<li>Expected HPI growth, next 4 quarters</li>");
+  });
+
   it("counts the folders that build nothing rather than printing a number that can go stale", () => {
     expect(page).toContain("One folder builds no metric at all");
     expect(page).toContain("More than one folder feeds zillow here");

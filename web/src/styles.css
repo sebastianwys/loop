@@ -221,6 +221,9 @@ svg { max-width: 100%; }
 @media (prefers-color-scheme: dark) {
   .legend .sw.taken { box-shadow: inset 0 0 0 12px rgba(28, 30, 34, 0.45); }
 }
+/* a number the build withheld: hollow like no data, ringed solid in ink the
+   way the map rings it, so the two blanks never share a key */
+.legend .sw.withheld { border: 1.5px solid var(--ink-2); background: transparent; }
 .legend .caption { color: var(--muted); margin-top: 4px; }
 
 .detail {
@@ -336,6 +339,7 @@ svg { max-width: 100%; }
 .detail td.trend, .detail th.trend { width: 48px; padding-left: 2px; padding-right: 2px; }
 .detail th .date, .detail td .date { display: block; font-size: 0.72rem; font-weight: 400; color: var(--muted); }
 .detail td.np { color: var(--muted); }
+.detail td.withheld { color: var(--muted); font-style: italic; }
 .table-note { margin: 4px 0 0; font-size: 0.78rem; color: var(--muted); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
@@ -387,13 +391,15 @@ svg { max-width: 100%; }
 .ind-tile .name { font-size: 0.78rem; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ind-tile .read { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-width: 0; }
 .ind-tile .value { font-size: 1.2rem; font-weight: 600; line-height: 1.2; }
-.ind-tile .foot { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; font-size: 0.72rem; }
+.ind-tile .foot { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 6px; font-size: 0.72rem; }
 .ind-tile .when { color: var(--muted); white-space: nowrap; }
 
 /* the sign and the word carry the direction; the color only repeats them */
 .ind-tile .chip { display: inline-flex; align-items: baseline; gap: 3px; color: var(--ink-2); white-space: nowrap; }
 .ind-tile .chip.up { color: var(--rise); }
 .ind-tile .chip.down { color: var(--fall); }
+/* the month a chip's change is for, when it is not the month of the value */
+.ind-tile .chip .month { color: var(--muted); }
 
 .ind-spark { display: block; flex: none; width: var(--spark-w); height: auto; }
 .ind-spark .line { fill: none; stroke: var(--trend); stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
@@ -633,3 +639,12 @@ svg { max-width: 100%; }
   white-space: normal; text-align: left;
 }
 .explainer-source { display: block; margin-top: 6px; font-size: 0.76rem; color: var(--muted); }
+
+/* a load that failed on a deployed page: what went wrong and a way to ask
+   again. the address bar keeps the link, so a reload opens it too */
+.load-failed { padding: 16px; max-width: 34rem; color: var(--ink-2); }
+.load-failed p { margin: 0 0 10px; }
+.load-failed button {
+  min-height: var(--tap); padding: 0 14px;
+  border: 1px solid var(--baseline); border-radius: 4px; background: var(--surface); color: var(--ink);
+}

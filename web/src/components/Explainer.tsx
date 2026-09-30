@@ -8,10 +8,16 @@ export function Explainer({ label, children }: { label: string; children: React.
   const id = useId();
   const wrap = useRef<HTMLSpanElement>(null);
 
-  // close on escape or on a click outside, so the bubble never traps the page
+  // close on escape or on a click outside, so the bubble never traps the page.
+  // escape closes the bubble and stops there: the map listens on window and
+  // would close the metro panel or the drawer the bubble sits in as well
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.stopPropagation();
+      setOpen(false);
+    };
     const onDown = (e: MouseEvent) => {
       if (!wrap.current?.contains(e.target as Node)) setOpen(false);
     };

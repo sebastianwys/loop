@@ -3,9 +3,10 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { SAMPLE } from "../lib/data";
 import { forecastExplainer } from "../lib/forecast";
-import { metricById, metricExplainer } from "../lib/metrics";
+import { defById, metricById, metricExplainer } from "../lib/metrics";
 import { BACKTEST } from "../lib/modelNumbers";
 import { SHIPPED, points, rowAt } from "../lib/model";
+import { buildDeepTimeline, yearMetric } from "../lib/timeline";
 import { DetailPanel } from "./DetailPanel";
 import { Explainer } from "./Explainer";
 
@@ -44,9 +45,24 @@ describe("what the detail panel says without being asked", () => {
 describe("the forecast definition", () => {
   const { sentences, source } = forecastExplainer(metro("10180"));
 
-  it("is three sentences, which is what a reader will actually read", () => {
-    expect(sentences).toHaveLength(3);
+  // the fourth says how ridge did against the gru and why the gru ships
+  // anyway, which a reader of the map is owed as much as the band
+  it("is four sentences, which is still what a reader will actually read", () => {
+    expect(sentences).toHaveLength(4);
     for (const sentence of sentences) expect(sentence.endsWith(".")).toBe(true);
+  });
+
+  // read off the backtest here rather than through the page's own reader, so
+  // a retrain that puts the gru ahead of ridge cannot leave the claim behind
+  it("says ridge matches or beats the gru everywhere only while the backtest does, and why the gru ships", () => {
+    const horizons = [...new Set(BACKTEST.map((r) => r.horizon))];
+    const everywhere = horizons.every((h) => {
+      const ridge = rowAt(BACKTEST, "ridge", h);
+      const gru = rowAt(BACKTEST, SHIPPED, h);
+      return ridge !== null && gru !== null && ridge.maePct <= gru.maePct && ridge.width <= gru.width;
+    });
+    expect(sentences[3].includes("matches or beats the GRU at every horizon, on error and on band width")).toBe(everywhere);
+    expect(sentences[3]).toContain("the pipeline picks between the two networks, not against ridge");
   });
 
   it("says what the model is and what the band is before it says what it misses", () => {
@@ -78,6 +94,17 @@ describe("what the colour on the map means", () => {
   it("says a dated metric is read at the timeline's period", () => {
     const text = metricExplainer(metricById("unemp"));
     expect(text).toContain("at the period the timeline is set to");
+  });
+
+  // with the index chosen the map runs its annual history and is coloured by
+  // growth into the scrubbed year, which is what the sidebar is handed
+  it("says the year timeline colours by growth, not by the level", () => {
+    const hpi = defById("hpi")!.def;
+    const shown = yearMetric(hpi, buildDeepTimeline(hpi, SAMPLE.metros)!, 2021);
+    const text = metricExplainer(shown);
+    expect(text).toContain("coloured by its House price index growth, 2020 to 2021");
+    expect(text).not.toContain("at the period the timeline is set to");
+    expect(text).toContain("FHFA");
   });
 
   // the bare source line under the select is gone, so the bubble has to carry

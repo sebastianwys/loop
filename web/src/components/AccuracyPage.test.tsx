@@ -205,6 +205,15 @@ describe("the accuracy view", () => {
     expect(page).toContain("FHFA House Price Index");
   });
 
+  // the growth beside each miss runs from the origin the call was made at to
+  // the quarter the export measured it at, four on, never up to the origin
+  it("places the growth window after the origin it prints", () => {
+    const grown = render(SCORED.map((m) => ({ ...m, latest: { ...m.latest, hpi_yoy_latest_date: "2026-06" } })));
+    const text = grown.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+    expect(text).not.toContain("four quarters to the origin");
+    expect(text).toContain("over the four quarters from the origin, Jun 2025 to Jun 2026.");
+  });
+
   it("renders at a phone width with the same tables and charts", () => {
     const phone = render(SCORED, "phone");
     expect(phone).toContain('class="acc-scroll"');
@@ -217,5 +226,73 @@ describe("the accuracy view", () => {
       // eslint control characters aside, every byte a reader sees is plain ascii
       expect(render(SCORED, mode), mode).toMatch(/^[\x20-\x7e\n\r\t]*$/);
     }
+  });
+});
+
+// the page reads which side of the call missed by more off the misses, not off
+// the sign of the skew, which is measured about the average miss
+describe("which side of the call the page says missed by more", () => {
+  const text = (html: string) => html.replace(/<[^>]+>/g, " ").replace(/&#x27;/g, "'").replace(/\s+/g, " ");
+
+  // the shipped build's shape: a positive skew, and shortfalls larger both ways
+  it("says the shortfalls ran larger when they did, on average and at the worst", () => {
+    const short = [
+      scored("10180", "Abilene, TX", 3, 1, 0.2), scored("19100", "Dallas-Fort Worth-Arlington, TX", 4, 2, 0.3),
+      scored("11100", "Amarillo, TX", 1, -3, 0.4), scored("12420", "Austin-Round Rock, TX", 1, -4, 0.5),
+    ];
+    const page = text(render(short));
+    expect(page).toContain("the metros that fell short of the model fell short by more than the metros that beat it beat it: 3.50 points on average against 1.50, and 4.00 at the worst against 2.00");
+    expect(page).not.toContain("the metros that beat the model beat it by more");
+  });
+
+  it("says the beats ran larger only when they did", () => {
+    const beats = [
+      scored("10180", "Abilene, TX", 12, 9, 0.2), scored("19100", "Dallas-Fort Worth-Arlington, TX", 8, 6, 0.3),
+      scored("11100", "Amarillo, TX", 1, -1, 0.4), scored("12420", "Austin-Round Rock, TX", 1, -2, 0.5),
+    ];
+    expect(text(render(beats))).toContain("the metros that beat the model beat it by more than the metros that fell short fell short of it");
+  });
+
+  it("says neither when one side is larger on average and the other at the worst", () => {
+    const mixed = [
+      scored("10180", "Abilene, TX", 10, 8, 0.2), scored("19100", "Dallas-Fort Worth-Arlington, TX", 2, 1, 0.3),
+      scored("11100", "Amarillo, TX", 1, -6, 0.4), scored("12420", "Austin-Round Rock, TX", 1, -7, 0.5),
+    ];
+    const page = text(render(mixed));
+    expect(page).toContain("neither side missed by more on both counts");
+    expect(page).not.toMatch(/beat it by more|fell short by more/);
+  });
+
+  it("reads the skew about the average miss, not about the call", () => {
+    expect(text(page)).toMatch(/so misses (above|below) the average miss run further out/);
+  });
+});
+
+describe("what the page says the scored calls are", () => {
+  const text = (html: string) => html.replace(/<[^>]+>/g, " ").replace(/&#x27;/g, "'").replace(/\s+/g, " ");
+
+  // nothing was published in 2025. the calls are the backtest's, made after the fact
+  it("names them as the backtest's calls rather than a forecast published a year ago", () => {
+    expect(text(page)).not.toContain("A year ago the model published");
+    expect(text(page)).toContain("These are the backtest's calls");
+    expect(text(page)).toContain("from the 2025Q2 origin");
+    expect(text(page)).toContain("the two are different fits");
+  });
+
+  // the band section quotes the backtest band's coverage, read from BACKTEST
+  it("attributes the coverage it quotes to the backtest band, not the band on the map", () => {
+    expect(text(page)).toContain("the backtest's own band, calibrated on 2018 to 2021, held");
+    expect(text(page)).not.toContain("87 percent of outcomes at four quarters against the 90 it aims at, which is why");
+  });
+
+  // divisions are shipped in place of their parents, so nothing is scored twice
+  // unless a parent is a scored row as well
+  it("says places are counted twice only when a scored division's parent is scored too", () => {
+    const division = (cbsa: string, name: string, parent: string) =>
+      ({ ...scored(cbsa, name, 2, -1, 0.3), level: "division" as const, parent: { cbsa: parent, name: "Parent" } });
+    const parts = [...SCORED, division("16984", "Chicago-Naperville-Schaumburg, IL", "16980"), division("20994", "Elgin, IL", "16980")];
+    expect(text(render(parts))).toContain("2 of the scored areas are metropolitan divisions, the pieces of 1 larger metro scored in parts rather than whole, so no place is counted twice");
+    const whole = [...parts, scored("16980", "Chicago-Naperville-Elgin, IL-IN", 2, -1, 0.3)];
+    expect(text(render(whole))).toContain("counted twice, once whole and once in parts");
   });
 });

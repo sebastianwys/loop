@@ -1,7 +1,10 @@
-import type { Growth, Metro, Period, YearKey, YearValues } from "../types";
+import type { Growth, Metro, PanelMarks, Period, YearKey, YearValues } from "../types";
 
 export type ScaleKind = "sequential" | "diverging";
-export type ValueFormat = "pct" | "usd" | "usd_k" | "ratio" | "rate" | "points" | "int" | "index" | "days" | "minutes" | "per_1000";
+// rate2 is a rate its publisher sets in hundredths, the fed funds target at
+// 4.25 or a mortgage rate at 6.95, which one decimal would print as a rate
+// nobody published
+export type ValueFormat = "pct" | "usd" | "usd_k" | "ratio" | "rate" | "rate2" | "points" | "int" | "index" | "days" | "minutes" | "per_1000";
 export type Group = "House prices" | "Housing market" | "Rents and affordability" | "People and migration" | "Supply" | "Forecasts";
 export type Source = "fhfa" | "census" | "bls" | "zillow" | "fred" | "acs" | "pep" | "bps" | "irs" | "realtor" | "bea" | "hud" | "forecast";
 
@@ -129,6 +132,76 @@ function sameGeography(metro: Metro, fields: Field[]): boolean {
   return from.every((v) => v === from[0]);
 }
 
+// the decade rates the build withholds when a metro's county lines moved too
+// far between the two acs vintages, with the vintage field each one divides
+const FOOTPRINT_RATES: Record<string, { field: Field; from: YearKey; to: YearKey }> = {
+  income_14_24: { field: "income", from: "2014", to: "2024" },
+  home_value_14_24: { field: "home_value", from: "2014", to: "2024" },
+  pop_14_24: { field: "pop", from: "2014", to: "2024" },
+};
+
+// why a blank is withheld: the county lines moved between the two vintages of
+// a decade rate, or a year's permits and people were counted over different
+// counties
+export type Withheld = "footprint" | "permits";
+
+// the metrics a blank can be withheld from rather than never measured
+export function canBeWithheld(metric: Metric | MetricDef): boolean {
+  const def = "def" in metric ? metric.def : metric;
+  return def.id in FOOTPRINT_RATES || def.id === "permits_per_1000";
+}
+
+const isShare = (value: unknown): boolean => typeof value === "number" && Number.isFinite(value) && value >= 0;
+
+// a withheld number and a number nobody measured are different claims, and a
+// blank cell cannot tell them apart, so every surface that shows a blank asks
+// this first. it is withheld only when the build had both sides to divide and
+// refused to: a rate with a vintage missing was never there to withhold
+export function withheldWhy(metro: Metro, metric: Metric | MetricDef, period: Period | null = null): Withheld | null {
+  const def = "def" in metric ? metric.def : metric;
+  const at = "def" in metric ? metric.period : period;
+  const rate = FOOTPRINT_RATES[def.id];
+  if (rate) {
+    if (num(metro?.growth?.[def.id as keyof Growth]) !== null) return null;
+    const moved = metro?.footprint_unweighed === true || isShare(metro?.footprint_refused);
+    const both = yearValue(metro, rate.from, rate.field) !== null && yearValue(metro, rate.to, rate.field) !== null;
+    return moved && both ? "footprint" : null;
+  }
+  if (def.id === "permits_per_1000" && at) {
+    const both = fieldAt(metro, at, "permits_units") !== null && fieldAt(metro, at, "pop_estimate") !== null;
+    return permitsMarked(metro, at) && both ? "permits" : null;
+  }
+  return null;
+}
+
+// a panel whose permits and people were counted over different counties, by
+// a measured share or by a move nobody could weigh
+function permitsMarked(metro: Metro, period: Period | null): boolean {
+  if (!period) return false;
+  const panel = (period === "latest" ? metro?.latest : metro?.years?.[period]) as PanelMarks | undefined;
+  return num(panel?.permits_footprint) !== null || panel?.permits_unweighed === true;
+}
+
+// the word a withheld blank wears in a tooltip, a table cell or a key
+export const WITHHELD = "withheld";
+
+// what happened, for a sentence that already says withheld
+export function withheldBecause(why: Withheld): string {
+  return why === "footprint"
+    ? "the county lines moved between the two vintages"
+    : "the permits and the people were counted over different counties";
+}
+
+// the reason, for a title or a sentence
+export function withheldReason(why: Withheld): string {
+  return `withheld because ${withheldBecause(why)}`;
+}
+
+// the same in a few words, for a tooltip or a key
+export function withheldShort(why: Withheld): string {
+  return why === "footprint" ? "county lines moved" : "counted over different counties";
+}
+
 export const DEFS: MetricDef[] = [
   // house prices
   change("hpi_19_24", "HPI growth, 2019 to 2024", "House prices", "fhfa"),
@@ -182,8 +255,12 @@ export const DEFS: MetricDef[] = [
   field("own_rate", "Homeownership rate", "pct", "sequential", "People and migration", "census", YEARS),
   // supply
   field("permits_units", "Housing units permitted", "int", "sequential", "Supply", "bps", ALL),
+  // a panel whose permits and people were counted over different counties
+  // carries permits_footprint, or permits_unweighed when nobody could weigh
+  // the difference, and the rate is withheld there rather than divided
+  // across two places
   { id: "permits_per_1000", label: "Units permitted per 1,000 residents", format: "per_1000", kind: "sequential", group: "Supply", source: "bps", periods: ALL, dateId: "permits_units",
-    valueAt: (m, p) => { if (!sameGeography(m, ["permits_units", "pop_estimate"])) return null; const units = fieldAt(m, p, "permits_units"); return divide(units === null ? null : units * 1000, fieldAt(m, p, "pop_estimate")); } },
+    valueAt: (m, p) => { if (!sameGeography(m, ["permits_units", "pop_estimate"]) || permitsMarked(m, p)) return null; const units = fieldAt(m, p, "permits_units"); return divide(units === null ? null : units * 1000, fieldAt(m, p, "pop_estimate")); } },
   field("permits_single_family", "Single family units permitted", "int", "sequential", "Supply", "bps", ALL),
   field("permits_multifamily", "Units in 5+ unit buildings permitted", "int", "sequential", "Supply", "bps", ALL),
   field("vacancy_rate", "Vacant housing units", "pct", "sequential", "Supply", "acs", YEARS),
@@ -191,15 +268,20 @@ export const DEFS: MetricDef[] = [
   // read as rates like the zillow forecast, signed either way
   field("hpi_forecast_4q", "Expected HPI growth, next 4 quarters", "rate", "diverging", "Forecasts", "forecast", ["latest"]),
   field("hpi_forecast_8q", "Expected HPI growth, next 8 quarters", "rate", "diverging", "Forecasts", "forecast", ["latest"]),
-  field("hpi_trend_5y", "HPI growth, 5 year annualized", "rate", "diverging", "Forecasts", "forecast", ["latest"]),
-  field("hpi_yoy_latest", "HPI growth, last 4 quarters", "rate", "diverging", "Forecasts", "forecast", ["latest"]),
+  // what the fhfa index did up to the origin. the export works these out and
+  // the build files them under the model's folder, but nothing in them is the
+  // model's, so they are credited to the index they are read off
+  field("hpi_trend_5y", "HPI growth, 5 year annualized", "rate", "diverging", "Forecasts", "fhfa", ["latest"]),
+  field("hpi_yoy_latest", "HPI growth, last 4 quarters", "rate", "diverging", "Forecasts", "fhfa", ["latest"]),
   // realized growth minus expected growth is a gap between two rates, so it
   // is in percentage points, the way the accuracy page prints the same field
   field("hpi_surprise_4q", "Surprise, actual minus expected, last 4 quarters", "points", "diverging", "Forecasts", "forecast", ["latest"]),
   // fhfa publishes a standard error beside the expanded index. a thin market
   // has fewer repeat sales, so its index is a looser measurement, and a wide
-  // error here is a reason to read the forecast above it loosely
-  field("hpi_index_error", "Index standard error", "rate", "sequential", "Forecasts", "fhfa", ["latest"]),
+  // error here is a reason to read the forecast above it loosely. fhfa sets it
+  // in hundredths, and one decimal printed the tightest metros as one number
+  // and denver as zero
+  field("hpi_index_error", "Index standard error", "rate2", "sequential", "Forecasts", "fhfa", ["latest"]),
 ];
 
 export function defaultPeriod(def: MetricDef): Period | null {
@@ -301,7 +383,7 @@ export function yearLabel(year: string | number, source?: Source): string {
 export function metricCaption(metric: Metric, metros: Metro[]): string {
   const source = `Source: ${SOURCE_LABEL[metric.source]}`;
   if (!metric.period) return source;
-  if (metric.period !== "latest") return `${source}, ${metric.period}`;
+  if (metric.period !== "latest") return `${source}, ${yearLabel(metric.period, metric.source)}`;
   let newest: string | null = null;
   for (const m of metros) {
     const d = metric.dateOf(m);
@@ -320,8 +402,24 @@ export function metricCaption(metric: Metric, metros: Metro[]): string {
 export function metricExplainer(metric: Metric): string {
   const source = SOURCE_LABEL[metric.def.source];
   const spanned = metric.def.periods.length === 0;
+  // a year off an annual history borrows the level's definition and carries
+  // growth into that year. timeline.ts owns the type and imports this module,
+  // so the year is read off the metric rather than through isYearMetric
+  if (typeof (metric as Metric & { year?: unknown }).year === "number") {
+    return `Every metro is coloured by its ${metric.label}, the change in its index into the year the timeline is set to, worked out here from the annual series. The index comes from ${source} and is not adjusted or smoothed here. A metro with no index that year is drawn hollow rather than guessed at.`;
+  }
   const what = spanned
     ? `Every metro is coloured by its ${metric.def.label}, which is a change measured between the two shaded vintage years rather than a reading at one date.`
     : `Every metro is coloured by its ${metric.def.label} at the period the timeline is set to.`;
-  return `${what} The numbers come from ${source} and are not adjusted or smoothed here. A metro with no reading is drawn hollow rather than guessed at.`;
+  return `${what} The numbers come from ${source} and are not adjusted or smoothed here. A metro with no reading is drawn hollow rather than guessed at.${withheldSentence(metric)}`;
+}
+
+// a withheld blank is a claim of its own, so the help says what it is and how
+// it is drawn, apart from a metro nobody measured
+function withheldSentence(metric: Metric): string {
+  if (!canBeWithheld(metric)) return "";
+  const why = metric.def.id === "permits_per_1000"
+    ? "A year whose permits and people were counted over different counties has its rate withheld rather than divided across two places"
+    : "A metro whose county lines moved by more than two percent of its people between the two vintages has its rate withheld rather than measured across two different places";
+  return ` ${why}: it is drawn hollow with a solid outline and keyed withheld, which is not the same as nobody measuring it.`;
 }

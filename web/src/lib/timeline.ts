@@ -186,7 +186,7 @@ export function buildTimeline(def: MetricDef, metros: Metro[], width = AXIS_WIDT
     const count = counts[period];
     const available = declared && (metros.length === 0 || count > 0);
     const year = period === "latest" ? (dateToYear(date) ?? end) : Number(period);
-    const label = period === "latest" ? (dateLabel(date, def.source) ?? "latest") : period;
+    const label = period === "latest" ? (dateLabel(date, def.source) ?? "latest") : yearLabel(period, def.source);
     return { period, label, date: period === "latest" ? date : null, year, t: at(year), count, available, row: 0 };
   });
   spread(ticks, width);
@@ -242,9 +242,9 @@ export function levelAt(series: AnnualSeries | null, year: number): number | nul
   return i < 0 || i >= series.values.length ? null : num(series.values[i]);
 }
 
-// the change into a year, in percent. fhfa rebases the index to 100 at each
-// metro's own first quarter, so two metros' levels say nothing side by side
-// while their growth rates are the same measurement everywhere
+// the change into a year, in percent. fhfa sets every metro's index to 100 at
+// one base quarter, 1995q1, so a level is decades of growth rather than a
+// price, while a year's growth rate is the same measurement everywhere
 export function growthAt(series: AnnualSeries | null, year: number): number | null {
   const from = levelAt(series, year - 1);
   const to = levelAt(series, year);
@@ -373,7 +373,7 @@ export function isYearMetric(metric: Metric): metric is YearMetric {
 }
 
 // growth rather than the level, on a diverging ramp: a level map cannot show
-// a crash, because a rebased index barely dips, and the bases differ by metro
+// a crash, because a level is decades of growth that one bad year barely dents
 export function yearMetric(def: MetricDef, deep: DeepTimeline, year: number | null): YearMetric {
   const frame = frameAt(deep, year);
   const key = deep.key;
@@ -410,15 +410,16 @@ export function periodLabel(metric: Metric, metro: Metro): string {
     const span = changeSpan(metric.def);
     return span ? `${span.from} to ${span.to}` : "";
   }
-  if (metric.period !== "latest") return metric.period;
+  if (metric.period !== "latest") return yearLabel(metric.period, metric.source);
   return dateLabel(metric.dateOf(metro), metric.source) ?? "latest";
 }
 
 // why a source has nothing at the first vintage year, when the reason is the
-// source's own and not this metro's. a blank year reads as "never published"
-// rather than "unknown" once the note says so
+// source's own and not this metro's. hud has published rents for decades; it
+// is the api this build reads that starts late, so the blank is uncollected
+// rather than unpublished
 const LATE_START: Partial<Record<Source, string>> = {
-  hud: "HUD publishes no fair market rents or income limits before fiscal 2017.",
+  hud: "The HUD API this build reads has no fair market rents or income limits before fiscal 2017, so the earlier years are not collected here.",
 };
 
 // "From 2019: Median listing price, Active listings." for the measures in a

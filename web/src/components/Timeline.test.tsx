@@ -110,6 +110,14 @@ describe("the timeline over a deep annual history", () => {
     expect(markup).toContain("clipped at plus or minus 5 percent");
   });
 
+  // fhfa's all-transactions index is 100 at 1995q1 for every metro, so a level
+  // is growth from a shared base, not a figure rebased at each metro's start
+  it("says why it maps growth without claiming a base per metro", () => {
+    const markup = render(scrub());
+    expect(markup).not.toContain("rebased per metro");
+    expect(markup).toContain("growth from one base quarter every metro shares, not a price");
+  });
+
   it("draws a bar per year, so the thin early years are visible before they are read", () => {
     const markup = render(scrub());
     expect(markup.match(/class="bar/g)).toHaveLength(deep.frames.length);

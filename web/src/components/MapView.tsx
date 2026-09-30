@@ -2,12 +2,12 @@ import * as L from "leaflet";
 import { useEffect, useMemo, useRef } from "react";
 import { CircleMarker, MapContainer, TileLayer, Tooltip, useMap } from "react-leaflet";
 import { formatValue } from "../lib/format";
-import { isInherited, type Metric } from "../lib/metrics";
-import { INK, INK_2, NULL_GRAY, SURFACE } from "../lib/palette";
+import { WITHHELD, isInherited, withheldShort, withheldWhy, type Metric } from "../lib/metrics";
+import { INK } from "../lib/palette";
 import type { ColorScale } from "../lib/scale";
 import { periodLabel } from "../lib/timeline";
 import type { Metro } from "../types";
-import { INHERITED_DASH, INHERITED_FILL_OPACITY, studyShapes, type BoundaryIndex, type MapMode } from "../lib/boundaries";
+import { markStyle, studyShapes, type BoundaryIndex, type MapMode } from "../lib/boundaries";
 import { ShapeLayer } from "./ShapeLayer";
 
 const CENTER: [number, number] = [39.5, -98.35];
@@ -125,25 +125,31 @@ export function MapView({ metros, metric, scale, selectedCbsa, onSelect, mode, b
         // a division with no rows of its own carries the parent metro's number.
         // it keeps the colour of its value, the outline says whose it is
         const taken = !missing && isInherited(m, metric);
+        // a blank the build withheld is not a blank nobody measured, so it is
+        // ringed and named differently
+        const withheld = missing ? withheldWhy(m, metric) : null;
+        const mark = markStyle(missing, taken, withheld !== null);
         return (
           <CircleMarker
             key={m.cbsa}
             center={[m.lat, m.lon]}
             radius={markerRadius(m.years?.["2024"]?.pop ?? null)}
             pathOptions={{
-              color: isSelected ? INK : missing ? NULL_GRAY : taken ? INK_2 : SURFACE,
+              color: isSelected ? INK : mark.color,
               weight: isSelected ? 3 : 2,
-              dashArray: isSelected ? undefined : missing ? "3 3" : taken ? INHERITED_DASH : undefined,
+              dashArray: isSelected ? undefined : mark.dashArray,
               fillColor: scale.color(value),
-              fillOpacity: missing ? 0.35 : taken ? INHERITED_FILL_OPACITY : 0.85,
+              // a dot is small, so a measured one fills heavier than a shape
+              fillOpacity: missing || taken ? mark.fillOpacity : 0.85,
             }}
             eventHandlers={{ click: () => onSelect(m.cbsa) }}
           >
             <Tooltip className="bs-tip" direction="top" offset={[0, -6]}>
               <span className="tn">{m.name}</span>{" "}
-              <span className="tv">{formatValue(value, metric.format, signed)}</span>{" "}
+              <span className="tv">{withheld ? WITHHELD : formatValue(value, metric.format, signed)}</span>{" "}
               <span className="tp">{periodLabel(metric, m)}</span>
               {taken && m.parent && <span className="tp"> from {m.parent.name}</span>}
+              {withheld && <span className="tp">, {withheldShort(withheld)}</span>}
             </Tooltip>
           </CircleMarker>
         );

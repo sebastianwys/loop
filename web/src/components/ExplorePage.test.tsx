@@ -58,7 +58,8 @@ describe("the explore view", () => {
 
   it("says in plain language that the metros are not independent samples and that nothing here is a cause", () => {
     const markup = page();
-    expect(markup).toContain("not 410");
+    // the count is the data's own, three in the fixture, never a typed 410
+    expect(markup).toContain("The 3 metros here are not 3 independent samples");
     expect(markup).toContain("one national cycle");
     expect(markup).toContain("caused");
   });

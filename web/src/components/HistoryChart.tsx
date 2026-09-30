@@ -29,13 +29,28 @@ function readout(h: Hovered): string {
 export function HistoryChart({ series, forecast, name }: Props) {
   const model = useMemo(() => buildHistory(series, forecast, W, H), [series, forecast]);
   const [hover, setHover] = useState<Hovered | null>(null);
+  // a readout belongs to the series it was read off. the panel hands this
+  // chart the next metro's series without a blur or a mouseleave when the
+  // route moves from the keyboard, so a new series clears it here
+  const [readOff, setReadOff] = useState(series);
+  if (readOff !== series) {
+    setReadOff(series);
+    setHover(null);
+  }
   const svg = useRef<SVGSVGElement>(null);
   const last = model.last;
   if (!last) return <p className="muted">no index values</p>;
 
   const asOf = dateLabel(series.as_of) ?? series.as_of;
   const toYear = model.years[1];
-  const span = `annual mean ${model.years[0]} to ${last.year}, the last through ${asOf}`;
+  // a short newest year is the index at as_of, not an annual mean, the way
+  // the note beside the chart says it
+  const partial = series.partial_year === last.year;
+  const span = !partial
+    ? `annual mean ${model.years[0]} to ${last.year}, the last through ${asOf}`
+    : last.year > model.years[0]
+      ? `annual mean ${model.years[0]} to ${last.year - 1}, then the index at ${asOf}`
+      : `the index at ${asOf}`;
   const title = model.forecast.length
     ? `house price index for ${name}, ${span}, with the expected path to ${toYear}`
     : `house price index for ${name}, ${span}`;
@@ -99,7 +114,7 @@ export function HistoryChart({ series, forecast, name }: Props) {
       ))}
       {model.d && <path className="line" d={model.d} />}
       <circle className="dot" cx={last.x} cy={last.y} r={4}>
-        <title>{`${last.year}: ${idx(last.value)}, through ${asOf}`}</title>
+        <title>{`${last.year}: ${idx(last.value)}, ${partial ? "the index at" : "through"} ${asOf}`}</title>
       </circle>
       <text className="lbl end" x={last.x} y={last.y - 8} textAnchor={anchor(last.x)}>{idx(last.value)}</text>
       {hover && (

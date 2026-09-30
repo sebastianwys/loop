@@ -3,7 +3,7 @@ import {
   MIN_FIT, buildAxis, buildExplore, exploreEnds, exploreOutliers, exploreTitle, fitSentence, fitStrength,
   inheritedSentence, logTicks, nearestPoint, pearson, plotSize, plottedSentence, ranks, spearman, wantsLog,
 } from "./explore";
-import { defById, resolveMetric } from "./metrics";
+import { defById, metricById, resolveMetric } from "./metrics";
 import type { Metro, YearValues } from "../types";
 
 const blank = (): YearValues => ({
@@ -209,6 +209,31 @@ describe("the plot built from a set of metros", () => {
     expect(sentence).toContain("2 of 5 metros are drawn");
     expect(sentence).toContain("2 have no permits");
     expect(sentence).toContain("2 have no population");
+  });
+
+  // a withheld number is not one nobody measured, and the count says which
+  it("counts the blanks the build withheld apart from the ones nobody measured", () => {
+    const counts = { total: 10, plotted: 6, inherited: 0, fitted: 6, missingX: 4, missingY: 0, missing: 4, withheldX: 3, whyX: "footprint" as const };
+    const sentence = plottedSentence(counts, "Median income growth, 2014 to 2024", "population");
+    expect(sentence).toContain("4 have no Median income growth, 2014 to 2024, 3 of them withheld because the county lines moved");
+    expect(plottedSentence({ ...counts, withheldX: 4 }, "income", "population")).toContain("all of them withheld");
+    expect(plottedSentence({ ...counts, withheldX: 0 }, "income", "population")).not.toContain("withheld");
+  });
+
+  // the count is read off the metros: a decade rate withheld because the
+  // county lines moved is told apart from one with a vintage nobody measured
+  it("counts a blank the build withheld apart from one nobody measured, from the metros themselves", () => {
+    const income = metricById("income_14_24");
+    const vintages = (m: Metro, first: number | null): Metro => ({
+      ...m,
+      years: { ...m.years, "2014": { ...m.years["2014"], income: first }, "2024": { ...m.years["2024"], income: 52000 } },
+    });
+    const refused = { ...vintages(metro("10000", 5, 50), 41000), footprint_refused: 0.047 };
+    const unmeasured = vintages(metro("10001", 9, 90), null);
+    const model = buildExplore([refused, unmeasured, metro("10002", 4, 40)], income, Y, size);
+    expect(model.counts).toMatchObject({ total: 3, missingX: 3, withheldX: 1, whyX: "footprint" });
+    expect(plottedSentence(model.counts, income.label, "population"))
+      .toContain("3 have no Median income growth, 2014 to 2024, 1 of them withheld because the county lines moved");
   });
 
   it("says so plainly when every metro carries both numbers", () => {

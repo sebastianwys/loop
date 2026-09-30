@@ -5,8 +5,10 @@ import type { RouteState } from "./route";
 import type { Metro } from "../types";
 
 // the model's own scorecard. hpi_surprise_4q is realized four quarter growth
-// to the origin minus the median the model published for that window four
-// quarters earlier, in percentage points, built from test block rows only.
+// to the origin minus the median the backtest's model predicted for that
+// window four quarters earlier, in percentage points, built from test block
+// rows only. nothing was published at that origin: these are the backtest's
+// calls, made after the fact by a model fitted on outcomes years before them.
 // everything on this page is read off that one field
 
 // a normal curve leaves this share of its mass beyond two standard
@@ -68,20 +70,29 @@ export interface Coverage {
   metros: number;
   scored: number;
   unscored: number;
-  // divisions are the pieces fhfa publishes inside the largest metros, so a
-  // few big places are scored twice, once whole and once in parts
+  // divisions are the pieces fhfa publishes inside the largest metros. the
+  // build ships them in place of their parent metro, so a place is scored
+  // twice only when its parent is a scored row as well, which overlap counts
   divisions: number;
+  // the parent metros those scored divisions split
+  parents: number;
+  // scored divisions whose parent metro is scored too
+  overlap: number;
   // metros scored but carrying no index standard error to plot against
   withError: number;
 }
 
 export function coverage(metros: Metro[], misses: Miss[]): Coverage {
   const scored = new Set(misses.map((m) => m.cbsa));
+  const divisions = metros.filter((m) => m.level === "division" && scored.has(m.cbsa));
+  const parents = new Set(divisions.map((m) => m.parent?.cbsa).filter((code): code is string => Boolean(code)));
   return {
     metros: metros.length,
     scored: misses.length,
     unscored: metros.length - misses.length,
-    divisions: metros.filter((m) => m.level === "division" && scored.has(m.cbsa)).length,
+    divisions: divisions.length,
+    parents: parents.size,
+    overlap: divisions.filter((m) => m.parent?.cbsa && scored.has(m.parent.cbsa)).length,
     withError: misses.filter((m) => m.error !== null).length,
   };
 }
@@ -93,15 +104,26 @@ export function openMetro(cbsa: string): Pick<RouteState, "view" | "metro"> {
   return { view: "map", metro: cbsa };
 }
 
-// the origin quarter the scored calls were made against, as the export dated
-// them. the newest any metro carries is the one the whole page is as of
-export function originOf(metros: Metro[]): string | null {
+// the newest date any metro carries for a field
+function newestDate(metros: Metro[], field: string): string | null {
   let newest: string | null = null;
   for (const metro of metros) {
-    const date = dateAt(metro, "latest", "hpi_surprise_4q");
+    const date = dateAt(metro, "latest", field);
     if (date !== null && (newest === null || date > newest)) newest = date;
   }
   return newest;
+}
+
+// the origin quarter the scored calls were made against, as the export dated
+// them. the newest any metro carries is the one the whole page is as of
+export function originOf(metros: Metro[]): string | null {
+  return newestDate(metros, "hpi_surprise_4q");
+}
+
+// where the growth each call is scored against ends, four quarters on from
+// the origin: the realized growth is dated at the live origin
+export function grownTo(metros: Metro[]): string | null {
+  return newestDate(metros, "hpi_yoy_latest");
 }
 
 // linear interpolation between order statistics, the same rule scale.ts bins by
@@ -135,6 +157,36 @@ export interface Summary {
   // the textbook standard error of the mean, which assumes 410 independent
   // draws. stateSpread below is the reason not to believe it
   se: number;
+  // the two sides of the call measured from zero, which is what "beat the
+  // model" and "fell short of it" mean on this page: how many, how far on
+  // average and how far at the worst. skewness is measured about the mean
+  // miss, not about zero, so it cannot say which of these is the larger
+  beats: Side;
+  shortfalls: Side;
+}
+
+// one side of the call, in points, the magnitude of the miss
+export interface Side {
+  n: number;
+  mean: number | null;
+  max: number | null;
+}
+
+function side(sizes: number[]): Side {
+  return sizes.length === 0
+    ? { n: 0, mean: null, max: null }
+    : { n: sizes.length, mean: sizes.reduce((a, b) => a + b, 0) / sizes.length, max: Math.max(...sizes) };
+}
+
+export type Larger = "beats" | "shortfalls" | "neither";
+
+// which side missed by more, on average and at the extreme both. a side that
+// is larger on one count and smaller on the other is neither
+export function largerSide(beats: Side, shortfalls: Side): Larger {
+  if (beats.mean === null || shortfalls.mean === null || beats.max === null || shortfalls.max === null) return "neither";
+  if (beats.mean > shortfalls.mean && beats.max > shortfalls.max) return "beats";
+  if (shortfalls.mean > beats.mean && shortfalls.max > beats.max) return "shortfalls";
+  return "neither";
 }
 
 export function summarize(misses: Miss[]): Summary | null {
@@ -170,6 +222,8 @@ export function summarize(misses: Miss[]): Summary | null {
     high: values.filter((v) => v < 0).length / n,
     outliers: sd === 0 ? 0 : values.filter((v) => Math.abs(v - mean) > 2 * sd).length / n,
     se: sd / Math.sqrt(n),
+    beats: side(values.filter((v) => v > 0)),
+    shortfalls: side(values.filter((v) => v < 0).map((v) => -v)),
   };
 }
 

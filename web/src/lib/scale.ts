@@ -1,5 +1,6 @@
-import type { ScaleKind } from "./metrics";
+import { isInherited, type Metric, type ScaleKind } from "./metrics";
 import { DIVERGING, NULL_GRAY, SEQUENTIAL } from "./palette";
+import type { Metro } from "../types";
 
 export interface Bin {
   from: number;
@@ -19,6 +20,21 @@ export interface ColorScale {
 
 const finite = (values: (number | null)[]) =>
   values.filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+
+// the values the map's classes are fitted to. a number a division took from
+// its parent is the parent's measurement, and four divisions of one parent
+// would count it four times, so it is drawn in the scale's colours but sets no
+// edge, the way it stays out of the ranking and the fit
+export function ownValues(metros: Metro[], metric: Metric): (number | null)[] {
+  return metros.filter((m) => !isInherited(m, metric)).map(metric.accessor);
+}
+
+// true when a drawn value falls outside the classes' domain, so the end classes
+// take it and the legend has to say "or more" rather than name an edge it passes
+export function drawnPast(scale: ColorScale, values: (number | null)[]): boolean {
+  const domain = scale.domain;
+  return domain !== null && finite(values).some((v) => v < domain[0] || v > domain[1]);
+}
 
 // where a diverging domain ends, as a quantile of the magnitudes rather than at
 // the largest one. the domain used to run to the biggest number in the data, so

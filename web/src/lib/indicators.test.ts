@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { SAMPLE } from "./data";
 import {
   CHART_H, CHART_PAD, CHART_W, DETAIL_ID, INDICATOR_GROUPS, MORTGAGE_ID, activeRangeId, buildIndicatorChart, changeChip,
-  chartTitle, clipHistory, displayFormat, groupIndicators, groupId, historySpan, indicatorRanges, indicatorSpark,
-  indicatorValue, monthLabel, nationalIndicators, nearestChartPoint, pointReadout, rangeLabel, rangeMonths,
-  readIndicator, showMortgageStat, sourceLine, tileId, tileReadout,
+  chartTitle, clipHistory, displayFormat, groupIndicators, groupId, historySpan, indicatorChip, indicatorDigits,
+  indicatorRanges, indicatorSpark, indicatorValue, monthLabel, nationalIndicators, nearestChartPoint, pointReadout,
+  rangeLabel, rangeMonths, readIndicator, showMortgageStat, sourceLine, tileChange, tileId, tileReadout,
 } from "./indicators";
 import type { Indicator, IndicatorPoint, MapData, MortgageRate } from "../types";
 
@@ -122,23 +122,42 @@ describe("groups", () => {
 describe("the displayed value", () => {
   it("prints a percent that is already in display units without scaling it", () => {
     expect(displayFormat("pct")).toBe("rate");
-    expect(displayFormat("rate")).toBe("rate");
     expect(displayFormat("index")).toBe("index");
     expect(indicatorValue(make({ value: 2.9 }))).toBe("2.9%");
-    expect(indicatorValue(make({ format: "rate", value: 6.76 }))).toBe("6.8%");
     expect(indicatorValue(make({ format: "index", value: 58.24 }))).toBe("58.2");
+  });
+
+  // the fed sets its target in quarter points and freddie mac publishes the
+  // mortgage rate in hundredths. at one decimal 4.25 printed as 4.3, a target
+  // nobody set, and the chart's steps stopped adding up to the chip
+  it("prints a rate at the hundredths its publisher sets it in", () => {
+    expect(displayFormat("rate")).toBe("rate2");
+    expect(indicatorDigits("rate")).toBe(2);
+    expect(indicatorDigits("pct")).toBe(1);
+    expect(indicatorDigits("index")).toBe(1);
+    expect(indicatorValue(make({ format: "rate", value: 6.76 }))).toBe("6.76%");
+    expect(indicatorValue(make({ format: "rate", value: 4.25 }))).toBe("4.25%");
+    expect(indicatorValue(make({ format: "rate", value: 4 }))).toBe("4.00%");
   });
 });
 
 describe("the change chip", () => {
   it("signs a rise and names the direction", () => {
-    expect(changeChip(0.4)).toMatchObject({ direction: "up", text: "+0.4 pts", word: "up" });
-    expect(changeChip(0.4).label).toBe("up 0.4 pts over twelve months");
+    expect(changeChip(0.4, 1)).toMatchObject({ direction: "up", text: "+0.4 pts", word: "up" });
+    expect(changeChip(0.4, 1).label).toBe("up 0.4 pts over twelve months");
   });
 
   it("signs a fall without a second minus in the size", () => {
-    expect(changeChip(-1.25)).toMatchObject({ direction: "down", text: "-1.3 pts", word: "down" });
-    expect(changeChip(-0.75).text).toBe("-0.8 pts");
+    expect(changeChip(-1.3, 1)).toMatchObject({ direction: "down", text: "-1.3 pts", word: "down" });
+    expect(changeChip(-0.75).text).toBe("-0.75 pts");
+  });
+
+  // with nothing said about the series, the chip keeps every digit a national
+  // series can carry rather than rounding a quarter point away
+  it("prints hundredths unless told the series is coarser", () => {
+    expect(changeChip(-0.25).text).toBe("-0.25 pts");
+    expect(changeChip(-1.25).text).toBe("-1.25 pts");
+    expect(changeChip(0.4).text).toBe("+0.40 pts");
   });
 
   it("reads exactly zero as no change, never as a signed zero", () => {
@@ -150,9 +169,15 @@ describe("the change chip", () => {
   });
 
   it("reads a change too small to print as no change", () => {
-    expect(changeChip(0.04).text).toBe("no change");
-    expect(changeChip(-0.04).text).toBe("no change");
-    expect(changeChip(0.05).text).toBe("+0.1 pts");
+    expect(changeChip(0.04, 1).text).toBe("no change");
+    expect(changeChip(-0.04, 1).text).toBe("no change");
+    expect(changeChip(0.05, 1).text).toBe("+0.1 pts");
+    expect(changeChip(0.004).text).toBe("no change");
+  });
+
+  it("names the month its change is for when it is given one", () => {
+    expect(changeChip(-0.75, 2, "2026-08").label).toBe("down 0.75 pts over the twelve months to Aug 2026");
+    expect(changeChip(0, 2, "2026-08").label).toBe("no change over the twelve months to Aug 2026");
   });
 
   it("says so when there is no twelve month figure", () => {
@@ -392,8 +417,72 @@ describe("the span the chart shows", () => {
     // the tile is not part of the bargain: its figure and its sparkline
     // still read the whole history, whatever the chart is showing
     expect(indicatorSpark(indicator.history)!.points).toHaveLength(368);
-    expect(changeChip(indicator.change_12m).text).toBe("+0.4 pts");
+    expect(indicatorChip(indicator).text).toBe("+1.2 pts");
     expect(sourceLine(indicator)).toBe("BLS via FRED, monthly, Jan 1996 to Aug 2026");
+  });
+});
+
+// the fed funds target through the september 2025 cut, month end readings,
+// the way the build lays a daily series on the calendar
+const target = (): IndicatorPoint[] => [
+  { date: "2025-08", value: 4.5 }, { date: "2025-09", value: 4.25 }, { date: "2025-10", value: 4 },
+  { date: "2025-11", value: 4 }, { date: "2025-12", value: 3.75 }, { date: "2026-01", value: 3.75 },
+  { date: "2026-02", value: 3.75 }, { date: "2026-03", value: 3.75 }, { date: "2026-04", value: 3.75 },
+  { date: "2026-05", value: 3.75 }, { date: "2026-06", value: 3.75 }, { date: "2026-07", value: 3.75 },
+  { date: "2026-08", value: 3.75 }, { date: "2026-09", value: 4 },
+];
+const fedFunds = (over: Partial<Indicator> = {}) =>
+  make({ id: "fed_funds", label: "Fed funds target", group: "Rates", format: "rate", value: 4, date: "2026-09", history: target(), ...over });
+
+describe("the chip beside the chart", () => {
+  // the build rounded -0.25 to -0.2, half to even, while the chart printed
+  // 4.25 and 4.00. the chip is now the difference of the two printed levels
+  it("is the difference of the two levels the chart prints", () => {
+    const tile = fedFunds({ change_12m: -0.2 });
+    expect(tileChange(tile)).toEqual({ change: -0.25, month: null });
+    expect(indicatorChip(tile).text).toBe("-0.25 pts");
+  });
+
+  // a daily rate's newest month is still running, so the build measures its
+  // change over the last finished month and says which one
+  it("measures the month the build names and labels the chip with it", () => {
+    const tile = fedFunds({ change_12m: -0.75, change_month: "2026-08" });
+    expect(tileChange(tile)).toEqual({ change: -0.75, month: "2026-08" });
+    expect(indicatorChip(tile).text).toBe("-0.75 pts");
+    expect(tileReadout(tile)).toBe("Fed funds target, 4.00% in Sep 2026, down 0.75 pts over the twelve months to Aug 2026");
+  });
+
+  it("keeps the build's own figure when either level is missing from the history", () => {
+    const tile = fedFunds({ change_12m: -0.5, history: target().slice(2) });
+    expect(tileChange(tile).change).toBe(-0.5);
+  });
+
+  it("prints a one decimal series at one decimal", () => {
+    const cpi = make({ value: 2.9, date: "2026-08", history: monthly("2025-08", 13).map((p, i) => ({ ...p, value: i === 0 ? 2.5 : 2.9 })) });
+    expect(indicatorChip(cpi).text).toBe("+0.4 pts");
+  });
+
+  // every tile carries change_month now: its own month for a monthly series,
+  // the last finished one for a daily rate, and null for a tile with no change
+  it("reads change_month off the build, and nothing that is not a month", () => {
+    const raw = { id: "fed_funds", group: "Rates", format: "rate", value: 4, date: "2026-09", change_12m: -0.75 };
+    expect(readIndicator({ ...raw, change_month: "2026-08" })?.change_month).toBe("2026-08");
+    expect(readIndicator({ ...raw, change_month: null })?.change_month).toBeNull();
+    expect(readIndicator({ ...raw, change_month: "august" })?.change_month).toBeNull();
+    // a build older than the field says nothing, and its change is the tile's own month's
+    expect(readIndicator(raw)).not.toHaveProperty("change_month");
+  });
+
+  it("shows no change for a tile the build says has none, whatever the history holds", () => {
+    const tile = fedFunds({ change_12m: null, change_month: null });
+    expect(tileChange(tile)).toEqual({ change: null, month: null });
+    expect(indicatorChip(tile).text).toBe("not reported");
+  });
+
+  it("does not label a chip whose month is the tile's own", () => {
+    const tile = fedFunds({ value: 4, date: "2026-09", change_12m: -0.25, change_month: "2026-09" });
+    expect(indicatorChip(tile).text).toBe("-0.25 pts");
+    expect(indicatorChip(tile).label).toBe("down 0.25 pts over twelve months");
   });
 });
 

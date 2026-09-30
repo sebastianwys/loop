@@ -1,5 +1,5 @@
 import { formatValue } from "../lib/format";
-import type { Metric } from "../lib/metrics";
+import { WITHHELD, withheldShort, type Metric, type Withheld } from "../lib/metrics";
 import type { ColorScale } from "../lib/scale";
 
 interface Props {
@@ -10,6 +10,9 @@ interface Props {
   onToggle?: () => void;
   // true when at least one metro on the map is showing its parent's number
   inherited?: boolean;
+  // why the metros whose number the build withheld are blank, when any are.
+  // they are keyed apart from no data, which is a different claim
+  withheld?: Withheld | null;
   // true when the end classes take everything past them, so the reader is
   // not told a bin ends where values plainly carry on
   clipped?: boolean;
@@ -19,7 +22,7 @@ const BODY_ID = "legend-body";
 
 // the key rolls up to its title line. on a phone it would otherwise cover a
 // third of the map, so it starts rolled up there
-export function Legend({ scale, metric, caption, open = true, onToggle, inherited = false, clipped = false }: Props) {
+export function Legend({ scale, metric, caption, open = true, onToggle, inherited = false, withheld = null, clipped = false }: Props) {
   const signed = scale.kind === "diverging";
   const last = scale.bins.length - 1;
   const range = (bin: { from: number; to: number }, i: number) => {
@@ -61,6 +64,12 @@ export function Legend({ scale, metric, caption, open = true, onToggle, inherite
           <span className="sw null" />
           <span>no data</span>
         </div>
+        {withheld && (
+          <div className="row">
+            <span className="sw withheld" />
+            <span>{WITHHELD}, {withheldShort(withheld)}</span>
+          </div>
+        )}
         {inherited && (
           <div className="row">
             <span className="sw taken" style={{ background: scale.color(scale.bins[Math.floor(scale.bins.length / 2)]?.from ?? null) }} />

@@ -250,9 +250,11 @@ export function SourcesPage({ data, go }: ViewProps) {
             </p>
             {report.rows.length > 0 && (
               <p>
-                One number in that file is not the model's. The index standard error is FHFA's own, published
-                beside the expanded index, and it rides in the model's export only because nothing else
-                carries it. It is listed under fhfa above, where it came from.
+                Not every number in that file is the model's. The index standard error is FHFA's own, published
+                beside the expanded index, and the growth over the last four quarters and the five year
+                annualized trend are what the FHFA index did up to the origin, worked out in the export. They
+                ride in the model's export only because nothing else carries them, and each is listed under
+                fhfa above, where it came from.
               </p>
             )}
             <p>

@@ -122,3 +122,49 @@ describe("the compare view", () => {
     expect(page(["10180", "19100"], "wide", { metric: "hpi_19_24" })).not.toContain('id="compare-period"');
   });
 });
+
+// a withheld rate and a rate nobody measured are different claims, and the
+// table cell says which rather than printing the same dash for both
+// fhfa's newest year is usually short, and the build carries the index at
+// as_of for it rather than a mean of the quarters it has
+describe("a partial newest year in the comparison", () => {
+  const partial = (metro: Metro, shift: number): Metro => ({
+    ...metro,
+    series: { hpi: { ...history, as_of: "2026Q2", partial_year: 2026, values: history.values.map((v) => (v === null ? null : v + shift)) } },
+  });
+  const short = { ...data, metros: [partial(SAMPLE.metros[0], 0), partial(SAMPLE.metros[1], 60), SAMPLE.metros[2]] };
+  const markup = render(short, ["10180", "19100"], "wide", {});
+  const text = markup.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+
+  it("calls its point the index at as_of in the footnote, not an annual mean", () => {
+    expect(text).not.toContain("annual mean, the last year through");
+    expect(text).toContain("annual mean through 2025; the 2026 point is the index at 2026Q2.");
+  });
+
+  it("dates the table's last index by the quarter", () => {
+    expect(markup).toContain('<span class="date">2026Q2</span>');
+    expect(markup).not.toContain('<span class="date">2026</span>');
+  });
+});
+
+describe("a decade rate the build withheld, in the compare table", () => {
+  const blank = (metro: Metro): Metro => ({ ...metro, growth: { ...metro.growth, income_14_24: null } });
+  const refused = { ...blank(data.metros[0]), footprint_refused: 0.047 };
+  const unmeasured = blank(data.metros[1]);
+  const withheldData: MapData = { ...data, metros: [refused, unmeasured, data.metros[2]] };
+  const markup = render(withheldData, [refused.cbsa, unmeasured.cbsa], "wide", { metric: "income_14_24" });
+  const cell = (name: string) => {
+    const rowAt = markup.indexOf(`${name}</span></th>`);
+    return markup.slice(rowAt, markup.indexOf("</td>", rowAt));
+  };
+
+  it("says withheld for the refused metro, with the reason on the cell", () => {
+    expect(cell(refused.name)).toContain("withheld");
+    expect(cell(refused.name)).toContain("county lines moved");
+  });
+
+  it("keeps the dash for the metro nobody measured", () => {
+    expect(cell(unmeasured.name)).not.toContain("withheld");
+    expect(cell(unmeasured.name)).toContain(">-");
+  });
+});

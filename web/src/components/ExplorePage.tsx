@@ -136,11 +136,11 @@ export function ExplorePage({ data, route, go, viewport }: ViewProps) {
             <p>The line misses {outliers.map((p) => p.name).join(" and ")} by more than anywhere else on the plot.</p>
           )}
           <p className="explore-caution">
-            Read this as two columns of one table sitting together, and nothing more. The 410 metros here are not 410
-            independent samples: they share one mortgage rate, one national cycle and one set of federal rules, so
-            when they move together a line through them can look far surer than the evidence is. Nothing on this page
-            shows that either metric caused the other, and the pairs are yours to choose, so it is easy to land on a
-            line that means nothing at all.
+            Read this as two columns of one table sitting together, and nothing more. The {model.counts.total} metros here
+            are not {model.counts.total} independent samples: they share one mortgage rate, one national cycle and one
+            set of federal rules, so when they move together a line through them can look far surer than the evidence
+            is. Nothing on this page shows that either metric caused the other, and the pairs are yours to choose, so
+            it is easy to land on a line that means nothing at all.
           </p>
         </div>
 

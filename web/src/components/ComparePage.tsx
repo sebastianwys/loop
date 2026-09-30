@@ -3,7 +3,7 @@ import {
   MAX_COMPARE, MIN_COMPARE, buildCompare, chartSize, chooseMetros, toggleCompare, type CompareEntry,
 } from "../lib/compare";
 import { formatValue } from "../lib/format";
-import { GROUPS, isInherited, visibleDefs } from "../lib/metrics";
+import { GROUPS, WITHHELD, isInherited, visibleDefs, withheldReason, withheldWhy } from "../lib/metrics";
 import { searchMetros } from "../lib/rank";
 import { routeMetric } from "../lib/route";
 import { dateLabel } from "../lib/timeline";
@@ -48,6 +48,13 @@ export function ComparePage({ data, route, go, viewport }: ViewProps) {
   const signed = metric.kind === "diverging";
   const missing = chosen.filter((metro) => !seriesOf(metro));
   const asOf = entries.length > 0 ? dateLabel(entries[0].series.as_of) ?? entries[0].series.as_of : null;
+  // a short newest year is the index at as_of, not an annual mean, the way the
+  // detail panel's note says it
+  const partial = entries.length > 0 ? entries[0].series.partial_year ?? null : null;
+  const lastLabel = (metro: Metro, year: number) => {
+    const series = seriesOf(metro);
+    return series && series.partial_year === year ? dateLabel(series.as_of) ?? series.as_of : year;
+  };
 
   // the slot a metro wears comes off its line, never off where it sits in the
   // list: a metro with no history takes no slot, and the ones after it would
@@ -166,6 +173,9 @@ export function ComparePage({ data, route, go, viewport }: ViewProps) {
                 {chosen.map((metro) => {
                   const line = lineOf(metro.cbsa);
                   const value = metric.accessor(metro);
+                  // a blank the build withheld reads as that, not as a dash
+                  // that looks like nobody measured it
+                  const withheld = value === null ? withheldWhy(metro, metric) : null;
                   return (
                     <tr key={metro.cbsa}>
                       <th scope="row">
@@ -174,13 +184,13 @@ export function ComparePage({ data, route, go, viewport }: ViewProps) {
                           {metro.name}
                         </span>
                       </th>
-                      <td className="v">
-                        {formatValue(value, metric.format, signed)}
+                      <td className="v" title={withheld ? withheldReason(withheld) : undefined}>
+                        {withheld ? <span className="withheld">{WITHHELD}</span> : formatValue(value, metric.format, signed)}
                         {value !== null && isInherited(metro, metric) && <span className="taken">from the parent</span>}
                       </td>
                       <td className="v">
                         {line ? idx(line.last.value) : "-"}
-                        {line && <span className="date">{line.last.year}</span>}
+                        {line && <span className="date">{lastLabel(metro, line.last.year)}</span>}
                       </td>
                       <td className="v">{line ? formatValue(line.growth, "rate", true) : "-"}</td>
                     </tr>
@@ -192,7 +202,10 @@ export function ComparePage({ data, route, go, viewport }: ViewProps) {
         )}
 
         <p className="compare-foot">
-          House prices: FHFA House Price Index, annual mean{asOf ? `, the last year through ${asOf}` : ""}.
+          House prices: FHFA House Price Index,{" "}
+          {partial && asOf
+            ? `annual mean through ${partial - 1}; the ${partial} point is the index at ${asOf}`
+            : `annual mean${asOf ? `, the last year through ${asOf}` : ""}`}.
           {" "}Growth is measured from the first year every metro here has an index.
         </p>
       </div>
