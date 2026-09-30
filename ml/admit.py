@@ -146,14 +146,6 @@ def check_arms(windows):
         raise ValueError(f"fitting through {FIT_END} leaves {unseen} unseen, not just {UNREACHABLE}")
 
 
-# train_one seeds itself from spec.SEED through a default argument bound at
-# import, so reassigning spec.SEED moves the batch order and not the weights.
-# replacing the function is the only way to vary a run end to end
-def with_seed(seed):
-    original = train.seed_everything
-    return original, lambda *_: original(seed)
-
-
 def score_arm(model_name, seq_features, static_features, panel, seed, max_epochs, verbose):
     nets.SEQ_FEATURES = list(seq_features)
     nets.STATIC_FEATURES = list(static_features)
@@ -163,12 +155,14 @@ def score_arm(model_name, seq_features, static_features, panel, seed, max_epochs
 
     y_fit = np.where(labels == "fit", windows.y, np.nan)
     y_score = np.where(labels == "score", windows.y, np.nan)
-    original, patched = with_seed(seed)
-    train.seed_everything = patched
+    # train_one reads spec.SEED when it runs, for the weights and for the batch
+    # order, so one seed moves the whole run. patching seed_everything alone
+    # moved the weights and left all five seeds on the same batches
+    previous, spec.SEED = spec.SEED, seed
     try:
         fitted = train.train_one(model_name, windows, y_fit, y_score, max_epochs=max_epochs, verbose=verbose)
     finally:
-        train.seed_everything = original
+        spec.SEED = previous
 
     history = fitted["history"]
     best = history["val_loss"].idxmin()
@@ -200,7 +194,8 @@ def main():
     default_out = "admission_pairs.csv" if args.pairs else "admission_loo.csv" if args.loo else "admission.csv"
     result_path = spec.ML_ROOT / "results" / (args.out or default_out)
 
-    panel = pd.read_parquet(spec.PANEL_PATH)
+    # the panel as it could have been read at the time, like every scored run
+    panel = spec.realtime(pd.read_parquet(spec.PANEL_PATH))
     shipped_seq, shipped_static = list(nets.SEQ_FEATURES), list(nets.STATIC_FEATURES)
     nets.SEQ_FEATURES, nets.STATIC_FEATURES = list(ALL_SEQ), list(ALL_STATIC)
     windows = nets.build_windows(panel)

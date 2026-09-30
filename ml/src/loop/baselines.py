@@ -159,9 +159,11 @@ def run_model(name, data):
     return predictions, backtest.evaluate(predictions), margins
 
 
+# every baseline is scored on the past, so it reads the panel as it could have
+# been read at the time
 def run_all(panel, figures=True, log=print):
     started = time.perf_counter()
-    data = backtest.dataset(panel)
+    data = backtest.dataset(spec.realtime(panel))
     summaries, margins, predictions = [], [], {}
     for name in MODELS:
         preds, summary, margin = run_model(name, data)
@@ -277,20 +279,23 @@ def design_chart(data_date="2026Q2", start="2005Q1"):
             ax.plot([_x(outcome)], [y + 0.3], marker="o", markersize=3, color=colors[b])
     # the tail of the train block is the validation set, and the block a model
     # fits on ends before it. that line decides what a feature can be taught,
-    # so it belongs on the figure that defines the split
-    ax.vlines(_x(spec.VAL_START) - 0.5, top - 1.7 - len(spec.HORIZONS) + 1, top + 0.3,
-              color=charts.INK2, linewidth=0.9, linestyle=(0, (4, 3)), zorder=4)
-    ax.text(_x(spec.VAL_START) - 0.8, top + 0.55, "fits to here", ha="right", va="center",
+    # so it belongs on the figure that defines the split. the blocks row is
+    # dated by outcome, so there the rule sits on the edge where 2015Q1 begins.
+    # a row of origins crosses it h quarters earlier, between its last fitting
+    # origin and its first validation origin, so a single rule through every
+    # row put the eight quarter validation origins inside the fitting block
+    rule = dict(color=charts.INK2, linewidth=0.9, linestyle=(0, (4, 3)), zorder=4)
+    ax.vlines(_x(spec.VAL_START), top - 0.3, top + 0.3, **rule)
+    for row, h in enumerate(spec.HORIZONS):
+        y = top - 1 - row
+        ax.vlines(_x(spec.shift_quarter(spec.VAL_START, -h)) - 0.125, y - 0.3, y + 0.3, **rule)
+    ax.text(_x(spec.VAL_START) - 0.3, top + 0.55, "fits to here", ha="right", va="center",
             fontsize=8, color=charts.INK2)
-    ax.text(_x(spec.VAL_START) + 0.8, top + 0.55, "validation", ha="left", va="center",
+    ax.text(_x(spec.VAL_START) + 0.3, top + 0.55, "validation", ha="left", va="center",
             fontsize=8, color=charts.INK2)
+    # the outcome decides the block, so every origin lands in one: there is no
+    # gap between blocks to mark
     gap_row = top - len(spec.HORIZONS)
-    ax.annotate(
-        "no origin here: the outcome would land in the next block",
-        (_x("2017Q1"), gap_row), xytext=(_x("2008Q3"), gap_row - 0.75),
-        fontsize=8, color=charts.INK2, va="center",
-        arrowprops=dict(arrowstyle="-", color=charts.AXIS, linewidth=0.6),
-    )
     ax.set_yticks([top] + [top - 1 - i for i in range(len(spec.HORIZONS))])
     ax.set_yticklabels(["blocks"] + [f"{h} quarter{'s' if h > 1 else ''} ahead" for h in spec.HORIZONS])
     ax.tick_params(axis="y", length=0)
@@ -334,7 +339,7 @@ def calibration_chart(summary, data_date):
     models = list(dict.fromkeys(test["model"]))
     fig, axes = charts.figure(
         "Interval coverage before and after conformal calibration",
-        f"share of test outcomes inside the 10 to 90 band, target 0.9; test block, outcomes from {spec.TEST_START}; panel through {data_date}",
+        f"share of test outcomes inside the band: the raw 10 to 90 band aims at 0.8 (dotted), the calibrated band at 0.9 (dashed); test block, outcomes from {spec.TEST_START}; panel through {data_date}",
         size=(10, 6.5), rows=2, cols=2, sharey=True,
     )
     x = np.arange(len(models))
@@ -345,12 +350,15 @@ def calibration_chart(summary, data_date):
         for xi, value in zip(x + 0.18, rows["coverage"]):
             if np.isfinite(value) and value > 0.15:
                 ax.text(xi, value - 0.02, f"{value:.2f}", ha="center", va="top", fontsize=7, color=charts.SURFACE)
+        # the raw band runs from the 10th to the 90th percentile, so it aims at
+        # 0.8. measured against 0.9 it read as twice the miss it is
+        ax.axhline(spec.QUANTILES[-1] - spec.QUANTILES[0], color=charts.INK2, linewidth=0.8, linestyle=":")
         ax.axhline(1 - spec.ALPHA, color=charts.INK2, linewidth=0.8, linestyle="--")
         ax.set_title(f"{h} quarter{'s' if h > 1 else ''} ahead")
         ax.set_xticks(x)
         ax.set_xticklabels([_label(m, "\n") for m in models])
         ax.set_ylim(0, 1.05)
-        ax.set_yticks([0, 0.25, 0.5, 0.75, 0.9, 1.0])
+        ax.set_yticks([0, 0.25, 0.5, 0.8, 0.9, 1.0])
     handles, labels = axes.ravel()[0].get_legend_handles_labels()
     fig.legend(handles, labels, loc="upper right", bbox_to_anchor=(0.99, 0.95), ncol=2)
     fig.subplots_adjust(top=0.85, hspace=0.4)

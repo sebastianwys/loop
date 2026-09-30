@@ -209,8 +209,48 @@ class TestPinball(unittest.TestCase):
         # three valid cells with outcomes 1, 2, 2 against zero predictions
         self.assertAlmostEqual(float(with_gap), 0.5 * (1.0 + 2.0 + 2.0) / 3, places=6)
         self.assertAlmostEqual(float(full), 0.5 * (1.0 + 2.0) / 2, places=6)
+        # an empty batch adds nothing to learn from. nan here would poison the
+        # gradient, and batched_loss weighs a batch by its valid cells, so a
+        # zero never reaches a validation loss on its own
         self.assertEqual(float(nets.pinball_loss(pred, torch.full_like(y, float("nan")))), 0.0)
 
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# an annual input is read once, at the origin, so a window must carry the
+# origin's own row. every fixture held the annual columns null or flat across
+# the year, and nothing failed when a window read the next quarter's value
+class TestTheStaticVectorIsReadAtTheOrigin(unittest.TestCase):
+    def test_every_window_holds_its_origins_value(self):
+        panel = panel_with_starts({"10001": "2000Q1", "10003": "2007Q4"})
+        # a different number in every row, so a read one quarter off cannot match
+        for k, name in enumerate(nets.STATIC_FEATURES):
+            panel[name] = 1000.0 * k + np.arange(len(panel), dtype=float)
+        w = nets.build_windows(panel)
+        rows = panel.set_index(["cbsa_code", "quarter"]).loc[list(zip(w.codes, w.origins)), nets.STATIC_FEATURES]
+        np.testing.assert_array_equal(w.static, rows.to_numpy(dtype=np.float32))
+
+
+# a feature needs two values in the fitting set to have a spread. one value is
+# a mean with no scale, and nothing failed when one was enough to count as seen
+class TestOneFittedValueIsNotSeen(unittest.TestCase):
+    def test_a_column_with_one_value_is_unseen(self):
+        mean, std, seen = nets.moments(np.array([[1.0, np.nan], [2.0, 5.0], [4.0, np.nan]]))
+        self.assertEqual(list(seen), [True, False])
+        self.assertEqual((float(mean[1]), float(std[1])), (0.0, 1.0))
+
+    def test_a_feature_with_one_fitted_value_is_blanked_everywhere(self):
+        w = nets.build_windows(panel_with_starts({"10001": "2000Q1"}))
+        mask = w.origins <= "2005Q4"
+        a = nets.STATIC_FEATURES.index("pop_growth")
+        # one value inside the fitting set, a value in every window outside it
+        w.static[~mask, a] = 0.02
+        w.static[np.nonzero(mask)[0][0], a] = 0.01
+        stats = nets.feature_stats(w, mask)
+        self.assertFalse(stats["static_seen"][a])
+        _, static, _, _ = nets.to_tensors(w, stats)
+        n_static = len(nets.STATIC_FEATURES)
+        self.assertEqual(float(static[:, a].abs().sum()), 0.0)
+        self.assertEqual(float(static[:, n_static + a].sum()), 0.0)

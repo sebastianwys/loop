@@ -42,6 +42,18 @@ CAL_START = "2018Q1"
 CAL_END = "2021Q4"
 TEST_START = "2022Q1"
 
+# the blocks are read off their end dates and the figures off their start
+# dates, so each start has to be the quarter after the end before it. an edit
+# that moves one and not the other stops here instead of moving a caption
+def check_calendar(pairs):
+    for end, start in pairs:
+        if pd.Period(end, freq="Q") + 1 != pd.Period(start, freq="Q"):
+            raise ValueError(f"{start} is not the quarter after {end}")
+
+
+CALENDAR = ((FIT_END, VAL_START), (TRAIN_END, CAL_START), (CAL_END, TEST_START))
+check_calendar(CALENDAR)
+
 # the panel contract. keys, then the columns every consumer may rely on.
 # a producer writes every column, null where a source has no value
 KEY = ["cbsa_code", "quarter"]
@@ -58,11 +70,13 @@ FEATURES = [
     "pop_growth",
     "domestic_migration_rate",
     "income_growth",
-    # fhfa's second estimate of the same metro quarter and the standard error
-    # it publishes with it. both reach back to 1991, which is where the fitting
-    # block lives, unlike every covariate above: unemployment reaches 82 percent
-    # of the fitting samples and the rest under 10. adding these cut the
-    # validation loss from 0.006567 to 0.006204
+    # fhfa's second estimate of the same metro quarter and the relative
+    # standard error it publishes with it, back to 1991. fhfa published them for
+    # 50 metros until its 2026Q1 report and for all 410 since, so the shipped
+    # forecast reads them everywhere and anything scored on the past reads them
+    # only for the 50, through realtime() below. on fhfa's 2026 history they cut
+    # the validation loss from 0.006567 to 0.006204, but 94 percent of that came
+    # from the 360 metros no model could have read before 2026
     "hpi_exp_yoy",
     "hpi_rstderr",
 ]
@@ -98,7 +112,6 @@ CONTEXT = [
     "zori_yoy",
     "listing_price_yoy",
     "inventory_yoy",
-    "hpi_rstderr_rel",
     "hpi_yoy_rel",
     "cpi_yoy",
     "treasury_10y",
@@ -108,6 +121,50 @@ CONTEXT = [
     "quarter_cos",
 ]
 PANEL_COLUMNS = KEY + STATIC + LEVELS + [c for c in FEATURES + CONTEXT if c not in LEVELS]
+
+# the quarter of year y + 1 from which an annual value for year y is known, by
+# when each publisher releases it. pep reaches metros in march, bps posts its
+# annual files in may and bea county income comes out in november. a quarter
+# counts as known when the release lands before the quarter ends
+PUBLISHED_IN_QUARTER = {
+    "pop_growth": 1,
+    "domestic_migration_rate": 1,
+    "permits_per_1000": 2,
+    "income_growth": 4,
+}
+
+# a release that came out later than its source's rule says. bea's 2024 county
+# income came out on 2026-02-05, after the shutdown, so no quarter of 2025 had it
+PUBLISHED_LATE = {"income_growth": {2024: "2026Q1"}}
+
+# fhfa's expanded-data index covered 25 metros from 2012 and 50 from 2018, and
+# reached 410 with the 2026Q1 report (fhfa technical note 2026m01). these are
+# the 50, as this repo pulled them before 2026. a backtest fits on outcomes
+# through 2017 and was chosen in 2018, when these 50 were published with their
+# history back to 1991, so they stay visible at every quarter
+EXPANDED_BEFORE_2026 = frozenset({
+    "11244", "11694", "12054", "12420", "12580", "14454", "15764", "16740", "16984", "17140",
+    "17410", "18140", "19124", "19740", "19804", "22744", "23104", "26420", "26900", "27260",
+    "28140", "29484", "29820", "31084", "33124", "33340", "33460", "33874", "34980", "35004",
+    "35084", "35614", "36084", "36740", "37964", "38060", "38300", "38900", "39300", "40140",
+    "40900", "41180", "41700", "41740", "41940", "42644", "45294", "47260", "47664", "47764",
+})
+EXPANDED_FOR_ALL_FROM = "2026Q1"
+EXPANDED_INPUTS = ("hpi_exp_yoy", "hpi_rstderr")
+
+
+# the panel as a model scored on the past could have read it. the backtest,
+# the band model and every feature experiment read this view, the shipped
+# forecast reads the full panel because fhfa publishes all 410 now. a row is
+# masked by its own quarter, which is conservative for an origin past 2026Q1
+def realtime(panel):
+    out = panel.copy()
+    quarter = pd.PeriodIndex(out["quarter"].astype(str), freq="Q")
+    hidden = ~out["cbsa_code"].astype(str).isin(EXPANDED_BEFORE_2026) & (quarter < to_period(EXPANDED_FOR_ALL_FROM))
+    for column in EXPANDED_INPUTS:
+        if column in out.columns:
+            out.loc[hidden, column] = np.nan
+    return out
 
 # metros the walkthrough charts name, chosen to span the map: the two chicago
 # pieces, sun belt boom towns, a mountain town, a coastal giant and a rust

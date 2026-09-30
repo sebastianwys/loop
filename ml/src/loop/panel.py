@@ -17,7 +17,12 @@ from loop import charts, data, spec
 
 # the map's zillow name matching lives in the bot package at the repo root
 sys.path.insert(0, str(spec.REPO_ROOT))
+from bot import build_map_data as bm  # noqa: E402
 from bot.build_map_data import display_name, load_bls, load_fred, load_zillow, match_zillow  # noqa: E402
+
+# a code omb renumbered without moving a county, old to new, the way the census
+# download and the map read it
+CURRENT_CODE = {old: new for new, old in bm.FORMER_CODE.items()}
 
 FHFA = "fhfa/hpi_master.csv"
 FHFA_EXP = "fhfa/hpi_exp_metro.txt"
@@ -25,6 +30,8 @@ BLS = "bls/laus_metro_unemployment.csv"
 FRED = "fred/mortgage30us.csv"
 NATIONAL = "national/indicators.csv"
 GAZETTEER = "gazetteer/cbsa_centroids.csv"
+MEMBERSHIP = "gazetteer/cbsa_counties_by_vintage.csv"
+COUNTY_POPULATION = "gazetteer/county_population_by_vintage.csv"
 ZILLOW = {"zhvi": "zillow/zhvi_metro.csv", "zori": "zillow/zori_metro.csv"}
 MERGED = spec.REPO_ROOT / "data" / "integrated" / "hpi_census_merged.csv"
 
@@ -87,9 +94,10 @@ def fhfa_series(raw):
 
 # the expanded data index: fhfa's second estimate of the same metro quarter,
 # built from more records, published beside the all-transactions series since
-# 1991. rstderr is the standard error fhfa reports for it, which is the only
-# published measure of how thin a metro's repeat sale record is, and the model
-# has no other way to know that abilene is measured worse than chicago
+# 1991. rstderr is the relative standard error fhfa reports for it, in percent
+# of the index, the only published measure of how thin a metro's repeat sale
+# record is. the model has no other way to know abilene is measured worse
+# than chicago
 def expanded_series(raw):
     out = pd.DataFrame({
         "cbsa_code": raw["city"].astype(str).str.zfill(5).to_numpy(),
@@ -184,19 +192,30 @@ def quarter_mean_of_dates(frame):
     return frame.assign(quarter=quarter.to_numpy()).groupby("quarter", as_index=False)["value"].mean()
 
 
-# the leakage rule. an annual value for year y is only known from the first
-# quarter of y + 1, so it applies to every quarter of y + 1 and later until a
-# newer year arrives. a monthly value is known in its own month and is read at
-# the quarter's last month. a row therefore never sees a number that was
-# published after its quarter
-def annual_as_of(annual, spine):
-    known = periods(spine["quarter"]).year.astype("int64") - 1
+# the leakage rule. an annual value for year y is known from quarter
+# known_quarter of y + 1, which is when its publisher releases it (see
+# spec.PUBLISHED_IN_QUARTER), and applies until a newer year is known. late
+# holds a year released after that rule, with the first quarter it was known.
+# a monthly value is known in its own month and is read at the quarter's last
+# month. a row therefore never sees a number published after its quarter
+def annual_as_of(annual, spine, known_quarter=1, late=None):
+    quarter = periods(spine["quarter"])
+    known = quarter.year.astype("int64") - np.where(quarter.quarter >= known_quarter, 1, 2)
+    for year, first in (late or {}).items():
+        # a quarter before the late release reads the year before it
+        early = (known >= year) & (quarter < spec.to_period(first))
+        known = np.where(early, year - 1, known)
     left = pd.DataFrame({
         "cbsa_code": spine["cbsa_code"].astype(str).to_numpy(),
         "known_year": known,
         "order": np.arange(len(spine)),
     }).sort_values("known_year", kind="stable")
-    right = annual[["cbsa_code", "year", "value"]].dropna(subset=["value"])
+    # a year withheld on purpose stays in as a null, so the quarters that would
+    # read it read nothing rather than an older year carried past it
+    kept = annual["value"].notna()
+    if "withheld" in annual.columns:
+        kept |= annual["withheld"].fillna(False).astype(bool)
+    right = annual.loc[kept, ["cbsa_code", "year", "value"]]
     right = right.assign(cbsa_code=right["cbsa_code"].astype(str), year=right["year"].astype("int64"))
     right = right.sort_values("year", kind="stable")
     merged = pd.merge_asof(left, right, left_on="known_year", right_on="year", by="cbsa_code", direction="backward")
@@ -223,9 +242,9 @@ def split_periods(long):
     return annual, monthly
 
 
-def as_of(long, spine):
+def as_of(long, spine, known_quarter=1, late=None):
     annual, monthly = split_periods(long)
-    return monthly_as_of(monthly, spine).fillna(annual_as_of(annual, spine))
+    return monthly_as_of(monthly, spine).fillna(annual_as_of(annual, spine, known_quarter, late))
 
 
 # a part keyed by metro and quarter, or by quarter alone, laid onto the spine
@@ -260,16 +279,41 @@ def _metric(frame, metric, key):
     return frame.loc[frame["metric"] == metric, ["cbsa_code", key, "value"]].reset_index(drop=True)
 
 
+# population growth across pep's change of vintage compares two census bases
+# and two sets of county lines, so salisbury read -1.18 in 2020. that step is
+# withheld, and the quarters that would read it read nothing
+def within_one_vintage(growth):
+    same = np.asarray([bm.pep_delineation(y) == bm.pep_delineation(y - 1) for y in growth["year"].astype(int)], dtype=bool)
+    return growth.assign(value=growth["value"].where(same), withheld=~same)
+
+
+# bps and pep move to new county lines in different years, so a year's permits
+# and its people can be counted over two different places. a rate is kept
+# where the two footprints agree within the map's tolerance and withheld
+# where they do not
+def one_footprint(permits, membership, county_population):
+    keep = []
+    for code, year in zip(permits["cbsa_code"].astype(str), permits["year"].astype(int)):
+        counted, living = bm.bps_delineation(year), bm.pep_delineation(year)
+        if counted == living:
+            keep.append(True)
+            continue
+        share = bm.footprint_share(membership, county_population, code, max(counted, living), min(counted, living))
+        keep.append(share is None or share <= bm.FOOTPRINT_TOLERANCE)
+    keep = np.asarray(keep, dtype=bool)
+    return permits.assign(value=permits["value"].where(keep), withheld=~keep)
+
+
 # the derived features as one long frame with the metrics.csv shape, so that
 # inheritance and alignment treat every feature alike
-def enrichment_features(metrics):
+def enrichment_features(metrics, membership=None, county_population=None):
     annual, monthly = split_periods(metrics)
     permits = _metric(annual, "permits_units", "year").merge(
         _metric(annual, "pop_estimate", "year"), on=["cbsa_code", "year"], suffixes=("", "_pop"))
     permits["value"] = permits["value"] / permits["value_pop"].where(permits["value_pop"] > 0) * 1000.0
     yearly = {
-        "permits_per_1000": permits,
-        "pop_growth": annual_log_change(_metric(annual, "pop_estimate", "year")),
+        "permits_per_1000": one_footprint(permits, membership, county_population),
+        "pop_growth": within_one_vintage(annual_log_change(_metric(annual, "pop_estimate", "year"))),
         "domestic_migration_rate": _metric(annual, "domestic_migration_rate", "year"),
         "income_growth": annual_log_change(_metric(annual, "bea_income_per_capita", "year")),
         "listing_price_yoy": annual_log_change(_metric(annual, "median_listing_price", "year")),
@@ -281,8 +325,10 @@ def enrichment_features(metrics):
     }
     rows = [f.assign(metric=name, period=f["year"].astype(int).astype(str)) for name, f in yearly.items()]
     rows += [f.assign(metric=name, period=f["month"].astype(str)) for name, f in by_month.items()]
-    out = pd.concat(rows, ignore_index=True)[["cbsa_code", "metric", "period", "value"]]
-    return out.dropna(subset=["value"]).reset_index(drop=True)
+    out = pd.concat(rows, ignore_index=True)
+    out["withheld"] = out["withheld"].fillna(False).astype(bool) if "withheld" in out.columns else False
+    out = out[["cbsa_code", "metric", "period", "value", "withheld"]]
+    return out[out["value"].notna() | out["withheld"]].reset_index(drop=True)
 
 
 # a division with no rows at all for a metric takes its parent metro's rows for
@@ -353,13 +399,12 @@ def zillow_long(wide, lookup):
 
 # --- unemployment ---
 
-# the bls collector keeps the annual averages plus the newest month, so most
-# quarters have no months to average. those take the latest annual average
-# under the annual rule: a year's average is known from the next january
+# the quarter's mean of its published months. the bls file keeps every month
+# since 1990, so a quarter with none is one bls withheld, new orleans and
+# slidell after katrina, and it reads null. falling back to an annual average
+# handed them 2004's 5.3 for three quarters
 def unemployment(bls, spine):
-    quarterly = attach(spine, quarter_mean_of_months(bls), spec.KEY)
-    annual = bls.loc[bls["period"].astype(str) == "M13", ["cbsa_code", "year", "value"]]
-    return quarterly.fillna(annual_as_of(annual, spine))
+    return attach(spine, quarter_mean_of_months(bls), spec.KEY)
 
 
 # --- assembly ---
@@ -379,6 +424,21 @@ def read_metrics(raw_dir, have):
         frame = pd.read_csv(raw_dir / source / "metrics.csv", dtype={"cbsa_code": str, "metric": str, "period": str})
         frame = frame[frame["metric"].isin(metrics)]
         frame = frame.assign(cbsa_code=frame["cbsa_code"].str.zfill(5), value=pd.to_numeric(frame["value"], errors="coerce"))
+
+        # a year a publisher printed under a code omb has since renumbered is the
+        # same metro's year, so cleveland's 2014 under 17460 belongs to 17410.
+        # where both codes carry a year, the row filed under the current code wins
+        current = frame["cbsa_code"].map(lambda code: CURRENT_CODE.get(code, code))
+        renamed = (current != frame["cbsa_code"]).to_numpy()
+        frame = frame.assign(cbsa_code=current, _renamed=renamed)
+        key = ["cbsa_code", "metric", "period"]
+        own = frame.loc[~frame["_renamed"], key].drop_duplicates()
+        beaten = frame[key].merge(own.assign(_own=True), on=key, how="left")["_own"].notna().to_numpy(dtype=bool)
+        frame = frame[~(frame["_renamed"].to_numpy() & beaten)].drop(columns="_renamed")
+
+        # one value per metro, metric and period, or as_of would pick one silently
+        if frame.duplicated(key).any():
+            raise ValueError(f"{source}/metrics.csv holds more than one row for a metro, metric and period")
 
         # a file on disk that hands back nothing for a metric it declares would
         # leave the feature it feeds null in every row, while the manifest still
@@ -419,13 +479,9 @@ def build(raw_dir=spec.RAW_DIR):
         panel["hpi_exp"] = np.nan
         panel["hpi_rstderr"] = np.nan
     panel["hpi_exp_yoy"] = log_diff(panel, "hpi_exp", 4)
-
-    # the standard error as a share of the index it belongs to. fhfa rebases
-    # every metro to 100 at its own start, so the raw error is not comparable
-    # across metros: 5.9 index points is 1.5 percent of an index at 400 and 3.9
-    # percent of one at 150
-    level = pd.Series(np.asarray(panel["hpi_exp"], dtype=float), index=panel.index)
-    panel["hpi_rstderr_rel"] = 100.0 * panel["hpi_rstderr"] / level.where(level > 0)
+    # rstderr is already a share of the index: fhfa calls it the relative
+    # standard error, in percent, median 1.8 across the 410. dividing it by the
+    # index again showed denver 0.05 where fhfa says 0.34
     panel["hpi_yoy_rel"] = relative_to_median(panel, "hpi_yoy")
 
     gazetteer = pd.read_csv(raw_dir / GAZETTEER, dtype=str)
@@ -475,9 +531,13 @@ def build(raw_dir=spec.RAW_DIR):
             panel[column] = np.nan
         panel[f"{column}_yoy"] = log_diff(panel, column, 4)
 
-    features = inherit_from_parent(enrichment_features(read_metrics(raw_dir, have)), parents_of(gazetteer))
+    membership = bm.load_membership(raw_dir / MEMBERSHIP) if (raw_dir / MEMBERSHIP).exists() else None
+    people = bm.load_county_population(raw_dir / COUNTY_POPULATION) if (raw_dir / COUNTY_POPULATION).exists() else None
+    derived = enrichment_features(read_metrics(raw_dir, have), membership, people)
+    features = inherit_from_parent(derived, parents_of(gazetteer))
     for name in ENRICHMENT_FEATURES:
-        panel[name] = as_of(features[features["metric"] == name], spine)
+        panel[name] = as_of(features[features["metric"] == name], spine,
+                            spec.PUBLISHED_IN_QUARTER.get(name, 1), spec.PUBLISHED_LATE.get(name))
     check_features(panel, have)
 
     return contract(panel.sort_values(spec.KEY).reset_index(drop=True))
@@ -521,6 +581,27 @@ def relative(path):
     return str(path.relative_to(spec.REPO_ROOT)) if spec.REPO_ROOT in path.parents else path.name
 
 
+# what the coverage figure shows, for the web page's caption: the years each
+# series spans, which are empty left of the fitting line, and which model
+# inputs a scored run cannot see there. the parquet is not tracked and ci has
+# no venv, so the page reads this from the manifest instead of the panel
+def coverage_summary(panel):
+    table = coverage_table(panel)
+    fit = int(spec.FIT_END[:4])
+    left = table.loc[:, [y for y in table.columns if y <= fit]]
+    series = []
+    for label in table.index:
+        row = table.loc[label]
+        first = next((int(y) for y in table.columns if float(row[y]) > 0), None)
+        series.append({"label": str(label), "first": first, "emptyBeforeFit": bool(float(left.loc[label].max()) == 0.0)})
+    view = spec.realtime(panel)
+    quarter = pd.PeriodIndex(view["quarter"].astype(str), freq="Q")
+    before = view[quarter <= spec.to_period(spec.FIT_END)]
+    unseen = [c for c in spec.FEATURES if c in before.columns and not before[c].notna().any()]
+    return {"fitEnd": spec.FIT_END, "first": int(table.columns.min()), "last": int(table.columns.max()),
+            "series": series, "features": len(spec.FEATURES), "unseen": unseen}
+
+
 def manifest(panel, path, have):
     missing = [name for name, info in have.items() if not info["present"]]
     return {
@@ -536,6 +617,7 @@ def manifest(panel, path, have):
         # goes stale the moment the contract moves, which it has twice
         "features": {"sequence": list(spec.SEQ_FEATURES), "annual": list(spec.STATIC_FEATURES)},
         "context": list(spec.CONTEXT),
+        "coverage": coverage_summary(panel),
         "sources": {name: info["path"] for name, info in have.items() if info["present"]},
         "missing_sources": {name: f"{have[name]['path']} is absent, so {', '.join(ABSENT.get(name, []))} stay null"
                             for name in missing},
@@ -609,7 +691,7 @@ FEATURE_LABELS = {
     "domestic_migration_rate": "net migration per 1,000, annual",
     "income_growth": "income growth, annual",
     "hpi_exp_yoy": "expanded index growth",
-    "hpi_rstderr": "index standard error, points",
+    "hpi_rstderr": "index standard error, percent of the index",
 }
 
 

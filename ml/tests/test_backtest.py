@@ -93,7 +93,6 @@ def synthetic_panel(metros=36, start="1975Q1", end="2026Q2", seed=spec.SEED):
         frame["hpi_exp_yoy"] = _yoy(expanded)
         error = np.where(years >= 1991, 0.3 + 0.12 * i + rng.normal(0.0, 0.05, n), np.nan)
         frame["hpi_rstderr"] = np.abs(error)
-        frame["hpi_rstderr_rel"] = 100.0 * frame["hpi_rstderr"] / expanded
 
         parts.append(frame)
     panel = pd.concat(parts, ignore_index=True)
@@ -410,3 +409,143 @@ class TestLeakageCheckCannotPassVacuously(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# the numbers the readme tables publish, worked by hand on two rows. the no
+# change fixture forecasts zero, where pct(y) - pct(q50) and pct(y - q50)
+# agree, so a wrong mae_pct passed there, and no test read rmse or width
+class TestEvaluateByHand(unittest.TestCase):
+    # one metro grew 10 percent against a median of 5, the other grew the 5 it
+    # was given. the band is 0.02 wide before calibration and 0.12 after
+    @classmethod
+    def setUpClass(cls):
+        q50 = np.log([1.05, 1.05])
+        frame = pd.DataFrame({
+            "model": "m", "cbsa_code": ["10180", "12420"], "quarter": "2022Q1", "horizon": 4, "block": "test",
+            "y": np.log([1.10, 1.05]), "q10": q50 - 0.01, "q50": q50, "q90": q50 + 0.01,
+            "lo": q50 - 0.06, "hi": q50 + 0.06,
+        })
+        cls.row = backtest.evaluate(frame).iloc[0]
+
+    # a miss of 5 points and a hit, so 2.5. the percent of the log gap would
+    # read 100 * (1.10 / 1.05 - 1) / 2, about 2.38
+    def test_mae_pct_is_the_gap_between_realized_and_forecast_growth(self):
+        self.assertAlmostEqual(self.row["mae_pct"], 2.5)
+
+    # one miss of e = log(1.10 / 1.05) and one hit: mae e / 2, rmse e / sqrt 2
+    def test_rmse_is_the_root_mean_square_error_of_the_median(self):
+        e = np.log(1.10 / 1.05)
+        self.assertAlmostEqual(self.row["mae"], e / 2.0)
+        self.assertAlmostEqual(self.row["rmse"], e / np.sqrt(2.0))
+
+    # the width printed beside the coverage is the calibrated band's
+    def test_width_is_the_calibrated_band(self):
+        self.assertAlmostEqual(self.row["width"], 0.12)
+
+
+# the band is published as a 90 percent band. every coverage check is one
+# sided, at least 1 - ALPHA, and moves with the constant, so a band calibrated
+# to 95 percent passed all of them
+class TestTheBandIsANinetyPercentBand(unittest.TestCase):
+    def test_cal_coverage_lands_at_ninety_percent_not_above(self):
+        n = 1000
+        y = np.random.default_rng(spec.SEED).normal(0.0, 0.05, n)
+        frame = pd.DataFrame({
+            "model": "m", "cbsa_code": "10180", "quarter": "2019Q1", "horizon": 4, "block": "cal",
+            "y": y, "q10": -0.01, "q50": 0.0, "q90": 0.01,
+        })
+        after, _ = backtest.calibrate(frame)
+        covered = spec.coverage(after["y"], after["lo"], after["hi"])
+        # the finite sample rank is ceil(1001 * 0.9) = 901 of 1000, less one
+        # if the outcome that sets the margin rounds off its own edge
+        self.assertGreaterEqual(covered, 0.9)
+        self.assertLessEqual(covered, 0.902)
+
+
+# the paired test by hand. the first model's median is the outcome itself, so
+# its error is zero, and the second's error in percent is whatever the fixture
+# says, so each origin's gap is known exactly
+class TestPairedTest(unittest.TestCase):
+    def pair(self, errors_by_origin, horizon=1):
+        first, second = [], []
+        for i, errors in enumerate(errors_by_origin):
+            quarter = str(pd.Period("2022Q1", freq="Q") + i)
+            for m, error in enumerate(errors):
+                row = {"cbsa_code": f"{10000 + m}", "quarter": quarter, "horizon": horizon, "block": "test", "y": 0.0}
+                first.append({**row, "q50": 0.0})
+                second.append({**row, "q50": float(np.log1p(error / 100.0))})
+        return pd.DataFrame(first), pd.DataFrame(second)
+
+    def expected(self, gaps, h):
+        gaps = np.asarray(gaps, dtype=float)
+        T = len(gaps)
+        centred = gaps - gaps.mean()
+        variance = centred @ centred / T
+        for lag in range(1, h):
+            variance += 2.0 * (1.0 - lag / h) * (centred[lag:] @ centred[:-lag]) / T
+        statistic = gaps.mean() / np.sqrt(variance / T) * np.sqrt((T + 1 - 2 * h + h * (h - 1) / T) / T)
+        from scipy import stats
+        return statistic, 2.0 * stats.t.sf(abs(statistic), df=T - 1)
+
+    def test_one_quarter_ahead_matches_the_formula(self):
+        errors = [[1.0], [3.0], [2.0], [5.0], [4.0], [2.5]]
+        first, second = self.pair(errors)
+        row = backtest.paired_test(first, second).iloc[0]
+        statistic, p = self.expected([-e[0] for e in errors], 1)
+        self.assertEqual((row["horizon"], row["origins"], row["samples"]), (1, 6, 6))
+        self.assertAlmostEqual(row["difference"], -np.mean([e[0] for e in errors]))
+        self.assertAlmostEqual(row["statistic"], statistic)
+        self.assertAlmostEqual(row["p_value"], p)
+        self.assertLess(row["p_value"], 0.05)
+
+    # at two quarters consecutive origins share a quarter of outcome, so the
+    # variance takes the first autocovariance at half weight
+    def test_an_overlapping_horizon_counts_its_autocovariance(self):
+        errors = [[1.0], [3.0], [2.0], [5.0], [4.0], [2.5], [0.5], [3.5]]
+        first, second = self.pair(errors, horizon=2)
+        row = backtest.paired_test(first, second).iloc[0]
+        statistic, p = self.expected([-e[0] for e in errors], 2)
+        self.assertAlmostEqual(row["statistic"], statistic)
+        self.assertAlmostEqual(row["p_value"], p)
+
+    # metros at one origin share its shocks, so they are averaged into one gap
+    # before the test: two metros that cancel leave that origin at zero
+    def test_the_metros_at_an_origin_are_one_observation(self):
+        errors = [[2.0, 2.0], [1.0, 5.0], [4.0, 0.0], [3.0, 3.0]]
+        first, second = self.pair(errors)
+        row = backtest.paired_test(first, second).iloc[0]
+        self.assertEqual((row["origins"], row["samples"]), (4, 8))
+        statistic, _ = self.expected([-np.mean(e) for e in errors], 1)
+        self.assertAlmostEqual(row["statistic"], statistic)
+
+    def test_identical_models_differ_by_nothing(self):
+        first, _ = self.pair([[1.0], [2.0], [3.0], [4.0]])
+        row = backtest.paired_test(first, first.copy()).iloc[0]
+        self.assertEqual((row["difference"], row["p_value"]), (0.0, 1.0))
+
+    def test_a_gap_no_origin_disagrees_with_is_certain(self):
+        first, second = self.pair([[2.0], [2.0], [2.0], [2.0]])
+        row = backtest.paired_test(first, second).iloc[0]
+        self.assertAlmostEqual(row["difference"], -2.0)
+        self.assertEqual(row["p_value"], 0.0)
+
+    # only samples both models scored count, and only in the block asked for
+    def test_only_shared_samples_in_the_block_count(self):
+        first, second = self.pair([[1.0], [3.0], [2.0], [5.0], [4.0]])
+        second = second.iloc[1:]
+        first = pd.concat([first, first.assign(block="cal", quarter="2019Q1")], ignore_index=True)
+        row = backtest.paired_test(first, second).iloc[0]
+        self.assertEqual((row["origins"], row["samples"]), (4, 4))
+
+    def test_write_paired_tests_the_shipped_model_against_each_other_one(self):
+        first, second = self.pair([[1.0], [3.0], [2.0], [5.0], [4.0]])
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp)
+            first.assign(model="seqgru").to_parquet(folder / "predictions_seqgru.parquet", index=False)
+            second.assign(model="ridge").to_parquet(folder / "predictions_ridge.parquet", index=False)
+            with mock.patch.object(spec, "BACKTEST_DIR", folder / "backtest"):
+                path = backtest.write_paired("seqgru", ["no_change", "ridge", "seqgru"], folder=folder)
+            out = pd.read_csv(path)
+        self.assertEqual(list(out.columns), backtest.PAIRED_COLUMNS)
+        self.assertEqual(out[["model", "against"]].values.tolist(), [["seqgru", "ridge"]])
+        self.assertLess(out["difference"].iloc[0], 0)

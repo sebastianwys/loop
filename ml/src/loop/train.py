@@ -243,33 +243,6 @@ def mae_pct(y, q50):
     return spec.mae(spec.pct(y), spec.pct(q50))
 
 
-# minimal stand in for backtest.evaluate: one row per block and horizon
-def evaluate(predictions):
-    rows = []
-    for block in ("train", "cal", "test"):
-        for h in spec.HORIZONS:
-            g = predictions[(predictions["block"] == block) & (predictions["horizon"] == h)]
-            if g.empty:
-                continue
-            y = g["y"].to_numpy(dtype=float)
-            row = {
-                "horizon": h,
-                "block": block,
-                "n": int(np.isfinite(y).sum()),
-                "mae": spec.mae(y, g["q50"]),
-                "rmse": spec.rmse(y, g["q50"]),
-                "relative_mae": spec.relative_mae(y, g["q50"]),
-            }
-            for q in spec.QUANTILES:
-                row[f"pinball_{int(round(100 * q))}"] = spec.pinball(y, g[qname(q)], q)
-            row["coverage_raw"] = spec.coverage(y, g["q10"], g["q90"])
-            row["coverage"] = spec.coverage(y, g["lo"], g["hi"])
-            row["width"] = spec.mean_width(g["lo"], g["hi"])
-            row["mae_pct"] = mae_pct(y, g["q50"])
-            rows.append(row)
-    return pd.DataFrame(rows)
-
-
 def best_epoch(history):
     val = history["val_loss"]
     if val.notna().any():
@@ -277,8 +250,10 @@ def best_epoch(history):
     return int(history["epoch"].max())
 
 
+# the published backtest reads the panel as it could have been read at the
+# time, so an input fhfa had not yet published is not in it
 def backtest(panel, model_name, device=None, max_epochs=MAX_EPOCHS, patience=PATIENCE, verbose=True):
-    windows = nets.build_windows(panel)
+    windows = nets.build_windows(spec.realtime(panel))
     sample_splits = splits(windows.origins)
     y_fit = np.where(sample_splits == "fit", windows.y, np.nan)
     y_val = np.where(sample_splits == "val", windows.y, np.nan)
@@ -304,23 +279,28 @@ def latest_origins(windows):
 
 # the shipped forecast: a final model on every realized outcome, and a second
 # model stopped at the calibration end whose margin on the test block is out
-# of sample for the recent era and widens the final model's band
+# of sample for the recent era and widens the final model's band. the final
+# model reads the full panel, since fhfa publishes the expanded index for all
+# 410 metros now. the second reads the panel as it could have been read at the
+# time, so its margin comes from real time inputs and the band it sets is the
+# conservative one
 def forecast_models(panel, model_name, epochs=None, device=None, verbose=True):
     if epochs is None:
         _, history = fit_and_score(panel, model_name, device=device, verbose=verbose)
         epochs = best_epoch(history)
     windows = nets.build_windows(panel)
+    past = nets.build_windows(spec.realtime(panel))
     sample_splits = splits(windows.origins)
     realized = ~np.isnan(windows.y)
     outcome_t = windows.t[:, None] + np.asarray(spec.HORIZONS)[None, :]
     through_cal = realized & (outcome_t <= windows.index_of(spec.CAL_END))
 
     final = train_one(model_name, windows, np.where(realized, windows.y, np.nan), None, device, epochs=epochs, verbose=verbose)
-    second = train_one(model_name, windows, np.where(through_cal, windows.y, np.nan), None, device, epochs=epochs, verbose=verbose)
+    second = train_one(model_name, past, np.where(through_cal, past.y, np.nan), None, device, epochs=epochs, verbose=verbose)
 
     test = (sample_splits == "test") & realized
     idx = np.nonzero(test.any(axis=1))[0]
-    held_out = predictions_frame(windows, sample_splits, predict(second["model"], second["inputs"], idx, second["device"]), idx)
+    held_out = predictions_frame(past, sample_splits, predict(second["model"], second["inputs"], idx, second["device"]), idx)
     margin = margins(held_out, "test")
 
     # a horizon with nothing realized on the test block has no conformal sample,
@@ -464,7 +444,6 @@ def synthetic_panel(n_metros=12, start="1995Q1", end="2026Q2", seed=spec.SEED):
         }))
     panel = pd.concat(frames, ignore_index=True)
     panel["hpi_exp_yoy"] = safe_log_diff(panel, "hpi_exp", 4)
-    panel["hpi_rstderr_rel"] = 100.0 * panel["hpi_rstderr"] / panel["hpi_exp"].where(panel["hpi_exp"] > 0)
     panel["hpi_yoy_rel"] = panel["hpi_yoy"] - panel.groupby("quarter")["hpi_yoy"].transform("median")
 
     # a column added to the contract and not here dies on a bare KeyError in
@@ -627,7 +606,11 @@ def plot_comparison(summaries, baselines, when):
     placed = spread(ends, 0.045 * top)
     for (name, x, y), color, at in zip(lines, charts.SERIES, placed):
         ax.plot(x, y, color=color, marker="o", markersize=4)
-        ax.annotate(name, (x[-1], at), xytext=(8, 0), textcoords="offset points", va="center", fontsize=8, color=charts.INK2)
+        # pushing the labels apart set gbm's beside the metro mean line, so each
+        # label takes its line's colour and a leader back to where the line ends
+        ax.annotate(name, (x[-1], y[-1]), xytext=(x[-1] + 0.45, at), textcoords="data", va="center", fontsize=8,
+                    color=color, annotation_clip=False,
+                    arrowprops=dict(arrowstyle="-", color=color, linewidth=0.6, shrinkA=0, shrinkB=3))
     ax.set_ylim(0, max(top * 1.1, placed.max() + 0.05 * top))
     ax.set_xticks(list(spec.HORIZONS))
     ax.set_xlabel("horizon, quarters ahead")
@@ -696,6 +679,10 @@ def run(panel=None, device=None, max_epochs=MAX_EPOCHS, patience=PATIENCE, verbo
     baseline_path = spec.BACKTEST_DIR / "baselines.csv"
     baselines = pd.read_csv(baseline_path, dtype={"model": str}) if baseline_path.exists() else None
     plot_comparison({n: results[n]["summary"] for n in MODELS}, baselines, when)
+    # a lower mean error can be luck, so the shipped network is tested against
+    # every other scored model on the samples both scored
+    against = list(dict.fromkeys(baselines["model"])) if baselines is not None else []
+    shared.write_paired(shipped, against + [n for n in MODELS if n != shipped])
     plot_distribution(forecasts[shipped], shipped, when)
     return {"shipped": shipped, "results": results, "forecasts": forecasts, "source": source}
 

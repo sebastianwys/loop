@@ -270,31 +270,32 @@ class TestAsOf(unittest.TestCase):
 
 
 class TestUnemployment(unittest.TestCase):
-    def test_months_first_then_the_lagged_annual_average(self):
+    # the annual average, m13, is not a month and never stands in for one
+    def test_a_quarter_is_the_mean_of_its_published_months(self):
         bls = pd.DataFrame({
             "cbsa_code": ["x"] * 5, "year": [2019, 2020, 2021, 2021, 2021],
             "period": ["M13", "M13", "M07", "M08", "M09"], "value": [3.0, 9.0, 5.0, 6.0, 7.0],
         })
         out = panel.unemployment(bls, spine(["x"], ["2019Q4", "2020Q2", "2021Q1", "2021Q3"])).tolist()
-        self.assertTrue(np.isnan(out[0]))
-        self.assertEqual(out[1:], [3.0, 9.0, 6.0])
+        self.assertTrue(np.isnan(out[0]) and np.isnan(out[1]) and np.isnan(out[2]))
+        self.assertEqual(out[3], 6.0)
 
-    # a quarter with some months uses them; only a quarter with none at all
-    # falls back to the annual rule
-    def test_only_a_quarter_with_no_months_takes_the_annual_average(self):
+    # a quarter with some months uses them. one with none is a quarter bls
+    # withheld, and it reads null rather than an older year's average
+    def test_a_quarter_bls_withheld_reads_null(self):
         bls = pd.DataFrame({
-            "cbsa_code": ["x"] * 5, "year": [2020, 2021, 2021, 2021, 2021],
-            "period": ["M13", "M07", "M08", "M09", "M11"], "value": [9.0, 5.0, 6.0, 7.0, 3.3],
+            "cbsa_code": ["x"] * 5, "year": [2004, 2005, 2005, 2005, 2006],
+            "period": ["M13", "M07", "M08", "M09", "M07"], "value": [5.3, 5.0, 6.0, 7.0, 4.0],
         })
-        out = panel.unemployment(bls, spine(["x"], ["2021Q3", "2021Q4", "2022Q1"])).tolist()
+        out = panel.unemployment(bls, spine(["x"], ["2005Q3", "2005Q4", "2006Q1", "2006Q3"])).tolist()
         self.assertEqual(out[0], 6.0)
-        self.assertEqual(out[1], 3.3)
-        self.assertEqual(out[2], 9.0)
+        self.assertTrue(np.isnan(out[1]) and np.isnan(out[2]))
+        self.assertEqual(out[3], 4.0)
 
 
 class TestEnrichment(unittest.TestCase):
     def metrics(self):
-        rows = long_rows("x", "pop_estimate", {"2019": 1000.0, "2020": 1100.0})
+        rows = long_rows("x", "pop_estimate", {"2019": 1000.0, "2020": 1100.0, "2021": 1210.0})
         rows += long_rows("x", "permits_units", {"2020": 22.0})
         rows += long_rows("x", "bea_income_per_capita", {"2019": 50.0, "2020": 55.0})
         rows += long_rows("x", "domestic_migration_rate", {"2020": 3.5})
@@ -309,8 +310,11 @@ class TestEnrichment(unittest.TestCase):
     def test_derived_features(self):
         features = panel.enrichment_features(self.metrics())
         self.assertAlmostEqual(self.value(features, "permits_per_1000", "2020"), 20.0)
-        self.assertAlmostEqual(self.value(features, "pop_growth", "2020"), np.log(1.1))
+        self.assertAlmostEqual(self.value(features, "pop_growth", "2021"), np.log(1.1))
         self.assertIsNone(self.value(features, "pop_growth", "2019"))
+        # 2019 is pep's vintage 2019 and 2020 its vintage 2025, two census bases
+        # and two sets of county lines, so the step between them is not growth
+        self.assertTrue(np.isnan(self.value(features, "pop_growth", "2020")))
         self.assertAlmostEqual(self.value(features, "income_growth", "2020"), np.log(1.1))
         self.assertAlmostEqual(self.value(features, "domestic_migration_rate", "2020"), 3.5)
         self.assertAlmostEqual(self.value(features, "listing_price_yoy", "2020"), np.log(1.05))
@@ -343,16 +347,21 @@ class TestEnrichment(unittest.TestCase):
         # and no year of the parent's own series leaked in
         self.assertNotIn(9_435_971.0, set(mine["value"]))
 
+    # in the order build() runs, derive then inherit, a growth is measured inside
+    # one geography and a division without its own takes the parent's whole.
+    # it never divides the division's people by the parent's
     def test_the_derived_growth_never_crosses_the_seam(self):
         long = pd.DataFrame({
             "cbsa_code": ["p", "p", "d"],
             "metric": ["pop_estimate"] * 3,
-            "period": ["2019", "2020", "2020"],
+            "period": ["2021", "2022", "2022"],
             "value": [9_435_971.0, 9_500_000.0, 718_960.0],
         })
-        features = panel.enrichment_features(panel.inherit_from_parent(long, {"d": "p"}))
+        features = panel.inherit_from_parent(panel.enrichment_features(long), {"d": "p"})
         growth = features[(features["cbsa_code"] == "d") & (features["metric"] == "pop_growth")]
-        self.assertTrue(growth.empty or growth["value"].isna().all())
+        self.assertEqual(list(growth["period"]), ["2022"])
+        self.assertAlmostEqual(float(growth["value"].iloc[0]), np.log(9_500_000.0 / 9_435_971.0))
+        self.assertNotIn(np.log(718_960.0 / 9_435_971.0), set(growth["value"]))
 
     def test_division_takes_missing_metrics_from_its_parent(self):
         long = pd.DataFrame({
@@ -609,3 +618,174 @@ class TestARebuildSaysWhatItReplaced(unittest.TestCase):
         lines = panel.compare(self.frame.iloc[:-5], self.path)
         self.assertEqual(len(lines), 1)
         self.assertIn("shape", lines[0])
+
+
+class TestPublicationLag(unittest.TestCase):
+    def spine(self, quarters):
+        return pd.DataFrame({"cbsa_code": ["x"] * len(quarters), "quarter": quarters})
+
+    def annual(self):
+        return pd.DataFrame({"cbsa_code": ["x"] * 3, "year": [2020, 2021, 2022], "value": [1.0, 2.0, 3.0]})
+
+    def test_the_first_quarter_rule_is_the_default(self):
+        out = panel.annual_as_of(self.annual(), self.spine(["2021Q4", "2022Q1", "2022Q3"]))
+        self.assertEqual(list(out), [1.0, 2.0, 2.0])
+
+    # bps posts its annual files in may
+    def test_a_second_quarter_release_is_not_read_in_the_first(self):
+        out = panel.annual_as_of(self.annual(), self.spine(["2022Q1", "2022Q2"]), known_quarter=2)
+        self.assertEqual(list(out), [1.0, 2.0])
+
+    # bea publishes year y in november of y + 1
+    def test_a_fourth_quarter_release_is_not_read_before_the_fourth_quarter(self):
+        out = panel.annual_as_of(self.annual(), self.spine(["2022Q1", "2022Q3", "2022Q4", "2023Q1"]), known_quarter=4)
+        self.assertEqual(list(out), [1.0, 1.0, 2.0, 2.0])
+
+    # bea's 2024 came out on 2026-02-05, so no quarter of 2025 had it
+    def test_a_late_release_is_read_from_the_quarter_it_came_out(self):
+        annual = pd.DataFrame({"cbsa_code": ["x", "x"], "year": [2023, 2024], "value": [5.0, 6.0]})
+        quarters = ["2025Q3", "2025Q4", "2026Q1", "2026Q2"]
+        out = panel.annual_as_of(annual, self.spine(quarters), known_quarter=4, late={2024: "2026Q1"})
+        self.assertEqual(list(out), [5.0, 5.0, 6.0, 6.0])
+
+
+class TestSeams(unittest.TestCase):
+    def test_growth_across_the_pep_vintage_change_is_withheld(self):
+        pop = pd.DataFrame({"cbsa_code": ["x"] * 4, "year": [2018, 2019, 2020, 2021], "value": [100.0, 101.0, 90.0, 91.0]})
+        out = panel.within_one_vintage(panel.annual_log_change(pop)).set_index("year")
+        self.assertEqual(sorted(out.index[out["value"].notna()]), [2019, 2021])
+        self.assertEqual(list(out.index[out["withheld"]]), [2020])
+
+    # a withheld year reads as nothing, it does not hand its quarters the year
+    # before it
+    def test_a_withheld_year_is_not_carried_past(self):
+        annual = pd.DataFrame({"cbsa_code": ["x"] * 3, "year": [2019, 2020, 2021], "value": [1.0, np.nan, 3.0],
+                               "withheld": [False, True, False]})
+        spine = pd.DataFrame({"cbsa_code": ["x"] * 3, "quarter": ["2020Q4", "2021Q2", "2022Q1"]})
+        out = panel.annual_as_of(annual, spine)
+        self.assertEqual(out.iloc[0], 1.0)
+        self.assertTrue(np.isnan(out.iloc[1]))
+        self.assertEqual(out.iloc[2], 3.0)
+
+    # 27180 took in a county between the two delineations and 10180 did not.
+    # 2019 is the one year bps and pep share a delineation
+    def test_permits_over_the_people_of_other_counties_are_left_out(self):
+        membership = {"2014": {"27180": frozenset({"a", "b"}), "10180": frozenset({"c"})},
+                      "2019": {"27180": frozenset({"a", "b", "g"}), "10180": frozenset({"c"})}}
+        people = {v: {"a": 50.0, "b": 50.0, "c": 100.0, "g": 40.0} for v in ("2014", "2019")}
+        permits = pd.DataFrame({"cbsa_code": ["27180", "10180", "27180"], "year": [2016, 2016, 2019], "value": [1.0, 2.0, 3.0]})
+        out = panel.one_footprint(permits, membership, people)
+        kept = out[out["value"].notna()]
+        self.assertEqual(list(zip(kept["cbsa_code"], kept["year"])), [("10180", 2016), ("27180", 2019)])
+        self.assertEqual(list(zip(out.loc[out["withheld"], "cbsa_code"], out.loc[out["withheld"], "year"])), [("27180", 2016)])
+
+    def test_a_county_set_nobody_published_is_not_a_change(self):
+        permits = pd.DataFrame({"cbsa_code": ["27180"], "year": [2016], "value": [1.0]})
+        self.assertEqual(list(panel.one_footprint(permits, None, None)["value"]), [1.0])
+
+
+# cleveland was 17460 until the july 2023 delineation made it 17410 on the
+# same counties
+class TestRenumberedCodes(unittest.TestCase):
+    def read(self, rows):
+        with tempfile.TemporaryDirectory() as tmp:
+            raw = Path(tmp)
+            (raw / "pep").mkdir()
+            pd.DataFrame(rows).to_csv(raw / "pep" / "metrics.csv", index=False)
+            have = {source: {"present": source == "pep"} for source in panel.ENRICHMENT}
+            return panel.read_metrics(raw, have)
+
+    def rows(self, code_2014, extra=()):
+        rows = long_rows(code_2014, "pop_estimate", {"2014": 10.0}) + long_rows("17410", "pop_estimate", {"2024": 20.0})
+        rows += long_rows("17410", "domestic_migration_rate", {"2024": 2.0})
+        return rows + list(extra)
+
+    def test_a_year_filed_under_a_retired_code_joins_the_current_one(self):
+        out = self.read(self.rows("17460"))
+        pop = out[out["metric"] == "pop_estimate"]
+        self.assertEqual(sorted(zip(pop["cbsa_code"], pop["period"])), [("17410", "2014"), ("17410", "2024")])
+
+    def test_where_both_codes_carry_a_year_the_current_code_wins(self):
+        out = self.read(self.rows("17460", long_rows("17410", "pop_estimate", {"2014": 11.0})))
+        pop = out[(out["metric"] == "pop_estimate") & (out["period"] == "2014")]
+        self.assertEqual(list(pop["value"]), [11.0])
+
+    def test_a_repeated_row_under_one_code_stops_the_read(self):
+        with self.assertRaises(ValueError):
+            self.read(self.rows("17410", long_rows("17410", "pop_estimate", {"2014": 12.0})))
+
+
+# build() wires the pure functions above together, and only the real files ran
+# it. a column built from the wrong series, over the wrong span or a year early
+# passed, since no test read those columns back off a built panel. this builds
+# one from a raw folder small enough to check by hand
+class TestBuildOnAHandMadeRawFolder(unittest.TestCase):
+    QUARTERS = [str(q) for q in pd.period_range("2016Q1", "2021Q4", freq="Q")]
+    MONTHS = pd.period_range("2015-01", "2021-12", freq="M")
+    # pep's estimates, its 2020 change of base included, and a migration rate
+    # that names its own year
+    POP = {2014: 1000.0, 2015: 1010.0, 2016: 1030.0, 2017: 1060.0, 2018: 1100.0, 2019: 1150.0, 2020: 1000.0,
+           2021: 1010.0}
+    MIGRATION = {year: float(year - 2013) for year in range(2014, 2022)}
+
+    @classmethod
+    def setUpClass(cls):
+        with tempfile.TemporaryDirectory() as tmp:
+            raw = Path(tmp)
+            for folder in ("fhfa", "gazetteer", "zillow", "pep"):
+                (raw / folder).mkdir()
+            # the all-transactions index grows 1 percent a quarter and the
+            # expanded one 2, so the two yearly changes cannot be mistaken
+            fhfa, expanded = [], []
+            for i, q in enumerate(cls.QUARTERS):
+                p = spec.to_period(q)
+                fhfa.append({**FHFA_ROW, "place_id": "10180", "yr": p.year, "period": p.quarter,
+                             "index_nsa": 100.0 * 1.01 ** i})
+                expanded.append({"city": "10180", "yr": p.year, "qtr": p.quarter, "index_nsa": 100.0 * 1.02 ** i,
+                                 "rstderr": 1.5})
+            pd.DataFrame(fhfa).to_csv(raw / panel.FHFA, index=False)
+            pd.DataFrame(expanded).to_csv(raw / panel.FHFA_EXP, sep="\t", index=False)
+            pd.DataFrame({"cbsa_code": ["10180"], "name": ["Abilene, TX Metro Area"], "cbsa_type": ["1"],
+                          "parent_cbsa": [None]}).to_csv(raw / panel.GAZETTEER, index=False)
+            # zillow's home value index grows 1 percent a month
+            zhvi = {str(m.end_time.date()): 1000.0 * 1.01 ** k for k, m in enumerate(cls.MONTHS)}
+            pd.DataFrame([{"RegionName": "Abilene, TX", "RegionType": "msa", **zhvi}]).to_csv(
+                raw / panel.ZILLOW["zhvi"], index=False)
+            rows = long_rows("10180", "pop_estimate", {str(y): v for y, v in cls.POP.items()})
+            rows += long_rows("10180", "domestic_migration_rate", {str(y): v for y, v in cls.MIGRATION.items()})
+            pd.DataFrame(rows).to_csv(raw / "pep" / "metrics.csv", index=False)
+            # the integrated csv at the repo root is not part of this folder
+            merged, panel.MERGED = panel.MERGED, raw / "absent.csv"
+            try:
+                cls.frame = panel.build(raw).set_index(["cbsa_code", "quarter"])
+            finally:
+                panel.MERGED = merged
+
+    def at(self, column, quarter):
+        return float(self.frame.loc[("10180", quarter), column])
+
+    def test_the_expanded_change_is_taken_on_the_expanded_index(self):
+        self.assertAlmostEqual(self.at("hpi_exp_yoy", "2018Q1"), 4 * np.log(1.02))
+        self.assertAlmostEqual(self.at("hpi_yoy", "2018Q1"), 4 * np.log(1.01))
+
+    # read at each quarter's last month, so twelve months apart
+    def test_the_zillow_change_is_over_four_quarters(self):
+        self.assertAlmostEqual(self.at("zhvi_yoy", "2018Q1"), 12 * np.log(1.01))
+
+    # a year's value is known from the first quarter of the next and not before
+    def test_an_annual_value_reaches_the_panel_the_year_after(self):
+        self.assertEqual(self.at("domestic_migration_rate", "2018Q4"), self.MIGRATION[2017])
+        self.assertEqual(self.at("domestic_migration_rate", "2019Q1"), self.MIGRATION[2018])
+        self.assertAlmostEqual(self.at("pop_growth", "2019Q1"), np.log(self.POP[2018] / self.POP[2017]))
+        self.assertAlmostEqual(self.at("pop_growth", "2019Q4"), np.log(self.POP[2018] / self.POP[2017]))
+
+
+class TestRenumberedDuplicates(TestRenumberedCodes):
+    # two rows under the retired code for one year are a duplicate like any
+    # other, not a pair to drop because they were renamed
+    def test_a_repeated_row_under_a_retired_code_stops_the_read(self):
+        rows = long_rows("17460", "pop_estimate", {"2014": 10.0, "2013": 9.0})
+        rows += long_rows("17460", "pop_estimate", {"2014": 10.5})
+        rows += long_rows("17410", "domestic_migration_rate", {"2024": 2.0})
+        with self.assertRaises(ValueError):
+            self.read(rows)

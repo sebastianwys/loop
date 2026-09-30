@@ -4,6 +4,7 @@
 
 import numpy as np
 import pandas as pd
+from scipy import stats
 
 from loop import spec
 
@@ -17,6 +18,7 @@ SUMMARY_COLUMNS = [
     "pinball_10", "pinball_50", "pinball_90", "coverage_raw", "coverage", "width", "mae_pct",
 ]
 MARGIN_COLUMNS = ["model", "horizon", "n_cal", "margin", "crossed"]
+PAIRED_COLUMNS = ["model", "against", "horizon", "origins", "samples", "difference", "statistic", "p_value"]
 BLOCKS = ("train", "cal", "test")
 
 
@@ -209,6 +211,66 @@ def evaluate(predictions, model=None):
     position = out["block"].map({b: i for i, b in enumerate(BLOCKS)})
     out = out.assign(_m=rank, _b=position).sort_values(["_m", "horizon", "_b"]).drop(columns=["_m", "_b"])
     return out.reset_index(drop=True)
+
+
+# whether one model's median really is closer than another's, one row per
+# horizon over the samples both scored. a lower mean error can be luck, and
+# the samples are not independent draws: the metros at one origin share its
+# shocks, and at h quarters consecutive origins share h - 1 quarters of
+# outcome. so the error gap is averaged across metros at each origin first,
+# and that series of origins gets a diebold mariano test with a newey west
+# variance of h - 1 lags and the small sample correction of harvey, leybourne
+# and newbold, read off a t with one fewer degree of freedom than there are
+# origins. difference is the first model's error less the second's, so a
+# negative one means the first is closer
+def paired_test(first, second, block="test"):
+    key = ["cbsa_code", "quarter", "horizon"]
+    a = first[first["block"] == block].dropna(subset=["y", "q50"])
+    b = second[second["block"] == block].dropna(subset=["y", "q50"])
+    both = a.merge(b, on=key, suffixes=("_a", "_b"))
+    gap = (np.abs(spec.pct(both["y_a"]) - spec.pct(both["q50_a"]))
+           - np.abs(spec.pct(both["y_b"]) - spec.pct(both["q50_b"])))
+    both = both.assign(gap=gap)
+    rows = []
+    for horizon, g in both.groupby("horizon", sort=True):
+        h = int(horizon)
+        series = g.groupby("quarter", sort=True)["gap"].mean().to_numpy(dtype=float)
+        T = len(series)
+        mean = float(series.mean())
+        centred = series - mean
+        variance = float(centred @ centred) / T
+        for lag in range(1, min(h, T)):
+            variance += 2.0 * (1.0 - lag / h) * float(centred[lag:] @ centred[:-lag]) / T
+        correction = (T + 1 - 2 * h + h * (h - 1) / T) / T
+        if T < 3 or correction <= 0:
+            statistic, p = float("nan"), float("nan")
+        elif variance <= 0:
+            # the same gap at every origin: none at all is no difference, and
+            # any other is one no origin disagrees with
+            statistic = 0.0 if mean == 0 else float(np.copysign(np.inf, mean))
+            p = 1.0 if mean == 0 else 0.0
+        else:
+            statistic = mean / np.sqrt(variance / T) * np.sqrt(correction)
+            p = float(2.0 * stats.t.sf(abs(statistic), df=T - 1))
+        rows.append({"horizon": h, "origins": T, "samples": int(len(g)),
+                     "difference": mean, "statistic": float(statistic), "p_value": p})
+    return pd.DataFrame(rows, columns=PAIRED_COLUMNS[2:])
+
+
+# the shipped network against every other model the backtest scored, read off
+# the predictions each run wrote, so a retrain rewrites it with the rest
+def write_paired(shipped, against, folder=None):
+    folder = spec.ML_ROOT / "data" if folder is None else folder
+    mine = pd.read_parquet(folder / f"predictions_{shipped}.parquet")
+    frames = []
+    for name in against:
+        path = folder / f"predictions_{name}.parquet"
+        if name == shipped or not path.exists():
+            continue
+        rows = paired_test(mine, pd.read_parquet(path))
+        frames.append(rows.assign(model=shipped, against=name))
+    out = pd.concat(frames, ignore_index=True)[PAIRED_COLUMNS] if frames else pd.DataFrame(columns=PAIRED_COLUMNS)
+    return write_summary(out, "paired")
 
 
 def write_summary(frame, name):

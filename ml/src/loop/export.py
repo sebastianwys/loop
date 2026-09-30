@@ -12,10 +12,10 @@ import pandas as pd
 
 from loop.spec import FORECAST_DIR, KEY, ML_ROOT, PANEL_PATH, TARGET_BASE, pct, quarter_end, shift_quarter
 
-# fhfa's own standard error for the metro's index at the origin, as a share of
-# that index. it is not a forecast, it rides along because the map reads this
-# file and nothing else carries it
-INDEX_ERROR = "hpi_rstderr_rel"
+# fhfa's own relative standard error for the metro's index at the origin, which
+# fhfa publishes as a percent of the index. it is not a forecast, it rides along
+# because the map reads this file and nothing else carries it
+INDEX_ERROR = "hpi_rstderr"
 
 DATA_DIR = ML_ROOT / "data"
 FORECASTS_PATH = FORECAST_DIR / "forecasts.csv"

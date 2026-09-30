@@ -213,3 +213,49 @@ class TestABlockWithNothingInItSaysSo(unittest.TestCase):
             band = baselines._band(residuals)
             self.assertEqual(len(band), 2)
             self.assertTrue(np.isnan(band).all())
+
+
+# the alpha search fits on origins whose outcome lands by the cut and scores
+# the check in the fit part's units, the transform the chosen model will use.
+# the test above bounds the fit at 0.8 of the train rows, which a fit leaking a
+# year past the cut also met, and nothing looked at the check at all
+class TestTheAlphaSearchIsScoredLikeTheModel(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        data = backtest.dataset(synthetic_panel(), horizons=(4,))
+        cls.calls = []
+        real = baselines._matrix
+
+        def spy(frame, prep=None):
+            X, out = real(frame, prep)
+            cls.calls.append((frame.copy(), X, out))
+            return X, out
+
+        with mock.patch.object(baselines, "_matrix", spy):
+            baselines._pick_alpha(data[data["block"] == "train"], 4)
+
+    def test_no_fit_outcome_lands_after_the_first_check_origin(self):
+        (fit, _, _), (check, _, _) = self.calls
+        last_outcome = max(spec.to_period(q) + 4 for q in fit["quarter"].unique())
+        self.assertLess(last_outcome, spec.to_period(check["quarter"].min()))
+
+    def test_the_check_is_filled_and_scaled_with_the_fit_parts_statistics(self):
+        (_, _, prep), (check, X_check, _) = self.calls
+        expected, _ = baselines._matrix(check, dict(prep))
+        np.testing.assert_array_equal(X_check, expected)
+
+
+# ridge fills and scales every row it scores with the train block's medians and
+# scaler. the outcome leak test moves only y outside train, so a leak through
+# the feature matrix was invisible to it
+class TestRidgeIsScaledOnTheTrainBlockOnly(unittest.TestCase):
+    def test_features_outside_train_do_not_move_a_train_row(self):
+        data = backtest.dataset(synthetic_panel(), horizons=(4,))
+        outside = (data["block"] != "train").to_numpy()
+        moved = data.copy()
+        moved.loc[outside, backtest.FEATURE_COLUMNS] *= 1000.0
+        before, after = baselines.ridge(data), baselines.ridge(moved)
+        train = (before["block"] == "train").to_numpy()
+        self.assertTrue(train.any() and not train.all())
+        for column in ("q10", "q50", "q90"):
+            np.testing.assert_allclose(after.loc[train, column], before.loc[train, column], err_msg=column)

@@ -22,9 +22,7 @@ STATIC = ["permits_per_1000", "pop_growth", "domestic_migration_rate", "income_g
 # the readme's table reads in
 SETS = {
     "seven series, the shipped set": BASE + ["hpi_exp_yoy", "hpi_rstderr"],
-    "plus both forms of the index error": BASE + ["hpi_exp_yoy", "hpi_rstderr", "hpi_rstderr_rel"],
     "expanded index, no error": BASE + ["hpi_exp_yoy"],
-    "the error as a percent of the index": BASE + ["hpi_exp_yoy", "hpi_rstderr_rel"],
     "five series, no expanded index": BASE,
     "plus the metro against the cross section": BASE + ["hpi_yoy_rel"],
     "plus the calendar quarter": BASE + ["quarter_sin", "quarter_cos"],
@@ -46,7 +44,8 @@ def validation_loss(model_name, seq_features, panel):
 
 def main():
     model_name = sys.argv[1] if len(sys.argv) > 1 else "seqgru"
-    panel = pd.read_parquet(spec.PANEL_PATH)
+    # the panel as it could have been read at the time, like every scored run
+    panel = spec.realtime(pd.read_parquet(spec.PANEL_PATH))
     shipped = list(nets.SEQ_FEATURES)
     rows = []
     for label, features in SETS.items():

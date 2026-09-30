@@ -30,10 +30,10 @@ def panel_frame():
     start, knee, end = math.log(100.0), math.log(150.0 / 1.06), math.log(150.0)
     for i, q in enumerate(quarters(21)):
         level = start + (knee - start) * i / 16 if i <= 16 else knee + (end - knee) * (i - 16) / 4
-        rows.append({"cbsa_code": "10180", "quarter": q, "log_hpi": level, "hpi_rstderr_rel": 0.5 + 0.1 * i})
+        rows.append({"cbsa_code": "10180", "quarter": q, "log_hpi": level, "hpi_rstderr": 0.5 + 0.1 * i})
     for i, q in enumerate(quarters(6)):
         rows.append({"cbsa_code": "00420", "quarter": q, "log_hpi": math.log(100.0) + math.log(1.03) * (i - 1) / 4,
-                     "hpi_rstderr_rel": 2.0 + 0.1 * i})
+                     "hpi_rstderr": 2.0 + 0.1 * i})
     return pd.DataFrame(rows)
 
 
@@ -306,3 +306,22 @@ class TestTheManifestDoesNotMoveForItsOwnStamp(unittest.TestCase):
             path.write_text("{not json")
             export.write_manifest([self.entry()], path)
             self.assertEqual(json.loads(path.read_text()), [self.entry()])
+
+
+# every frame build_metrics joins is keyed by five digit codes before the join.
+# only the forecast codes were ever cast in a test, so a panel or a prediction
+# frame read with integer codes dropped metrics from the map and passed
+class TestEveryJoinedFrameGetsItsLeadingZeroBack(ExportCase):
+    def test_integer_and_float_codes_in_the_panel(self):
+        for cast in (int, float):
+            with self.subTest(cast=cast.__name__):
+                panel = self.panel.assign(cbsa_code=self.panel["cbsa_code"].astype(cast))
+                metrics = export.build_metrics(self.forecasts, panel, self.predictions)
+                pd.testing.assert_frame_equal(metrics, self.metrics)
+
+    def test_integer_and_float_codes_in_the_predictions(self):
+        for cast in (int, float):
+            with self.subTest(cast=cast.__name__):
+                predictions = self.predictions.assign(cbsa_code=self.predictions["cbsa_code"].astype(cast))
+                metrics = export.build_metrics(self.forecasts, self.panel, predictions)
+                pd.testing.assert_frame_equal(metrics, self.metrics)

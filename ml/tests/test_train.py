@@ -87,16 +87,7 @@ class TestFitAndScore(unittest.TestCase):
         self.assertAlmostEqual(row.lo, row.q10 - margin[int(row.horizon)])
         self.assertAlmostEqual(row.hi, row.q90 + margin[int(row.horizon)])
 
-    def test_evaluate_gives_one_row_per_block_and_horizon(self):
-        summary = train.evaluate(self.predictions)
-        self.assertEqual(len(summary), 2 * len(spec.HORIZONS))
-        for column in ("n", "mae", "rmse", "relative_mae", "pinball_10", "pinball_50", "pinball_90", "coverage_raw", "coverage", "width", "mae_pct"):
-            self.assertIn(column, summary.columns)
-        cal = summary[summary.block == "cal"]
-        self.assertTrue((cal.coverage >= 1 - spec.ALPHA).all())
-        row = summary.iloc[0]
-        g = self.predictions[(self.predictions.block == row.block) & (self.predictions.horizon == row.horizon)]
-        self.assertAlmostEqual(row.mae_pct, np.mean(np.abs(spec.pct(g.y) - spec.pct(g.q50))))
+    def test_best_epoch_is_the_lowest_validation_loss(self):
         self.assertEqual(train.best_epoch(self.history), int(self.history.loc[self.history.val_loss.idxmin(), "epoch"]))
 
 
@@ -215,6 +206,45 @@ class TestNoOutcomeLeaksIntoFitting(unittest.TestCase):
         self.assertNotAlmostEqual(held_out[1], in_sample[1], places=6)
 
 
+# fhfa published the expanded index for 50 metros until its 2026Q1 report. the
+# tiny panel holds boise and bozeman, which are not among them, so a scored run
+# must be handed no value of theirs before 2026Q1 and the shipped model must
+class TestTheScoredModelsReadOnlyWhatWasPublished(unittest.TestCase):
+    def spy(self):
+        calls = []
+        real = train.train_one
+
+        def recorder(model_name, windows, *args, **kwargs):
+            calls.append(windows)
+            return real(model_name, windows, *args, **kwargs)
+
+        return calls, recorder
+
+    def unpublished(self, windows):
+        self.assertEqual(windows.seq.shape[-1], len(nets.SEQ_FEATURES))
+        channel = nets.SEQ_FEATURES.index("hpi_exp_yoy")
+        early = np.array([spec.to_period(o) < spec.to_period(spec.EXPANDED_FOR_ALL_FROM) for o in windows.origins])
+        outside = ~np.isin(windows.codes, sorted(spec.EXPANDED_BEFORE_2026))
+        return int((~np.isnan(windows.seq[early & outside][..., channel])).sum())
+
+    def test_the_premise_the_tiny_panel_holds_metros_outside_the_fifty(self):
+        self.assertTrue(set(tiny_panel()["cbsa_code"]) - spec.EXPANDED_BEFORE_2026)
+
+    def test_the_backtest_is_handed_only_what_fhfa_had_published(self):
+        calls, recorder = self.spy()
+        with mock.patch.object(train, "train_one", recorder):
+            train.backtest(tiny_panel(), "windowmlp", device="cpu", max_epochs=1, verbose=False)
+        self.assertEqual(self.unpublished(calls[0]), 0)
+
+    def test_the_band_model_reads_what_was_published_and_the_shipped_model_reads_it_all(self):
+        calls, recorder = self.spy()
+        with mock.patch.object(train, "train_one", recorder):
+            train.forecast_models(tiny_panel(), "windowmlp", epochs=1, device="cpu", verbose=False)
+        final, band = calls
+        self.assertGreater(self.unpublished(final), 0)
+        self.assertEqual(self.unpublished(band), 0)
+
+
 class TestBandNeedsAConformalSample(unittest.TestCase):
     def test_a_panel_with_no_test_outcome_refuses_to_forecast(self):
         panel = train.synthetic_panel(n_metros=6, start="2000Q1", end="2021Q4")
@@ -270,6 +300,10 @@ class TestRun(unittest.TestCase):
                 self.assertTrue((root / "models" / f"{name}.pt").exists())
             shipped = pd.read_csv(root / "forecast" / "forecasts.csv", dtype={"cbsa_code": str})
             self.assertEqual(set(shipped.model), {out["shipped"]})
+            # no baselines ran here, so the shipped network is tested against the other one
+            paired = pd.read_csv(root / "backtest" / "paired.csv")
+            self.assertEqual(set(paired["model"]), {out["shipped"]})
+            self.assertEqual(set(paired["against"]), set(train.MODELS) - {out["shipped"]})
             for name in ("09_training_curves", "10_quantile_calibration", "11_forecast_fans", "12_model_comparison", "13_forecast_distribution"):
                 self.assertGreater(os.path.getsize(root / "figures" / f"{name}.png"), 1000)
 
@@ -500,3 +534,144 @@ class TestTheSeedIsReadWhenItIsUsed(unittest.TestCase):
         self.assertEqual(self.draw(), self.draw())
         self.assertEqual(self.drawn(7), self.drawn(7))
         self.assertNotEqual(self.drawn(7), self.drawn(8))
+
+
+# train_one scales the inputs and the target by the fitting set alone. the leak
+# tests read the arrays it is handed, so nothing failed when it took either set
+# of statistics from every window, cal and test included
+class TestTheFitIsScaledByItsOwnBlock(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.windows = nets.build_windows(tiny_panel())
+        table = train.splits(cls.windows.origins)
+        cls.y_fit = np.where(table == "fit", cls.windows.y, np.nan)
+        cls.fitted = train.train_one("windowmlp", cls.windows, cls.y_fit, None, device="cpu",
+                                     epochs=1, verbose=False)
+
+    def test_feature_statistics_come_from_the_fitting_windows(self):
+        own = nets.feature_stats(self.windows, ~np.isnan(self.y_fit).all(axis=1))
+        every = nets.feature_stats(self.windows, np.ones(len(self.windows), dtype=bool))
+        # the two differ on this panel, or the check would prove nothing
+        self.assertFalse(np.array_equal(own["seq_mean"], every["seq_mean"]))
+        for key, value in own.items():
+            np.testing.assert_array_equal(self.fitted["stats"][key], value, err_msg=key)
+
+    def test_the_target_scale_comes_from_the_fitting_outcomes(self):
+        loc, scale, _ = nets.moments(self.y_fit)
+        every, _, _ = nets.moments(self.windows.y)
+        self.assertFalse(np.array_equal(loc, every))
+        model = self.fitted["model"]
+        np.testing.assert_array_equal(model.y_loc.cpu().numpy(), loc)
+        np.testing.assert_array_equal(model.y_scale.cpu().numpy(), scale)
+
+
+# the shipped forecast refuses a margin that inverts the band on any metro. the
+# refusal was tested with every band inverted, where any and all agree, so
+# refusing only when every metro crossed passed
+class TestOneInvertedBandStopsTheForecast(unittest.TestCase):
+    def test_a_margin_that_inverts_some_bands_and_not_others_refuses(self):
+        panel = tiny_panel()
+        # the raw bands the final model draws, left unwidened
+        with mock.patch.object(train, "margins", return_value={h: 0.0 for h in spec.HORIZONS}):
+            raw = train.forecast(panel, "windowmlp", epochs=1, device="cpu", verbose=False)
+        # halfway between the narrowest and the widest half width at each
+        # horizon, so the narrowest band inverts and the widest still stands
+        margin = {}
+        for h, g in raw.groupby("horizon"):
+            width = (g.q90 - g.q10).to_numpy()
+            self.assertLess(width.min(), width.max())
+            margin[int(h)] = -(width.min() + width.max()) / 4.0
+        with mock.patch.object(train, "margins", return_value=margin):
+            with self.assertRaises(ValueError) as raised:
+                train.forecast(panel, "windowmlp", epochs=1, device="cpu", verbose=False)
+        self.assertIn("inverts the band", str(raised.exception))
+
+
+# the band model fits every realized outcome through the calibration end, the
+# end quarter itself included. the leak test bounds it from above only, so
+# dropping the 2021Q4 outcomes from the model that sets the margin passed
+class TestTheBandModelFitsThroughTheCalibrationEnd(unittest.TestCase):
+    def test_every_outcome_realized_at_the_calibration_end_is_fitted(self):
+        panel = tiny_panel()
+        calls = []
+        real = train.train_one
+
+        def recorder(model_name, windows, y_fit, *args, **kwargs):
+            calls.append(np.array(y_fit, dtype=float))
+            return real(model_name, windows, y_fit, *args, **kwargs)
+
+        with mock.patch.object(train, "train_one", recorder):
+            train.forecast_models(panel, "windowmlp", epochs=1, device="cpu", verbose=False)
+        windows = nets.build_windows(spec.realtime(panel))
+        outcome = windows.t[:, None] + np.asarray(spec.HORIZONS)[None, :]
+        at_end = (outcome == windows.index_of(spec.CAL_END)) & ~np.isnan(windows.y)
+        self.assertTrue(at_end.any())
+        np.testing.assert_array_equal(calls[1][at_end], windows.y[at_end].astype(float))
+
+
+# the validation loss is the pinball loss over every valid cell, however the
+# rows are cut into eval batches. every validation set in the suite fit in one
+# batch, so weighting the batches by rows instead of cells passed
+class TestTheValidationLossIgnoresTheEvalBatchSize(unittest.TestCase):
+    def test_small_eval_batches_give_the_one_batch_loss(self):
+        windows = nets.build_windows(tiny_panel())
+        y_val = np.where(train.splits(windows.origins) == "val", windows.y, np.nan)
+        # ragged on purpose: every other row keeps one horizon
+        y_val[::2, 1:] = np.nan
+        train.seed_everything()
+        model = train.build_model("windowmlp", len(windows.metros))
+        stats = nets.feature_stats(windows, np.ones(len(windows), dtype=bool))
+        seq, static, metro, _ = nets.to_tensors(windows, stats)
+        y = torch.from_numpy(np.ascontiguousarray(y_val, dtype=np.float32))
+        idx = torch.from_numpy(np.nonzero(~np.isnan(y_val).all(axis=1))[0])
+        whole = train.batched_loss(model, (seq, static, metro), y, idx, "cpu")
+        with mock.patch.object(train, "EVAL_BATCH", 7):
+            cut = train.batched_loss(model, (seq, static, metro), y, idx, "cpu")
+        self.assertGreater(len(idx), 2 * 7)
+        self.assertAlmostEqual(cut, whole, places=7)
+
+
+# a reseeded run draws new batches as well as new weights. the class above pins
+# the weights; nothing failed when the batch order was seeded from a constant,
+# which left every reseeded run walking the same batches
+class TestTheBatchOrderFollowsTheSeed(unittest.TestCase):
+    class FirstBatch(Exception):
+        pass
+
+    # the first loss of an epoch is taken on its first batch, so stop there
+    def first_batch(self, windows, y_fit):
+        seen = []
+
+        def stop(pred, y):
+            seen.append(torch.nan_to_num(y, nan=-1.0))
+            raise self.FirstBatch
+
+        with mock.patch.object(nets, "pinball_loss", stop), self.assertRaises(self.FirstBatch):
+            train.train_one("windowmlp", windows, y_fit, None, device="cpu", epochs=1, verbose=False)
+        return seen[0]
+
+    def test_moving_spec_seed_moves_the_first_batch(self):
+        windows = nets.build_windows(tiny_panel())
+        y_fit = np.where(train.splits(windows.origins) == "fit", windows.y, np.nan)
+        first = self.first_batch(windows, y_fit)
+        self.assertTrue(torch.equal(first, self.first_batch(windows, y_fit)))
+        with mock.patch.object(spec, "SEED", spec.SEED + 1):
+            moved = self.first_batch(windows, y_fit)
+        self.assertFalse(torch.equal(first, moved))
+
+
+# training stops once PATIENCE epochs pass without a better validation loss.
+# the scripted run above ends at max_epochs whichever epoch the stop fires on,
+# so a stop one epoch late passed
+class TestEarlyStoppingStopsOnTime(unittest.TestCase):
+    def test_the_run_ends_patience_epochs_after_the_best(self):
+        windows = nets.build_windows(tiny_panel())
+        table = train.splits(windows.origins)
+        y_fit = np.where(table == "fit", windows.y, np.nan)
+        y_val = np.where(table == "val", windows.y, np.nan)
+        scripted = iter([1.0, 0.25, 0.8, 0.9, 1.2, 1.3, 1.4, 1.5])
+        with mock.patch.object(train, "batched_loss", lambda *args: next(scripted)):
+            fitted = train.train_one("windowmlp", windows, y_fit, y_val, device="cpu",
+                                     max_epochs=8, patience=3, verbose=False)
+        self.assertEqual(fitted["epochs"], 2)
+        self.assertEqual(list(fitted["history"]["epoch"]), [1, 2, 3, 4, 5])

@@ -204,3 +204,74 @@ class TestTheFeatureSplitMatchesTheFlatList(unittest.TestCase):
         from loop import nets
         self.assertEqual(nets.SEQ_FEATURES, spec.SEQ_FEATURES)
         self.assertEqual(nets.STATIC_FEATURES, spec.STATIC_FEATURES)
+
+
+# austin is one of the 50 metros fhfa published the expanded index for before
+# 2026, boise is not
+class TestRealtime(unittest.TestCase):
+    def frame(self):
+        return pd.DataFrame({
+            "cbsa_code": ["12420", "12420", "14260", "14260"],
+            "quarter": ["2025Q4", "2026Q1", "2025Q4", "2026Q1"],
+            "hpi_exp_yoy": [0.01, 0.02, 0.03, 0.04],
+            "hpi_rstderr": [1.0, 1.1, 2.0, 2.1],
+            "hpi_yoy": [0.05, 0.05, 0.05, 0.05],
+        })
+
+    def test_a_metro_fhfa_had_not_published_is_masked_until_2026q1(self):
+        boise = spec.realtime(self.frame()).query("cbsa_code == '14260'").set_index("quarter")
+        self.assertTrue(np.isnan(boise.loc["2025Q4", "hpi_exp_yoy"]))
+        self.assertTrue(np.isnan(boise.loc["2025Q4", "hpi_rstderr"]))
+        self.assertEqual(boise.loc["2026Q1", "hpi_exp_yoy"], 0.04)
+        self.assertEqual(boise.loc["2026Q1", "hpi_rstderr"], 2.1)
+
+    def test_the_fifty_keep_their_history(self):
+        austin = spec.realtime(self.frame()).query("cbsa_code == '12420'")
+        self.assertEqual(list(austin["hpi_exp_yoy"]), [0.01, 0.02])
+
+    def test_nothing_else_moves_and_the_input_is_left_alone(self):
+        frame = self.frame()
+        out = spec.realtime(frame)
+        self.assertEqual(list(out["hpi_yoy"]), [0.05] * 4)
+        self.assertEqual(frame.loc[2, "hpi_exp_yoy"], 0.03)
+
+    def test_fifty_metros_as_fhfa_published_them(self):
+        self.assertEqual(len(spec.EXPANDED_BEFORE_2026), 50)
+        self.assertEqual(spec.EXPANDED_FOR_ALL_FROM, "2026Q1")
+        self.assertTrue(set(spec.EXPANDED_INPUTS) <= set(spec.FEATURES))
+
+
+class TestPublicationLags(unittest.TestCase):
+    def test_every_annual_model_input_has_a_release_quarter(self):
+        self.assertEqual(spec.PUBLISHED_IN_QUARTER, {
+            "pop_growth": 1, "domestic_migration_rate": 1, "permits_per_1000": 2, "income_growth": 4})
+
+    def test_bea_2024_is_known_from_2026q1(self):
+        self.assertEqual(spec.PUBLISHED_LATE["income_growth"], {2024: "2026Q1"})
+
+
+# the readme, the export manifest and the map all call the band a 90 percent
+# band, and nothing pinned the constant that makes it one
+class TestTheBandLevelIsPinned(unittest.TestCase):
+    def test_alpha_is_ten_percent(self):
+        self.assertEqual(spec.ALPHA, 0.1)
+
+
+# an outcome on a band edge is inside the band. the conformal rank puts one
+# calibration outcome exactly on the widened edge, so an edge that did not
+# count would shave the coverage the margin was sized for
+class TestCoverageCountsTheEdges(unittest.TestCase):
+    def test_an_outcome_on_either_edge_is_covered(self):
+        self.assertEqual(spec.coverage([0.0, 1.0], [0.0, 0.0], [1.0, 1.0]), 1.0)
+
+
+class TestTheCalendarHoldsTogether(unittest.TestCase):
+    def test_the_shipped_boundaries_are_one_calendar(self):
+        spec.check_calendar(spec.CALENDAR)
+        self.assertEqual(spec.CALENDAR, ((spec.FIT_END, spec.VAL_START), (spec.TRAIN_END, spec.CAL_START),
+                                         (spec.CAL_END, spec.TEST_START)))
+
+    def test_a_start_moved_without_its_end_is_refused(self):
+        for pairs in ((("2014Q4", "2015Q2"),), (("2017Q4", "2017Q4"),), (("2021Q4", "2022Q1"), ("2014Q3", "2015Q1"))):
+            with self.subTest(pairs=pairs), self.assertRaises(ValueError):
+                spec.check_calendar(pairs)
