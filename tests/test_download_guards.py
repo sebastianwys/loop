@@ -1,3 +1,11 @@
+import contextlib
+import errno
+import hashlib
+import io
+import json
+import os
+import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -5,6 +13,8 @@ from pathlib import Path
 from unittest import mock
 
 import pandas as pd
+
+REPO = Path(__file__).resolve().parent.parent
 
 # scripts/ is not a package, so put it on the path before importing
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
@@ -212,6 +222,175 @@ class TestCensusKeepsThePreviousVintages(unittest.TestCase):
         combined = pd.read_csv(raw / "acs_5yr_combined.csv")
         self.assertEqual(sorted(combined["year"].tolist()), [2014, 2019, 2024])
         self.assertTrue((raw / "download_manifest.json").exists())
+
+
+METRO_SLICE = "city\tmetro_name\tyr\tqtr\tindex_nsa\nAbilene\tAbilene TX\t2026\t2\t264.64\n"
+
+
+def _sha256(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+# fhfa answering both files with bodies newer than the archived ones
+def _fhfa_site():
+    site = mock.Mock()
+    site.get.side_effect = lambda url: _response(
+        (MASTER_SLICE if url.endswith(".csv") else METRO_SLICE).replace("264.64", "266.00"))
+    return site
+
+
+def _newer_acs_frame(year, api_key):
+    return _acs_frame(year).assign(B19013_001E="61000")
+
+
+# download_census.main on a temporary folder, with the key, the catalog and
+# the api stubbed. hands back whatever the run raised
+def _run_census(folder, argv=(), **patches):
+    with mock.patch.object(dc, "RAW_DIR", folder), \
+         mock.patch.object(dc, "VINTAGES_FILE", folder / "vintages.json"), \
+         mock.patch.object(dc, "load_api_key", return_value="key"), \
+         mock.patch.object(dc, "fetch_acs_data", side_effect=_newer_acs_frame), \
+         mock.patch.object(sys, "argv", ["download_census.py", *argv]), \
+         contextlib.ExitStack() as stack, \
+         contextlib.redirect_stdout(io.StringIO()):
+        for name, value in patches.items():
+            stack.enter_context(mock.patch.object(dc, name, value))
+        try:
+            dc.main()
+        except (Exception, SystemExit) as error:
+            return error
+    return None
+
+
+# a disk that fills while the manifest is being written
+def _dies_halfway(obj, fp, *args, **kwargs):
+    text = json.dumps(obj, *args, **kwargs)
+    fp.write(text[: len(text) // 2])
+    raise OSError(errno.ENOSPC, "No space left on device")
+
+
+# a manifest is renamed over with the files it describes, never truncated in
+# place. a write that dies has to leave one that parses and still hashes to
+# the files beside it
+class TestAManifestWriteThatDiesLeavesAWholeManifest(unittest.TestCase):
+    def folder(self, bodies):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        folder = Path(tmp.name)
+        for name, body in bodies.items():
+            (folder / name).write_text(body)
+        entries = [{"filename": name, "integrity": {"sha256": _sha256(folder / name)}} for name in bodies]
+        (folder / "download_manifest.json").write_text(json.dumps(entries))
+        return folder
+
+    def assert_manifest_describes_folder(self, folder):
+        entries = json.loads((folder / "download_manifest.json").read_text())
+        self.assertEqual({e["filename"]: e["integrity"]["sha256"] for e in entries},
+                         {e["filename"]: _sha256(folder / e["filename"]) for e in entries})
+
+    def test_download_fhfa(self):
+        folder = self.folder({"hpi_master.csv": MASTER_SLICE, "hpi_exp_metro.txt": METRO_SLICE})
+        with mock.patch.object(dfhfa, "RAW_DIR", folder), \
+             mock.patch.object(dfhfa, "requests", _fhfa_site()), \
+             mock.patch.object(json, "dump", _dies_halfway), \
+             contextlib.redirect_stdout(io.StringIO()):
+            with self.assertRaises(OSError):
+                dfhfa.main()
+        self.assert_manifest_describes_folder(folder)
+
+    def test_download_census(self):
+        folder = self.folder({f"acs_5yr_{y}.csv": _acs_frame(y).to_csv(index=False) for y in (2014, 2019, 2024)})
+        (folder / "vintages.json").write_text(json.dumps({"years": [2024, 2019, 2014]}))
+        with mock.patch.object(json, "dump", _dies_halfway):
+            outcome = _run_census(folder)
+        self.assertIsInstance(outcome, OSError)
+        self.assert_manifest_describes_folder(folder)
+
+
+def _git(*args):
+    return subprocess.run(["git", "-C", str(REPO), *args], capture_output=True, text=True)
+
+
+def _has_git():
+    return shutil.which("git") is not None and _git("rev-parse", "--is-inside-work-tree").returncode == 0
+
+
+# a run that is killed cannot clean up its staging folder, so whatever it
+# stages under data/raw has to be something .gitignore already covers, or a
+# later git add data/raw commits it
+@unittest.skipUnless(_has_git(), "needs git and the repo's work tree")
+class TestWhatADownloadStagesIsIgnored(unittest.TestCase):
+    # every path main renames out of, as the path it would be in this repo
+    @contextlib.contextmanager
+    def staged_paths(self, folder, source):
+        staged, real = [], os.replace
+
+        def replace(src, dst, *args, **kwargs):
+            if folder in Path(src).parents:
+                staged.append(Path("data", "raw", source, Path(src).relative_to(folder)).as_posix())
+            return real(src, dst, *args, **kwargs)
+
+        with mock.patch.object(os, "replace", replace):
+            yield staged
+
+    def assert_ignored(self, staged):
+        self.assertTrue(staged, "the run staged nothing this test could see")
+        result = [path for path in staged if _git("check-ignore", "--no-index", "-q", path).returncode != 0]
+        self.assertEqual(result, [], "staged under data/raw and not ignored by .gitignore")
+
+    def folder(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        return Path(tmp.name)
+
+    def test_download_fhfa(self):
+        folder = self.folder()
+        with self.staged_paths(folder, "fhfa") as staged, \
+             mock.patch.object(dfhfa, "RAW_DIR", folder), \
+             mock.patch.object(dfhfa, "requests", _fhfa_site()), \
+             contextlib.redirect_stdout(io.StringIO()):
+            dfhfa.main()
+        self.assert_ignored(staged)
+
+    def test_download_census(self):
+        folder = self.folder()
+        (folder / "vintages.json").write_text(json.dumps({"years": [2024, 2019, 2014]}))
+        with self.staged_paths(folder, "census") as staged:
+            self.assertIsNone(_run_census(folder))
+        self.assert_ignored(staged)
+
+
+# vintages.json names the vintages on disk and moves only with them. a
+# --refresh-vintages run that fails leaves it byte for byte, one that lands
+# every vintage moves it
+class TestAFailedRefreshLeavesThePin(unittest.TestCase):
+    CATALOG = {"dataset": [{"c_dataset": ["acs", "acs5"], "c_vintage": 2025}]}
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.folder = Path(tmp.name)
+        self.pin = self.folder / "vintages.json"
+        self.pin.write_text(json.dumps({"years": [2024, 2019, 2014]}) + "\n")
+        self.before = self.pin.read_bytes()
+
+    def refresh(self, **patches):
+        return _run_census(self.folder, ["--refresh-vintages"],
+                           fetch_catalog=mock.Mock(return_value=self.CATALOG), **patches)
+
+    def test_a_refresh_whose_vintages_fail_leaves_the_pin(self):
+        outcome = self.refresh(fetch_acs_data=mock.Mock(side_effect=RuntimeError("census answered html")))
+        self.assertIsInstance(outcome, SystemExit)
+        self.assertEqual(self.pin.read_bytes(), self.before)
+
+    def test_a_refresh_with_no_key_leaves_the_pin(self):
+        outcome = self.refresh(load_api_key=mock.Mock(side_effect=RuntimeError("CENSUS_API_KEY is not set")))
+        self.assertIsInstance(outcome, RuntimeError)
+        self.assertEqual(self.pin.read_bytes(), self.before)
+
+    def test_a_refresh_that_lands_every_vintage_moves_the_pin(self):
+        self.assertIsNone(self.refresh())
+        self.assertEqual(json.loads(self.pin.read_text())["years"], [2025, 2020, 2015])
 
 
 if __name__ == "__main__":

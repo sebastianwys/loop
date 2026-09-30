@@ -182,8 +182,10 @@ def acs_batches(latest, n_batches=N_BATCHES, span=SPAN):
 
 
 # the end years to pull. pinned unless refresh is set, so the dag and the
-# manifest stay reproducible across runs
-def resolve_years(refresh=False):
+# manifest stay reproducible across runs. a new pin is written to pin_path,
+# which main points into its staging folder: the pin names the vintages on
+# disk, so it lands with them or not at all
+def resolve_years(refresh=False, pin_path=None):
     if VINTAGES_FILE.exists() and not refresh:
         return json.loads(VINTAGES_FILE.read_text())["years"]
 
@@ -198,8 +200,8 @@ def resolve_years(refresh=False):
         "catalog": CATALOG_URL,
         "resolved_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
-    VINTAGES_FILE.write_text(json.dumps(pin, indent=2) + "\n")
-    print(f"Pinned vintages {years}, latest available {latest}")
+    Path(pin_path or VINTAGES_FILE).write_text(json.dumps(pin, indent=2) + "\n")
+    print(f"Resolved vintages {years}, latest available {latest}")
 
     return years
 
@@ -290,21 +292,27 @@ def query_acs(year, api_key, geography, within=None):
 
 # remove stale years, pull fresh data, write combined csv and manifest
 def main():
-    years = resolve_years(refresh="--refresh-vintages" in sys.argv)
-    api_key = load_api_key()
-
-    start, end = window(years[-1])[0], years[0]
-    print(f"Vintages {years}, covering {start} to {end}")
-
     manifest = []
     all_frames = []
     failed = []
 
     # every vintage is written to a staging folder first. one file landing on
     # the archive before the run as a whole is known good leaves the folder
-    # half replaced under a manifest still describing the files it replaced
-    with tempfile.TemporaryDirectory(dir=RAW_DIR) as staging:
+    # half replaced under a manifest still describing the files it replaced.
+    # the .staging- prefix is the one bot.common stages under and .gitignore
+    # covers, so a run that is killed leaves nothing git would pick up
+    with tempfile.TemporaryDirectory(dir=RAW_DIR, prefix=".staging-") as staging:
         staging = Path(staging)
+
+        # a refresh stages its new pin here with the files. written in place, a
+        # refresh that failed after it moved the pin off the vintages on disk,
+        # and the next plain run moved the study window without the flag
+        pin_path = staging / VINTAGES_FILE.name
+        years = resolve_years(refresh="--refresh-vintages" in sys.argv, pin_path=pin_path)
+        api_key = load_api_key()
+
+        start, end = window(years[-1])[0], years[0]
+        print(f"Vintages {years}, covering {start} to {end}")
 
         # pull oldest first so the combined csv and the manifest stay in
         # ascending year order. acs_batches returns newest first
@@ -354,8 +362,8 @@ def main():
 
         if failed:
             # a partial pull published over a complete one cannot be undone, so
-            # the archive, the combined csv and the manifest all keep describing
-            # the last good run. the staged folder goes with this exit
+            # the archive, the combined csv, the manifest and the pin all keep
+            # describing the last good run. the staged folder goes with this exit
             sys.exit(
                 f"Census ACS download incomplete, vintages failed: {failed}. "
                 "The previous combined csv and manifest were left in place."
@@ -364,8 +372,15 @@ def main():
         combined = pd.concat(all_frames, ignore_index=True)
         combined.to_csv(staging / "acs_5yr_combined.csv", index=False)
 
-        # every vintage passed, so the per-year files, the combined csv and the
-        # manifest that describes them are published in one step
+        # the manifest is written in the staging folder too. written in place it
+        # was truncated first, so a write that died left the new files under a
+        # manifest that no longer parsed
+        with open(staging / "download_manifest.json", "w") as f:
+            json.dump(manifest, f, indent=2)
+
+        # every vintage passed and every file is whole, so the per-year files,
+        # the combined csv, a new pin and the manifest that describes them are
+        # published by renames alone, the manifest last
         for entry in manifest:
             os.replace(staging / entry["filename"], RAW_DIR / entry["filename"])
 
@@ -373,9 +388,12 @@ def main():
         os.replace(staging / "acs_5yr_combined.csv", combined_path)
         print(f"\nCombined file: {combined_path} ({len(combined)} total rows)")
 
+        if pin_path.exists():
+            os.replace(pin_path, VINTAGES_FILE)
+            print(f"Pinned vintages {years}")
+
         manifest_path = RAW_DIR / "download_manifest.json"
-        with open(manifest_path, "w") as f:
-            json.dump(manifest, f, indent=2)
+        os.replace(staging / "download_manifest.json", manifest_path)
         print(f"Manifest saved to {manifest_path}")
 
     # the pinned years changed, so per-year csvs off the study go now that their

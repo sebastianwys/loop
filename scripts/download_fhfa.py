@@ -141,21 +141,29 @@ def main():
 
     # every file is downloaded to a staging folder first. one file landing on
     # the archive before the run as a whole is known good leaves the folder half
-    # replaced under a manifest still describing the file it replaced
-    with tempfile.TemporaryDirectory(dir=RAW_DIR) as staging:
+    # replaced under a manifest still describing the file it replaced. the
+    # .staging- prefix is the one bot.common stages under and .gitignore
+    # covers, so a run that is killed leaves nothing git would pick up
+    with tempfile.TemporaryDirectory(dir=RAW_DIR, prefix=".staging-") as staging:
         staging = Path(staging)
         for filename, url in FILES.items():
             info = download_file(filename, url, staging)
             manifest.append(info)
 
-        # both files passed, so the archive and the manifest that describes it
-        # are published in one step
+        # the manifest is written in the staging folder too. written in place it
+        # was truncated first, so a write that died left the new files under a
+        # manifest that no longer parsed
+        with open(staging / "download_manifest.json", "w") as f:
+            json.dump(manifest, f, indent=2)
+
+        # both files passed and the manifest is whole, so the archive and the
+        # manifest that describes it are published by renames alone, the
+        # manifest last
         for filename in FILES:
             os.replace(staging / filename, RAW_DIR / filename)
 
         manifest_path = RAW_DIR / "download_manifest.json"
-        with open(manifest_path, "w") as f:
-            json.dump(manifest, f, indent=2)
+        os.replace(staging / "download_manifest.json", manifest_path)
 
     print(f"\nManifest saved to {manifest_path}")
     print("FHFA download complete.")

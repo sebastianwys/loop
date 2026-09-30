@@ -9,12 +9,12 @@
       "dataset": "Population Estimates Program metro, micro and division totals with components of change, one row per area, metric and year"
     },
     "integrity": {
-      "sha256": "dd330f627bb3e19b002f527ac7280a09f829bd62ec4a8612907f14b38b386416",
+      "sha256": "6c429c94f3c144885b225cde26d7680fa8a831f36840b7a37151ffb2ae0febe0",
       "size_kb": 2242.8,
       "row_count": 69034
     },
     "version": "vintage 2025, annual 2010 to 2025",
-    "downloaded_at": "2026-09-15T19:53:57Z",
+    "downloaded_at": "2026-09-30T01:30:12Z",
     "notes": {
       "metrics": [
         "pop_estimate",
@@ -28,7 +28,16 @@
         "2025": "https://www2.census.gov/programs-surveys/popest/datasets/2020-2025/metro/totals/cbsa-est2025-alldata.csv"
       },
       "base_years": "the population estimate is kept, the components are skipped because they cover april to june of that year only",
-      "rate": "domestic_migration_rate is domestic_migration per 1,000 of pop_estimate"
+      "rate": "domestic_migration_rate is domestic_migration per 1,000 of pop_estimate",
+      "renumbered": {
+        "19380": "19430",
+        "39100": "28880",
+        "39140": "39150",
+        "45540": "48680",
+        "23844": "29414",
+        "43524": "23224",
+        "35154": "29484"
+      }
     }
   },
   {
@@ -46,7 +55,7 @@
       "row_count": 2806
     },
     "version": "vintage 2025, 2020 to 2025",
-    "downloaded_at": "2026-09-15T19:53:57Z",
+    "downloaded_at": "2026-09-30T01:30:11Z",
     "notes": {
       "encoding": "latin-1",
       "area_codes": 962
@@ -67,7 +76,7 @@
       "row_count": 2797
     },
     "version": "vintage 2019, 2010 to 2019",
-    "downloaded_at": "2026-09-15T19:53:57Z",
+    "downloaded_at": "2026-09-30T01:30:11Z",
     "notes": {
       "encoding": "latin-1",
       "area_codes": 957

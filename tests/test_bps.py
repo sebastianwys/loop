@@ -8,7 +8,7 @@ import pandas as pd
 import requests
 
 from bot.build_map_data import RESERVED
-from bot.collectors import bps
+from bot.collectors import bps, pep
 
 # the two header lines and the blank third line of every annual file
 HEADER = (
@@ -34,6 +34,14 @@ ABILENE_2024 = ("202499,101,10180,2,Abilene  TX ,431,431,120144,48,96,14788,0,0,
 YANKTON_2024 = ("202499,999,49460,5,Yankton  SD ,41,41,11910,0,0,0,2,8,1500,10,130,12500,"
                 "41,41,11910,0,0,0,2,8,1500,10,130,12500\n")
 FILE_2024 = HEADER_2024 + ABILENE_2024 + YANKTON_2024
+
+# copied from ma2014a.txt. the villages was 45540 until july 2023 made it
+# 48680 on the same county, and cleveland was 17460 until 17410 took in
+# ashtabula as well
+VILLAGES_2014 = ("201499,422,45540,C,The Villages  FL ,2570,2570,733957,0,0,0,0,0,0,0,0,0,"
+                 "2570,2570,733957,0,0,0,0,0,0,0,0,0\n")
+CLEVELAND_2014 = ("201499,184,17460,C,Cleveland-Elyria  OH ,2256,2256,599567,22,44,1301,21,81,8860,31,519,37807,"
+                  "2144,2144,589533,9,18,1170,21,81,8860,31,519,37807\n")
 
 
 def lookup(metrics):
@@ -245,6 +253,32 @@ class TestMetricsEdgeCases(unittest.TestCase):
         self.assertEqual(bps.stray_years(bps.parse_annual(""), 2014), [])
 
 
+class TestRenumbered(unittest.TestCase):
+    def test_a_retired_code_lands_under_the_current_one(self):
+        got = lookup(bps.annual_metrics(bps.parse_annual(HEADER + VILLAGES_2014)))
+        self.assertEqual(got, {("48680", "permits_units", "2014"): 2570,
+                               ("48680", "permits_single_family", "2014"): 2570,
+                               ("48680", "permits_multifamily", "2014"): 0})
+
+    # ashtabula moved into 17410, so 17460 is not the same counties
+    def test_a_code_that_moved_a_county_stays_where_it_was_printed(self):
+        got = lookup(bps.annual_metrics(bps.parse_annual(HEADER + CLEVELAND_2014)))
+        self.assertEqual(got[("17460", "permits_units", "2014")], 2256 + 44 + 81 + 519)
+        self.assertNotIn("17410", {code for code, _, _ in got})
+
+    # a year printing both codes keeps the row printed under the current one,
+    # whichever comes first
+    def test_the_current_code_wins_when_both_are_printed(self):
+        current = VILLAGES_2014.replace(",45540,", ",48680,").replace(",2570,2570,733957,", ",100,100,733957,", 1)
+        for rows in (VILLAGES_2014 + current, current + VILLAGES_2014):
+            got = lookup(bps.annual_metrics(bps.parse_annual(HEADER + rows)))
+            self.assertEqual(got[("48680", "permits_units", "2014")], 100)
+            self.assertEqual(len(got), 3)
+
+    def test_the_same_pairs_as_pep(self):
+        self.assertIs(bps.RENUMBERED, pep.RENUMBERED)
+
+
 class FakeResponse:
     def __init__(self, status_code, content=b""):
         self.status_code = status_code
@@ -303,6 +337,12 @@ class TestCollectOffline(unittest.TestCase):
         self.assertEqual(entries[1]["filename"], "ma2014a.txt")
         self.assertEqual(entries[1]["version"], "2014 annual")
         self.assertEqual(entries[-1]["source"]["endpoint"], bps.file_url(2025))
+
+    def test_the_manifest_names_the_codes_filed_under_their_successor(self):
+        with patch("bot.collectors.bps.fetch", side_effect=fake_fetch):
+            bps.collect(self.out)
+        entries = json.loads((self.out / "download_manifest.json").read_text())
+        self.assertEqual(entries[0]["notes"]["renumbered"], bps.RENUMBERED)
 
     def test_missing_required_year_raises(self):
         def gone(url, **kwargs):

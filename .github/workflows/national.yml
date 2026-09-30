@@ -75,12 +75,15 @@ jobs:
       - name: run the tests
         run: python run_tests.py
 
+      # zillow's manifest goes in with the map. the rebuild reads the zillow
+      # vintage and hash off it, and with the csvs gitignored it is the repo's
+      # only record of what the committed map was built on
       - name: commit the refresh
         id: commit
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "bot: national strip refresh"
-          file_pattern: "data/raw/national data/raw/fred web/public/data"
+          file_pattern: "data/raw/national data/raw/fred data/raw/zillow/download_manifest.json web/public/data"
 
       # the worker serves the built assets, so new numbers are only live after a
       # deploy. without the token the run still commits and says what is missing

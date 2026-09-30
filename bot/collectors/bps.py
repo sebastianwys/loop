@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from bot.collectors.pep import RENUMBERED, renumber, superseded
 from bot.common import RAW_DIR, STUDY_YEARS, fetch, manifest_entry, staged_folder
 
 OUT_DIR = RAW_DIR / "bps"
@@ -60,7 +61,10 @@ def clean_name(raw):
 # trailing commas and crlf endings are skipped by shape rather than position:
 # a data row has a survey date, a five digit cbsa code and at least the
 # seventeen fields through the 5+ unit valuation. a unit count that is not a
-# number lands as missing
+# number lands as missing. a code omb retired without moving a county is
+# filed under the code that replaced it, the way pep files it, so the
+# villages 2014, printed as 45540, lands under 48680. a file is one survey
+# year, so a retired code printed beside its successor gives way to it
 def parse_annual(text):
     rows = []
     for line in text.splitlines():
@@ -77,7 +81,8 @@ def parse_annual(text):
     df = pd.DataFrame(rows, columns=PARSED)
     for col in UNIT_FIELDS:
         df[col] = pd.to_numeric(df[col], errors="coerce")
-    return df
+    df = df[~superseded(df["cbsa_code"])]
+    return df.assign(cbsa_code=renumber(df["cbsa_code"])).reset_index(drop=True)
 
 
 # the three map metrics per area and year in the builder's column contract. a
@@ -146,6 +151,8 @@ def collect(out_dir=OUT_DIR):
                 "areas": areas,
                 "metrics": list(METRICS),
                 "basis": "estimates with imputation. permits_units sums the 1, 2, 3-4 and 5+ unit classes",
+                # retired code: the code its rows are filed under
+                "renumbered": RENUMBERED,
             },
         )] + entries)
     print(f"[bps] {len(metrics)} metric rows for {areas} areas, {version} -> {out_file.name}")

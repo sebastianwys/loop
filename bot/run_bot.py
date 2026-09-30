@@ -5,7 +5,6 @@ import importlib
 import pkgutil
 import sys
 
-from bot import build_map_data
 from bot import collectors as collectors_pkg
 
 
@@ -50,6 +49,10 @@ def main(only=None):
             print(f"[{name}] FAILED {type(e).__name__}: {e}")
             failures.append(name)
 
+    # the build reads the gazetteer's year, so importing it at the top of this
+    # file put the gazetteer ahead of discover(), and one that would not import
+    # stopped the run before any collector had a turn. it waits for them now
+    from bot import build_map_data
     build_map_data.build()
 
     if failures:

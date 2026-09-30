@@ -26,9 +26,15 @@ KNOWN_THROUGH = 2021
 TOTAL_US_STATE = 97
 TOTAL_US_COUNTY = 0
 
+# fips state codes stop at 56. a partner state past it is a row irs adds of
+# its own: 57 foreign, 58 and 59 other flows, 96 to 98 the totals above
+LAST_STATE = 56
+
 METRICS = ["irs_net_returns", "irs_net_exemptions", "irs_inflow_returns", "irs_outflow_returns"]
+GROSS = ["irs_inflow_returns", "irs_outflow_returns"]
 COLUMNS = ["cbsa_code", "metric", "period", "value"]
 TOTAL_COLUMNS = ["county_fips", "n1", "n2"]
+MOVE_COLUMNS = ["origin", "dest", "n1"]
 DATASET = ("county to county migration, total us in and out migration per county "
            "summed to cbsa and metropolitan division codes")
 
@@ -48,31 +54,46 @@ def _empty_totals():
                          "n1": pd.Series(dtype=int), "n2": pd.Series(dtype=int)})
 
 
+def _empty_moves():
+    return pd.DataFrame({"origin": pd.Series(dtype=str), "dest": pd.Series(dtype=str),
+                         "n1": pd.Series(dtype=int)})
+
+
 # the county's own fips sits on the y2 side of the inflow file (destination)
 # and the y1 side of the outflow file (origin), the partner on the other.
 # codes are zero padded in some years and bare in others, so they go through
-# int. keeps the total migration us row of every county and drops the state
-# totals (county 0) and suppressed totals, which are -1 (fewer than 20 returns)
-def parse_totals(content, kind):
+# int. the six columns as numbers, own county first, or none for an empty file
+def _fields(content, kind):
     own, partner = ("y2", "y1") if kind == "inflow" else ("y1", "y2")
     if content.startswith(b"\xef\xbb\xbf"):
         content = content[3:]
     try:
         df = pd.read_csv(io.BytesIO(content), dtype=str, encoding="latin-1")
     except pd.errors.EmptyDataError:
-        return _empty_totals()
+        return None
     needed = [f"{own}_statefips", f"{own}_countyfips", f"{partner}_statefips",
               f"{partner}_countyfips", "n1", "n2"]
     absent = [c for c in needed if c not in df.columns]
     if absent:
         raise ValueError(f"{kind} file is missing columns {absent}")
-    state, county, partner_state, partner_county, n1, n2 = (
-        pd.to_numeric(df[c], errors="coerce") for c in needed)
+    return [pd.to_numeric(df[c], errors="coerce") for c in needed]
+
+
+def _fips(state, county):
+    return state.astype(int).astype(str).str.zfill(2) + county.astype(int).astype(str).str.zfill(3)
+
+
+# keeps the total migration us row of every county and drops the state
+# totals (county 0) and suppressed totals, which are -1 (fewer than 20 returns)
+def parse_totals(content, kind):
+    fields = _fields(content, kind)
+    if fields is None:
+        return _empty_totals()
+    state, county, partner_state, partner_county, n1, n2 = fields
     keep = ((partner_state == TOTAL_US_STATE) & (partner_county == TOTAL_US_COUNTY)
             & (state > 0) & (county > 0) & (n1 >= 0) & (n2 >= 0))
     out = pd.DataFrame({
-        "county_fips": state[keep].astype(int).astype(str).str.zfill(2)
-        + county[keep].astype(int).astype(str).str.zfill(3),
+        "county_fips": _fips(state[keep], county[keep]),
         "n1": n1[keep].astype(int),
         "n2": n2[keep].astype(int),
     })
@@ -80,9 +101,30 @@ def parse_totals(content, kind):
     return out.drop_duplicates("county_fips").reset_index(drop=True)
 
 
+# the county to county rows: returns that moved from one county to another,
+# keyed by the county they left and the one they entered. the rows irs adds
+# of its own, the non-migrants (a county paired with itself) and suppressed
+# counts go. irs prints a pair only at 20 returns or more and folds the rest
+# into other flows. the 2013 to 2014 files print about a thousand pairs
+# twice, and a repeat counts once
+def parse_moves(content, kind):
+    fields = _fields(content, kind)
+    if fields is None:
+        return _empty_moves()
+    state, county, partner_state, partner_county, n1, _ = fields
+    keep = ((state > 0) & (county > 0) & (partner_state > 0) & (partner_state <= LAST_STATE)
+            & (partner_county > 0) & ~((state == partner_state) & (county == partner_county))
+            & (n1 >= 0))
+    own, partner = _fips(state[keep], county[keep]), _fips(partner_state[keep], partner_county[keep])
+    origin, dest = (partner, own) if kind == "inflow" else (own, partner)
+    out = pd.DataFrame({"origin": origin, "dest": dest, "n1": n1[keep].astype(int)})
+    return out.drop_duplicates(["origin", "dest"]).reset_index(drop=True)
+
+
 # net per county for one pair. a county counts only when both its inflow and
 # outflow totals are known, so net always equals inflow minus outflow at
-# every level of aggregation
+# every level of aggregation, and still does once aggregate takes the moves
+# inside a code off both gross flows
 def county_net(inflow, outflow):
     both = inflow.merge(outflow, on="county_fips", suffixes=("_in", "_out"))
     return pd.DataFrame({
@@ -147,14 +189,41 @@ def parse_crosswalk(content):
     return pd.concat([cbsa, division], ignore_index=True)
 
 
+# the returns that moved between two counties of the same code, per code.
+# only the counties county_net kept count, so a code's gross flows and its
+# net are read off the same counties. a county sits in its cbsa and in its
+# division, so a move between two divisions of one metro is inside the metro
+# and inside neither division
+def moves_inside(moves, crosswalk, counties):
+    moves = moves[moves["origin"].isin(counties) & moves["dest"].isin(counties)]
+    ends = (moves.merge(crosswalk.rename(columns={"county_fips": "origin"}), on="origin")
+            .merge(crosswalk.rename(columns={"county_fips": "dest"}), on=["dest", "cbsa_code"]))
+    return ends.groupby("cbsa_code")["n1"].sum()
+
+
 # sum the county values into every code each county belongs to. a county in
 # no cbsa falls out of the inner merge and a code with no usable county gets
-# no row. values stay whole numbers
-def aggregate(county_values, crosswalk, period):
+# no row. values stay whole numbers.
+#
+# a county's total migration row counts a move from another county of the
+# same code too, so summed to the code that move is inflow where it landed
+# and outflow where it left. it cancels in the net and inflates both gross
+# flows, so inside, the returns per code from moves_inside, comes off both
+# and leaves inflow what came from outside the code and outflow what left
+# it. the two files print each such move once, and with the same count in
+# every filing year pulled, so it is read off the inflow file alone and the
+# net still equals inflow minus outflow. moves under 20 returns are not
+# printed pair by pair and stay in both gross flows
+def aggregate(county_values, crosswalk, period, inside=None):
     joined = crosswalk.merge(county_values, on="county_fips")
     if joined.empty:
         return pd.DataFrame(columns=COLUMNS)
-    totals = joined.groupby("cbsa_code", sort=True)[METRICS].sum().reset_index()
+    totals = joined.groupby("cbsa_code", sort=True)[METRICS].sum()
+    if inside is not None:
+        taken = inside.reindex(totals.index, fill_value=0)
+        for metric in GROSS:
+            totals[metric] = totals[metric] - taken
+    totals = totals.reset_index()
     long = totals.melt(id_vars="cbsa_code", value_vars=METRICS, var_name="metric", value_name="value")
     long["period"] = str(period)
     long["value"] = long["value"].astype(int)
@@ -225,11 +294,14 @@ def collect():
             print(f"[irs] {name} {files[-1]['row_count']} rows, {len(totals[kind])} county totals")
 
         counties = county_net(totals["inflow"], totals["outflow"])
+        inside = moves_inside(parse_moves(fetched["inflow"][1], "inflow"), crosswalk,
+                              set(counties["county_fips"]))
         one_sided = len(set(totals["inflow"]["county_fips"]) ^ set(totals["outflow"]["county_fips"]))
         without = len(delineated - set(counties["county_fips"]))
         print(f"[irs] {period_of(year)}: {len(counties)} counties netted, {one_sided} dropped for a "
-              f"missing side, {without} delineation counties without data")
-        frames.append(aggregate(counties, crosswalk, period_of(year)))
+              f"missing side, {without} delineation counties without data, {int(inside.sum())} "
+              f"returns taken off the gross flows of {len(inside)} codes")
+        frames.append(aggregate(counties, crosswalk, period_of(year), inside))
         year += 1
 
     df = pd.concat(frames, ignore_index=True)
@@ -244,6 +316,11 @@ def collect():
                 "rule": "a county counts in a year only when both its inflow and outflow totals are "
                         "present and not suppressed (-1), counties sum to their cbsa and, inside a "
                         "division, to that division too",
+                "gross_flows": "inflow and outflow leave out a move between two counties of the same "
+                               "code, read off the county to county rows of the inflow file, so a "
+                               "code's inflow came from outside it and its outflow left it. irs prints "
+                               "a pair only at 20 returns or more, so smaller moves inside a code stay "
+                               "in. the net is the same either way",
                 "period": "the second filing year of each pair",
                 "metrics": METRICS,
                 "delineation": DELINEATION_URL,

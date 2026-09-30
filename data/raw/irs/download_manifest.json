@@ -9,15 +9,16 @@
       "dataset": "county to county migration, total us in and out migration per county summed to cbsa and metropolitan division codes"
     },
     "integrity": {
-      "sha256": "ee3f5d88d2f1315607a41dc90ba5c543e95bdc673e59221b1bbfd2c80b176a77",
-      "size_kb": 1284.5,
+      "sha256": "72e238ccaa94f7c1b596b704d4f792f0fd72325c3237bc621cd61f19b4f11ab7",
+      "size_kb": 1283.7,
       "row_count": 38448
     },
     "version": "through 2022-2023",
-    "downloaded_at": "2026-09-18T05:57:39Z",
+    "downloaded_at": "2026-09-30T01:23:43Z",
     "notes": {
       "summary_row": "partner state 97 with county 0, Total Migration-US, per county",
       "rule": "a county counts in a year only when both its inflow and outflow totals are present and not suppressed (-1), counties sum to their cbsa and, inside a division, to that division too",
+      "gross_flows": "inflow and outflow leave out a move between two counties of the same code, read off the county to county rows of the inflow file, so a code's inflow came from outside it and its outflow left it. irs prints a pair only at 20 returns or more, so smaller moves inside a code stay in. the net is the same either way",
       "period": "the second filing year of each pair",
       "metrics": [
         "irs_net_returns",

@@ -46,6 +46,23 @@ V2019 = (
 HEAD = ("CBSA,MDIV,STCOU,NAME,LSAD,ESTIMATESBASE2020,POPESTIMATE2020,POPESTIMATE2021,"
         "NATURALCHG2020,NATURALCHG2021,DOMESTICMIG2020,DOMESTICMIG2021,NETMIG2020,NETMIG2021\n")
 
+# vintage 2019 rows for three codes omb has since renumbered, estimates only.
+# the villages 45540 is 48680 today and gary 23844 is 29414, both on the same
+# counties. cleveland 17460 is 17410, which also holds ashtabula. real figures
+RENUMBERED_2019 = (
+    "CBSA,MDIV,STCOU,NAME,LSAD,ESTIMATESBASE2010,POPESTIMATE2010,POPESTIMATE2014,POPESTIMATE2019\n"
+    f'45540,,,"The Villages, FL",{MSA},93420,94278,112236,132420\n'
+    f'45540,,12119,"Sumter County, FL",{COUNTY},93420,94278,112236,132420\n'
+    f'16980,23844,,"Gary, IN",{DIV},708117,708163,705792,703428\n'
+    f'17460,,,"Cleveland-Elyria, OH",{MSA},2077277,2075478,2067356,2048449\n'
+)
+
+# the same area in vintage 2025, printed under its current code, in the short
+# header. the estimates are real, the components invented
+VILLAGES_2025 = f'48680,,,"Wildwood-The Villages, FL",{MSA},129752,130293,134878,5,6,7,8,9,10'
+
+MEMBERSHIP = Path(__file__).resolve().parent.parent / "data" / "raw" / "gazetteer" / "cbsa_counties_by_vintage.csv"
+
 
 def csv(*rows):
     return HEAD + "".join(row + "\n" for row in rows)
@@ -285,6 +302,64 @@ class TestEdgeCases(unittest.TestCase):
         df = pep.parse_vintage(text)
         self.assertEqual(value(df, "10180", "natural_change", "2020"), 5)
         self.assertEqual(value(df, "10180", "domestic_migration_rate", "2020"), 70)
+
+
+class TestRenumbered(unittest.TestCase):
+    def test_a_retired_metro_code_lands_under_the_current_one(self):
+        df = pep.parse_vintage(RENUMBERED_2019)
+        self.assertEqual(value(df, "48680", "pop_estimate", "2014"), 112236)
+        self.assertEqual(value(df, "48680", "pop_estimate", "2019"), 132420)
+        self.assertNotIn("45540", df.cbsa_code.tolist())
+
+    def test_a_retired_division_code_lands_under_the_current_one(self):
+        df = pep.parse_vintage(RENUMBERED_2019)
+        self.assertEqual(value(df, "29414", "pop_estimate", "2014"), 705792)
+        self.assertNotIn("23844", df.cbsa_code.tolist())
+
+    # ashtabula moved into 17410, so 17460 is not the same counties
+    def test_a_code_that_moved_a_county_stays_where_it_was_printed(self):
+        df = pep.parse_vintage(RENUMBERED_2019)
+        self.assertEqual(value(df, "17460", "pop_estimate", "2014"), 2067356)
+        self.assertNotIn("17410", df.cbsa_code.tolist())
+
+    # the levels are kept as published, one vintage beside the other
+    def test_the_two_vintages_meet_under_the_current_code(self):
+        frames = {2019: pep.parse_vintage(RENUMBERED_2019), 2025: pep.parse_vintage(csv(VILLAGES_2025))}
+        merged = pep.merge_vintages(frames)
+        rows = merged[(merged.cbsa_code == "48680") & (merged.metric == "pop_estimate")]
+        self.assertEqual(dict(zip(rows.period, rows.value)),
+                         {"2010": 94278, "2014": 112236, "2019": 132420, "2020": 130293, "2021": 134878})
+        self.assertNotIn("45540", merged.cbsa_code.tolist())
+
+    # a file printing both codes keeps the row printed under the current one,
+    # whichever comes first
+    def test_the_current_code_wins_when_both_are_printed(self):
+        retired = f'45540,,,"The Villages, FL",{MSA},1,999,999,5,6,7,8,9,10'
+        for rows in ((retired, VILLAGES_2025), (VILLAGES_2025, retired)):
+            df = pep.parse_vintage(csv(*rows))
+            self.assertEqual(value(df, "48680", "pop_estimate", "2021"), 134878)
+            self.assertEqual(len(df[df.metric == "pop_estimate"]), 2)
+
+    def test_the_pairs_come_from_the_census_crosswalks(self):
+        crosswalks = {**pep.MSA_CROSSWALK, **pep.DIVISION_CROSSWALK}
+        self.assertEqual(pep.RENUMBERED, {old: new for old, new in crosswalks.items() if old not in pep.MOVED_A_COUNTY})
+        self.assertEqual(pep.RENUMBERED["45540"], "48680")
+        self.assertLessEqual(pep.MOVED_A_COUNTY, set(crosswalks))
+
+    # the premise, from the delineations the gazetteer archived: a pair kept
+    # holds the same counties under its old code, on every delineation that
+    # lists it, as under its new code on the newest, and a pair left out does not
+    def test_every_pair_kept_moved_no_county_and_every_pair_left_out_did(self):
+        if not MEMBERSHIP.exists():
+            self.skipTest("the gazetteer membership file is not on disk")
+        membership = build_map_data.load_membership(MEMBERSHIP)
+        newest = membership[max(membership)]
+        crosswalks = {**pep.MSA_CROSSWALK, **pep.DIVISION_CROSSWALK}
+        for old, new in crosswalks.items():
+            listed = [table[old] for table in membership.values() if old in table]
+            self.assertTrue(listed, old)
+            same = all(counties == newest[new] for counties in listed)
+            self.assertEqual(same, old in pep.RENUMBERED, f"{old} -> {new}")
 
 
 class TestHelpers(unittest.TestCase):

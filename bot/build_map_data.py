@@ -8,7 +8,7 @@ import pandas as pd
 from bot import indicators
 from bot.collectors.gazetteer import YEAR as GAZETTEER_YEAR
 from bot.common import (
-    BASE_DIR, INTEGRATED, RAW_DIR, STUDY_YEARS, WEB_DATA_DIR, replace_atomically,
+    BASE_DIR, INTEGRATED, RAW_DIR, STUDY_YEARS, WEB_DATA_DIR, env_key, replace_atomically,
     unchanged_but_for_stamps, utc_now
 )
 
@@ -52,6 +52,9 @@ FOOTPRINT_TOLERANCE = 0.02
 # guard that reads one of them is the defect this audit kept finding
 FORMER_CODE = {new: old for old, new in {**DIVISION_CROSSWALK, **MSA_CROSSWALK}.items()}
 
+# and the other way round, the code a former one is carried under now
+CURRENT_CODE = {old: new for new, old in FORMER_CODE.items()}
+
 # fhfa's metro series begin in 1975, so the panel draws the whole history, one
 # annual mean of the quarterly index per year, the last year partial. this is
 # the floor, not every metro's start: fhfa phased most of them in later and each
@@ -67,9 +70,11 @@ MONTH = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 # census marks a missing estimate with a large negative sentinel
 SENTINEL = -666666
 
+# every merged column the panels read, the degree share's denominator too. it
+# joined after this list was written, and a suppressed one published -0.0
 NUMERIC = [
     "year", "avg_index_nsa", "median_income", "total_pop", "median_age",
-    "bachelors_count", "masters_count", "total_occupied_units",
+    "adults_25_plus", "bachelors_count", "masters_count", "total_occupied_units",
     "owner_occupied_units", "median_home_value", "homeownership_rate",
 ]
 
@@ -168,6 +173,74 @@ def load_county_population(path):
     for vintage, group in df.dropna(subset=["population"]).groupby("vintage"):
         out[str(vintage)] = dict(zip(group["county_fips"], group["population"]))
     return out
+
+
+# the delineation a source files a year's rows on, named by the membership
+# vintage that lists its counties. bps filed 2014 to 2018 on february 2013,
+# 2019 to 2023 on september 2018 and 2024 on july 2023. pep's vintage 2019,
+# which carries 2010 to 2019, is september 2018, and its vintage 2025 is july 2023
+def bps_delineation(year):
+    return "2014" if int(year) <= 2018 else "2019" if int(year) <= 2023 else "2024"
+
+
+def pep_delineation(year):
+    return "2019" if int(year) <= 2019 else "2024"
+
+
+# the counties a cbsa code held on one delineation, through the code it had
+# before omb renumbered it, or none when that delineation does not carry it
+def counties_on(membership, vintage, code):
+    if not membership:
+        return None
+    table = membership.get(str(vintage), {})
+    counties = table.get(str(code))
+    if counties is None:
+        counties = table.get(FORMER_CODE.get(str(code)))
+    return counties
+
+
+# the share of a metro's people that changed hands between two vintages: the
+# counties it gained, counted where they were counted, plus the ones it lost,
+# over what it held in the earlier one. none when the populations are not on
+# disk, which sends the caller back to refusing every redraw
+def moved_share(county_population, later, earlier, added, removed, kept):
+    if not county_population:
+        return None
+    later_pop = county_population.get(str(later), {})
+    earlier_pop = county_population.get(str(earlier), {})
+    if not later_pop or not earlier_pop:
+        return None
+    base = sum(earlier_pop.get(f, 0.0) for f in kept | removed)
+    if base <= 0:
+        return None
+    moved = sum(later_pop.get(f, 0.0) for f in added) + sum(earlier_pop.get(f, 0.0) for f in removed)
+    return moved / base
+
+
+# none when two delineations give a code the same counties, or when either
+# does not carry it, since an unknown county set is not evidence of a change.
+# otherwise the share of its people that moved, and 1.0 when nobody can weigh it
+def footprint_share(membership, county_population, code, later, earlier):
+    later_counties = counties_on(membership, later, code)
+    earlier_counties = counties_on(membership, earlier, code)
+    if later_counties is None or earlier_counties is None or later_counties == earlier_counties:
+        return None
+    share = moved_share(county_population, later, earlier, later_counties - earlier_counties,
+                        earlier_counties - later_counties, later_counties & earlier_counties)
+    return 1.0 if share is None else share
+
+
+# the 1.0 above is the right call for withholding a rate and the wrong number
+# to publish as a share, since nobody measured it. true for exactly those
+# moves: two delineations give a code different counties and the populations
+# on disk cannot weigh the difference
+def unweighable(membership, county_population, code, later, earlier):
+    later_counties = counties_on(membership, later, code)
+    earlier_counties = counties_on(membership, earlier, code)
+    if later_counties is None or earlier_counties is None or later_counties == earlier_counties:
+        return False
+    return moved_share(county_population, later, earlier, later_counties - earlier_counties,
+                       earlier_counties - later_counties, later_counties & earlier_counties) is None
 
 
 def load_bls(path):
@@ -452,12 +525,45 @@ def indicator_months(spec, grid):
     raise ValueError(f"{spec['id']}: unknown transform {kind}")
 
 
+# the date each series was last read on
+def newest_readings(frame):
+    dated = frame.dropna(subset=["value"])
+    return {str(s): str(d) for s, d in dated.groupby("series_id")["date"].max().items()}
+
+
+# the newest month a reading dated newest has finished: its own month when it
+# falls on the month's last day, the month before otherwise
+def month_over(newest):
+    return newest[:7] if pd.Timestamp(newest).is_month_end else month_back(newest[:7], 1)
+
+
+# the newest month a tile's twelve month change may be measured at, none for a
+# monthly series, whose newest month is already a whole one. a daily or weekly
+# series is read partway through its newest month, and the same month a year
+# back is that month's last reading, so pairing the two measured fed funds over
+# eleven and a half months: -0.2 for a year the target fell 0.50. the change is
+# for the newest month every series behind the tile has finished instead, so
+# both ends are month ends a year apart and both are points on the chart
+def change_cap(spec, readings):
+    sides = [s for s in (spec["series"], spec.get("against")) if s]
+    if not any(s in indicators.DAILY_OR_WEEKLY for s in sides):
+        return None
+    return min(month_over(readings[s]) for s in sides)
+
+
 # value and date are the newest month with a number, history is the last
-# HISTORY_MONTHS of them, oldest first
-def indicator_record(spec, months):
+# HISTORY_MONTHS of them, oldest first. the change is for the newest month at
+# or before cap, and change_month says which, so the page can name it
+def indicator_record(spec, months, cap=None):
     dates = sorted(months)
     newest = dates[-1]
     value = months[newest]
+    month = newest if cap is None else max((m for m in dates if m <= cap), default=None)
+    # a rate is set in quarter points and published to two decimals, so its
+    # change is too. at one decimal the fed funds chip read -0.8 beside two
+    # levels on its own chart that differ by 0.75
+    digits = 2 if spec["format"] == "rate" else 1
+    change = None if month is None else diff(months[month], months.get(month_back(month, 12)), digits)
     return {
         "id": spec["id"],
         "label": spec["label"],
@@ -467,7 +573,8 @@ def indicator_record(spec, months):
         "note": spec["note"],
         "value": value,
         "date": newest,
-        "change_12m": diff(value, months.get(month_back(newest, 12))),
+        "change_12m": change,
+        "change_month": None if change is None else month,
         # the transform already rounded to the precision the tile publishes, so
         # the chart carries the tile's own number. rounding again here put the
         # fed funds tile at 3.75 and the line beside it at 3.8
@@ -479,11 +586,12 @@ def indicator_record(spec, months):
 # shown as a row of nulls
 def indicator_list(frame):
     grid = monthly_grid(frame)
+    readings = newest_readings(frame)
     records, skipped = [], []
     for spec in indicators.INDICATORS:
         months = indicator_months(spec, grid)
         if months:
-            records.append(indicator_record(spec, months))
+            records.append(indicator_record(spec, months, change_cap(spec, readings)))
         else:
             skipped.append(spec["id"])
     if skipped:
@@ -506,6 +614,14 @@ ENRICHMENT_FILE = "metrics.csv"
 # core field names a collector may not reuse
 RESERVED = {"hpi", "income", "pop", "age", "degree_share", "own_rate", "home_value", "zhvi", "zori", "unemp"}
 
+# the key's shape: a five digit code, and a period that is yyyy or yyyy-mm.
+# periods are compared as strings and only four digits reach a year panel, so
+# off this shape 2026Q2 read newer than 2026-07, 2026-7 newer than 2026-10 and
+# 2024.0 left its panel, and a code read as 10180.0 matched no metro, all in
+# silence
+KEY_CODE = r"\d{5}"
+KEY_PERIOD = r"\d{4}(-(0[1-9]|1[0-2]))?"
+
 
 # any collector can drop metrics.csv beside its manifest with the columns
 # cbsa_code, metric, period, value. period is yyyy for an annual value or
@@ -520,8 +636,20 @@ def load_enrichment(path):
     clash = sorted(set(df["metric"].dropna()) & RESERVED)
     if clash:
         raise ValueError(f"{path.parent.name}/metrics.csv reuses core field names {clash}")
+    # latest keeps a metric's date under its name and _date, so a metric named
+    # that way writes over another one's date
+    dated = sorted(m for m in set(df["metric"].dropna()) if m.endswith("_date"))
+    if dated:
+        raise ValueError(f"{path.parent.name}/metrics.csv names metrics {dated}, where latest keeps the dates")
     df["value"] = pd.to_numeric(df["value"], errors="coerce")
     df = df.dropna(subset=["cbsa_code", "metric", "period", "value"])
+    off = df[~(df["cbsa_code"].str.fullmatch(KEY_CODE) & df["period"].str.fullmatch(KEY_PERIOD))]
+    if len(off):
+        first = off.iloc[0]
+        raise ValueError(
+            f"{path.parent.name}/metrics.csv has {len(off)} rows off the key, a five digit cbsa_code and a "
+            f"yyyy or yyyy-mm period, first at {first['cbsa_code']} {first['metric']} {first['period']}"
+        )
     # cbsa_code, metric and period are the key. a repeat used to be resolved
     # twice over in one pass, the year panel taking the last row and the latest
     # tile the first, so one metric showed two numbers for one period
@@ -532,6 +660,16 @@ def load_enrichment(path):
             f"{path.parent.name}/metrics.csv repeats (cbsa_code, metric, period): "
             f"{len(repeated)} rows, first at {first['cbsa_code']} {first['metric']} {first['period']}"
         )
+    # omb renumbered a few metros and divisions without moving a county, and a
+    # collector files each year under the code the publisher printed that year,
+    # so cleveland's 2014 rent sat under 17460 while the map carries 17410 and
+    # 113 year panel cells shipped null. a row under the former code is the
+    # same metro's, and where both codes carry a period the current code's row
+    # stands
+    current = df["cbsa_code"].map(CURRENT_CODE).fillna(df["cbsa_code"])
+    renumbered = current != df["cbsa_code"]
+    df = df.assign(cbsa_code=current)
+    df = df[~(renumbered & df.duplicated(["cbsa_code", "metric", "period"], keep=False))]
     return {
         "name": path.parent.name,
         "folder": path.parent,
@@ -672,6 +810,41 @@ def apply_enrichments(metro, enrichments, parent_code=None):
     return metro
 
 
+# the two metrics the page divides into units permitted per 1,000 residents
+PERMITS, PEOPLE = "permits_units", "pop_estimate"
+
+
+# the page divides a year panel's permits by the same panel's people, and the
+# two sources file a year on different delineations: bps put 2014 on february
+# 2013 and pep on september 2018. where omb moved more than the tolerance of a
+# metro's people between the two, the rate divides one place by another, so
+# the panel carries the share and the page withholds it. jackson tn is the
+# widest, 205 units over three counties by the people of four, 1.14 per 1,000
+# where its own counties give 1.58. a division that takes both from its parent
+# is its parent's footprint, one that takes only one shows no rate at all, and
+# a panel missing either side has no rate to withhold. a move nobody can weigh
+# is withheld too, marked unweighed rather than given a share
+def mark_permit_footprints(metro, membership, county_population):
+    inherited = metro.get("parent_metrics") or []
+    if (PERMITS in inherited) != (PEOPLE in inherited):
+        return metro
+    code = metro["parent"]["cbsa"] if PERMITS in inherited else metro["cbsa"]
+    for year in STUDY_YEARS:
+        panel = metro["years"][str(year)]
+        counted, living = bps_delineation(year), pep_delineation(year)
+        if counted == living or panel.get(PERMITS) is None or panel.get(PEOPLE) is None:
+            continue
+        later, earlier = max(counted, living), min(counted, living)
+        share = footprint_share(membership, county_population, code, later, earlier)
+        if share is None or share <= FOOTPRINT_TOLERANCE:
+            continue
+        if unweighable(membership, county_population, code, later, earlier):
+            panel["permits_unweighed"] = True
+        else:
+            panel["permits_footprint"] = rnd(share, 4)
+    return metro
+
+
 # --- provenance ---
 
 # one line per source folder rather than one per file: the first manifest entry
@@ -760,33 +933,6 @@ def build_metros(merged, centroids, zhvi=None, zori=None, bls_frame=None, enrich
     metros, dropped, unmatched = [], 0, 0
     y0, y1, y2 = STUDY_YEARS
 
-    # the counties a cbsa code held in one vintage, or none when the delineation
-    # of that vintage does not carry the code at all
-    def counties_at(year, code):
-        if not membership:
-            return None
-        vintage = membership.get(str(year), {})
-        counties = vintage.get(str(code))
-        if counties is None:
-            counties = vintage.get(FORMER_CODE.get(str(code)))
-        return counties
-
-    # the share of a metro's people that changed hands between two vintages: the
-    # counties it gained, counted where they were counted, plus the ones it lost,
-    # over what it held in the earlier one. none when the populations are not on
-    # disk, which sends the caller back to refusing every redraw
-    def moved_share(later_year, earlier_year, added, removed, kept):
-        if not county_population:
-            return None
-        later_pop = county_population.get(str(later_year), {})
-        earlier_pop = county_population.get(str(earlier_year), {})
-        if not later_pop or not earlier_pop:
-            return None
-        base = sum(earlier_pop.get(f, 0.0) for f in kept | removed)
-        if base <= 0:
-            return None
-        moved = sum(later_pop.get(f, 0.0) for f in added) + sum(earlier_pop.get(f, 0.0) for f in removed)
-        return moved / base
     for cbsa, group in merged.groupby("cbsa_code", sort=False):
         if cbsa not in centroids.index:
             dropped += 1
@@ -837,40 +983,35 @@ def build_metros(merged, centroids, zhvi=None, zori=None, bls_frame=None, enrich
         # none when the two vintages are the same place, otherwise the share of
         # the metro's people that changed hands. a share the tolerance allows is
         # reported anyway and recorded in approx_growth, since a boundary tidied
-        # is not a metro redrawn
+        # is not a metro redrawn. the second value says whether anyone weighed
+        # it: a change nobody can weigh is a change, so it comes back as 1.0 and
+        # withholds the rates, and it is not a share to publish
         def footprint_move(later_year, earlier_year):
-            later_counties = counties_at(later_year, cbsa)
-            earlier_counties = counties_at(earlier_year, cbsa)
-            if later_counties is None or earlier_counties is None:
+            if counties_on(membership, later_year, cbsa) is None or counties_on(membership, earlier_year, cbsa) is None:
                 later_states = name_states(value(later_year, "NAME"))
                 earlier_states = name_states(value(earlier_year, "NAME"))
                 if later_states and earlier_states and later_states != earlier_states:
-                    return 1.0
-                return None
-            if later_counties == earlier_counties:
-                return None
-            share = moved_share(later_year, earlier_year,
-                                later_counties - earlier_counties,
-                                earlier_counties - later_counties,
-                                later_counties & earlier_counties)
-            # a change nobody can weigh is a change
-            return 1.0 if share is None else share
+                    return 1.0, False
+                return None, True
+            share = footprint_share(membership, county_population, cbsa, later_year, earlier_year)
+            return share, not unweighable(membership, county_population, cbsa, later_year, earlier_year)
 
         # the three acs rates all span the same pair of vintages, so one number
         # describes all of them. moved is set when a rate was reported over a
         # footprint that did move, which is seven of the 410 metros. refused is
         # set when there was a rate to report and the move was too far for it,
         # because a withheld number and a number nobody measured are different
-        # claims and a blank cell cannot tell them apart. the two are exclusive:
-        # one share covers all three rates
-        moved, refused = [], []
+        # claims and a blank cell cannot tell them apart. unweighed is refused
+        # over a move nobody could weigh. the three are exclusive: one share
+        # covers all three rates
+        moved, refused, unweighed = [], [], []
 
         def acs_growth(later_year, earlier_year, col):
-            share = footprint_move(later_year, earlier_year)
+            share, weighed = footprint_move(later_year, earlier_year)
             rate = growth(value(later_year, col), value(earlier_year, col))
             if share is not None and share > FOOTPRINT_TOLERANCE:
                 if rate is not None:
-                    refused.append(share)
+                    (refused if weighed else unweighed).append(share)
                 return None
             if share is not None and rate is not None:
                 moved.append(share)
@@ -923,9 +1064,14 @@ def build_metros(merged, centroids, zhvi=None, zori=None, bls_frame=None, enrich
             record["footprint_moved"] = rnd(max(moved), 4)
         if refused:
             record["footprint_refused"] = rnd(max(refused), 4)
+        # withheld all the same, and with no share: the page printed the 1.0
+        # that stands in for it as 100.00 percent of the metro's people
+        if unweighed:
+            record["footprint_unweighed"] = True
         if hpi_series:
             record["series"] = {"hpi": hpi_series}
-        metros.append(apply_enrichments(record, enrichments, parent["cbsa"] if parent else None))
+        metro = apply_enrichments(record, enrichments, parent["cbsa"] if parent else None)
+        metros.append(mark_permit_footprints(metro, membership, county_population))
 
     metros.sort(key=lambda m: m["name"])
     return metros, dropped, unmatched
@@ -996,27 +1142,112 @@ def national_block(fred_frame, national_frame=None):
     return block or None
 
 
-# what a build is worth in the file: the metros it put on the map, the tiles in
-# the strip, and how many metros carry a number for each field beside them. the
-# version string next to a source is a manifest's word for it and a build that
-# opened nothing still carries it, so the refusal below is measured on these
-def payload_counts(payload):
-    national = payload.get("national") or {}
-    counts = {
-        "metros": len(payload.get("metros") or []),
-        "indicators": len(national.get("indicators") or []),
-        "mortgage_rate": sum(1 for v in (national.get("mortgage_rate") or {}).values() if v is not None),
+# the share of a column's cells a rebuild may lose before it is refused. a
+# column is one field of one panel across the metros, a year's or latest, one
+# tile's history across its months, one metro's price history across its
+# years, every metro's price history together, the mortgage block, or the
+# metros themselves. measured over the 31 committed versions of the map, the
+# largest loss a rebuild meant to make was one year of a 27 year price
+# history, 3.7 percent, in two metros when a year short of four quarters
+# stopped being drawn as a mean. a tile's history slid one month of sixty,
+# 1.7 percent, when the strip carried five years. on a panel it was 6 of 403
+# of the 2024 rents, 1.5 percent, when an annual mean began to need three
+# quarters of a year, and a zillow refresh took 3 of 388 days to pending, 0.8.
+# the loss the guard is for took every cell of seven columns at once, the
+# national refresh that blanked zillow. five percent is more than any loss
+# anyone meant, and still lets the shortest price history today, 26 years,
+# lose one, 3.8 percent. a source that goes missing takes all of its cells.
+#
+# the decade rates and the price to income ratios are not columns here. they
+# are the build's arithmetic over the year panels, which are, and its
+# judgement too: 72 of 377 decade rates were withheld at once, 19 percent,
+# when the county sets began deciding them
+LOSS_TOLERANCE = 0.05
+
+# a loss that is meant, a source retired or a rule that withholds more, goes
+# through by naming it here, comma separated, or in build(allow_loss=...). the
+# refusal says which names
+ALLOW_LOSS = "LOOP_ALLOW_LOSS"
+
+# the column every metro's price history is counted in together. each metro's
+# own line is counted again under its code
+HISTORY = "series.hpi"
+
+
+def history_column(code):
+    return f"{HISTORY}.{code}"
+
+
+# what a build is worth in the file: every number a source put there, as
+# {column: (field, keys holding a number)}. field names the column's source
+# through CORE_FIELDS or the enrichment that published it, and a key is the
+# metro, year, month or period the cell belongs to. the version string next to a
+# source is a manifest's word for it and a build that opened nothing still
+# carries it, so the refusal below is measured on these. a date or a flag
+# says something about a number and is not one
+def payload_cells(payload):
+    cells = {}
+
+    def column(name, field):
+        return cells.setdefault(name, (field, set()))[1]
+
+    def number(value):
+        return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+    for metro in payload.get("metros") or []:
+        code = metro.get("cbsa")
+        column("metros", "metros").add(code)
+        panels = [(f"years.{year}", panel) for year, panel in (metro.get("years") or {}).items()]
+        panels.append(("latest", metro.get("latest") or {}))
+        for name, panel in panels:
+            for field, value in panel.items():
+                held = column(f"{name}.{field}", field)
+                if number(value):
+                    held.add(code)
         # the note a weighed boundary move leaves. without the delineations on
         # disk nothing can be weighed, and the decade rates the file withholds
         # would come back as numbers over two different places
-        "footprint_moved": sum(1 for m in payload.get("metros") or [] if m.get("footprint_moved") is not None),
-        "footprint_refused": sum(1 for m in payload.get("metros") or [] if m.get("footprint_refused") is not None),
-    }
-    for metro in payload.get("metros") or []:
-        for field, value in (metro.get("latest") or {}).items():
-            if value is not None and not field.endswith("_date"):
-                counts[field] = counts.get(field, 0) + 1
-    return counts
+        for field in ("footprint_moved", "footprint_refused"):
+            if number(metro.get(field)):
+                column(field, field).add(code)
+        # the price history the panel draws, one point a year. latest.hpi is
+        # only its newest point, so an fhfa file cut to 2020 onward kept 2,869
+        # of 17,768 points and every counted column, and was written. each
+        # metro's line is a column, as a tile's history is, and all the lines
+        # together are one more, keyed by metro and year
+        history = (metro.get("series") or {}).get("hpi") or {}
+        start = history.get("start")
+        if number(start):
+            years = {start + place for place, value in enumerate(history.get("values") or []) if number(value)}
+            column(HISTORY, "hpi").update((code, year) for year in years)
+            column(history_column(code), "hpi").update(years)
+    national = payload.get("national") or {}
+    for tile in national.get("indicators") or []:
+        held = column(f"indicators.{tile.get('id')}", "indicators")
+        held.update(point.get("date") for point in tile.get("history") or [] if number(point.get("value")))
+    for period, value in (national.get("mortgage_rate") or {}).items():
+        if number(value):
+            column("mortgage_rate", "mortgage_rate").add(period)
+    return cells
+
+
+# the columns that lost more than the tolerance of their cells, as {column:
+# (field, held, kept)}. a column that is gone lost every cell, so a tile that
+# vanishes is always one of these. a metro's own line is judged while the
+# metro is on the map. a metro that left, dropped or renumbered, is the metros
+# column's loss, and its points still count in the whole history the way its
+# panel cells count in theirs
+def lost_cells(before, after):
+    left = before.get("metros", ("metros", set()))[1] - after.get("metros", ("metros", set()))[1]
+    left_with_their_metro = {history_column(code) for code in left}
+    out = {}
+    for name, (field, held) in before.items():
+        if name in left_with_their_metro:
+            continue
+        kept = held & (after[name][1] if name in after else set())
+        if len(held) - len(kept) > LOSS_TOLERANCE * len(held):
+            out[name] = (field, len(held), len(kept))
+    return out
 
 
 # the source behind each core field, so a refusal names the collector to run
@@ -1024,15 +1255,34 @@ def payload_counts(payload):
 # folder that published it, which the build knows for every folder it read
 CORE_FIELDS = {
     "hpi": "fhfa", "zhvi": "zillow", "zori": "zillow", "unemp": "bls",
+    "income": "census", "pop": "census", "age": "census", "degree_share": "census",
+    "own_rate": "census", "home_value": "census",
     "indicators": "national", "mortgage_rate": "fred",
+    # the vintage tables weigh these
+    "footprint_moved": "gazetteer", "footprint_refused": "gazetteer", "permits_footprint": "gazetteer",
+    # the census join placed at the gazetteer's centroids, which no one
+    # collector owns, so it goes by its own name
+    "metros": "metros",
 }
+
+
+# names given as "bls,zillow" or as a list of them
+def loss_names(names):
+    names = names.split(",") if isinstance(names, str) else names
+    return {name.strip() for name in names or () if name and name.strip()}
 
 
 # a source is optional on a first build and mandatory on every one after. the
 # zillow csvs are gitignored, so a checkout that has not run that collector
 # cannot see them, and a partial rebuild would write nulls over every zhvi and
-# zori in the file. fail instead, and name what went missing
-def refuse_to_lose_a_source(out_path, payload, enrichments=()):
+# zori in the file. fail instead, and name what went missing.
+#
+# it used to count each field of latest, the metros and the tiles as one total
+# apiece and refuse only a total that reached zero, so a keyless bls pull
+# blanked every 2014 unemployment rate on a year panel nothing counted, and a
+# rebuild that kept 2 metros of 410, or 12 tiles of 13, was written. it is
+# measured cell by cell against the file on disk now
+def refuse_to_lose_a_source(out_path, payload, enrichments=(), allow=()):
     out_path = Path(out_path)
     if not out_path.exists():
         return
@@ -1040,8 +1290,6 @@ def refuse_to_lose_a_source(out_path, payload, enrichments=()):
         previous = json.loads(out_path.read_text())
     except ValueError:
         return
-    before, after = payload_counts(previous), payload_counts(payload)
-    emptied = [field for field, count in before.items() if count and not after.get(field)]
     owner = dict(CORE_FIELDS)
     for source in enrichments:
         for metric in source["metrics"]:
@@ -1049,20 +1297,27 @@ def refuse_to_lose_a_source(out_path, payload, enrichments=()):
     # a folder that published a metrics.csv into the file before and has none
     # this time is where the metrics nothing else accounts for went
     live = {source["name"] for source in enrichments}
-    gone = {e.get("source") for e in (previous.get("provenance") or [])
-            if e.get("filename") == ENRICHMENT_FILE and e.get("source") not in live}
-    lost = {owner[field] for field in emptied if field in owner}
-    orphans = [field for field in emptied if field not in owner]
-    if orphans:
-        lost.update(gone or orphans)
+    gone = sorted({e.get("source") for e in (previous.get("provenance") or [])
+                   if e.get("filename") == ENRICHMENT_FILE and e.get("source") not in live})
+    lost = {}
+    for column, (field, held, kept) in lost_cells(payload_cells(previous), payload_cells(payload)).items():
+        for name in [owner[field]] if field in owner else gone or [column]:
+            lost.setdefault(name, []).append(f"{column} {held} to {kept}")
     had = {name for name, version in (previous.get("sources") or {}).items() if version}
     has = {name for name, version in (payload.get("sources") or {}).items() if version}
-    lost.update(had - has)
+    for name in had - has:
+        lost.setdefault(name, []).append("version")
+    allowed = loss_names(allow)
+    lost = {name: columns for name, columns in lost.items() if name not in allowed}
     if lost:
+        detail = "; ".join(f"{name} {', '.join(columns[:3])}"
+                           + (f" and {len(columns) - 3} more" if len(columns) > 3 else "")
+                           for name, columns in sorted(lost.items()))
         raise RuntimeError(
-            f"{out_path.name} already carries {sorted(lost)} and this build cannot see "
-            "them, so writing would blank those columns. run those collectors "
-            "first, or build somewhere else"
+            f"{out_path.name} already carries {sorted(lost)} and this build would lose them "
+            f"({detail}), so writing would blank those columns. run those collectors first, "
+            f"or build somewhere else. a loss that is meant goes through with "
+            f"{ALLOW_LOSS}={','.join(sorted(lost))}"
         )
 
 
@@ -1075,7 +1330,7 @@ def optional(path, loader, label):
     return loader(path)
 
 
-def build(out_path=None, paths=None):
+def build(out_path=None, paths=None, allow_loss=()):
     p = dict(DEFAULT_PATHS)
     if paths:
         p.update(paths)
@@ -1129,7 +1384,7 @@ def build(out_path=None, paths=None):
 
     out_path = Path(out_path) if out_path else WEB_DATA_DIR / "metros.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    refuse_to_lose_a_source(out_path, payload, enrichments)
+    refuse_to_lose_a_source(out_path, payload, enrichments, loss_names(allow_loss) | loss_names(env_key(ALLOW_LOSS)))
     # the daily national refresh rebuilds this whether or not fred moved, so a
     # rebuild that lands on the same numbers leaves the file exactly as it was
     if not unchanged_but_for_stamps(out_path, payload):

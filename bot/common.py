@@ -201,6 +201,13 @@ class Landing:
         self.text(MANIFEST_FILE, json.dumps(entries, indent=2) + "\n")
         return path
 
+    # the landing is still one rename per file, since no filesystem renames a
+    # set of files at once. a rename that fails partway, or a run killed
+    # between two of them, leaves the mix described above, in a window of
+    # milliseconds where it used to be the whole run. a workflow run that fails
+    # commits nothing, and the next run that finishes lands every file again.
+    # closing it for good would take a journal every reader checks, which this
+    # window is not worth
     def commit(self):
         for name in self.names:
             os.replace(self.staging / name, self.folder / name)

@@ -1,8 +1,15 @@
 import io
+import sys
 
 import pandas as pd
 
-from bot.common import RAW_DIR, fetch, manifest_entry, staged_folder, write_csv
+from bot.common import BASE_DIR, RAW_DIR, fetch, manifest_entry, staged_folder, write_csv
+
+# scripts/ is not a package, so put it on the path before importing the
+# crosswalks the census download joins the older vintages on
+sys.path.insert(0, str(BASE_DIR / "scripts"))
+
+from download_census import DIVISION_CROSSWALK, MSA_CROSSWALK
 
 OUT_DIR = RAW_DIR / "pep"
 OUT_FILE = OUT_DIR / "metrics.csv"
@@ -30,6 +37,34 @@ COMPONENTS = {
 RATE = "domestic_migration_rate"
 METRICS = [*COMPONENTS, RATE]
 BASE_PREFIX = "ESTIMATESBASE"
+
+# a publisher prints the code an area had on the delineation it filed under,
+# so a year printed under a code omb has since retired never reached the code
+# the map and the panel carry: the villages 2014 sat under 45540 while the
+# map asked for 48680. the census download follows the renumbering through
+# its two crosswalks, and so do this collector and bps, for the pairs where
+# omb moved no county: on every delineation that lists the old code, it held
+# the counties the new code holds today. two pairs moved a county and stay
+# where they were printed: cleveland 17460, now 17410, took in ashtabula in
+# july 2023, and the chicago division 16974, now 16984, gave kendall to elgin
+# in september 2018. whether a series may run across a move like that is the
+# footprint guard's question, not the collector's
+MOVED_A_COUNTY = {"17460", "16974"}
+RENUMBERED = {old: new for old, new in {**MSA_CROSSWALK, **DIVISION_CROSSWALK}.items()
+              if old not in MOVED_A_COUNTY}
+
+
+# a retired code whose successor the same file also prints. the row printed
+# under the current code is the one kept
+def superseded(codes):
+    printed = set(codes)
+    return codes.isin([old for old, new in RENUMBERED.items() if new in printed])
+
+
+# every code under the one it carries today, the rows superseded() names
+# already gone
+def renumber(codes):
+    return codes.replace(RENUMBERED)
 
 
 # every vintage sits in a folder named for the years it covers
@@ -66,15 +101,17 @@ def year_columns(columns, prefixes):
 
 
 # metro, micro and division rows keyed the way the map wants: a division by
-# its MDIV, everything else by its CBSA. county rows and unlabelled rows go,
-# a code seen twice keeps its first row
+# its MDIV, everything else by its CBSA, a renumbered code by the code that
+# replaced it. county rows and unlabelled rows go, a code seen twice keeps
+# its first row
 def area_rows(df):
     lsad = df["LSAD"].fillna("").str.strip()
     df = df[lsad.isin(AREA_LSAD)]
     division = lsad[df.index] == DIVISION
     code = df["CBSA"].where(~division, df["MDIV"]).fillna("").str.strip()
     df = df.assign(cbsa_code=code.str.zfill(5))[code.str.fullmatch(r"\d{1,5}")]
-    return df.drop_duplicates("cbsa_code")
+    df = df[~superseded(df["cbsa_code"])]
+    return df.assign(cbsa_code=renumber(df["cbsa_code"])).drop_duplicates("cbsa_code")
 
 
 # domestic migration per thousand residents, where both sides exist and the
@@ -197,6 +234,8 @@ def collect():
                 "base_years": "the population estimate is kept, the components are skipped "
                               "because they cover april to june of that year only",
                 "rate": "domestic_migration_rate is domestic_migration per 1,000 of pop_estimate",
+                # retired code: the code its rows are filed under
+                "renumbered": RENUMBERED,
             },
         ))
         landing.manifest(entries)

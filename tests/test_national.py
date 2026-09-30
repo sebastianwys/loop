@@ -193,8 +193,10 @@ class TestRecord(NationalCase):
 
     # one cent a month for twelve months is 0.12, and the change rounds to one
     # decimal like every other tile
-    def test_change_12m_rounds_to_one_decimal(self):
-        self.assertEqual(self.record("treasury_10y", self.rate_rows())["change_12m"], 0.1)
+    # a rate is published to two decimals and so is its change, while a
+    # percent tile keeps one
+    def test_a_rate_change_keeps_two_decimals(self):
+        self.assertEqual(self.record("treasury_10y", self.rate_rows())["change_12m"], 0.12)
 
     def test_change_12m_is_negative_when_the_level_falls(self):
         rows = [("UNRATE", "2025-08-01", "4.3"), ("UNRATE", "2026-08-01", "3.9")]
@@ -247,11 +249,76 @@ class TestRecord(NationalCase):
     def test_record_keys_come_from_the_contract(self):
         record = self.record("treasury_10y", self.rate_rows(count=3))
         self.assertEqual(list(record), ["id", "label", "group", "format", "provider",
-                                        "note", "value", "date", "change_12m", "history"])
+                                        "note", "value", "date", "change_12m", "change_month", "history"])
         spec = indicators.by_id("treasury_10y")
         self.assertEqual([record["label"], record["group"], record["format"], record["provider"]],
                          [spec["label"], spec["group"], spec["format"], spec["provider"]])
         self.assertIn(record["group"], indicators.GROUPS)
+
+
+# a daily or weekly series is read partway through its newest month, and the
+# same month a year back is that month's last reading, so pairing the two put
+# fed funds at -0.2 for a year the target fell 0.50. the chip is for the newest
+# month every series behind the tile has finished, and says which month
+class TestTheChangeIsForAFinishedMonth(NationalCase):
+    # the upper limit of the target at month ends, then the day of the build
+    TARGET = [("2025-08-31", "4.50"), ("2025-09-30", "4.25"), ("2025-10-31", "4.00"),
+              ("2026-07-31", "3.75"), ("2026-08-31", "3.75"), ("2026-09-17", "4.00")]
+
+    def tile(self, indicator_id, rows):
+        return next(r for r in bm.indicator_list(self.frame(rows)) if r["id"] == indicator_id)
+
+    def target(self, rows):
+        return self.tile("fed_funds", [("DFEDTARU", d, v) for d, v in rows])
+
+    # august 2026 at 3.75 against august 2025 at 4.50, both month ends
+    def test_a_reading_partway_through_a_month_is_measured_at_the_month_before(self):
+        tile = self.target(self.TARGET)
+        self.assertEqual((tile["value"], tile["date"]), (4.0, "2026-09"))
+        self.assertEqual((tile["change_month"], tile["change_12m"]), ("2026-08", -0.75))
+
+    # and both ends of it are points on the chart drawn beside the tile
+    def test_the_chip_is_the_difference_of_two_points_on_the_chart(self):
+        tile = self.target(self.TARGET)
+        chart = {point["date"]: point["value"] for point in tile["history"]}
+        month = tile["change_month"]
+        self.assertEqual(bm.diff(chart[month], chart[bm.month_back(month, 12)], 2), tile["change_12m"])
+
+    def test_a_reading_on_the_last_day_of_a_month_finishes_it(self):
+        tile = self.target(self.TARGET[:-1])
+        self.assertEqual((tile["date"], tile["change_month"], tile["change_12m"]), ("2026-08", "2026-08", -0.75))
+
+    # the last thursday of a month is not its end, so a weekly series waits for
+    # its first reading in the next month
+    def test_a_weekly_series_waits_for_the_next_month(self):
+        rows = [("MORTGAGE30US", "2025-07-31", "6.72"), ("MORTGAGE30US", "2025-08-28", "6.58"),
+                ("MORTGAGE30US", "2026-07-30", "6.70"), ("MORTGAGE30US", "2026-08-27", "6.66")]
+        self.assertEqual(self.tile("mortgage", rows)["change_month"], "2026-07")
+        tile = self.tile("mortgage", rows + [("MORTGAGE30US", "2026-09-03", "6.71")])
+        self.assertEqual((tile["change_month"], tile["change_12m"]), ("2026-08", 0.08))
+
+    # a spread has finished a month only where both of its series have
+    def test_a_spread_waits_for_the_later_of_its_two_series(self):
+        rows = [("DGS1", "2025-07-31", "3.90"), ("DGS1", "2025-08-29", "3.85"), ("DGS1", "2026-07-31", "4.08"),
+                ("DGS1", "2026-08-31", "4.16"), ("DGS1", "2026-09-16", "4.45"),
+                ("EFFR", "2025-07-31", "4.33"), ("EFFR", "2025-08-29", "4.33"), ("EFFR", "2026-07-31", "3.63"),
+                ("EFFR", "2026-08-28", "3.63")]
+        tile = self.tile("rate_path", rows)
+        self.assertEqual((tile["date"], tile["change_month"], tile["change_12m"]), ("2026-08", "2026-07", 0.88))
+
+    # a monthly series publishes a whole month, so its newest one is finished
+    def test_a_monthly_series_is_measured_at_its_newest_month(self):
+        rows = [("UNRATE", "2025-08-01", "4.3"), ("UNRATE", "2026-08-01", "3.9")]
+        tile = self.tile("unemployment", rows)
+        self.assertEqual((tile["date"], tile["change_month"], tile["change_12m"]), ("2026-08", "2026-08", -0.4))
+
+    def test_a_change_with_no_base_names_no_month(self):
+        tile = self.target(self.TARGET[3:])
+        self.assertEqual((tile["change_12m"], tile["change_month"]), (None, None))
+
+    def test_a_month_is_over_on_its_last_calendar_day(self):
+        self.assertEqual([bm.month_over(d) for d in ("2026-08-31", "2026-08-28", "2026-02-28", "2024-02-28")],
+                         ["2026-08", "2026-07", "2026-02", "2024-01"])
 
 
 class TestIndicatorList(NationalCase):
@@ -330,6 +397,11 @@ class TestCollector(unittest.TestCase):
 
     def test_every_daily_series_is_one_the_contract_asks_for(self):
         self.assertTrue(set(national.DAILY) <= set(indicators.series_ids()))
+
+    # the build measures these at a finished month, so it has to know them
+    def test_every_series_cut_to_month_ends_is_one_the_build_knows_is_daily(self):
+        self.assertTrue(set(national.DAILY) <= set(indicators.DAILY_OR_WEEKLY))
+        self.assertTrue(set(indicators.DAILY_OR_WEEKLY) <= set(indicators.series_ids()))
 
     def test_out_file_is_the_path_the_build_reads(self):
         self.assertEqual(national.OUT_FILE, bm.DEFAULT_PATHS["national"])

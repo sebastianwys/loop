@@ -301,6 +301,19 @@ class TestEdgeCases(BuildCase):
         self.assertIsNone(chicago["years"]["2024"]["age"])
         self.assertEqual(chicago["years"]["2019"]["age"], 36.0)
 
+    # the degree share's denominator joined after the mask was written, and a
+    # suppressed one divided the counts into -0.0 instead of a blank
+    def test_a_sentinel_universe_gives_a_null_share(self):
+        rows = [list(row) for row in MERGED]
+        for row in rows:
+            if row[0] == "10180" and row[4] == 2019:
+                row[MERGED_COLS.index("adults_25_plus")] = -666666666
+        path = Path(self.tmp.name) / "merged_sentinel_universe.csv"
+        pd.DataFrame(rows, columns=MERGED_COLS).to_csv(path, index=False)
+        abilene = self.metro(self.build(merged=path), "10180")
+        self.assertIsNone(abilene["years"]["2019"]["degree_share"])
+        self.assertEqual(abilene["years"]["2014"]["degree_share"], 0.1846)
+
     def test_blank_ownership_rate_falls_back_to_the_counts(self):
         chicago = self.metro(self.build(), "16980")
         self.assertEqual(chicago["years"]["2019"]["own_rate"], 0.6286)
@@ -554,6 +567,39 @@ class TestEnrichment(unittest.TestCase):
         self.assertEqual(chi["years"]["2024"]["permits"], 30000.0)
         self.assertEqual(chi["years"]["2024"]["own_metric"], 1.0)
         self.assertEqual(chi["parent_metrics"], ["permits"])
+
+    # omb renumbered cleveland 17460 to 17410 without moving a county, and a
+    # collector files a year under the code printed that year. the rows under
+    # the former code are the same metro's and reach its year panels
+    def test_a_row_under_a_former_code_reaches_the_current_one(self):
+        self.assertEqual(bm.FORMER_CODE["17410"], "17460")
+        merged = pd.DataFrame({"cbsa_code": ["17410"], "place_name": ["Cleveland, OH"], "year": [2024],
+                               "avg_index_nsa": [200.0], "geo_level": ["msa"], "parent_cbsa": [None]})
+        centroids = pd.DataFrame({"cbsa_code": ["17410"], "name": ["Cleveland, OH Metro Area"],
+                                  "lat": [41.5], "lon": [-81.7]}).set_index("cbsa_code")
+        with tempfile.TemporaryDirectory() as tmp:
+            self.write(tmp, "acs", ["17460,gross_rent,2014,750", "17410,gross_rent,2024,900"])
+            source = bm.discover_enrichments(tmp)[0]
+            metros, _, _ = bm.build_metros(merged, centroids, enrichments=[source])
+        self.assertNotIn("17460", source["groups"])
+        years = metros[0]["years"]
+        self.assertEqual((years["2014"]["gross_rent"], years["2024"]["gross_rent"]), (750.0, 900.0))
+        self.assertEqual((metros[0]["latest"]["gross_rent"], metros[0]["latest"]["gross_rent_date"]), (900.0, "2024"))
+
+    def test_where_both_codes_carry_a_period_the_current_code_stands(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.write(tmp, "acs", ["17460,gross_rent,2014,750", "17410,gross_rent,2014,760",
+                                    "17460,gross_rent,2019,800"])
+            source = bm.discover_enrichments(tmp)[0]
+        annual, _ = bm.enrich_values(source["groups"]["17410"])
+        self.assertEqual(annual, {("gross_rent", 2014): 760.0, ("gross_rent", 2019): 800.0})
+
+    # a repeat under one code is still the collector's mistake, not a renumbering
+    def test_a_repeat_under_one_code_still_stops_the_build(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.write(tmp, "acs", ["17460,gross_rent,2014,750", "17460,gross_rent,2014,760"])
+            with self.assertRaises(ValueError):
+                bm.discover_enrichments(tmp)
 
     def test_metro_never_inherits(self):
         merged, centroids = self.frames()
@@ -817,6 +863,18 @@ class TestTheMetricsContractIsAKey(BuildCase):
         abi = self.metro(self.build(), "10180")
         self.assertEqual((abi["years"]["2019"]["permits"], abi["years"]["2024"]["permits"]), (700.0, 850.0))
 
+    # the key has a shape too. off it, a period compared as a string won latest
+    # over a newer one or left its year panel, a code read as 10180.0 matched
+    # no metro, and a metric named x_date wrote over the date latest keeps for x
+    def test_a_key_off_the_contract_is_refused(self):
+        for body in ("10180,permits,2024.0,850\n", "10180,listings,2026Q2,90\n", "10180,listings,2026-7,90\n",
+                     "10180.0,permits,2024,850\n", "10180,x,2024,1\n10180,x_date,2024,5\n"):
+            with self.subTest(body=body):
+                self.source("keys", body)
+                with self.assertRaises(ValueError) as caught:
+                    self.build()
+                self.assertIn("keys/metrics.csv", str(caught.exception))
+
     # metric names are the payload's namespace, and folder order decided the
     # winner. inventory is already owned by zillow_extras, so this is one
     # collector away from being live
@@ -1022,13 +1080,16 @@ class TestRebuildIsIdempotent(BuildCase):
         self.assertEqual(first, second)
         self.assertIn("2026-09-15T00:00:00Z", first.decode())
 
+    # a revised number rather than a dropped metro, which the loss guard refuses
     def test_a_changed_input_is_written_with_a_new_stamp(self):
         out = Path(self.tmp.name) / "metros.json"
         first = json.loads(self.build_at("2026-09-15T00:00:00Z", out).read_text())
-        rows = [r for r in MERGED if r[0] != "44100"]
+        income = MERGED_COLS.index("median_income")
+        rows = [r[:income] + [61000] + r[income + 1:] if (r[0], r[4]) == ("10180", 2024) else r for r in MERGED]
         pd.DataFrame(rows, columns=MERGED_COLS).to_csv(self.paths["merged"], index=False)
         second = json.loads(self.build_at("2026-09-16T06:00:00Z", out).read_text())
-        self.assertNotEqual(len(first["metros"]), len(second["metros"]))
+        self.assertEqual([self.metro(p, "10180")["years"]["2024"]["income"] for p in (first, second)],
+                         [60000.0, 61000.0])
         self.assertEqual(second["generated_at"], "2026-09-16T06:00:00Z")
 
 
@@ -1064,6 +1125,162 @@ class TestARebuildCannotDropASource(BuildCase):
         self.assertIsNotNone(again["metros"][0]["years"]["2014"]["zhvi"])
 
 
+# the guard compares cells against the file on disk: one field of one panel
+# across the metros, one tile's history across its months, or a metro's price
+# history across its years, alone and with every other metro's. it used to
+# count totals and refuse only a total that reached zero, so a keyless bls
+# pull blanked the 2014 panels, which nothing counted, and 410 metros could
+# fall to 2
+class TestTheGuardComparesCells(BuildCase):
+    def panel(self, count, blank=0):
+        return {"sources": {"bls": "1990 onward"},
+                "metros": [{"cbsa": f"{10000 + i}", "years": {"2014": {"unemp": None if i < blank else 4.0}},
+                            "latest": {"unemp": 3.7, "unemp_date": "2025-03"}} for i in range(count)]}
+
+    def tiles(self, months):
+        history = [{"date": bm.month_back("2026-08", back), "value": 3.0} for back in reversed(range(months))]
+        return {"national": {"indicators": [{"id": "cpi", "history": history}]}}
+
+    # a price history per metro, one point a year from its start through last
+    def lines(self, starts, last=2026):
+        return {"sources": {"fhfa": "2026-Q2"},
+                "metros": [{"cbsa": code, "series": {"hpi": {"start": start, "values": [100.0] * (last - start + 1)}}}
+                           for code, start in starts.items()]}
+
+    # forty metros drawn from 1975, 52 points each and 2,080 in all
+    def forty_lines(self):
+        return {f"{10000 + i}": 1975 for i in range(40)}
+
+    def on_disk(self, payload):
+        out = Path(self.tmp.name) / "metros.json"
+        out.write_text(json.dumps(payload))
+        return out
+
+    def refusal(self, out, payload, allow=()):
+        with self.assertRaises(RuntimeError) as raised:
+            bm.refuse_to_lose_a_source(out, payload, allow=allow)
+        return str(raised.exception)
+
+    # five of a hundred is the tolerance, and one more is past it
+    def test_a_loss_inside_the_tolerance_is_written_and_one_past_it_is_not(self):
+        out = self.on_disk(self.panel(100))
+        bm.refuse_to_lose_a_source(out, self.panel(100, blank=5))
+        refused = self.refusal(out, self.panel(100, blank=6))
+        self.assertIn("['bls']", refused)
+        self.assertIn("years.2014.unemp 100 to 94", refused)
+
+    # a cell belongs to its metro, so a value that moves between metros is
+    # a loss where it left, whatever the column's total says
+    def test_a_cell_is_counted_by_its_metro_not_by_the_total(self):
+        before = self.panel(10)
+        after = self.panel(10, blank=1)
+        after["metros"].append({"cbsa": "20000", "years": {"2014": {"unemp": 5.0}}, "latest": {}})
+        out = self.on_disk(before)
+        self.assertIn("years.2014.unemp 10 to 9", self.refusal(out, after))
+
+    def test_a_tile_that_keeps_its_name_but_loses_its_history_is_refused(self):
+        out = self.on_disk(self.tiles(100))
+        bm.refuse_to_lose_a_source(out, self.tiles(95))
+        refused = self.refusal(out, self.tiles(60))
+        self.assertIn("['national']", refused)
+        self.assertIn("indicators.cpi 100 to 60", refused)
+
+    # latest.hpi is the newest point alone, so an fhfa file cut to its last
+    # few years kept every counted column and was written over the whole
+    # history. abilene's line runs 2000 to 2003 and the cut keeps 2002 on
+    def test_a_price_history_cut_short_is_refused(self):
+        fhfa_fixture().to_csv(self.paths["fhfa"], index=False)
+        out = Path(self.tmp.name) / "metros.json"
+        self.assertEqual(len(self.metro(self.build_to(out), "10180")["series"]["hpi"]["values"]), 4)
+        before = out.read_bytes()
+        rows = fhfa_fixture()
+        rows[rows["yr"].astype(int) >= 2002].to_csv(self.paths["fhfa"], index=False)
+        with self.assertRaises(RuntimeError) as raised:
+            bm.build(out_path=out, paths=dict(self.paths))
+        self.assertIn("['fhfa']", str(raised.exception))
+        self.assertIn("series.hpi 4 to 2", str(raised.exception))
+        self.assertEqual(out.read_bytes(), before)
+
+    # 45 points of 2,080 is inside the tolerance for the whole history, and
+    # all but seven of one metro's 52 is not inside it for that metro's line
+    def test_one_metros_line_cut_short_is_refused_on_its_own(self):
+        out = self.on_disk(self.lines(self.forty_lines()))
+        refused = self.refusal(out, self.lines(dict(self.forty_lines(), **{"10000": 2020})))
+        self.assertIn("['fhfa']", refused)
+        self.assertIn("series.hpi.10000 52 to 7", refused)
+        self.assertNotIn("series.hpi 2080", refused)
+
+    # two years of 52 is inside the tolerance and three is past it. a year
+    # added is no loss at all
+    def test_a_line_inside_the_tolerance_is_written_and_one_past_it_is_not(self):
+        out = self.on_disk(self.lines({"10180": 1975}))
+        bm.refuse_to_lose_a_source(out, self.lines({"10180": 1975}, last=2027))
+        bm.refuse_to_lose_a_source(out, self.lines({"10180": 1977}))
+        self.assertIn("series.hpi.10180 52 to 49", self.refusal(out, self.lines({"10180": 1978})))
+
+    # a metro that leaves the map takes its line with it. that is the metros
+    # column's loss, one of forty here, and its 52 points count in the whole
+    # history the way its panel cells count in theirs, so it is not refused
+    # again for the line
+    def test_a_metro_that_left_the_map_is_not_refused_for_its_line(self):
+        out = self.on_disk(self.lines(self.forty_lines()))
+        kept = {code: start for code, start in self.forty_lines().items() if code != "10000"}
+        bm.refuse_to_lose_a_source(out, self.lines(kept))
+
+    # a date or a flag says something about a number and is not one, so an
+    # unweighed mark that goes when the populations come back is no loss
+    def test_a_date_or_a_flag_is_not_a_cell(self):
+        before = self.panel(3)
+        for metro in before["metros"]:
+            metro["footprint_unweighed"] = True
+            metro["years"]["2014"]["permits_unweighed"] = True
+        after = self.panel(3)
+        for metro in after["metros"]:
+            del metro["latest"]["unemp_date"]
+        bm.refuse_to_lose_a_source(self.on_disk(before), after)
+
+    # the footprint marks are the vintage tables' work, so losing them names
+    # the folder they come from
+    def test_a_lost_footprint_mark_names_the_gazetteer(self):
+        before = self.panel(3)
+        for metro in before["metros"]:
+            metro["years"]["2014"]["permits_footprint"] = 0.3
+        refused = self.refusal(self.on_disk(before), self.panel(3))
+        self.assertIn("gazetteer years.2014.permits_footprint 3 to 0", refused)
+
+    # a loss that is meant goes through by name, and only that loss does
+    def test_a_meant_loss_goes_through_by_the_name_the_refusal_gives(self):
+        out = self.on_disk(self.panel(10))
+        refused = self.refusal(out, self.panel(10, blank=10))
+        self.assertIn(f"{bm.ALLOW_LOSS}=bls", refused)
+        bm.refuse_to_lose_a_source(out, self.panel(10, blank=10), allow=("bls",))
+        bm.refuse_to_lose_a_source(out, self.panel(10, blank=10), allow="zillow, bls")
+        self.refusal(out, self.panel(10, blank=10), allow=("zillow",))
+
+    # the build reads the same names out of the environment, which is how a
+    # workflow or a shell says the loss is meant
+    def test_a_build_reads_the_meant_loss_from_the_environment(self):
+        out = Path(self.tmp.name) / "metros.json"
+        self.build_to(out)
+        before = out.read_bytes()
+        BLS[BLS["year"] != 2019].to_csv(self.paths["bls"], index=False)
+        with self.assertRaises(RuntimeError):
+            bm.build(out_path=out, paths=dict(self.paths))
+        self.assertEqual(out.read_bytes(), before)
+        with mock.patch.dict("os.environ", {bm.ALLOW_LOSS: "bls"}):
+            payload = json.loads(bm.build(out_path=out, paths=dict(self.paths)).read_text())
+        self.assertIsNone(self.metro(payload, "10180")["years"]["2019"]["unemp"])
+        self.assertEqual(self.metro(payload, "10180")["years"]["2024"]["unemp"], 3.4)
+
+    # and the parameter does the same for a caller in python
+    def test_a_build_takes_the_meant_loss_as_a_parameter(self):
+        out = Path(self.tmp.name) / "metros.json"
+        self.build_to(out)
+        BLS[BLS["year"] != 2019].to_csv(self.paths["bls"], index=False)
+        payload = json.loads(bm.build(out_path=out, paths=dict(self.paths), allow_loss=("bls",)).read_text())
+        self.assertIsNone(self.metro(payload, "10180")["years"]["2019"]["unemp"])
+
+
 class TestNationalIndicators(BuildCase):
     def test_indicators_follow_the_contract_order_and_keys(self):
         Path(self.paths["national"]).write_text(national_rows())
@@ -1073,7 +1290,7 @@ class TestNationalIndicators(BuildCase):
         records = block["indicators"]
         self.assertEqual([r["id"] for r in records], [spec["id"] for spec in indicators.INDICATORS])
         self.assertEqual(list(records[0]), ["id", "label", "group", "format", "provider",
-                                            "note", "value", "date", "change_12m", "history"])
+                                            "note", "value", "date", "change_12m", "change_month", "history"])
         tiles = {r["id"]: r for r in records}
         self.assertEqual((tiles["cpi"]["value"], tiles["cpi"]["date"]), (3.0, "2026-08"))
         self.assertEqual(tiles["cpi"]["history"], [{"date": "2026-08", "value": 3.0}])
@@ -1310,6 +1527,29 @@ class TestASmallBoundaryMoveIsNotARedraw(unittest.TestCase):
         self.assertIsNone(self.metro("26420")["growth"]["pop_14_24"])
         self.assertNotIn("footprint_moved", self.metro("26420"))
 
+    # and what it withholds carries no share, since nobody weighed one: the
+    # page printed the 1.0 standing in for it as 100.00 percent of houston's
+    # people, where 0.46 percent moved
+    def test_a_move_nobody_weighed_is_marked_unweighed_rather_than_given_a_share(self):
+        houston = self.metro("26420")
+        self.assertIsNone(houston["growth"]["pop_14_24"])
+        self.assertNotIn("footprint_refused", houston)
+        self.assertIs(houston["footprint_unweighed"], True)
+        self.assertNotIn("footprint_unweighed", self.metro("26420", self.population))
+
+    # one share covers all three rates, so a metro carries one mark at most,
+    # and without the populations no share is published at all
+    def test_a_metro_carries_one_footprint_mark_at_most(self):
+        marks = ("footprint_moved", "footprint_refused", "footprint_unweighed")
+        for population in (self.population, None):
+            metros, _, _ = bm.build_metros(self.merged, self.centroids, membership=self.membership,
+                                           county_population=population)
+            for metro in metros:
+                self.assertLessEqual(sum(mark in metro for mark in marks), 1, metro["cbsa"])
+                if population is None:
+                    self.assertNotIn("footprint_refused", metro, metro["cbsa"])
+                    self.assertNotIn("footprint_moved", metro, metro["cbsa"])
+
     # 16984 joined the seven when the guard began following omb's renumbering:
     # the chicago division gave up kendall county, 1.62 percent of its people,
     # and under its old code that move is measurable rather than unknown
@@ -1329,6 +1569,86 @@ class TestASmallBoundaryMoveIsNotARedraw(unittest.TestCase):
             with self.assertRaises(ValueError) as caught:
                 bm.load_county_population(path)
             self.assertIn("population", str(caught.exception))
+
+
+# the page divides a year panel's permits by its people, and bps filed 2014 on
+# the february 2013 delineation while pep filed it on september 2018. jackson
+# tn took in gibson county between the two, so 205 units over three counties
+# were divided by the people of four
+class TestAPermitRateCountsOnePlace(unittest.TestCase):
+    JACKSON, SALISBURY, DIVISION = "27180", "41540", "99994"
+
+    @classmethod
+    def setUpClass(cls):
+        cls.merged = bm.load_merged(bm.DEFAULT_PATHS["merged"])
+        cls.centroids = bm.load_centroids(bm.DEFAULT_PATHS["centroids"])
+        cls.membership = bm.load_membership(bm.DEFAULT_PATHS["membership"])
+        cls.population = bm.load_county_population(bm.DEFAULT_PATHS["county_population"])
+        cls.jackson_share = bm.rnd(bm.footprint_share(cls.membership, cls.population, cls.JACKSON, "2019", "2014"), 4)
+
+    # the two sources the rate is made of, a folder each the way data/raw is
+    def rows(self, code):
+        return {"bps": [f"{code},{bm.PERMITS},{year},205" for year in (2014, 2019, 2024)],
+                "pep": [f"{code},{bm.PEOPLE},{year},179358" for year in (2014, 2019, 2024)]}
+
+    def build(self, rows, merged, centroids=None, population="shipped"):
+        population = self.population if population == "shipped" else population
+        with tempfile.TemporaryDirectory() as tmp:
+            for name, lines in rows.items():
+                (Path(tmp) / name).mkdir()
+                (Path(tmp) / name / "metrics.csv").write_text("cbsa_code,metric,period,value\n" + "\n".join(lines) + "\n")
+            metros, _, _ = bm.build_metros(merged, self.centroids if centroids is None else centroids,
+                                           enrichments=bm.discover_enrichments(tmp), membership=self.membership,
+                                           county_population=population)
+        return {metro["cbsa"]: metro for metro in metros}
+
+    def own(self, code, rows=None, population="shipped"):
+        merged = self.merged[self.merged["cbsa_code"] == code]
+        return self.build(rows or self.rows(code), merged, population=population)[code]
+
+    # only 2014 pairs two delineations: bps and pep agree on 2019 and 2024
+    def test_the_2014_panel_carries_the_share_that_moved(self):
+        self.assertGreater(self.jackson_share, bm.FOOTPRINT_TOLERANCE)
+        jackson = self.own(self.JACKSON)
+        self.assertEqual(jackson["years"]["2014"]["permits_footprint"], self.jackson_share)
+        for year in ("2019", "2024"):
+            self.assertNotIn("permits_footprint", jackson["years"][year])
+
+    def test_a_metro_that_kept_its_counties_is_not_marked(self):
+        self.assertEqual(self.membership["2014"][self.SALISBURY], self.membership["2019"][self.SALISBURY])
+        self.assertNotIn("permits_footprint", self.own(self.SALISBURY)["years"]["2014"])
+
+    # a withheld rate and a rate nobody measured are different claims, so a
+    # panel missing either side has nothing to withhold and stays unmarked
+    def test_a_panel_without_both_sides_is_not_marked(self):
+        rows = self.rows(self.JACKSON)
+        rows["pep"] = [line for line in rows["pep"] if ",2014," not in line]
+        self.assertNotIn("permits_footprint", self.own(self.JACKSON, rows)["years"]["2014"])
+
+    # withheld all the same, without a share nobody weighed
+    def test_a_move_nobody_can_weigh_is_withheld_without_a_share(self):
+        panel = self.own(self.JACKSON, population=None)["years"]["2014"]
+        self.assertNotIn("permits_footprint", panel)
+        self.assertIs(panel["permits_unweighed"], True)
+
+    # a division that takes both sides from its parent shows its parent's
+    # rate, so it carries its parent's footprint. one that takes only the
+    # permits shows no rate at all, so there is nothing to withhold
+    def test_a_division_taking_both_from_its_parent_carries_the_parents_share(self):
+        merged = pd.DataFrame({"cbsa_code": [self.DIVISION], "place_name": ["Jackson North, TN (MSAD)"],
+                               "year": [2024], "avg_index_nsa": [200.0], "geo_level": ["division"],
+                               "parent_cbsa": [self.JACKSON]})
+        division = pd.DataFrame({"name": ["Jackson North, TN Metro Division"], "lat": [35.7], "lon": [-88.8]},
+                                index=pd.Index([self.DIVISION], name="cbsa_code"))
+        centroids = pd.concat([self.centroids, division])
+        rows = self.rows(self.JACKSON)
+        both = self.build(rows, merged, centroids)[self.DIVISION]
+        self.assertEqual(both["parent_metrics"], [bm.PERMITS, bm.PEOPLE])
+        self.assertEqual(both["years"]["2014"]["permits_footprint"], self.jackson_share)
+        rows["pep"].append(f"{self.DIVISION},{bm.PEOPLE},2014,60000")
+        one = self.build(rows, merged, centroids)[self.DIVISION]
+        self.assertEqual(one["parent_metrics"], [bm.PERMITS])
+        self.assertNotIn("permits_footprint", one["years"]["2014"])
 
 
 class TestFootprintChange(unittest.TestCase):

@@ -9,12 +9,12 @@
       "dataset": "Building Permits Survey, new privately owned housing units authorized by building permits, annual, by core based statistical area"
     },
     "integrity": {
-      "sha256": "ccbb4d4dcb8aa5043bd41e11f35c865bf6b9c303b90c4a2f92edd86f7adb8f89",
+      "sha256": "2b43dd89a09d970e469e4315f0c158ef74a87726329f44fd6154abba953110fb",
       "size_kb": 559.2,
       "row_count": 17040
     },
     "version": "2014 to 2025 annual",
-    "downloaded_at": "2026-09-15T19:05:09Z",
+    "downloaded_at": "2026-09-30T01:30:15Z",
     "notes": {
       "years": [
         2014,
@@ -34,13 +34,22 @@
         "cbsa2024a.txt",
         "cbsa2025a.txt"
       ],
-      "areas": 939,
+      "areas": 935,
       "metrics": [
         "permits_units",
         "permits_single_family",
         "permits_multifamily"
       ],
-      "basis": "estimates with imputation. permits_units sums the 1, 2, 3-4 and 5+ unit classes"
+      "basis": "estimates with imputation. permits_units sums the 1, 2, 3-4 and 5+ unit classes",
+      "renumbered": {
+        "19380": "19430",
+        "39100": "28880",
+        "39140": "39150",
+        "45540": "48680",
+        "23844": "29414",
+        "43524": "23224",
+        "35154": "29484"
+      }
     }
   },
   {
@@ -58,7 +67,7 @@
       "row_count": 381
     },
     "version": "2014 annual",
-    "downloaded_at": "2026-09-15T19:05:08Z"
+    "downloaded_at": "2026-09-30T01:30:12Z"
   },
   {
     "filename": "ma2015a.txt",
@@ -75,7 +84,7 @@
       "row_count": 381
     },
     "version": "2015 annual",
-    "downloaded_at": "2026-09-15T19:05:08Z"
+    "downloaded_at": "2026-09-30T01:30:12Z"
   },
   {
     "filename": "ma2016a.txt",
@@ -92,7 +101,7 @@
       "row_count": 382
     },
     "version": "2016 annual",
-    "downloaded_at": "2026-09-15T19:05:08Z"
+    "downloaded_at": "2026-09-30T01:30:13Z"
   },
   {
     "filename": "ma2017a.txt",
@@ -109,7 +118,7 @@
       "row_count": 382
     },
     "version": "2017 annual",
-    "downloaded_at": "2026-09-15T19:05:08Z"
+    "downloaded_at": "2026-09-30T01:30:14Z"
   },
   {
     "filename": "ma2018a.txt",
@@ -126,7 +135,7 @@
       "row_count": 382
     },
     "version": "2018 annual",
-    "downloaded_at": "2026-09-15T19:05:09Z"
+    "downloaded_at": "2026-09-30T01:30:14Z"
   },
   {
     "filename": "ma2019a.txt",
@@ -143,7 +152,7 @@
       "row_count": 384
     },
     "version": "2019 annual",
-    "downloaded_at": "2026-09-15T19:05:09Z"
+    "downloaded_at": "2026-09-30T01:30:14Z"
   },
   {
     "filename": "ma2020a.txt",
@@ -160,7 +169,7 @@
       "row_count": 384
     },
     "version": "2020 annual",
-    "downloaded_at": "2026-09-15T19:05:09Z"
+    "downloaded_at": "2026-09-30T01:30:14Z"
   },
   {
     "filename": "ma2021a.txt",
@@ -177,7 +186,7 @@
       "row_count": 384
     },
     "version": "2021 annual",
-    "downloaded_at": "2026-09-15T19:05:09Z"
+    "downloaded_at": "2026-09-30T01:30:14Z"
   },
   {
     "filename": "ma2022a.txt",
@@ -194,7 +203,7 @@
       "row_count": 384
     },
     "version": "2022 annual",
-    "downloaded_at": "2026-09-15T19:05:09Z"
+    "downloaded_at": "2026-09-30T01:30:14Z"
   },
   {
     "filename": "ma2023a.txt",
@@ -211,7 +220,7 @@
       "row_count": 384
     },
     "version": "2023 annual",
-    "downloaded_at": "2026-09-15T19:05:09Z"
+    "downloaded_at": "2026-09-30T01:30:15Z"
   },
   {
     "filename": "cbsa2024a.txt",
@@ -228,7 +237,7 @@
       "row_count": 921
     },
     "version": "2024 annual",
-    "downloaded_at": "2026-09-15T19:05:09Z"
+    "downloaded_at": "2026-09-30T01:30:15Z"
   },
   {
     "filename": "cbsa2025a.txt",
@@ -245,6 +254,6 @@
       "row_count": 931
     },
     "version": "2025 annual",
-    "downloaded_at": "2026-09-15T19:05:09Z"
+    "downloaded_at": "2026-09-30T01:30:15Z"
   }
 ]

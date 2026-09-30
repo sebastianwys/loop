@@ -5,15 +5,15 @@ data/raw/zillow/*.csv
 # snakemake run metadata and logs
 .snakemake/
 
-# the markers the download rules declare in place of the archive itself, so a
-# failed rule cannot take the vintage with it
-data/raw/*/.download_complete
-
 # a body on its way to an archive, named beside the file it will be renamed
 # over, and the directory a collector stages its whole folder in. a run that
 # dies cleans both up, a run that is killed cannot
 data/raw/*/*.part
 data/raw/*/.staging-*/
+
+# the map payload is staged beside metros.json the same way, and both workflows
+# commit this folder
+web/public/data/*.part
 
 # boundary shapefiles are fetched by npm run boundaries, the topojson is committed
 data/raw/boundaries/*.zip

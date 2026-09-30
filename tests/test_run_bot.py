@@ -1,10 +1,14 @@
 import io
+import json
+import subprocess
+import sys
 import types
 import unittest
 from contextlib import redirect_stdout
+from pathlib import Path
 from unittest import mock
 
-from bot import run_bot
+from bot import build_map_data, run_bot
 
 NAMES = ["gazetteer", "acs", "bps", "fred"]
 
@@ -34,7 +38,7 @@ class RunBotCase(unittest.TestCase):
         out = io.StringIO()
         with mock.patch.object(run_bot.pkgutil, "iter_modules", iter_modules), \
              mock.patch.object(run_bot.importlib, "import_module", import_module), \
-             mock.patch.object(run_bot.build_map_data, "build", lambda: built.append(True)):
+             mock.patch.object(build_map_data, "build", lambda: built.append(True)):
             code = 0
             try:
                 with redirect_stdout(out):
@@ -116,6 +120,65 @@ class TestOnlyOneCollector(RunBotCase):
             run_bot.parse_args(["--only"])
         with self.assertRaises(SystemExit):
             run_bot.parse_args(["national"])
+
+
+# a fresh interpreter where a meta path finder breaks the real gazetteer
+# import. the two collectors are stand-ins, so nothing reaches the network, and
+# the map build is replaced wherever it still imports, so nothing is written
+BROKEN_GAZETTEER_RUN = r'''
+import importlib.abc
+import json
+import pkgutil
+import sys
+import types
+
+
+class BrokenGazetteer(importlib.abc.MetaPathFinder):
+    def find_spec(self, name, path, target=None):
+        if name == "bot.collectors.gazetteer":
+            raise ImportError("gazetteer will not import")
+        return None
+
+
+sys.meta_path.insert(0, BrokenGazetteer())
+ran = []
+
+for name in ("first", "second"):
+    module = types.ModuleType(f"bot.collectors.{name}")
+    module.collect = lambda name=name: ran.append(name)
+    sys.modules[module.__name__] = module
+
+pkgutil.iter_modules = lambda path=None, prefix="": [
+    types.SimpleNamespace(name=name) for name in ("first", "gazetteer", "second")]
+
+try:
+    import bot.build_map_data
+except ImportError:
+    pass
+else:
+    bot.build_map_data.build = lambda *args, **kwargs: ran.append("build")
+
+try:
+    import bot.run_bot
+    bot.run_bot.main()
+finally:
+    print(json.dumps(ran))
+'''
+
+
+# the tests above stand in for importlib, so they never reach an import made at
+# the top of a module. run_bot imported build_map_data there, which imports the
+# gazetteer's year, and a gazetteer that would not import stopped the run
+# before any collector had a turn
+class TestABrokenGazetteerImport(unittest.TestCase):
+    def test_the_other_collectors_still_run_and_the_run_fails(self):
+        result = subprocess.run([sys.executable, "-c", BROKEN_GAZETTEER_RUN],
+                                cwd=Path(__file__).resolve().parent.parent,
+                                capture_output=True, text=True, timeout=300)
+        ran = json.loads(result.stdout.strip().splitlines()[-1])
+        self.assertEqual([name for name in ran if name != "build"], ["first", "second"], result.stderr[-500:])
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("[gazetteer] FAILED to import", result.stdout)
 
 
 if __name__ == "__main__":

@@ -40,4 +40,12 @@ describe("the deploy preflight", () => {
     expect(out.level).toBe("warn");
     expect(out.message).toContain("could not reach the remote");
   });
+
+  // the counts come from the last fetch, so a commit it already brought in is
+  // missing from this tree whether or not the remote answers this time
+  it("stops a tree behind its upstream even when the remote could not be reached", () => {
+    const out = verdict({ upstream: "github/main", fetched: false, behind: 1, ahead: 0 });
+    expect(out.level).toBe("stop");
+    expect(out.message).toContain("1 behind github/main");
+  });
 });

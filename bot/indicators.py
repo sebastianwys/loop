@@ -17,6 +17,11 @@
 # deeper start than those cannot grow the payload on its own
 HISTORY_MONTHS = 1200
 
+# the series fred publishes more than once a month, daily or weekly. the strip
+# keeps one number a month from each, the month's last reading, so the newest
+# month of one of these is a reading taken partway through it
+DAILY_OR_WEEKLY = ("DFEDTARU", "DGS1", "DGS10", "EFFR", "MORTGAGE30US")
+
 INDICATORS = [
     {
         "id": "cpi",

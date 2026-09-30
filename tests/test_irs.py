@@ -2,7 +2,9 @@ import hashlib
 import io
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 import pandas as pd
 
@@ -52,6 +54,9 @@ AUTAUGA_NET_RETURNS = 2076 - 1923
 AUTAUGA_NET_EXEMPTIONS = 4489 - 4040
 ELMORE_NET_RETURNS = 3120 - 2900
 ELMORE_NET_EXEMPTIONS = 6400 - 5900
+# 475 returns moved from elmore to autauga and 463 the other way, both inside
+# 33860, so neither is migration for it
+MOVED_INSIDE_33860 = 475 + 463
 
 HEADER = ["CBSA Code", "Metropolitan Division Code", "CSA Code", "CBSA Title",
           "Metropolitan/Micropolitan Statistical Area", "Metropolitan Division Title", "CSA Title",
@@ -61,6 +66,14 @@ HEADER = ["CBSA Code", "Metropolitan Division Code", "CSA Code", "CBSA Title",
 
 def totals(text, kind):
     return irs.parse_totals(text.encode(), kind)
+
+
+def moves(text, kind):
+    return irs.parse_moves(text.encode(), kind)
+
+
+def as_tuples(frame):
+    return sorted(zip(frame.origin, frame.dest, frame.n1.astype(int)))
 
 
 # autauga and elmore share a cbsa, cook sits in a cbsa and a division
@@ -171,6 +184,75 @@ class TestCountyNet(unittest.TestCase):
         self.assertEqual(list(net.columns), ["county_fips"] + irs.METRICS)
 
 
+class TestParseMoves(unittest.TestCase):
+    # the inflow file keys a move by the county it entered, so the partner is
+    # where it came from. the totals, foreign, other flows and non-migrant
+    # rows are not moves between two counties
+    def test_keeps_the_county_to_county_rows_only(self):
+        df = moves(INFLOW_TEXT, "inflow")
+        self.assertEqual(list(df.columns), irs.MOVE_COLUMNS)
+        self.assertEqual(as_tuples(df), [("01001", "01051", 463), ("01051", "01001", 475)])
+
+    def test_outflow_reads_the_origin_side(self):
+        text = OUTFLOW_TEXT + "1,1,1,51,AL,Elmore County,463,909,25789\n"
+        self.assertEqual(as_tuples(moves(text, "outflow")), [("01001", "01051", 463)])
+
+    def test_a_file_of_totals_only_has_no_moves(self):
+        self.assertEqual(len(moves(OUTFLOW_TEXT, "outflow")), 0)
+
+    def test_padded_codes_match_bare_codes(self):
+        text = PADDED_INFLOW_TEXT + "01,001,01,051,AL,Elmore County,475,935,23050\n"
+        self.assertEqual(as_tuples(moves(text, "inflow")), [("01051", "01001", 475)])
+
+    # the 2013 to 2014 files print about a thousand pairs twice
+    def test_a_repeated_pair_counts_once(self):
+        text = INFLOW_TEXT + "1,1,1,51,AL,Elmore County,475,935,23050\n"
+        self.assertEqual(as_tuples(moves(text, "inflow")), [("01001", "01051", 463), ("01051", "01001", 475)])
+
+    def test_a_suppressed_pair_is_dropped(self):
+        text = INFLOW_TEXT.replace("Elmore County,475,935,23050", "Elmore County,-1,-1,-1")
+        self.assertEqual(as_tuples(moves(text, "inflow")), [("01001", "01051", 463)])
+
+    def test_empty_file(self):
+        for content in (b"", INFLOW_TEXT.split("\n", 1)[0].encode() + b"\n"):
+            df = irs.parse_moves(content, "inflow")
+            self.assertEqual(list(df.columns), irs.MOVE_COLUMNS)
+            self.assertEqual(len(df), 0)
+
+
+class TestMovesInside(unittest.TestCase):
+    def test_a_move_between_two_counties_of_one_cbsa(self):
+        inside = irs.moves_inside(moves(INFLOW_TEXT, "inflow"), crosswalk(), {"01001", "01051"})
+        self.assertEqual(inside.to_dict(), {"33860": MOVED_INSIDE_33860})
+
+    # cook and lake are two divisions of chicago: a move between them is
+    # inside the metro and inside neither division
+    def test_a_move_between_two_divisions_is_inside_the_metro_only(self):
+        walk = pd.DataFrame({"county_fips": ["17031", "17031", "17097", "17097"],
+                             "cbsa_code": ["16980", "16984", "16980", "29404"]})
+        pairs = pd.DataFrame({"origin": ["17097", "17031"], "dest": ["17031", "17097"], "n1": [500, 700]})
+        self.assertEqual(irs.moves_inside(pairs, walk, {"17031", "17097"}).to_dict(), {"16980": 1200})
+
+    # cook and dupage are one division of chicago: a move between them is
+    # inside that division and inside the metro
+    def test_a_move_between_two_counties_of_one_division_is_inside_both(self):
+        walk = pd.DataFrame({"county_fips": ["17031", "17031", "17043", "17043"],
+                             "cbsa_code": ["16980", "16984", "16980", "16984"]})
+        pairs = pd.DataFrame({"origin": ["17043", "17031"], "dest": ["17031", "17043"], "n1": [600, 900]})
+        self.assertEqual(irs.moves_inside(pairs, walk, {"17031", "17043"}).to_dict(),
+                         {"16980": 1500, "16984": 1500})
+
+    def test_a_move_to_another_cbsa_is_not_inside(self):
+        pairs = pd.DataFrame({"origin": ["01001"], "dest": ["48441"], "n1": [60]})
+        self.assertEqual(len(irs.moves_inside(pairs, crosswalk(), {"01001", "48441"})), 0)
+
+    # a county county_net dropped is outside the code's sums, so a move to or
+    # from it is migration for the counties that did count
+    def test_a_county_left_out_of_the_net_is_not_inside(self):
+        inside = irs.moves_inside(moves(INFLOW_TEXT, "inflow"), crosswalk(), {"01001"})
+        self.assertEqual(len(inside), 0)
+
+
 class TestAggregate(unittest.TestCase):
     def net(self, inflow=INFLOW_TEXT, outflow=OUTFLOW_TEXT):
         return irs.county_net(totals(inflow, "inflow"), totals(outflow, "outflow"))
@@ -180,22 +262,49 @@ class TestAggregate(unittest.TestCase):
         self.assertEqual(len(rows), 1)
         return int(rows.value.iloc[0])
 
+    # the moves between autauga and elmore, as collect reads them
+    def inside(self, net):
+        return irs.moves_inside(moves(INFLOW_TEXT, "inflow"), crosswalk(), set(net.county_fips))
+
     def test_two_county_cbsa_sums_by_hand(self):
-        out = irs.aggregate(self.net(), crosswalk(), "2022")
+        net = self.net()
+        out = irs.aggregate(net, crosswalk(), "2022", self.inside(net))
         self.assertEqual(self.value(out, "33860", "irs_net_returns"),
                          AUTAUGA_NET_RETURNS + ELMORE_NET_RETURNS)
         self.assertEqual(self.value(out, "33860", "irs_net_returns"), 373)
         self.assertEqual(self.value(out, "33860", "irs_net_exemptions"),
                          AUTAUGA_NET_EXEMPTIONS + ELMORE_NET_EXEMPTIONS)
         self.assertEqual(self.value(out, "33860", "irs_net_exemptions"), 949)
-        self.assertEqual(self.value(out, "33860", "irs_inflow_returns"), 2076 + 3120)
-        self.assertEqual(self.value(out, "33860", "irs_outflow_returns"), 1923 + 2900)
+        self.assertEqual(self.value(out, "33860", "irs_inflow_returns"), 2076 + 3120 - MOVED_INSIDE_33860)
+        self.assertEqual(self.value(out, "33860", "irs_inflow_returns"), 4258)
+        self.assertEqual(self.value(out, "33860", "irs_outflow_returns"), 1923 + 2900 - MOVED_INSIDE_33860)
+        self.assertEqual(self.value(out, "33860", "irs_outflow_returns"), 3885)
 
     def test_net_equals_inflow_minus_outflow(self):
-        out = irs.aggregate(self.net(), crosswalk(), "2022")
+        net = self.net()
+        out = irs.aggregate(net, crosswalk(), "2022", self.inside(net))
         self.assertEqual(self.value(out, "33860", "irs_net_returns"),
                          self.value(out, "33860", "irs_inflow_returns")
                          - self.value(out, "33860", "irs_outflow_returns"))
+
+    # bea borrows aggregate for plain sums, so with no moves given nothing
+    # comes off
+    def test_without_moves_the_sums_are_plain(self):
+        out = irs.aggregate(self.net(), crosswalk(), "2022")
+        self.assertEqual(self.value(out, "33860", "irs_inflow_returns"), 2076 + 3120)
+        self.assertEqual(self.value(out, "33860", "irs_outflow_returns"), 1923 + 2900)
+        self.assertEqual(self.value(out, "33860", "irs_net_returns"), 373)
+
+    # a code no move stays inside keeps its sums
+    def test_moves_inside_one_code_leave_the_others_alone(self):
+        inflow = INFLOW_TEXT + "17,31,97,0,IL,Cook County Total Migration-US,90000,150000,9000000\n"
+        outflow = OUTFLOW_TEXT + "17,31,97,0,IL,Cook County Total Migration-US,120000,200000,12000000\n"
+        net = self.net(inflow, outflow)
+        out = irs.aggregate(net, crosswalk(), "2022", self.inside(net))
+        self.assertEqual(self.value(out, "33860", "irs_inflow_returns"), 4258)
+        for code in ("16980", "16984"):
+            self.assertEqual(self.value(out, code, "irs_inflow_returns"), 90000)
+            self.assertEqual(self.value(out, code, "irs_outflow_returns"), 120000)
 
     def test_map_contract_columns_and_types(self):
         out = irs.aggregate(self.net(), crosswalk(), "2022")
@@ -253,6 +362,114 @@ class TestAggregate(unittest.TestCase):
         annual, latest = build_map_data.enrich_values(loaded["groups"]["33860"])
         self.assertEqual(annual[("irs_net_returns", 2022)], 373.0)
         self.assertEqual(latest["irs_net_returns"], ("2022", 373.0))
+
+
+# chicago's own division holds cook and dupage, lake is a division of its
+# own. 600 returns moved from dupage to cook and 900 from cook to dupage, and
+# each file prints the pair once from its side. the rest came from or went to
+# another state, as other flows
+DIVISION_INFLOW_TEXT = (
+    "y2_statefips,y2_countyfips,y1_statefips,y1_countyfips,y1_state,y1_countyname,n1,n2,agi\n"
+    "17,31,97,0,IL,Cook County Total Migration-US,4000,8000,200000\n"
+    "17,31,17,43,IL,DuPage County,600,1200,30000\n"
+    "17,31,59,0,DS,Other flows - Different State,3400,6800,170000\n"
+    "17,43,97,0,IL,DuPage County Total Migration-US,2500,5000,125000\n"
+    "17,43,17,31,IL,Cook County,900,1800,45000\n"
+    "17,43,59,0,DS,Other flows - Different State,1600,3200,80000\n"
+    "17,97,97,0,IL,Lake County Total Migration-US,1700,3400,85000\n"
+    "17,97,59,0,DS,Other flows - Different State,1700,3400,85000\n"
+)
+
+DIVISION_OUTFLOW_TEXT = (
+    "y1_statefips,y1_countyfips,y2_statefips,y2_countyfips,y2_state,y2_countyname,n1,n2,agi\n"
+    "17,31,97,0,IL,Cook County Total Migration-US,4700,9400,235000\n"
+    "17,31,17,43,IL,DuPage County,900,1800,45000\n"
+    "17,31,59,0,DS,Other flows - Different State,3800,7600,190000\n"
+    "17,43,97,0,IL,DuPage County Total Migration-US,2100,4200,105000\n"
+    "17,43,17,31,IL,Cook County,600,1200,30000\n"
+    "17,43,59,0,DS,Other flows - Different State,1500,3000,75000\n"
+    "17,97,97,0,IL,Lake County Total Migration-US,1300,2600,65000\n"
+    "17,97,59,0,DS,Other flows - Different State,1300,2600,65000\n"
+)
+
+MOVED_INSIDE_16984 = 600 + 900
+
+
+class FakeResponse:
+    def __init__(self, content=None):
+        self.status_code = 404 if content is None else 200
+        self.content = content or b""
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise RuntimeError(f"HTTP {self.status_code}")
+
+
+# collect with the network faked, reading back the metrics.csv it writes. the
+# delineation answers with the workbook, every pair irs is known to publish
+# answers with the two files, and the first newer pair answers 404
+def collect_offline(delineation, inflow, outflow):
+    def fetch(url, params=None, **kwargs):
+        if url == irs.DELINEATION_URL:
+            return FakeResponse(delineation)
+        for year in range(irs.FIRST_YEAR, irs.KNOWN_THROUGH + 1):
+            for kind, text in (("inflow", inflow), ("outflow", outflow)):
+                if url == irs.URL.format(kind=kind, pair=irs.pair_label(year)):
+                    return FakeResponse(text.encode())
+        return FakeResponse()
+
+    with tempfile.TemporaryDirectory() as tmp:
+        folder = Path(tmp) / "irs"
+        with mock.patch.object(irs, "OUT_DIR", folder), mock.patch.object(irs, "OUT_FILE", folder / "metrics.csv"), \
+                mock.patch.object(irs, "fetch", fetch), redirect_stdout(io.StringIO()):
+            irs.collect()
+        return pd.read_csv(folder / "metrics.csv", dtype={"cbsa_code": str, "period": str})
+
+
+# a move between two counties of one division is migration for neither the
+# division nor its metro, so it comes off the gross flows of both and the nets
+# stay what the plain sums give. driven through collect, since the county to
+# county rows never reach aggregate on their own
+class TestAMoveInsideOneDivision(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        rows = [
+            county_row("16980", "16984", "Cook County", "17", "031"),
+            county_row("16980", "16984", "DuPage County", "17", "043"),
+            county_row("16980", "29404", "Lake County", "17", "097"),
+        ]
+        cls.out = collect_offline(workbook(rows), DIVISION_INFLOW_TEXT, DIVISION_OUTFLOW_TEXT)
+
+    def value(self, code, metric):
+        period = irs.period_of(irs.KNOWN_THROUGH)
+        rows = self.out[(self.out.cbsa_code == code) & (self.out.metric == metric) & (self.out.period == period)]
+        self.assertEqual(len(rows), 1, f"{code} {metric} {period}")
+        return int(rows.value.iloc[0])
+
+    def test_comes_off_the_divisions_gross_flows(self):
+        self.assertEqual(self.value("16984", "irs_inflow_returns"), 4000 + 2500 - MOVED_INSIDE_16984)
+        self.assertEqual(self.value("16984", "irs_inflow_returns"), 3400 + 1600)
+        self.assertEqual(self.value("16984", "irs_outflow_returns"), 4700 + 2100 - MOVED_INSIDE_16984)
+        self.assertEqual(self.value("16984", "irs_outflow_returns"), 3800 + 1500)
+
+    # the parent sums its divisions, so the move is inside it too
+    def test_comes_off_the_parents_gross_flows(self):
+        self.assertEqual(self.value("16980", "irs_inflow_returns"), 4000 + 2500 + 1700 - MOVED_INSIDE_16984)
+        self.assertEqual(self.value("16980", "irs_outflow_returns"), 4700 + 2100 + 1300 - MOVED_INSIDE_16984)
+
+    # the control: a move inside a code cancels in its net, before and after
+    def test_the_nets_are_unchanged(self):
+        for code, returns, exemptions in (("16984", 6500 - 6800, 13000 - 13600),
+                                          ("16980", 8200 - 8100, 16400 - 16200)):
+            self.assertEqual(self.value(code, "irs_net_returns"), returns)
+            self.assertEqual(self.value(code, "irs_net_exemptions"), exemptions)
+            self.assertEqual(self.value(code, "irs_net_returns"),
+                             self.value(code, "irs_inflow_returns") - self.value(code, "irs_outflow_returns"))
+
+    # the control: lake's division holds no move of its own and keeps its sums
+    def test_a_division_no_move_stays_inside_keeps_its_sums(self):
+        self.assertEqual(self.value("29404", "irs_inflow_returns"), 1700)
+        self.assertEqual(self.value("29404", "irs_outflow_returns"), 1300)
 
 
 class TestCrosswalk(unittest.TestCase):

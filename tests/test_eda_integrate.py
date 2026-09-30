@@ -130,7 +130,7 @@ if __name__ == "__main__":
 # degree share denominator that joined on 2026-09-16 moved the hash, and both
 # suites stayed green through it.
 #
-# the loader ml/MILESTONES.md milestone 1 describes checks the hash on read.
+# loop.data.load, milestone 1 in ml/MILESTONES.md, checks the hash on read.
 # this is the other half, the one that catches the drift today: it reads the
 # real file and fails if the shape, the coverage or the bytes move
 class TestTheIntegratedFileIsTheOneEverythingWasComputedOn(unittest.TestCase):
