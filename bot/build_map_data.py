@@ -49,7 +49,7 @@ FOOTPRINT_TOLERANCE = 0.02
 # metro or a division without moving a county under it, and the census download
 # joins the older vintages onto the new code, so the footprint guard has to
 # follow the renumbering rather than be defeated by it. both tables, since a
-# guard that reads one of them is the defect this audit kept finding
+# guard that reads only one of them is defeated by the renumbering in the other
 FORMER_CODE = {new: old for old, new in {**DIVISION_CROSSWALK, **MSA_CROSSWALK}.items()}
 
 # and the other way round, the code a former one is carried under now

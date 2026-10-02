@@ -193,11 +193,11 @@ class TestQuarterMeans(unittest.TestCase):
         # 99 is the year's own average, not a thirteenth month
         self.assertAlmostEqual(out["2020Q2"], 8.0)
 
-    # the audit wanted a short quarter dropped. it was tried and measured: the
-    # only short quarter in the panel is 2025Q4, october 2025 was never
-    # published because of the shutdown, and dropping it sent 385 metros back
-    # to the 2024 annual average. two real months of the quarter beat a number
-    # from the year before
+    # dropping a short quarter was tried and measured: the only short quarter
+    # in the panel is 2025Q4, october 2025 was never published because of the
+    # shutdown, and dropping it sent 385 metros back to the 2024 annual
+    # average. two real months of the quarter beat a number from the year
+    # before
     def test_a_short_quarter_keeps_the_months_it_has(self):
         frame = pd.DataFrame({
             "cbsa_code": ["x"] * 5,
@@ -327,9 +327,9 @@ class TestEnrichment(unittest.TestCase):
         out = panel.annual_log_change(annual)
         self.assertTrue(out["value"].isna().all())
 
-    # the audit asked for the opposite of this and it would have been a defect:
-    # the parent is a larger geography, so a year by year fill puts chicago's
-    # 9.4 million next to gary's 719 thousand and calls the step a growth rate
+    # the opposite of this would be a defect: the parent is a larger
+    # geography, so a year by year fill puts chicago's 9.4 million next to
+    # gary's 719 thousand and calls the step a growth rate
     def test_a_division_holding_part_of_a_metric_inherits_none_of_it(self):
         long = pd.DataFrame({
             "cbsa_code": ["p", "p", "p", "d", "q"],

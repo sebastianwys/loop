@@ -70,8 +70,3 @@ class TestTheFitMaskIsTheFittingBlock(unittest.TestCase):
             expected = ((outcome <= w.index_of(end)) & ~np.isnan(w.y)).any(axis=1)
             self.assertTrue(expected.any() and not expected.all(), end)
             np.testing.assert_array_equal(admit.fit_mask_at(w, end), expected, err_msg=end)
-
-
-# the red test for the admission seeds passes now, and the gate runs it
-# from here so the batch order cannot quietly stop following the seed again
-from tests.redtest_admit_seed import TestAdmitSeedsVaryTheWholeRun  # noqa: E402,F401

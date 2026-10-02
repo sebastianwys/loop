@@ -814,8 +814,8 @@ class TestProvenance(BuildCase):
             self.assertIsNone(payload["sources"][name])
 
 
-# four from the audit pile, all in the readers that turn a source file into a
-# metro's numbers
+# the readers that turn a source file into a metro's numbers take the newest
+# row by its date, not by where it sits in the file
 class TestTheReadersDoNotTrustFileOrder(BuildCase):
     def zillow(self, months):
         frame = pd.DataFrame([{"RegionName": "Abilene, TX", "RegionType": "msa", **months}])

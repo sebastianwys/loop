@@ -154,7 +154,8 @@ def county_net(inflow, outflow):
 # 47930 waterbury-shelton is naugatuck valley, 09140, alone. no county in
 # this table maps to 09140, because naugatuck valley was assembled from towns
 # in three of them, so 47930 has no filing year before 2022 and no county
-# arithmetic can give it one. redtest_irs_connecticut holds the case open
+# arithmetic can give it one. tests/test_irs_connecticut.py holds the case open
+# as an expected failure
 CONNECTICUT = {
     "09001": "09190",  # fairfield, western connecticut
     "09003": "09110",  # hartford, capitol
