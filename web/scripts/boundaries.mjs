@@ -13,7 +13,7 @@ const YEAR = 2024;
 // 35% keeps the coastlines readable at street level and lands under 1 mb
 const SIMPLIFY = "35%";
 const BASE = `https://www2.census.gov/geo/tiger/GENZ${YEAR}/shp`;
-const USER_AGENT = "loop-bot/0.1 (+https://github.com/sebastianwys/loop)";
+const USER_AGENT = "loop-bot/0.1 (+https://github.com/sebwys/loop)";
 
 const WEB = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const RAW = path.resolve(WEB, "..", "data", "raw", "boundaries");

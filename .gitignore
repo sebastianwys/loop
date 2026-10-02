@@ -24,18 +24,5 @@ web/public/data/*.part
 data/raw/boundaries/*.zip
 data/raw/boundaries/trial_*.json
 
-# local handoff notes, never committed
-HANDOFF.md
-
-# stack-audit working state. the three exceptions are the ratchet: baseline
-# keeps coverage from eroding, false_positives makes the next run quieter
-.audit/*
-!.audit/config.json
-!.audit/baseline.json
-!.audit/false_positives.jsonl
-
-# the stack-audit record. kept locally, not published in a portfolio repo
-docs/audit-2026-09/
-
 # the model page's figures, copied out of ml/results by the web build
 web/public/figures/

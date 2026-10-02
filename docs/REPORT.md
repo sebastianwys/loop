@@ -1,77 +1,56 @@
 # Project Loop: the data report
 
-Sources, schema, quality, cleaning, findings and reproducing steps. The short version is in the [README](../README.md). The forecasting model is in [ml/README.md](../ml/README.md).
+This started as my final project for IS477 at the University of Illinois. The pipeline in the repo root is that project, tagged `final-project`. I worked alone. The short version is in the [README](../README.md) and the forecasting model is in [ml/README.md](../ml/README.md).
 
 Live map: https://loop.macroviz.workers.dev
 
-This started as my IS477 final project at the University of Illinois. The pipeline in the repo root is that project, tagged `final-project`. I worked individually and every commit is mine.
-
-## The Question
+## The question
 
 Home prices respond to local income, demographics, education and supply. Which of those actually predict appreciation across U.S. metros, and which metros broke away from what their fundamentals suggest?
 
-The pipeline pulls two government datasets, profiles them, cleans them, joins them on CBSA code, and produces five charts and one integrated CSV.
+## The sources
 
-## The Sources
-
-Both are U.S. government works in the public domain (17 USC 105). No PII: everything aggregates to metro level. ACS responses are mandatory under Title 13. The MIT license here covers source code only.
-
-The bot adds more sources, all public domain except Zillow Research and Realtor.com Economic Research, used under their terms with attribution and not redistributed here.
+Both sources are public domain U.S. government data aggregated to the metro level, so there is no personal information. The MIT license covers the code only.
 
 ### FHFA House Price Index
 
-Weighted repeat-sales on Fannie, Freddie, FHA and VA mortgage data. About 186,000 rows, 1975 to 2026.
+A weighted repeat sales index built from Fannie Mae, Freddie Mac, FHA and VA mortgages, about 186,000 rows from 1975 to 2026.
 
 | field | value |
 | --- | --- |
-| location | `data/raw/fhfa/hpi_master.csv` |
+| file | `data/raw/fhfa/hpi_master.csv`, about 16.8 MB |
 | source | https://www.fhfa.gov/hpi/download/monthly/hpi_master.csv |
-| access | direct HTTP, about 16.8 MB |
 | manifest | `data/raw/fhfa/download_manifest.json` |
-| vintage | pulled 2026-09-14. No vintage parameter exists, see problem 4. |
+| pulled | 2026-09-14. FHFA publishes no vintage parameter, see problem 4 |
 
-Filtered to the canonical inter-metro index (MSA, quarterly, traditional, all-transactions), the working slice is 71,072 rows across 410 MSAs.
+I filter to the metro level, quarterly frequency, the traditional all transactions index. That leaves 71,072 rows across 410 metros. The measure is `index_nsa`, keyed by `place_id` (the CBSA or division code) and `yr`.
 
-| column | type | note |
-| --- | --- | --- |
-| `place_id` | string | CBSA or division code. Joins to Census `geo_code`. |
-| `place_name` | string | metro name |
-| `hpi_type` | string | filtered to `traditional` |
-| `hpi_flavor` | string | filtered to `all-transactions` |
-| `level` | string | filtered to `MSA` |
-| `frequency` | string | filtered to `quarterly` |
-| `yr`, `period` | int | year, quarter 1 to 4 |
-| `index_nsa` | float | the measure used |
-| `index_sa` | float | 100 percent null at MSA level. Not used. |
-| `rstderr`, `note` | | expanded-data series only. Not used. |
+### Census ACS five year estimates
 
-### Census ACS 5-Year Estimates
-
-Sixty months of pooled responses per vintage. Three non-overlapping windows, because Census Comparison Profile guidance is built around non-overlapping intervals. Overlapping windows would count the same respondents twice.
+Each vintage pools 60 months of responses. I use three windows that do not overlap, because overlapping windows count the same respondents twice.
 
 | vintage | window | role | rows |
 | --- | --- | --- | --- |
-| 2014 | 2010 to 2014 | post-recession baseline | 960 |
-| 2019 | 2015 to 2019 | pre-COVID peak | 969 |
-| 2024 | 2020 to 2024 | post-COVID | 972 |
+| 2014 | 2010 to 2014 | after the recession | 960 |
+| 2019 | 2015 to 2019 | the peak before COVID | 969 |
+| 2024 | 2020 to 2024 | after COVID | 972 |
 
-Endpoint `https://api.census.gov/data/{year}/acs/acs5`, all metropolitan and micropolitan areas, manifest at `data/raw/census/download_manifest.json`. Rows are what the committed files hold and what the manifest records: the metro and micro areas plus the 31, 31 and 37 metropolitan division rows problem 5 added. Earlier drafts published the metro rows alone.
+Endpoint `https://api.census.gov/data/{year}/acs/acs5`, manifest at `data/raw/census/download_manifest.json`.
 
-| original | renamed | description |
+| Census code | renamed | meaning |
 | --- | --- | --- |
 | `B19013_001E` | `median_income` | median household income, USD |
 | `B01003_001E` | `total_pop` | total population |
 | `B01002_001E` | `median_age` | median age |
-| `B15003_001E` | `adults_25_plus` | population 25 and over, the universe B15003 counts within |
-| `B15003_022E` | `bachelors_count` | persons with a bachelor's |
-| `B15003_023E` | `masters_count` | persons with a master's |
+| `B15003_001E` | `adults_25_plus` | population 25 and over |
+| `B15003_022E` | `bachelors_count` | people with a bachelor's degree |
+| `B15003_023E` | `masters_count` | people with a master's degree |
 | `B25003_001E` | `total_occupied_units` | occupied housing units |
-| `B25003_002E` | `owner_occupied_units` | owner-occupied units |
+| `B25003_002E` | `owner_occupied_units` | owner occupied units |
 | `B25077_001E` | `median_home_value` | median home value, USD |
-| (geo) | `cbsa_code` | CBSA code, cast to string for the join |
-| derived | `homeownership_rate` | `owner / total` |
+| derived | `homeownership_rate` | owner occupied over total occupied |
 
-## The Schema
+## The schema
 
 ```
 +-------------------------+         +-------------------------+
@@ -95,166 +74,137 @@ Endpoint `https://api.census.gov/data/{year}/acs/acs5`, all metropolitan and mic
             +-------------------------+
 ```
 
-`data/integrated/hpi_census_merged.csv`. 410 metros is 373 metropolitan statistical areas plus 37 metropolitan divisions. The theoretical maximum is 1,230 (410 x 3); the 26 missing rows are the Census side, not the FHFA side. All 26 are in the FHFA slice for their year and absent from the ACS vintage, 14 in 2014 and 12 in 2019, none in 2024. They are codes Census had not published yet at that vintage, newer designations and divisions, while FHFA carries its index back under the current definitions. Five of them were recovered on 2026-09-18: a metro that is renumbered without being redrawn is the same metro, so MSA_CROSSWALK joins the older vintage onto the current code, and Cleveland, Dayton, Wildwood-The Villages, Prescott Valley and Kiryas Joel each got a vintage or two back. Cleveland is the one pair whose counties are not identical, gaining Ashtabula, which the footprint guard weighs at 4.70 percent, over the two percent tolerance, so its year figures are published and its decade rates are withheld and say why.
+The output is `data/integrated/hpi_census_merged.csv`. The 410 metros are 373 metropolitan statistical areas plus 37 metropolitan divisions. Three vintages would allow 1,230 rows. The 26 missing rows are metro codes Census had not published yet in 2014 and 2019.
 
-## The Five Problems
+## The five problems
 
-Every one of these was a silent failure. None threw an error.
+Every one of these failed silently. None of them threw an error.
 
 | # | problem | symptom | fix | lesson |
 | --- | --- | --- | --- | --- |
-| 1 | CBSA code type mismatch | merge returned zero rows | `astype(str)` on the Census side | profile both sides of a join before merging |
-| 2 | 2010 ACS endpoint | errors on a variable set that worked from 2015 | dropped 2010, moved to non-overlapping 2014/2019/2024 | pre-2012 ACS variable codes and geographies differ |
-| 3 | HPI type/flavor duplication | 3.77 rows per metro across three years, impossible without duplication | dropped `hpi_type` and `hpi_flavor` from the `groupby` keys | check `rows / unique entities` against what you expect |
-| 4 | FHFA has no vintage parameter | hash moved with no code change | the archived raw file in git is the vintage | a source you cannot address by vintage must be pinned by commit |
-| 5 | the 13 largest metros missing | Chicago, NYC and LA never joined | pull ACS at division level, crosswalk 4 renamed codes | a housing study without Chicago is not a housing study |
+| 1 | CBSA code types did not match | the merge returned zero rows | cast the Census side to string | profile both sides of a join before merging |
+| 2 | the 2010 ACS endpoint | errors on a variable set that worked from 2015 | dropped 2010 and moved to 2014, 2019 and 2024 | ACS codes and geographies before 2012 differ |
+| 3 | duplicated HPI series | 3.77 rows per metro across three years | dropped `hpi_type` and `hpi_flavor` from the group keys | check rows per entity against what you expect |
+| 4 | FHFA has no vintage parameter | the file hash moved with no code change | the raw file committed to git is the vintage | a source you cannot ask for by vintage has to be pinned by commit |
+| 5 | the 13 largest metros were missing | Chicago, New York and Los Angeles never joined | pulled ACS at the division level and mapped 4 renamed codes | a housing study without Chicago is not a housing study |
 
-Problem 1 is the one I misread longest. I diagnosed it as a data availability problem until profiling both sides showed identical numeric values under different types. One line to fix, a long time to find.
+Problem 1 took me the longest. I read it as a data availability problem until profiling both sides showed the same values stored as different types. The fix was one line.
 
-Problem 4 surfaced on 2026-09-14 while proving a clean start-to-finish run. Census reproduced byte for byte because every ACS endpoint carries its vintage in the URL. FHFA did not. `hpi_master.csv` is a live file, and between May and September FHFA added two quarters and two columns, expanded one series from 7,000 rows to 58,220, and revised history. The merged file kept its row count but 1,094 values changed and its SHA-256 moved from `08c906a7` to `c3d1629e`. I adopted the September pull in one dedicated commit, so `git log -- data/raw/fhfa/hpi_master.csv` shows both snapshots.
+Problem 4 showed up while I proved a clean run from scratch. Census reproduced byte for byte because every ACS endpoint carries its vintage in the URL. FHFA did not. Between May and September FHFA added two quarters and two columns and revised its history, so 1,094 merged values changed. I adopted the September pull in one commit, so `git log -- data/raw/fhfa/hpi_master.csv` shows both snapshots.
 
-Problem 5 raised the join from 373 metros to all 410 FHFA codes. Division rows carry `geo_level` of `division` and their parent code in `parent_cbsa`.
+Problem 5 raised the join from 373 metros to all 410 FHFA codes. Division rows carry `geo_level` set to `division` and their parent code in `parent_cbsa`.
 
-The broader lesson: curation work is mostly diagnosing failures that look like something else. Both of the worst bugs here were one-line fixes that took days to find.
+## The cleaning
 
-## The Cleaning
-
-| # | operation | why |
+| # | step | why |
 | --- | --- | --- |
-| 1 | lock the FHFA series to MSA, quarterly, traditional, all-transactions | without it, multiple HPI variants per metro-year duplicate Census rows on the merge |
-| 2 | collapse quarters to annual means per metro, with a `quarters_available` count | FHFA is quarterly, Census is annual |
-| 3 | coerce eight Census variables with `pd.to_numeric(errors="coerce")` | the API returns strings, and suppression is the sentinel `-666666666`, not null |
-| 4 | cast Census `cbsa_code` to string | matches FHFA's format, see problem 1 |
-| 5 | derive `homeownership_rate` | a rate compares across metro sizes, counts do not |
+| 1 | lock the FHFA series to metro, quarterly, traditional, all transactions | several index variants per metro and year would duplicate Census rows in the merge |
+| 2 | average quarters to a yearly mean per metro, with a count of quarters | FHFA is quarterly and Census is yearly |
+| 3 | convert eight Census columns to numbers | the API returns strings and marks suppressed values with `-666666666` |
+| 4 | cast the Census `cbsa_code` to string | to match FHFA, see problem 1 |
+| 5 | derive `homeownership_rate` | a rate compares across metro sizes and a count does not |
 
-Post-coerce null rate is below 1 percent per variable. The merge is an inner join with an empty-merge guard that raises `RuntimeError` on zero rows, which catches CBSA boundary changes before they write an empty CSV.
+After conversion each column is less than 1 percent null. The merge is an inner join that raises an error when it returns zero rows, which catches a boundary change before it writes an empty file.
 
-## The Findings
+## The findings
 
-A regime shift between the 2019 and 2024 vintages.
+The top of the market changed between 2019 and 2024. In 2019 the top 15 was led by the Bay Area and Seattle: San Francisco-San Mateo-Redwood City at 441.8, San Jose at 418.5 and Seattle-Bellevue-Kent at 378.9. In 2024 it was led by the Miami-Miami Beach-Kendall division at 629.0, Bozeman MT at 610.2, St. Petersburg-Clearwater-Largo at 598.4, Charleston SC at 581.9 and Naples FL at 571.2. Salt Lake City, Boise and Portland OR are outside the top 15, at ranks 32, 27 and 57 of 410. Mountain towns and coastal Sun Belt markets replaced the Bay Area.
 
-The top-15 inverted. The 2019 list was led by the Bay Area and Puget Sound: San Francisco-San Mateo-Redwood City at 441.8, San Jose at 418.5, Seattle-Bellevue-Kent at 378.9, Oakland-Fremont-Berkeley at 370.9, then Midland TX at 368.9. The 2024 list is led by the Miami-Miami Beach-Kendall division at 629.0, then Bozeman MT at 610.2, St. Petersburg-Clearwater-Largo at 598.4, Charleston SC at 581.9 and Naples FL at 571.2. Bozeman is the highest ranked whole metro. Salt Lake City, Boise and Portland OR are all outside the top 15, at ranks 32, 27 and 57 of 410. Missoula joined Bozeman, so Montana holds two of the top 15. Mountain towns and Sun Belt coastal markets replaced the Bay Area story, which is the visible signature of remote-work migration.
+Population did not lose its link to price. On the 396 metros with all three vintages, its correlation with HPI was 0.27, 0.31 and 0.27. A paired test (Steiger, p 0.048) puts the move from 2019 to 2024 at the edge of significance, a wobble of about 0.04 that ended where it started.
 
-Seven of the 2024 top 15 are metropolitan divisions, so the list changed shape as well as order when the 37 divisions joined in commit c3af214. Bozeman was already eighth in 2019, so it climbed rather than appeared.
-
-Population did not decouple from price. On the 396 metros carrying all three vintages the correlation with HPI runs 0.27, 0.31, 0.27. It rose and came back. I first tested the 2019 to 2024 leg with an independent-sample Fisher z, z = 0.63, p = 0.53, and that is the wrong test here: it treats the two vintages as two separate samples of metros, and they are one sample of metros measured twice.
-
-Paired, the move is significant at the 5 percent level, and only just. Population correlates 0.998 across the two vintages and HPI 0.906, so nearly all of the sampling error is common to both correlations and cancels; the independent-sample test discards that cancellation, which is why its z comes out about three times too small. Steiger's Z2* gives z = 1.976, p = 0.0481, Dunn and Clark's variant z = 1.982, p = 0.0475, and a paired bootstrap over metros, 50,000 draws, puts the 2019 minus 2024 gap at 0.041 with a 95 percent interval of 0.001 to 0.075 and p = 0.045, between 0.044 and 0.048 across seven seeds. So there is a real wobble in the population correlation and it is small: about 0.04 up and 0.04 back, ending where it started. Earlier drafts of this report claimed a drop from 0.40 to 0.23 and read a decoupling story into it. Neither endpoint reproduces on the committed data, and a rise and return of 0.04 is not a decoupling.
-
-The correlation matrix at the 2024 vintage, Pearson r over all 410 metros and divisions, pairwise complete:
+Correlations at the 2024 vintage, Pearson r over all 410 metros and divisions:
 
 | pair | r | reading |
 | --- | --- | --- |
-| median income vs HPI | 0.50 | strongest non-trivial predictor |
-| median home value vs HPI | 0.67 | expected, HPI measures value appreciation |
-| income vs median home value | 0.82 | wealthy metros have expensive housing |
-| homeownership rate vs HPI | -0.10 | weak negative, and it is composition: the 37 divisions average 0.644 ownership at HPI 415, the 373 plain MSAs 0.673 at HPI 342 |
-| median age vs homeownership | 0.63 | life-cycle effect, does not reach HPI |
+| median income and HPI | 0.50 | the strongest predictor that is not trivial |
+| median home value and HPI | 0.67 | expected, HPI measures value growth |
+| income and median home value | 0.82 | wealthy metros have expensive housing |
+| homeownership rate and HPI | minus 0.10 | weak, and mostly the divisions, which own less and price higher |
+| median age and homeownership | 0.63 | a life cycle effect that does not reach HPI |
 
-Most of these cells moved when the 37 metropolitan divisions joined the panel in commit c3af214 and the metro count went from 373 to 410. Income vs HPI moved twice: the FHFA 2026-Q3 re-pull in commit 2f9d03c shifted it on the unchanged 373 metros, then the division merge moved it again. Divisions are kept because FHFA publishes the 13 largest metros only as divisions and their parent MSAs are absent from the file, so nothing is double counted. Excluding them would drop New York, Los Angeles, Chicago, Dallas and Atlanta, which is the worst possible exclusion for a correlation against population. Values published before those commits were computed on the smaller population and are not comparable. Recompute rather than citing an older draft.
+The income and HPI scatter shows where prices outran local income: a cluster at HPI 545 to 610 with median income of 80k to 95k, which is Bozeman, Charleston, Naples and Bend.
 
-The income-vs-HPI scatter shows the affordability story: a cluster at HPI 545 to 610 sitting at 80k to 95k median income. Those are Bozeman, Charleston, Naples and Bend, where prices outran local income between 2019 and 2024.
+Five charts are in `results/visualizations/`: the HPI distribution, income against HPI, homeownership against HPI, the top 15 and the correlation heatmap.
 
-Five charts in `results/visualizations/`: HPI distribution, income vs HPI, homeownership vs HPI, the top-15 bar chart, and the correlation heatmap.
-
-## The Reproducing Steps
+## Reproducing it
 
 ```bash
-cd loop
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 export CENSUS_API_KEY=your_key_here
+snakemake --cores 1
 ```
 
-Get a key at https://api.census.gov/data/key_signup.html and click the activation link. Without one the API returns an HTML page with a 200 status, which `download_census.py` detects.
+Get a key at https://api.census.gov/data/key_signup.html. Without one the API returns an HTML page with a 200 status, which `download_census.py` catches.
 
-Three ways to run, same outputs:
-
-| option | command | note |
-| --- | --- | --- |
-| Snakemake | `snakemake --cores 1` | recommended. Three rules, re-runs only what changed. |
-| wrapper | `python run_all.py` | same three scripts, no dependency tracking |
-| manual | `python scripts/download_fhfa.py`, then `download_census.py`, then `eda_integrate.py` | |
-
-ACS end years are pinned in `data/raw/census/vintages.json`. `--refresh-vintages` re-resolves the newest vintage and moves the window forward deliberately.
-
-| output | contents |
+| option | command |
 | --- | --- |
-| `data/raw/fhfa/` | HPI master, expanded metro file, manifest |
-| `data/raw/census/` | 3 ACS vintages, combined CSV, manifest |
-| `data/integrated/` | `hpi_census_merged.csv` |
-| `results/visualizations/` | 5 PNGs |
+| Snakemake | `snakemake --cores 1`, which reruns only what changed |
+| wrapper | `python run_all.py` |
+| by hand | `python scripts/download_fhfa.py`, then `download_census.py`, then `eda_integrate.py` |
 
-Every manifest records filename, source, SHA-256, size, row count, vintage and an ISO 8601 UTC timestamp. A re-download with a different hash is the trigger to re-run downstream.
+Every manifest records the file, source, SHA-256, size, row count, vintage and a UTC timestamp. Census files reproduce exactly. FHFA files do not, because `hpi_master.csv` is live, so the committed copy is the snapshot this report describes. `snakemake --cores 1 --forcerun integrate` rebuilds from it without downloading.
 
-Verifying integrity: Census files will match, because each vintage endpoint is fixed. FHFA files will not, because `hpi_master.csv` is live. The committed `data/raw/fhfa/` is the snapshot this report describes. To rebuild from it without downloading, run `snakemake --cores 1 --forcerun integrate`.
+## The bot and the map
 
-## The Bot and the Map
+`bot/` collects more sources on a GitHub Actions schedule and rebuilds the map data in `web/public/data/metros.json`. Each source is one collector in `bot/collectors/` that writes `data/raw/<source>/` with a manifest.
 
-`bot/` collects enrichment sources on a monthly GitHub Actions schedule and rebuilds `web/public/data/metros.json`. Each source is one collector in `bot/collectors/` writing `data/raw/<source>/` with a manifest and a `metrics.csv` the map builder finds by convention.
-
-| source | what it adds |
+| source | adds |
 | --- | --- |
-| Census Gazetteer | centroids. Division centroids derived from their counties, plus the counties of every CBSA and division from the OMB 2023 delineation, and from the February 2013 and September 2018 delineations the two older ACS vintages were published on. With the ACS population of every county at each vintage, that is what decides whether a decade growth rate compares a metro to itself: a CBSA whose county lines moved by more than two percent of its people reports no change, and one moved by less reports it and says so. |
-| Zillow | ZHVI, ZORI, inventory, days to pending, price cuts, ZHVF forecast |
+| Census Gazetteer | metro centroids and the counties in each metro |
+| Zillow | home values, rents, inventory, days to pending, price cuts |
 | BLS | metro unemployment |
-| FRED | 30-year mortgage rate, plus thirteen national indicators for the strip |
-| Census ACS | gross rent, rent burden, vacancy, commute, poverty, labor force |
+| FRED | the 30 year mortgage rate and 13 national indicators |
+| Census ACS | rent, rent burden, vacancy, commute, poverty, labor force |
 | Census | population estimates with migration, building permits |
-| Realtor.com | listing metrics |
-| IRS | county-to-county migration |
-| BEA, HUD | personal income, fair market rents. Keys required. |
+| Realtor.com | listing data |
+| IRS | migration between counties |
+| BEA, HUD | personal income, fair market rents |
 
-Divisions inherit metro-level sources from their parent and say so. HUD is the exception: it publishes for its own fair market rent areas rather than for CBSAs, so 66 of the 410 study codes have no HUD entity, the 37 divisions among them. Each of those is rebuilt from the counties the delineation gives it, every county carrying the value of the HUD area it sits in, averaged by ACS population when the counties span more than one area, which is why the HUD collector reads `CENSUS_API_KEY` as well as its own token. Without the census key the codes that sit in a single area still resolve and the rest stay missing rather than being averaged blind. New England is keyed town by town, and in Connecticut HUD still names the pre-2022 counties while the delineation names planning regions, so its towns are placed by the census. The Massachusetts municipalities that became cities, Methuen, Watertown, Amesbury, Easthampton and Framingham, carry their pre-incorporation subdivision code at HUD and their reassigned one at the census; the five pairs are crosswalked in the collector. Left unmatched they had no weight, and a row with no weight leaves the numerator and the denominator both, so they did not go missing from the mean, they tilted it: 107,874 people and 4.3 percent of Cambridge-Newton-Framingham, one directional, since Methuen is half of them and sits in the cheaper Lawrence area. Any town that falls outside the crosswalk is named in the manifest rather than dropped in silence. HUD has nothing before fiscal 2017, so 2014 is blank for every metro and the map says so rather than showing an empty panel. IRS meets the same Connecticut change and cannot answer it the same way, because it publishes counties and not towns: each pre-2022 county is credited whole to the one region it mostly became, which is right for Bridgeport-Stamford-Danbury and Norwich-New London-Willimantic, within half a percent and five, and wrong for Hartford by 16.3 percent and New Haven by 28.6 measured across the 2021 to 2022 seam where the filing years change geography and nothing else moves. Waterbury-Shelton is Naugatuck Valley alone, a region assembled from towns in three counties, so it has no filing year before 2022 and no county arithmetic can give it one. Run it with `python -m bot.run_bot`. `CENSUS_API_KEY` and `FRED_API_KEY` are required; `BLS_API_KEY`, `BEA_API_KEY` and `HUD_API_TOKEN` add the rest. A source with no key is skipped.
+Divisions inherit metro sources from their parent and say so. HUD publishes for its own areas, so divisions are rebuilt from their counties, weighted by population. The map's settings and deploy steps are in [web/README.md](../web/README.md).
 
-`web/` is the React and Leaflet map. Settings and deploy steps are in [web/README.md](../web/README.md).
-
-## The Layout
+## The layout
 
 ```
 loop/
-|-- scripts/          acquisition and integration
+|-- scripts/          download and integration
 |-- data/raw/         one folder per source, each with a manifest
 |-- data/integrated/  the merged output
-|-- results/          5 PNG charts
+|-- results/          5 charts
 |-- ml/               the forecasting model, see ml/README.md
 |-- bot/              collectors and the map data build
-|-- web/              react and leaflet map
-|-- tests/            python run_tests.py
+|-- web/              the React and Leaflet map
+|-- tests/            run with python run_tests.py
 |-- docs/REPORT.md    this file
-|-- Snakefile         workflow definition
-`-- metadata.jsonld   Schema.org Dataset description
+|-- Snakefile         the workflow
+`-- metadata.jsonld   a Schema.org description of the dataset
 ```
 
-Raw files keep their source name. Manifests are always `download_manifest.json` in the source folder. Visualizations use snake_case.
+## The lifecycle
 
-## The Lifecycle
-
-The DCC Curation Lifecycle Model, mapped to artifacts.
+The DCC Curation Lifecycle Model, mapped to this project.
 
 | phase | here |
 | --- | --- |
-| conceptualise | the project plan: research questions, dataset selection |
+| conceptualise | the project plan, research questions and dataset choice |
 | create or receive | `scripts/download_fhfa.py`, `scripts/download_census.py` |
-| appraise and select | filter to MSA, quarterly, traditional, all-transactions |
-| ingest | save to `data/raw/` with a SHA-256 manifest |
+| appraise and select | the filter to metro, quarterly, traditional, all transactions |
+| ingest | `data/raw/` with a SHA-256 manifest |
 | preservation action | public domain inputs, MIT license, structured manifests |
 | store | `data/raw/` and `data/integrated/` committed to GitHub |
 | access, use, reuse | `README.md`, `Snakefile`, `run_all.py`, `metadata.jsonld` |
-| transform | `scripts/eda_integrate.py` cleans, joins, derives, visualizes |
+| transform | `scripts/eda_integrate.py` cleans, joins, derives and charts |
 
-## The Future Work
+## Future work
 
-The metropolitan-division crosswalk and the forecasting model are both done. What remains:
-
-- Feature engineering on the integrated set: income-to-price ratio, education share, demographic deltas across vintages.
-- Generative scenarios. A small VAE producing synthetic metro-year observations under counterfactual conditions, kept only if it beats conditional sampling.
-- FAIR metadata. A DCAT file or a DataCite descriptor for a Zenodo deposit would make the dataset machine-discoverable.
+- More features from the merged set: income to price ratio, education share, change between vintages.
+- Synthetic scenarios from a small generative model, kept only if it beats simple conditional sampling.
+- A DataCite record for a Zenodo deposit so the dataset can be found and cited.
 
 `ml/MILESTONES.md` is the plan.
 
-## The References
+## References
 
 Datasets
 
@@ -266,17 +216,4 @@ Methodology
 3. U.S. Census Bureau. *When to Use 1-year, 3-year, or 5-year Estimates*. https://www.census.gov/programs-surveys/acs/guidance/estimates.html.
 4. U.S. Census Bureau. *Comparing ACS Data*. https://www.census.gov/programs-surveys/acs/guidance/comparing-acs-data.html.
 5. Office of Management and Budget. (2023). *2023 Standards for Delineating Core Based Statistical Areas (OMB Bulletin 23-01)*. https://www.census.gov/programs-surveys/metro-micro/about/omb-bulletins.html.
-6. Federal Housing Finance Agency. *HPI FAQs and Methodology*. https://www.fhfa.gov/data/hpi/hpi-faqs.
-
-Software
-
-7. McKinney, W., and the pandas development team. *pandas* v2.1+. https://pandas.pydata.org/.
-8. Harris, C. R., Millman, K. J., van der Walt, S. J., et al. (2020). Array programming with NumPy. *Nature* 585, 357 to 362.
-9. Hunter, J. D. (2007). Matplotlib: A 2D graphics environment. *Computing in Science & Engineering* 9(3), 90 to 95.
-10. Reitz, K., and contributors. *Requests* v2.31+. https://requests.readthedocs.io/.
-11. Waskom, M. L. (2021). seaborn. *Journal of Open Source Software* 6(60), 3021.
-12. Python Software Foundation. *Python 3.12 Reference Manual*. https://www.python.org/.
-
-License
-
-Source code MIT (`LICENSE`). Data public domain. The integrated dataset is offered into the public domain.
+6. Federal Housing Finance Agency. *FHFA House Price Index Frequently Asked Questions*. https://www.fhfa.gov/faqs/hpi.
