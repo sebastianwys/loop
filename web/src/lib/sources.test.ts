@@ -248,8 +248,8 @@ const built: MapData | null = present ? (JSON.parse(readFileSync(PATH, "utf8")) 
 describe.skipIf(!present)("the provenance block of the built metros.json", () => {
   it("has one row per source folder, each naming a file and its checksum", () => {
     const report = buildSources(built!);
-    // sixteen raw folders and the model's own export, which is computed here
-    expect(report.rows).toHaveLength(17);
+    // seventeen raw folders and the model's own export, which is computed here
+    expect(report.rows).toHaveLength(18);
     for (const { entry: row } of report.rows) {
       expect(row.sha256, row.source).toMatch(/^[0-9a-f]{64}$/);
       expect(row.filename, row.source).not.toBe("");
@@ -270,10 +270,10 @@ describe.skipIf(!present)("the provenance block of the built metros.json", () =>
     }
   });
 
-  it("builds metrics out of thirteen folders and names what the other four do", () => {
+  it("builds metrics out of thirteen folders and names what the other five do", () => {
     const report = buildSources(built!);
     const quiet = report.rows.filter((r) => r.metrics.length === 0).map((r) => r.entry.source);
-    expect(quiet).toEqual(["boundaries", "fred", "gazetteer", "national"]);
+    expect(quiet).toEqual(["boundaries", "fhfa_vintages", "fred", "gazetteer", "national"]);
     for (const row of report.rows) {
       if (row.metrics.length === 0) expect(row.role, row.entry.source).not.toBeNull();
       else expect(row.role, row.entry.source).toBeNull();

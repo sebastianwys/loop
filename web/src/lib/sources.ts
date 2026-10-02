@@ -19,6 +19,7 @@ const ROLE: Record<string, string> = {
   gazetteer: "the centroid each metro's dot is placed at",
   fred: "the 30 year mortgage rate the forecast model reads as an input, a national figure rather than a metro metric",
   national: "the national indicators in the header strip, a second pull from the same publisher",
+  fhfa_vintages: "the FHFA index as each past release first printed it, which the forecast model's yearly refit record reads",
 };
 
 // the header shows the fred rate on its own only while no national tile
