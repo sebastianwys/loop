@@ -249,19 +249,28 @@ def _label_points(ax, points, gap, dx=6):
 def design_chart(data_date="2026Q2", start="2005Q1"):
     fig, ax = charts.figure(
         "How the backtest is split",
-        f"forecast origins by horizon and block; a line from the last origin of a block ends where its outcome lands; "
+        f"forecast origins by horizon and block; a line from a block's last origin ends where its outcome lands;\n"
         f"the train block reaches back to the panel start and the axis is cut at {spec.to_period(start).year}; panel through {data_date}",
-        size=(10, 4.6),
+        size=(charts.PAGE_WIDTH, 4.2), small=charts.PAGE_SMALL, room=0.15,
     )
+    fig.subplots_adjust(left=0.17, right=0.98, bottom=0.09)
     colors = dict(zip(backtest.BLOCKS, charts.SERIES))
     first = {"train": start, "cal": spec.CAL_START, "test": spec.TEST_START}
     last = {"train": spec.TRAIN_END, "cal": spec.CAL_END, "test": data_date}
     top = len(spec.HORIZONS)
+    half = 0.42
     for block in backtest.BLOCKS:
         x0, x1 = _x(first[block]), _x(last[block]) + 0.25
-        ax.fill_between([x0, x1], top - 0.24, top + 0.24, color=colors[block], alpha=0.3, linewidth=0)
-        note = {"train": f"train: outcomes to {last[block]}", "cal": f"cal: to {last[block]}", "test": f"test: outcomes from {first[block]}"}[block]
-        ax.text((x0 + x1) / 2, top, note, ha="center", va="center", fontsize=8, color=charts.INK2)
+        ax.fill_between([x0, x1], top - half, top + half, color=colors[block], alpha=0.3, linewidth=0)
+    # each stretch of the blocks row is named inside itself, name over dates
+    stretches = [
+        (_x(start), _x(spec.VAL_START), "train: fitting", f"outcomes to {spec.FIT_END}"),
+        (_x(spec.VAL_START), _x(spec.TRAIN_END) + 0.25, "validation", f"to {spec.TRAIN_END}"),
+        (_x(spec.CAL_START), _x(spec.CAL_END) + 0.25, "calibration", f"to {spec.CAL_END}"),
+        (_x(spec.TEST_START), _x(data_date) + 0.25, "test", f"from {spec.TEST_START}"),
+    ]
+    for x0, x1, name, dates in stretches:
+        ax.text((x0 + x1) / 2, top, f"{name}\n{dates}", ha="center", va="center", fontsize=charts.PAGE_SMALL, color=charts.INK2)
     quarters = [str(p) for p in pd.period_range(start, data_date, freq="Q")]
     end = spec.to_period(data_date)
     for row, h in enumerate(spec.HORIZONS):
@@ -285,14 +294,10 @@ def design_chart(data_date="2026Q2", start="2005Q1"):
     # origin and its first validation origin, so a single rule through every
     # row put the eight quarter validation origins inside the fitting block
     rule = dict(color=charts.INK2, linewidth=0.9, linestyle=(0, (4, 3)), zorder=4)
-    ax.vlines(_x(spec.VAL_START), top - 0.3, top + 0.3, **rule)
+    ax.vlines(_x(spec.VAL_START), top - half, top + half, **rule)
     for row, h in enumerate(spec.HORIZONS):
         y = top - 1 - row
         ax.vlines(_x(spec.shift_quarter(spec.VAL_START, -h)) - 0.125, y - 0.3, y + 0.3, **rule)
-    ax.text(_x(spec.VAL_START) - 0.3, top + 0.55, "fits to here", ha="right", va="center",
-            fontsize=8, color=charts.INK2)
-    ax.text(_x(spec.VAL_START) + 0.3, top + 0.55, "validation", ha="left", va="center",
-            fontsize=8, color=charts.INK2)
     # the outcome decides the block, so every origin lands in one: there is no
     # gap between blocks to mark
     gap_row = top - len(spec.HORIZONS)
@@ -302,8 +307,8 @@ def design_chart(data_date="2026Q2", start="2005Q1"):
     years = list(range(spec.to_period(start).year, end.year + 1, 3))
     ax.set_xticks(years)
     ax.set_xticklabels([str(v) for v in years])
-    ax.set_xlim(_x(start) - 0.3, _x(data_date) + 2.2)
-    ax.set_ylim(gap_row - 1.2, top + 1.0)
+    ax.set_xlim(_x(start) - 0.3, _x(data_date) + 0.6)
+    ax.set_ylim(gap_row - 0.6, top + half + 0.1)
     ax.grid(False)
     ax.spines["left"].set_visible(False)
     return charts.save(fig, "05_backtest_design")

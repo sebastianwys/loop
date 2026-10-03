@@ -496,23 +496,46 @@ def note(source, last):
     return f"data through {last}{tag}"
 
 
+# models go by the names the site's tables give them
+SHOWN = {
+    "no_change": "no change",
+    "momentum": "momentum",
+    "metro_mean": "metro mean",
+    "ridge": "ridge",
+    "gbm": "gradient boosting",
+    "windowmlp": "window MLP",
+    "seqgru": "sequence GRU",
+}
+
+
+def shown(name):
+    return SHOWN.get(name, name.replace("_", " "))
+
+
 def plot_training_curves(histories, epochs, when):
-    fig, axes = charts.figure("Training curves", f"pinball loss per epoch on the fitting set (outcomes through {spec.shift_quarter(VAL_START, -1)}) and the validation set ({VAL_START} to {spec.TRAIN_END}), {when}", size=(10, 4.5), rows=1, cols=2)
-    fig.subplots_adjust(top=0.78, wspace=0.25)
+    fig, axes = charts.figure("Training curves", f"pinball loss per epoch on the fitting set (outcomes through {spec.shift_quarter(VAL_START, -1)})\nand the validation set ({VAL_START} to {spec.TRAIN_END}), {when}", size=(charts.PAGE_WIDTH, 4.2), rows=1, cols=2, small=charts.PAGE_SMALL, room=0.62)
+    fig.subplots_adjust(left=0.11, right=0.98, bottom=0.14, wspace=0.34)
     for k, (ax, name) in enumerate(zip(axes, histories)):
         h = histories[name]
         ax.plot(h["epoch"], h["train_loss"], color=charts.SERIES[0], label="fitting set")
         ax.plot(h["epoch"], h["val_loss"], color=charts.SERIES[1], label="validation")
         stop = epochs[name]
         ax.axvline(stop, color=charts.MUTED, linestyle="--", linewidth=0.8)
-        top = np.nanmax(np.r_[h["train_loss"], h["val_loss"]])
-        side = "right" if stop > 0.6 * h["epoch"].max() else "left"
-        ax.annotate(f"stopped at epoch {stop}", (stop, top), xytext=(-5 if side == "right" else 5, 0), textcoords="offset points", ha=side, va="top", fontsize=8, color=charts.INK2)
-        ax.set_title(name)
+        # an empty band above the curves holds the note on where training stopped
+        loss = np.r_[h["train_loss"], h["val_loss"]]
+        low, high = np.nanmin(loss), np.nanmax(loss)
+        ax.set_ylim(low - 0.06 * (high - low), high + 0.24 * (high - low))
+        side = "right" if stop > (h["epoch"].min() + h["epoch"].max()) / 2 else "left"
+        ax.annotate(f"stopped at epoch {stop}", (stop, 1), xycoords=ax.get_xaxis_transform(), xytext=(-5 if side == "right" else 5, -3),
+                    textcoords="offset points", ha=side, va="top", fontsize=charts.PAGE_SMALL, color=charts.INK2)
+        ax.set_title(shown(name))
         ax.set_xlabel("epoch")
         if k == 0:
             ax.set_ylabel("pinball loss, log growth units")
-            ax.legend(loc="upper right", bbox_to_anchor=(1.0, 0.85))
+    # one key for both panels, on its own row under the subtitle
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper left", ncol=2, borderaxespad=0, handlelength=1.6,
+               bbox_to_anchor=(axes[0].get_position().x0, 1 - (charts.header_depth(fig) + 0.06) / fig.get_figheight()))
     return charts.save(fig, "09_training_curves")
 
 
@@ -520,11 +543,11 @@ def plot_training_curves(histories, epochs, when):
 # level. the conformal edges do not. a symmetric margin is fitted for the band
 # as a whole to reach 1 - alpha, so drawing its edges at 0.1 and 0.9 measured
 # them against levels they never claimed and doubled the apparent miss. the
-# band's own number, its coverage, goes in the title instead
+# band's own number, its coverage, goes in the heading instead
 def plot_calibration(predictions, model_name, when, return_figure=False):
     test = predictions[predictions["block"] == "test"]
-    fig, axes = charts.figure("Quantile calibration", f"share of test block outcomes below each predicted quantile, {model_name}, {when}. the conformal band is one interval, so its coverage is reported rather than plotted", size=(8, 7.5), rows=2, cols=2)
-    fig.subplots_adjust(top=0.86, hspace=0.4, wspace=0.3)
+    fig, axes = charts.figure("Quantile calibration", f"share of test block outcomes below each predicted quantile, {shown(model_name)}, {when}. the conformal band is one interval, so its coverage is reported rather than plotted", size=(charts.PAGE_WIDTH, 7.2), rows=2, cols=2, small=charts.PAGE_SMALL, room=0.62)
+    fig.subplots_adjust(left=0.1, right=0.98, bottom=0.08, hspace=0.42, wspace=0.26)
     nominal = list(spec.QUANTILES)
     for k, (ax, h) in enumerate(zip(axes.flat, spec.HORIZONS)):
         g = test[test["horizon"] == h]
@@ -536,8 +559,12 @@ def plot_calibration(predictions, model_name, when, return_figure=False):
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)
         ax.set_xticks(nominal)
-        ax.set_title(f"{h} quarter{'s' if h > 1 else ''} ahead, n {len(g)}, band coverage {covered:.2f} of {1 - spec.ALPHA:.2f}")
-        ax.set_xlabel("nominal quantile")
+        # the horizon heads the panel, its band's numbers on a smaller line below
+        ax.set_title(f"{h} quarter{'s' if h > 1 else ''} ahead", pad=19)
+        ax.annotate(f"band coverage {covered:.2f} of {1 - spec.ALPHA:.2f}, n {len(g)}", (0, 1), xycoords="axes fraction",
+                    xytext=(0, 5), textcoords="offset points", va="bottom", fontsize=charts.PAGE_SMALL, color=charts.INK2)
+        if k >= 2:
+            ax.set_xlabel("nominal quantile")
         if k % 2 == 0:
             ax.set_ylabel("share of outcomes below")
         if k == 0:
@@ -554,9 +581,11 @@ def plot_fans(panel, forecasts, model_name, when):
     codes += [c for c in forecasts["cbsa_code"].unique() if c not in codes][: 8 - len(codes)]
     names = panel.drop_duplicates("cbsa_code").set_index("cbsa_code")["name"]
     origin = forecasts["origin"].max()
-    fig, axes = charts.figure("Forecast fans", f"house price index since {FAN_START} and the median path with a 90 percent band, origin {origin}, {model_name}, {when}", size=(14, 7), rows=2, cols=4)
-    fig.subplots_adjust(top=0.85, hspace=0.45, wspace=0.25)
-    for k, (ax, code) in enumerate(zip(axes.flat, codes)):
+    far = int(forecasts["horizon"].max())
+    fig, axes = charts.figure("Forecast fans", f"house price index since {FAN_START} and the median path with a 90 percent band, origin {origin},\n{shown(model_name)}, {when}; under each name, the median {far} quarters out and its band", size=(charts.PAGE_WIDTH, 9.4), rows=4, cols=2, small=charts.PAGE_SMALL, room=0.62, sharex=True)
+    fig.subplots_adjust(left=0.1, right=0.98, bottom=0.04, hspace=0.5, wspace=0.24)
+    fig.supylabel("index level", x=0.005, fontsize=charts.PAGE_SMALL + 1, color=charts.INK2)
+    for ax, code in zip(axes.flat, codes):
         rows = forecasts[forecasts["cbsa_code"] == code].sort_values("horizon")
         start = rows["origin"].iloc[0]
         history = panel[(panel["cbsa_code"] == code) & (panel["quarter"] >= FAN_START) & (panel["quarter"] <= start)].sort_values("quarter")
@@ -565,32 +594,27 @@ def plot_fans(panel, forecasts, model_name, when):
         x = [spec.quarter_end(start)] + [spec.quarter_end(spec.shift_quarter(start, int(h))) for h in rows["horizon"]]
         ax.fill_between(x, [level] + list(level * np.exp(rows["lo"])), [level] + list(level * np.exp(rows["hi"])), color=charts.BAND, linewidth=0)
         ax.plot(x, [level] + list(level * np.exp(rows["q50"])), color=charts.SERIES[0], marker="o", markersize=3)
-        far = rows.iloc[-1]
-        ax.text(0.03, 0.93, f"{int(far['horizon'])}q median {far['q50_pct']:+.1f}%, band {far['lo_pct']:+.1f}% to {far['hi_pct']:+.1f}%", transform=ax.transAxes, fontsize=7, color=charts.INK2, va="top")
-        ax.set_title(spec.SHOWCASE.get(code, names.get(code, code)))
+        # the numbers sit on a smaller line under the name, clear of the data
+        end = rows.iloc[-1]
+        ax.set_title(spec.SHOWCASE.get(code, names.get(code, code)), pad=19)
+        ax.annotate(f"median {end['q50_pct']:+.1f}%, band {end['lo_pct']:+.1f}% to {end['hi_pct']:+.1f}%", (0, 1), xycoords="axes fraction",
+                    xytext=(0, 5), textcoords="offset points", va="bottom", fontsize=charts.PAGE_SMALL, color=charts.INK2)
         ax.xaxis.set_major_locator(mdates.YearLocator(4))
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
-        ax.margins(y=0.2)
-        if k % 4 == 0:
-            ax.set_ylabel("index level")
-    for ax in list(axes.flat)[len(codes):]:
-        ax.set_visible(False)
+        ax.margins(y=0.08)
+    for k, ax in enumerate(axes.flat):
+        if k >= len(codes):
+            ax.set_visible(False)
+        elif k + axes.shape[1] >= len(codes):
+            # the lowest panel in each column keeps its years
+            ax.tick_params(labelbottom=True)
     return charts.save(fig, "11_forecast_fans")
 
 
-# push labels apart from the bottom up so they never overlap
-def spread(values, gap):
-    out = np.array(values, dtype=float)
-    order = np.argsort(out)
-    for a, b in zip(order[:-1], order[1:]):
-        if out[b] - out[a] < gap:
-            out[b] = out[a] + gap
-    return out
-
-
 def plot_comparison(summaries, baselines, when):
-    fig, ax = charts.figure("Model comparison", f"mean absolute error of the median forecast on the test block, percentage points of growth, {when}", size=(9, 5.5))
-    fig.subplots_adjust(top=0.84, right=0.82)
+    fig, ax = charts.figure("Model comparison", f"mean absolute error of the median forecast on the test block, percentage points of growth,\n{when}", size=(charts.PAGE_WIDTH, 4.6), small=charts.PAGE_SMALL, room=0.2)
+    # the right margin holds the names at the line ends
+    fig.subplots_adjust(left=0.1, right=0.77, bottom=0.12)
     lines = []
     for name, summary in summaries.items():
         rows = summary[summary["block"] == "test"].sort_values("horizon")
@@ -601,21 +625,16 @@ def plot_comparison(summaries, baselines, when):
             g = rows[rows["model"] == name].sort_values("horizon")
             lines.append((str(name), g["horizon"].to_numpy(), g["mae_pct"].to_numpy()))
     lines = lines[: len(charts.SERIES)]
-    ends = [line[2][-1] for line in lines]
     top = max(np.nanmax(line[2]) for line in lines)
-    placed = spread(ends, 0.045 * top)
-    for (name, x, y), color, at in zip(lines, charts.SERIES, placed):
+    for (name, x, y), color in zip(lines, charts.SERIES):
         ax.plot(x, y, color=color, marker="o", markersize=4)
-        # pushing the labels apart set gbm's beside the metro mean line, so each
-        # label takes its line's colour and a leader back to where the line ends
-        ax.annotate(name, (x[-1], y[-1]), xytext=(x[-1] + 0.45, at), textcoords="data", va="center", fontsize=8,
-                    color=color, annotation_clip=False,
-                    arrowprops=dict(arrowstyle="-", color=color, linewidth=0.6, shrinkA=0, shrinkB=3))
-    ax.set_ylim(0, max(top * 1.1, placed.max() + 0.05 * top))
+    ax.set_ylim(0, top * 1.1)
     ax.set_xticks(list(spec.HORIZONS))
     ax.set_xlabel("horizon, quarters ahead")
     ax.set_ylabel("mean absolute error, percentage points")
     ax.set_xlim(spec.HORIZONS[0] - 0.3, spec.HORIZONS[-1] + 0.3)
+    # the long horizon errors bunch up, so the names are pushed apart
+    charts.label_ends(ax, [(x[-1], y[-1], shown(name), color) for (name, x, y), color in zip(lines, charts.SERIES)], size=charts.PAGE_SMALL)
     return charts.save(fig, "12_model_comparison")
 
 
@@ -623,13 +642,15 @@ def plot_distribution(forecasts, model_name, when):
     rows = forecasts[forecasts["horizon"] == 4]
     values = rows["q50_pct"].to_numpy(dtype=float)
     origin = rows["origin"].max()
-    fig, ax = charts.figure("Forecast distribution", f"median four quarter forecast across {len(values)} metros, {model_name}, origin {origin}, {when}", size=(9, 5.5))
-    fig.subplots_adjust(top=0.84)
+    fig, ax = charts.figure("Forecast distribution", f"median four quarter forecast across {len(values)} metros, {shown(model_name)}, origin {origin},\n{when}", size=(charts.PAGE_WIDTH, 4.6), small=charts.PAGE_SMALL, room=0.5)
+    fig.subplots_adjust(left=0.09, right=0.97, bottom=0.12)
     ax.hist(values, bins=30, color=charts.SERIES[0], edgecolor=charts.SURFACE, linewidth=0.5)
     marks = np.percentile(values, [10, 50, 90])
-    for (label, value), height in zip(zip(("10th percentile", "median", "90th percentile"), marks), (0.96, 0.87, 0.78)):
+    # named above the plot, the outer two opening away from the median
+    for (label, value), side in zip(zip(("10th percentile", "median", "90th percentile"), marks), ("right", "center", "left")):
         ax.axvline(value, color=charts.INK2, linewidth=0.8)
-        ax.text(value, height, f" {label} {value:+.1f}%", transform=ax.get_xaxis_transform(), fontsize=8, color=charts.INK2, va="top")
+        ax.annotate(f"{label}\n{value:+.1f}%", (value, 1), xycoords=ax.get_xaxis_transform(), xytext=(0, 4),
+                    textcoords="offset points", ha=side, va="bottom", fontsize=charts.PAGE_SMALL, color=charts.INK2, annotation_clip=False)
     charts.pct_axis(ax, "x", 0)
     ax.set_xlabel("median forecast, four quarters ahead")
     ax.set_ylabel("metros")

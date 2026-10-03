@@ -713,9 +713,10 @@ def coverage_figure(panel):
     latest, metros = panel["quarter"].max(), panel["cbsa_code"].nunique()
     fig, ax = charts.figure(
         "Where the panel has data",
-        f"share of the {metros} metros with a value in each year, one row per source series, as of {latest}; "
+        f"share of the {metros} metros with a value in each year, one row per source series, as of {latest};\n"
         f"left of the rule is the block the model fits on, so coverage right of it teaches nothing",
-        size=(11, 6))
+        size=(charts.PAGE_WIDTH, 5.0), small=charts.PAGE_SMALL, room=0.32)
+    fig.subplots_adjust(left=0.16, right=0.89, bottom=0.07)
     years = table.columns.to_numpy(dtype=float)
     x = np.append(years, years[-1] + 1) - 0.5
     y = np.arange(len(table) + 1)
@@ -725,8 +726,9 @@ def coverage_figure(panel):
     # the fitting block ends inside a year, so the rule sits on the cell edge
     fit_year = int(spec.FIT_END[:4])
     ax.axvline(fit_year + 0.5, color=charts.INK2, linewidth=1.0, zorder=5)
-    ax.text(fit_year + 0.35, len(table) + 0.55, "fits through here", ha="right", va="top",
-            fontsize=8, color=charts.INK2)
+    # named above the grid, clear of the rows and of the year labels below it
+    ax.annotate("fits through here", (fit_year + 0.5, 1), xycoords=ax.get_xaxis_transform(), xytext=(-4, 4),
+                textcoords="offset points", ha="right", va="bottom", fontsize=charts.PAGE_SMALL, color=charts.INK2, annotation_clip=False)
     ax.set_yticks(y[:-1] + 0.5, table.index)
     ticks = [int(v) for v in years if v % 5 == 0]
     ax.set_xticks(ticks, [str(v) for v in ticks])
@@ -734,7 +736,7 @@ def coverage_figure(panel):
     ax.tick_params(length=0)
     for side in ax.spines.values():
         side.set_visible(False)
-    bar = fig.colorbar(mesh, ax=ax, fraction=0.03, pad=0.02)
+    bar = fig.colorbar(mesh, ax=ax, fraction=0.03, pad=0.02, aspect=40)
     bar.outline.set_visible(False)
     charts.pct_axis(bar.ax)
     bar.set_label("share of metros", color=charts.INK2)
