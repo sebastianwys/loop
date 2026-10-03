@@ -12,7 +12,7 @@
 // the captions below is read from there. a retrain redraws the pngs, and the
 // words describing them move with it instead of describing the old ones
 import {
-  EXPANDED_BEFORE, EXPANDED_FOR_ALL_FROM, FIT_END, NOMINAL_COVERAGE, SHIPPED, TRAIN_END, horizonPhrase, horizonWord, horizonsIn,
+  FIT_END, NOMINAL_COVERAGE, SHIPPED, TRAIN_END, horizonPhrase, horizonWord, horizonsIn,
   inWords, points, proseName, rowAt, scored, sentenceCase, shiftQuarter,
 } from "./model";
 import type { BacktestRow, ForecastFacts, PanelCoverage, PanelFacts, RawBand, TrainingFacts } from "./model";
@@ -68,17 +68,16 @@ const REALTIME_ROWS = ["expanded hpi", "index error"];
 
 // the figure is drawn from the whole panel, so for those rows it shows more
 // than the backtest ever reads, on both sides of the rule
-function drawnFuller(coverage: PanelCoverage, panel: PanelFacts): string {
+function drawnFuller(coverage: PanelCoverage): string {
   const rows = coverage.series.filter((s) => REALTIME_ROWS.includes(s.label)).map((s) => seriesName(s.label));
   if (rows.length === 0) return "";
   const them = rows.length === 1 ? "it" : "them";
-  return `${sentenceCase(list(rows))} ${rows.length === 1 ? "is" : "are"} drawn for all ${panel.metros} metros on either side of the rule,`
-    + ` as FHFA publishes ${them} now, while the backtest reads ${them} only for the ${EXPANDED_BEFORE} FHFA published ${them} for`
-    + ` before its ${EXPANDED_FOR_ALL_FROM} report.`;
+  return `${sentenceCase(list(rows))} ${rows.length === 1 ? "is" : "are"} drawn as FHFA publishes ${them} now, fuller than the`
+    + ` backtest reads ${them}.`;
 }
 
 export function coverageFigure(coverage: PanelCoverage | null, panel: PanelFacts): Pick<ModelFigure, "alt" | "caption"> {
-  const lead = "Everything right of the rule is coverage the model is scored on and never taught.";
+  const lead = "Right of the rule the model is scored and never taught.";
   if (!coverage) {
     return {
       alt: `A grid of the panel's source series against the years ${panel.first.slice(0, 4)} to ${panel.last.slice(0, 4)}, each cell `
@@ -101,9 +100,9 @@ export function coverageFigure(coverage: PanelCoverage | null, panel: PanelFacts
     ? " Every series has something left of the rule."
     : ` ${sentenceCase(list(empty))} ${empty.length === 1 ? "is" : "are"} empty everywhere left of the rule.`;
   const count = empty.length === 0
-    ? "Every series has something on the left of it."
-    : `${sentenceCase(inWords(empty.length))} ${empty.length === 1 ? "series has" : "series have"} nothing at all on the left of it.`;
-  const fuller = drawnFuller(coverage, panel);
+    ? "Every series has something left of it."
+    : `${sentenceCase(inWords(empty.length))} ${empty.length === 1 ? "series has" : "series have"} nothing left of it.`;
+  const fuller = drawnFuller(coverage);
   return {
     alt: `A grid of ${inWords(coverage.series.length)} source series against the years ${coverage.first} to ${coverage.last}, each cell `
       + `shaded by the share of the ${panel.metros} metros that have a value, with a vertical rule at the end of ${fitYear} marked `
@@ -130,9 +129,8 @@ export function designFigure(fitEnd: string, horizons: number[]): Pick<ModelFigu
       + " model fits on and the part held back for validation. Each horizon row has its own short dashed mark, as many quarters"
       + ` earlier as it looks ahead, just before its first validation origin${marks}. The longer the horizon, the earlier its`
       + " ticks change colour, and since the outcome decides the block, every origin lands in one.",
-    caption: "Read down a column: the longer the horizon, the earlier an origin has to stop being something the model is"
-      + " allowed to learn from, and each row's dashed mark steps left with it. Together the dashed marks draw the line that"
-      + " decides what a feature can be taught at all.",
+    caption: "The longer the horizon, the earlier an origin stops being something the model can learn from, and each row's"
+      + " dashed mark steps left with it.",
   };
 }
 
@@ -150,7 +148,7 @@ export function trainingFigure(training: TrainingFacts[]): Pick<ModelFigure, "al
   return {
     alt: `${sentenceCase(inWords(training.length))} panels of pinball loss against epoch, ${list(names)}, each with a fitting `
       + `curve and a validation curve. ${told.join(" ")}`,
-    caption: "Both networks stop on validation loss. Neither the test block nor the calibration block is consulted.",
+    caption: "Both networks stop on validation loss and never read the test or calibration blocks.",
   };
 }
 
@@ -198,11 +196,11 @@ export function comparisonFigure(rows: BacktestRow[]): Pick<ModelFigure, "alt" |
   if (farSpread && shorter.length > 0) {
     const tightest = shorter.reduce((a, b) => (b.spread < a.spread ? b : a));
     if (shorter.every((s) => farSpread.spread < s.spread)) {
-      apart = ", and the strongest three converge at the long end, where the choice between them stops being obvious";
+      apart = ", and the best three converge at the long end";
     } else if (shorter.every((s) => farSpread.spread > s.spread)) {
-      apart = `, and the strongest three sit furthest apart at the long end, ${points(farSpread.spread)} points from the first to the third against ${points(tightest.spread)} at ${horizonPhrase([tightest.h])}`;
+      apart = `, and the best three sit furthest apart at the long end, ${points(farSpread.spread)} points against ${points(tightest.spread)} at ${horizonPhrase([tightest.h])}`;
     } else {
-      apart = `, and the strongest three sit ${points(farSpread.spread)} points apart at the long end`;
+      apart = `, and the best three sit ${points(farSpread.spread)} points apart at the long end`;
     }
   }
   return {
@@ -266,7 +264,7 @@ export function fansFigure(forecast: ForecastFacts): Pick<ModelFigure, "alt" | "
   return {
     alt: `Eight metros, each showing its house price index since 2015 and the model's median path${until} inside a shaded 90 percent band.`
       + (bands.length > 0 ? ` ${sentenceCase(bands.join(", and "))}.` : ""),
-    caption: `Eight metros at the ${forecast.origin ?? "latest"} origin: the index since 2015, the median path, and the 90 percent band drawn around it.`,
+    caption: `Eight metros at the ${forecast.origin ?? "latest"} origin: the index since 2015, the median path and the 90 percent band.`,
   };
 }
 

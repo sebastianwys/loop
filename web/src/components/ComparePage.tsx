@@ -77,10 +77,7 @@ export function ComparePage({ data, route, go, viewport }: ViewProps) {
       <div className="compare-inner">
         <div className="compare-head">
           <h2>Compare metros</h2>
-          <p className="compare-note">
-            Two to four metros, their house price index on one chart and the metric you choose in the table.
-            The address bar carries the comparison, so the link you copy opens what you are looking at.
-          </p>
+          <p className="compare-note">Two to four metros on one price chart, and any metric in the table. The link keeps the view.</p>
         </div>
 
         <div className="compare-card compare-pick">
@@ -202,11 +199,10 @@ export function ComparePage({ data, route, go, viewport }: ViewProps) {
         )}
 
         <p className="compare-foot">
-          House prices: FHFA House Price Index,{" "}
+          FHFA House Price Index,{" "}
           {partial && asOf
-            ? `annual mean through ${partial - 1}; the ${partial} point is the index at ${asOf}`
+            ? `annual mean through ${partial - 1}, and ${partial} is the index at ${asOf}`
             : `annual mean${asOf ? `, the last year through ${asOf}` : ""}`}.
-          {" "}Growth is measured from the first year every metro here has an index.
         </p>
       </div>
     </div>

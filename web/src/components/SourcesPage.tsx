@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { visibleDefs } from "../lib/metrics";
-import { buildSources, safeUrl, shortHash, stamp, type SourceRow } from "../lib/sources";
+import { joinList } from "../lib/model";
+import { NOT_COMMITTED, buildSources, safeUrl, shortHash, stamp, type SourceRow } from "../lib/sources";
 import type { ViewProps } from "../lib/views";
 import "../styles/sources.css";
 
@@ -61,6 +62,8 @@ export function SourcesPage({ data, go }: ViewProps) {
   const vintages = Object.entries(data.sources ?? {});
   const modelVintage = data.sources?.forecast ?? null;
   const blank = report.rows.filter((r) => r.metrics.length === 0).length;
+  // the files named on this page that the repo leaves out, and why
+  const uncommitted = report.rows.map((r) => NOT_COMMITTED[r.entry.source]).filter((why): why is string => Boolean(why));
   // a source id can have more than one folder behind it, so the page names
   // which rather than leaving a reader to spot the repeat
   const shared = useMemo(() => {
@@ -91,19 +94,16 @@ export function SourcesPage({ data, go }: ViewProps) {
         <div className="sources-head">
           <h2>Where every number comes from</h2>
           <p className="sources-note">
-            Nothing on this site is typed in by hand. Every source was fetched once, written to a named file
-            and hashed, and the pipeline records what it got rather than what it asked for. The table below is
-            that record: the publisher, the address, the vintage, the moment of the download, the rows that
-            arrived and the sha256 of the file each number was read out of.
+            Every data value on this site is read from a file the pipeline downloaded and hashed. The table is
+            that record, down to the sha256 of the file each number came from.
           </p>
         </div>
 
         {report.rows.length === 0 ? (
           <>
             <p className="sources-empty">
-              This build of metros.json carries no provenance block, which is what a build made before the block
-              was added looks like, and what the bundled sample data is. The vintages it does carry are below,
-              but there is no checksum to show and this page will not invent one.
+              This build of metros.json carries no provenance block, like the bundled sample data or a build made
+              before the block was added. Its vintages are below, but there is no checksum to show.
             </p>
             {vintages.length > 0 && (
               <div className="sources-scroll">
@@ -183,16 +183,14 @@ export function SourcesPage({ data, go }: ViewProps) {
             </div>
 
             <p className="sources-foot">
-              The file count and the row count cover the whole folder. The sha256 belongs to the one file named
-              beside it, which is the file the metrics in the next table were read out of.
+              Files and rows count the whole folder. The sha256 is for the one file named beside it.
             </p>
 
             <div className="sources-head">
               <h3>What each source builds</h3>
               <p className="sources-note">
-                The folder names above are the pipeline's, not the site's, and they do not all line up.
-                {shared.length > 0 ? ` More than one folder feeds ${shared.join(" and ")} here.` : ""}
-                {blank > 0 ? ` ${blank === 1 ? "One folder builds" : `${opener(blank)} folders build`} no metric at all: they are what the map is drawn on and what the header reports, so they are named rather than left blank.` : ""}
+                {shared.length > 0 ? `More than one folder feeds ${shared.join(" and ")} here.` : ""}
+                {blank > 0 ? `${shared.length > 0 ? " " : ""}${blank === 1 ? "One folder builds" : `${opener(blank)} folders build`} no metric, and the last column says what ${blank === 1 ? "it is" : "they are"} for.` : ""}
               </p>
             </div>
 
@@ -232,29 +230,21 @@ export function SourcesPage({ data, go }: ViewProps) {
           <div className="sources-model">
             <h3>The forecast is computed here, not downloaded</h3>
             <p>
-              {opener(forecasts.length)} of the metrics on this site are written by the forecasting model in
-              the repository's ml directory rather than fetched from a publisher. It is the one row above with
-              no address to follow, because nothing was downloaded for it: the address column names the code
-              that wrote the file instead of a publisher's url.
+              {opener(forecasts.length)} metrics come from the forecasting model in the repo's ml folder, not a
+              publisher. Its row above names the code that wrote the file in place of an address.
             </p>
             <ul className="metric-list">
               {forecasts.map((def) => <li key={def.id}>{def.label}</li>)}
             </ul>
             <p>
-              It is checkable the same way as the rest. The model is fit on the sources this build records,
-              and its export writes a manifest of its own at ml/results/forecast/download_manifest.json in the
-              same shape as the download manifests this page is built from, so the hash in the table above is
-              the hash of the file the site reads. That manifest carries one thing the table has no column
-              for: the checksums of the three artifacts the export was computed from.
+              It is checkable the same way: the export writes ml/results/forecast/download_manifest.json in the same
+              shape as the others, plus the checksums of the three artifacts it was computed from.
               {modelVintage ? ` This build reads the ${modelVintage} export.` : ""}
             </p>
             {report.rows.length > 0 && (
               <p>
-                Not every number in that file is the model's. The index standard error is FHFA's own, published
-                beside the expanded index, and the growth over the last four quarters and the five year
-                annualized trend are what the FHFA index did up to the origin, worked out in the export. They
-                ride in the model's export only because nothing else carries them, and each is listed under
-                fhfa above, where it came from.
+                The index standard error is FHFA's own figure, and the last four quarters and the five year trend
+                are what the FHFA index did up to the origin, so all three are listed under fhfa.
               </p>
             )}
             <p>
@@ -266,10 +256,10 @@ export function SourcesPage({ data, go }: ViewProps) {
         )}
 
         <p className="sources-foot">
-          Every file named above is in the repository beside the download manifest this page is built from,
-          under data/raw in the folder the source column names, and under ml/results for the one the model
-          computed. Running a sha256 over that file returns the value in the last column, which is what makes
-          the rest of this site checkable rather than trustable.
+          Each file named above sits under data/raw in its source's folder, or ml/results for the forecast.
+          {uncommitted.length > 0
+            ? ` ${uncommitted.length === 1 ? "One is" : `${opener(uncommitted.length)} are`} not committed: ${joinList(uncommitted)}.`
+            : ""}
         </p>
       </div>
     </main>

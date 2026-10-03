@@ -406,12 +406,12 @@ export function metricExplainer(metric: Metric): string {
   // growth into that year. timeline.ts owns the type and imports this module,
   // so the year is read off the metric rather than through isYearMetric
   if (typeof (metric as Metric & { year?: unknown }).year === "number") {
-    return `Every metro is coloured by its ${metric.label}, the change in its index into the year the timeline is set to, worked out here from the annual series. The index comes from ${source} and is not adjusted or smoothed here. A metro with no index that year is drawn hollow rather than guessed at.`;
+    return `Each metro is colored by its ${metric.label}, the change in its index into the year the timeline is set to. The index comes from ${source}, unadjusted, and a metro with no index that year is drawn hollow.`;
   }
   const what = spanned
-    ? `Every metro is coloured by its ${metric.def.label}, which is a change measured between the two shaded vintage years rather than a reading at one date.`
-    : `Every metro is coloured by its ${metric.def.label} at the period the timeline is set to.`;
-  return `${what} The numbers come from ${source} and are not adjusted or smoothed here. A metro with no reading is drawn hollow rather than guessed at.${withheldSentence(metric)}`;
+    ? `Each metro is colored by its ${metric.def.label}, a change measured between the two shaded vintage years rather than a reading at one date.`
+    : `Each metro is colored by its ${metric.def.label} at the period the timeline is set to.`;
+  return `${what} The numbers come from ${source}, unadjusted, and a metro with no reading is drawn hollow.${withheldSentence(metric)}`;
 }
 
 // a withheld blank is a claim of its own, so the help says what it is and how
@@ -419,7 +419,7 @@ export function metricExplainer(metric: Metric): string {
 function withheldSentence(metric: Metric): string {
   if (!canBeWithheld(metric)) return "";
   const why = metric.def.id === "permits_per_1000"
-    ? "A year whose permits and people were counted over different counties has its rate withheld rather than divided across two places"
-    : "A metro whose county lines moved by more than two percent of its people between the two vintages has its rate withheld rather than measured across two different places";
-  return ` ${why}: it is drawn hollow with a solid outline and keyed withheld, which is not the same as nobody measuring it.`;
+    ? "A year whose permits and people were counted over different counties"
+    : "A metro whose county lines moved by more than two percent of its people between the two vintages";
+  return ` ${why} is withheld instead, drawn hollow with a solid outline and keyed withheld.`;
 }

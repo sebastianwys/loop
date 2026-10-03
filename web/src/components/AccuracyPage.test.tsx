@@ -92,7 +92,7 @@ describe("the accuracy view", () => {
   });
 
   it("says plainly which way the model leaned rather than leaving the reader to work it out", () => {
-    expect(page).toContain("That is a bias, not bad luck in a few places");
+    expect(page).toContain("That is a lean across the map, not bad luck in a few places");
     expect(page).toContain("The model ran high, nearly everywhere at once");
     expect(page).toContain("came in under");
   });
@@ -195,7 +195,7 @@ describe("the accuracy view", () => {
     expect(bare).toContain("nothing to test the miss against");
     expect(bare).not.toContain("rank correlation");
     // the rest of the page still stands
-    expect(bare).toContain("That is a bias, not bad luck in a few places");
+    expect(bare).toContain("That is a lean across the map, not bad luck in a few places");
   });
 
   it("names the origin the calls were made at, and the source they are scored against", () => {
@@ -241,8 +241,8 @@ describe("which side of the call the page says missed by more", () => {
       scored("11100", "Amarillo, TX", 1, -3, 0.4), scored("12420", "Austin-Round Rock, TX", 1, -4, 0.5),
     ];
     const page = text(render(short));
-    expect(page).toContain("the metros that fell short of the model fell short by more than the metros that beat it beat it: 3.50 points on average against 1.50, and 4.00 at the worst against 2.00");
-    expect(page).not.toContain("the metros that beat the model beat it by more");
+    expect(page).toContain("the metros that fell short missed by more than the metros that beat it: 3.50 points on average against 1.50, and 4.00 at the worst against 2.00");
+    expect(page).not.toContain("the metros that beat it missed by more");
   });
 
   it("says the beats ran larger only when they did", () => {
@@ -250,7 +250,7 @@ describe("which side of the call the page says missed by more", () => {
       scored("10180", "Abilene, TX", 12, 9, 0.2), scored("19100", "Dallas-Fort Worth-Arlington, TX", 8, 6, 0.3),
       scored("11100", "Amarillo, TX", 1, -1, 0.4), scored("12420", "Austin-Round Rock, TX", 1, -2, 0.5),
     ];
-    expect(text(render(beats))).toContain("the metros that beat the model beat it by more than the metros that fell short fell short of it");
+    expect(text(render(beats))).toContain("the metros that beat it missed by more than the metros that fell short");
   });
 
   it("says neither when one side is larger on average and the other at the worst", () => {
@@ -260,7 +260,7 @@ describe("which side of the call the page says missed by more", () => {
     ];
     const page = text(render(mixed));
     expect(page).toContain("neither side missed by more on both counts");
-    expect(page).not.toMatch(/beat it by more|fell short by more/);
+    expect(page).not.toMatch(/beat it missed by more|fell short missed by more/);
   });
 
   it("reads the skew about the average miss, not about the call", () => {
@@ -276,7 +276,7 @@ describe("what the page says the scored calls are", () => {
     expect(text(page)).not.toContain("A year ago the model published");
     expect(text(page)).toContain("These are the backtest's calls");
     expect(text(page)).toContain("from the 2025Q2 origin");
-    expect(text(page)).toContain("the two are different fits");
+    expect(text(page)).toContain("The two are different fits");
   });
 
   // the band section quotes the backtest band's coverage, read from BACKTEST

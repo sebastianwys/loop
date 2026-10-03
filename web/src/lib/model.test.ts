@@ -9,9 +9,9 @@ import {
   edgeSentence, edgeTest, edgesOver, errorCut, errorCuts, extraFit, horizonPhrase, horizonsIn, joinList, leaderboard, lossSentence,
   lossesOf, matchedBy, matchedEverywhere, matchedPhrase, meanVerdict, modelLabel, modelsIn, pAt, pBound, pList, pPhrase, pRange,
   pText, pairedOrigins, pairedWith, points, proseName, quantile, quarterLabel, revisionOf, ridgeVerdict, rowAt, ruleCall,
-  ruleSentence, sentenceCase, separatedAt, separatedSentence, separations, settingsPhrase, shiftQuarter, spanPaired, spanRows,
+  ruleSentence, sentenceCase, separatedAt, separatedSentence, separations, shiftQuarter, spanPaired, spanRows,
   spanStart, spansIn, spreadOf, tiedWith, widthAgainst, winsAt,
-  type AdmissionRow, type BacktestRow, type Loss, type PairedRow, type WalkBand, type WalkPairedRow, type WalkRow,
+  type AdmissionRow, type BacktestRow, type Loss, type PairedRow, type WalkPairedRow, type WalkRow,
 } from "./model";
 import { BACKTEST, WALKFORWARD, WALKFORWARD_LATEST, WALKFORWARD_PAIRED } from "./modelNumbers";
 import { DEFAULT_ROUTE } from "./route";
@@ -79,7 +79,7 @@ describe("the leaderboard the page draws", () => {
   });
 
   it("gives every model a readable name and falls back to its id", () => {
-    expect(modelLabel(SHIPPED)).toBe("sequence gru");
+    expect(modelLabel(SHIPPED)).toBe("sequence GRU");
     expect(modelLabel("gbm")).toBe("gradient boosting");
     expect(modelLabel("transformer")).toBe("transformer");
   });
@@ -341,7 +341,7 @@ describe("the claims the model page makes about the shipped backtest", () => {
     const lowest = gruLowest();
     expect(READINGS).toContain(lowest.length > 0
       ? `The sequence GRU has the lowest error at ${horizonPhrase(lowest)}.`
-      : "The sequence GRU has the lowest error at no horizon in this build.");
+      : "The sequence GRU has the lowest error at no horizon here.");
   });
 
   it("names every horizon another model is ahead of the gru, and who and by how much, which the limits say out loud", () => {
@@ -374,7 +374,7 @@ describe("the claims the model page makes about the shipped backtest", () => {
       return ridge !== null && gru !== null && ridge.maePct <= gru.maePct && ridge.width <= gru.width;
     });
     expect(PAGE.includes("Ridge matches or beats the GRU at every horizon, on error and on band width.")).toBe(everywhere);
-    expect(PAGE).toContain("The GRU ships because the pipeline picks between the two networks, not against ridge.");
+    expect(PAGE).toContain("The GRU ships because the pipeline picks between the two networks, not against ridge");
   });
 
   it("has ridge as the nearest rival at eight quarters, by a gap worth the caveat", () => {
@@ -404,8 +404,8 @@ describe("the claims the model page makes about the shipped backtest", () => {
     const [low, high] = [field[0], field[field.length - 1]];
     expect(LIMITS).toContain(misses ? "The bands fail at eight quarters." : "The bands hold at eight quarters in this build.");
     expect(LIMITS).toContain(`covers ${points(shipped.coverage)} of outcomes there against a nominal ${points(NOMINAL_COVERAGE)}`);
-    expect(LIMITS).toContain(`the field runs ${points(low.coverage)} for ${modelLabel(low.model)} to ${points(high.coverage)} for ${modelLabel(high.model)}`);
-    expect(LIMITS.includes("no model on the table escapes it")).toBe(field.every((r) => r.coverage < NOMINAL_COVERAGE));
+    expect(LIMITS).toContain(`${points(low.coverage)} for ${modelLabel(low.model)} to ${points(high.coverage)} for ${modelLabel(high.model)}`);
+    expect(LIMITS.includes("every model on the table falls short")).toBe(field.every((r) => r.coverage < NOMINAL_COVERAGE));
     // a repair is ruled out only while there is a miss to repair
     expect(LIMITS.includes("would fix the number")).toBe(misses);
   });
@@ -544,10 +544,10 @@ describe("reading the admission run", () => {
 
   it("keeps rents and listing prices out, and says why, only while their gain is inside the spread", () => {
     expect(admissionSentences(run)).toBe("Permits and income beat the set without them on every seed, and ship. Rents and listing "
-      + "prices beat the set without them on every seed as well, but added to the shipped set they lower the validation loss by "
-      + "less than the spread across one set's seeds, winning on four of five seeds, so they stay out.");
+      + "prices beat it on every seed as well, but added to the shipped set they gain less than one set's spread across seeds, "
+      + "winning on four of five seeds, so they stay out.");
     const clear = run.map((r) => (r.arm === ARMS.all ? { ...r, loss: r.loss - 0.001 } : r));
-    expect(admissionSentences(clear)).toContain("by more than the spread across one set's seeds, winning on every seed, though they are not in the shipped set yet.");
+    expect(admissionSentences(clear)).toContain("gain more than one set's spread across seeds, winning on every seed, though they are not in the shipped set yet.");
     const worse = run.map((r) => (r.arm === ARMS.all ? { ...r, loss: r.loss + 0.001 } : r));
     expect(admissionSentences(worse)).toContain("they do not lower the validation loss at all, so they stay out.");
   });
@@ -666,9 +666,9 @@ describe("reading the walk-forward record", () => {
 
   it("states the rule and what it found the way the readme does", () => {
     const calls = ["ridge", AVERAGE].map((m) => ruleCall(PAIRS, m));
-    expect(ruleSentence(calls, 4, 4)).toBe("The rule for replacing the GRU was written before the run: ridge or the average "
-      + "replaces it only if better at three of four horizons at 5 percent and worse at none. Neither is, so the GRU stays, and "
-      + "what the table says is that four models are tied, not that the GRU won.");
+    expect(ruleSentence(calls, 4, 4)).toBe("The rule, written before the run: ridge or the average replaces it only if better at "
+      + "three of four horizons at 5 percent and worse at none. Neither is, so the GRU stays, one of four tied models rather than "
+      + "a winner.");
     const ahead = ["ridge", AVERAGE].map((m) => ruleCall(moved({ ridge: [[1, 0.01], [2, 0.02], [8, 0.03]] }), m));
     expect(ruleSentence(ahead, 4, 3)).toContain("worse at none. Ridge is, so by that rule it replaces the GRU.");
     expect(ruleSentence([], 4, 4)).toBe("");
@@ -759,21 +759,10 @@ describe("reading the walk-forward record", () => {
     expect(widthAgainst(Number.NaN, 0.1)).toBeNull();
   });
 
-  it("gives the gru's band settings once where they agree and a horizon at a time where they do not", () => {
-    const setting = (horizon: number, gamma: number, window: number, scaled: boolean | null = true): WalkBand =>
-      ({ model: SHIPPED, horizon, gamma, window, scaled });
-    const shipped = [setting(1, 0.05, 40), setting(2, 0.05, 16), setting(4, 0.05, 16), setting(8, 0.05, 16)];
-    expect(settingsPhrase([...shipped, { ...setting(1, 0, 0, false), model: "momentum" }])).toBe("a step of 0.05 and the per-metro "
-      + "scale at every horizon, with a 40 quarter window at one quarter and a 16 quarter window at two, four and eight quarters");
-    expect(settingsPhrase([setting(1, 0, 0, false), setting(2, 0, 0, false)]))
-      .toBe("no step, no per-metro scale and every outcome realized so far at every horizon");
-    expect(settingsPhrase([])).toBe("");
-  });
-
   it("joins a list with or when asked", () => {
     expect(joinList(["ridge", "the average"], "or")).toBe("ridge or the average");
     expect(joinList(["a", "b", "c"])).toBe("a, b and c");
-    expect(modelLabel(AVERAGE)).toBe("gru and ridge averaged");
+    expect(modelLabel(AVERAGE)).toBe("GRU and ridge averaged");
     expect(proseName(AVERAGE)).toBe("the average");
   });
 });

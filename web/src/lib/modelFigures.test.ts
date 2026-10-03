@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EXPANDED_BEFORE, EXPANDED_FOR_ALL_FROM, type BacktestRow, type ForecastFacts } from "./model";
+import { type BacktestRow, type ForecastFacts } from "./model";
 import {
   FIGURES, FIGURE_FILES, FIGURE_IDS, calibrationFigure, comparisonFigure, coverageFigure, designFigure, distributionFigure,
   fansFigure, figureSrc, said, trainingFigure,
@@ -141,15 +141,13 @@ describe("the words a figure is given, chosen by its numbers", () => {
       ],
     };
     const { alt, caption } = coverageFigure(coverage, PANEL);
-    const fuller = `The expanded index and the index error are drawn for all ${PANEL.metros} metros on either side of the rule, as FHFA `
-      + `publishes them now, while the backtest reads them only for the ${EXPANDED_BEFORE} FHFA published them for before its `
-      + `${EXPANDED_FOR_ALL_FROM} report.`;
+    const fuller = "The expanded index and the index error are drawn as FHFA publishes them now, fuller than the backtest reads them.";
     expect(caption).toContain(fuller);
     expect(alt).toContain(fuller);
     // the count of empty series still sits right after the first sentence, so its "it" is still the rule
-    expect(caption).toMatch(/^Everything right of the rule is coverage the model is scored on and never taught\. Every series has something on the left of it\./);
+    expect(caption).toMatch(/^Right of the rule the model is scored and never taught\. Every series has something left of it\./);
     const error = coverageFigure({ ...coverage, series: coverage.series.filter((s) => s.label !== "expanded hpi") }, PANEL).caption;
-    expect(error).toContain("The index error is drawn for all");
+    expect(error).toContain("The index error is drawn as FHFA publishes it now");
     expect(coverageFigure({ ...coverage, series: coverage.series.slice(0, 1) }, PANEL).caption).not.toContain("backtest reads");
   });
 
@@ -158,7 +156,7 @@ describe("the words a figure is given, chosen by its numbers", () => {
       fitEnd: "2014Q4", first: 1975, last: 2026, features: 11, unseen: [],
       series: [{ label: "hpi", first: 1975, emptyBeforeFit: false }, { label: "income", first: 2016, emptyBeforeFit: true }],
     };
-    expect(coverageFigure(coverage, PANEL).caption).toContain("One series has nothing at all on the left of it.");
+    expect(coverageFigure(coverage, PANEL).caption).toContain("One series has nothing left of it.");
     expect(coverageFigure(coverage, PANEL).alt).toContain("Income is empty everywhere left of the rule.");
     expect(coverageFigure(null, PANEL).caption).not.toMatch(/series ha/);
   });

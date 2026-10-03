@@ -102,7 +102,7 @@ describe("what the colour on the map means", () => {
     const hpi = defById("hpi")!.def;
     const shown = yearMetric(hpi, buildDeepTimeline(hpi, SAMPLE.metros)!, 2021);
     const text = metricExplainer(shown);
-    expect(text).toContain("coloured by its House price index growth, 2020 to 2021");
+    expect(text).toContain("colored by its House price index growth, 2020 to 2021");
     expect(text).not.toContain("at the period the timeline is set to");
     expect(text).toContain("FHFA");
   });

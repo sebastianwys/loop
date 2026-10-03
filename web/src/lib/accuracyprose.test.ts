@@ -58,7 +58,7 @@ describe("which side of the call missed by more", () => {
     const beats = MISSES.filter((m) => m.surprise > 0).map((m) => m.surprise);
     const shortfalls = MISSES.filter((m) => m.surprise < 0).map((m) => -m.surprise);
     const beatsLarger = mean(beats) > mean(shortfalls) && Math.max(...beats) > Math.max(...shortfalls);
-    const claimed = PAGE.includes("the metros that beat the model beat it by more than the metros that fell short fell short of it");
+    const claimed = PAGE.includes("the metros that beat it missed by more than the metros that fell short");
     expect(claimed && !beatsLarger
       ? `says beats ran larger; mean beat ${mean(beats).toFixed(2)} vs mean shortfall ${mean(shortfalls).toFixed(2)} pp, `
         + `largest ${Math.max(...beats).toFixed(2)} vs ${Math.max(...shortfalls).toFixed(2)}`
@@ -69,7 +69,7 @@ describe("which side of the call missed by more", () => {
     const beats = MISSES.filter((m) => m.surprise > 0).map((m) => m.surprise);
     const shortfalls = MISSES.filter((m) => m.surprise < 0).map((m) => -m.surprise);
     const shortfallsLarger = mean(shortfalls) > mean(beats) && Math.max(...shortfalls) > Math.max(...beats);
-    const claimed = PAGE.includes("the metros that fell short of the model fell short by more than the metros that beat it beat it");
+    const claimed = PAGE.includes("the metros that fell short missed by more than the metros that beat it");
     expect(claimed && !shortfallsLarger ? "says shortfalls ran larger, and they did not" : "consistent").toBe("consistent");
   });
 });

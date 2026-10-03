@@ -162,10 +162,10 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
   const whichSide = sides === null
     ? ""
     : larger === "shortfalls"
-      ? ` Measured from the call itself, the metros that fell short of the model fell short by more than the metros that beat it beat it: ${sides.short.toFixed(2)} points on average against ${sides.beat.toFixed(2)}, and ${sides.shortMax.toFixed(2)} at the worst against ${sides.beatMax.toFixed(2)}.`
+      ? ` Measured from the call, the metros that fell short missed by more than the metros that beat it: ${sides.short.toFixed(2)} points on average against ${sides.beat.toFixed(2)}, and ${sides.shortMax.toFixed(2)} at the worst against ${sides.beatMax.toFixed(2)}.`
       : larger === "beats"
-        ? ` Measured from the call itself, the metros that beat the model beat it by more than the metros that fell short fell short of it: ${sides.beat.toFixed(2)} points on average against ${sides.short.toFixed(2)}, and ${sides.beatMax.toFixed(2)} at the worst against ${sides.shortMax.toFixed(2)}.`
-        : ` Measured from the call itself, neither side missed by more on both counts: the metros that beat the model beat it by ${sides.beat.toFixed(2)} points on average and ${sides.beatMax.toFixed(2)} at the worst, and the ones that fell short fell short by ${sides.short.toFixed(2)} and ${sides.shortMax.toFixed(2)}.`;
+        ? ` Measured from the call, the metros that beat it missed by more than the metros that fell short: ${sides.beat.toFixed(2)} points on average against ${sides.short.toFixed(2)}, and ${sides.beatMax.toFixed(2)} at the worst against ${sides.shortMax.toFixed(2)}.`
+        : ` Measured from the call, neither side missed by more on both counts: the metros that beat it did by ${sides.beat.toFixed(2)} points on average and ${sides.beatMax.toFixed(2)} at the worst, the ones that fell short by ${sides.short.toFixed(2)} and ${sides.shortMax.toFixed(2)}.`;
   // the scored calls are the backtest's, and the coverage the band section
   // quotes is the backtest band's. the band on the map is the shipped one,
   // with a margin set separately, so the page says whose number it is
@@ -184,7 +184,6 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
         : "It runs the other way from the guess.";
   // whether the miss grows at every step of the error, or only at one end
   const steady = bins.length > 1 && bins.every((bin, i) => i === 0 || bin.meanAbs > bins[i - 1].meanAbs);
-  const widest = bins.length === 0 ? null : bins.reduce((a, b) => (b.meanAbs > a.meanAbs ? b : a));
   const clusterMoves = spread === null ? "leaves" : spread.clusterSe > stats.se ? "widens" : spread.clusterSe < stats.se ? "narrows" : "leaves";
   // a band that hands out one width to every metro says nothing about any one
   // of them. the line drawn here is a width that varies by less than a quarter
@@ -198,13 +197,10 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
         <div className="acc-head">
           <h2>How wrong was the model</h2>
           <p className="acc-note">
-            These are the backtest's calls: the sequence GRU as the backtest fitted it, on outcomes through
-            {" "}{FIT_END}, predicting four quarter growth for every metro from the {made ?? "scored"} origin. Nothing
-            was published then. The calls were made afterwards, out of sample, and those four quarters have now
-            happened, so every one of them can be scored against what the index actually did. The gap is the
-            miss: what the metro grew, minus what the model said it would. The calls come from the test block,
-            so none of those outcomes was in the model's training data. The forecast the map draws is a refit on
-            everything since, and it has no scored calls yet.
+            These are the backtest's calls: the sequence GRU, fit on outcomes through {FIT_END}, forecasting four
+            quarter growth for every metro from the {made ?? "scored"} origin. Those quarters have now happened,
+            and none of them was in training. The miss is what the metro grew minus what the model said. The
+            forecast on the map is a refit with no scored calls yet.
           </p>
         </div>
 
@@ -219,31 +215,30 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
           <h3>1. How far off, and which way</h3>
           <p>
             The middle metro grew {pp(stats.median)} against what the model expected, and {share(stats.high)} of the
-            {" "}{stats.n} scored metros came in under their own forecast. A model with no bias would put about half
-            the metros on each side. This one put {share(stats.high)} below it and the rest above.
+            {" "}{stats.n} scored metros came in under their forecast. A model with no lean would put about half on
+            each side.
           </p>
           <p>
             {leaning ? (
               <>
-                That is a bias, not bad luck in a few places. The average miss of {pp(stats.mean)} is more than twice
-                the {errorBar.toFixed(2)} point standard error it carries once metros in the same state are allowed to
-                move together, which is the more conservative of the two standard errors in section 4. The model ran
-                {" "}{ran}, nearly everywhere at once.
+                That is a lean across the map, not bad luck in a few places. The average miss of {pp(stats.mean)} is
+                more than twice its {errorBar.toFixed(2)} point standard error
+                {spread !== null ? ", even with metros in a state allowed to move together (section 4)" : ""}. The model
+                ran {ran}, nearly everywhere at once.
               </>
             ) : (
               <>
-                That is not enough to call a bias from this origin. The average miss of {pp(stats.mean)} sits inside
-                twice the {errorBar.toFixed(2)} point standard error it carries once metros in the same state are
-                allowed to move together, so the lean is within what one national year can produce by itself.
+                That is not enough to call a lean from this origin. The average miss of {pp(stats.mean)} sits inside
+                twice its {errorBar.toFixed(2)} point standard error
+                {spread !== null ? ", with metros in a state allowed to move together" : ""}, so one national year could
+                produce it by itself.
               </>
             )}
           </p>
           <p>
-            The miss is also not symmetric. Skewness is {stats.skew.toFixed(2)}, {skewWord}, so {skewReading}.
-            {whichSide} Excess kurtosis is {stats.kurtosis.toFixed(2)}, meaning {tailWord}:
-            {" "}{share1(stats.outliers)} of metros sit more than two standard deviations from the mean where a normal
-            curve would put {share1(NORMAL_TAIL)}. A summary that assumes a bell curve will
-            {" "}{stats.kurtosis > 0 ? "understate" : "overstate"} how often this model is badly wrong about one place.
+            The miss is not symmetric either. Skewness is {stats.skew.toFixed(2)}, {skewWord}, so {skewReading}.
+            {whichSide} Excess kurtosis is {stats.kurtosis.toFixed(2)}, {tailWord}: {share1(stats.outliers)} of
+            metros sit more than two standard deviations out, against {share1(NORMAL_TAIL)} for a normal curve.
           </p>
 
           <figure className="acc-figure">
@@ -299,7 +294,7 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
             </svg>
             <p className="acc-readout" aria-live="polite">
               {bar === null ? (
-                <span className="hint">point at a bar to read it. every metro's miss, counted into {hist.step} point bins</span>
+                <span className="hint">point at a bar to read it. misses counted in {hist.step} point bins</span>
               ) : (
                 <span>
                   <strong>{bar.count}</strong> {bar.count === 1 ? "metro" : "metros"} missed by {bar.from.toFixed(0)} to
@@ -308,8 +303,8 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
               )}
             </p>
             <figcaption>
-              Distribution of the miss across {stats.n} metros, in percentage points. Left of the zero line the metro
-              grew less than the model expected.
+              The miss across {stats.n} metros, in percentage points. Left of zero the metro grew less than the model
+              expected.
             </figcaption>
           </figure>
 
@@ -324,14 +319,14 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
                 </tr>
               </thead>
               <tbody>
-                <tr><th scope="row">median</th><td className="v">{pp(stats.median)}</td><td>the middle metro, the centre that outliers cannot move</td></tr>
-                <tr><th scope="row">mean</th><td className="v">{pp(stats.mean)}</td><td>the average miss, which is the bias in one number</td></tr>
-                <tr><th scope="row">middle half</th><td className="v">{pp(stats.q1)} to {pp(stats.q3)}</td><td>where half of all metros landed</td></tr>
-                <tr><th scope="row">middle 90 percent</th><td className="v">{pp(stats.p05)} to {pp(stats.p95)}</td><td>{tail.toFixed(1)} points wide, which is the spread worth planning around</td></tr>
-                <tr><th scope="row">standard deviation</th><td className="v">{pp(stats.sd, false)}</td><td>the spread, assuming a shape the tails say it does not have</td></tr>
-                <tr><th scope="row">mean absolute error</th><td className="v">{pp(stats.mae, false)}</td><td>the typical size of a miss, ignoring direction</td></tr>
-                <tr><th scope="row">root mean squared error</th><td className="v">{pp(stats.rmse, false)}</td><td>the same, with the big misses weighted more heavily</td></tr>
-                <tr><th scope="row">worst either way</th><td className="v">{pp(stats.min)} to {pp(stats.max)}</td><td>the two metros named in the next section</td></tr>
+                <tr><th scope="row">median</th><td className="v">{pp(stats.median)}</td><td>the middle metro, which outliers cannot move</td></tr>
+                <tr><th scope="row">mean</th><td className="v">{pp(stats.mean)}</td><td>the average miss, the lean in one number</td></tr>
+                <tr><th scope="row">middle half</th><td className="v">{pp(stats.q1)} to {pp(stats.q3)}</td><td>where half the metros landed</td></tr>
+                <tr><th scope="row">middle 90 percent</th><td className="v">{pp(stats.p05)} to {pp(stats.p95)}</td><td>{tail.toFixed(1)} points wide, the spread worth planning around</td></tr>
+                <tr><th scope="row">standard deviation</th><td className="v">{pp(stats.sd, false)}</td><td>the spread, if the shape were normal, which the tails say it is not</td></tr>
+                <tr><th scope="row">mean absolute error</th><td className="v">{pp(stats.mae, false)}</td><td>the typical size of a miss, either way</td></tr>
+                <tr><th scope="row">root mean squared error</th><td className="v">{pp(stats.rmse, false)}</td><td>the same, with big misses weighted more</td></tr>
+                <tr><th scope="row">worst either way</th><td className="v">{pp(stats.min)} to {pp(stats.max)}</td><td>the top rows of the next section</td></tr>
               </tbody>
             </table>
           </div>
@@ -339,10 +334,7 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
 
         <section className="acc-block">
           <h3>2. Where it was most wrong</h3>
-          <p>
-            Both directions, biggest gap first. Pick a metro to open it on the map. Every row subtracts:
-            what the metro grew, less what the model said, is the miss.
-          </p>
+          <p>Both directions, biggest gap first. Pick a metro to open it on the map.</p>
           <div className="acc-pair">
             <MissTable
               rows={worst.above}
@@ -358,19 +350,16 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
             />
           </div>
           <p className="acc-foot">
-            Growth figures are percent change in the FHFA index over the four quarters from the origin
-            {asOf && until ? `, ${asOf} to ${until}` : ""}. The miss is their difference, so it is in percentage
-            points. Rounding means a row can look a tenth off.
+            Growth is the percent change in the FHFA index over the four quarters from the origin
+            {asOf && until ? `, ${asOf} to ${until}` : ""}. The miss is in percentage points.
           </p>
         </section>
 
         <section className="acc-block">
           <h3>3. Does anything explain a bigger miss</h3>
           <p>
-            FHFA publishes a standard error for each metro's index, as a percent of the index itself. It says how
-            precisely the thing being forecast is even measured: a metro with few repeat sales has a looser index.
-            The obvious guess is that a loosely measured metro is also a harder one to forecast. It is worth checking
-            rather than asserting, so here is the relationship as it actually is.
+            FHFA publishes a standard error for each metro's index, as a percent of the index. Is a loosely
+            measured metro also harder to forecast?
           </p>
           {fit === null || bins.length === 0 ? (
             <p className="acc-empty">This build carries no index standard errors, so there is nothing to test the miss against.</p>
@@ -378,30 +367,20 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
             <>
               <p>
                 {holds} Across the {fit.n} metros carrying both, the correlation between the index error and the size
-                of the miss is {fit.r.toFixed(2)}, so the fitted line accounts for about {share(fit.r2)} of the spread
-                and leaves {share(1 - fit.r2)} of it unexplained. The line is an ordinary least squares fit of the
-                absolute miss on the index error, nothing more. It is a summary of a cloud, not a mechanism, and it
-                does not say a loose index causes a bad forecast. A plausible reading is that both are downstream of
-                the same thing, a market with few sales in it, but this page cannot separate that reading from any
-                other.
+                of the miss is {fit.r.toFixed(2)}, so the line accounts for about {share(fit.r2)} of the spread. It is
+                a summary of the cloud and not a mechanism, and it does not say a loose index causes a bad forecast.
               </p>
               <p>
-                The shape matters more than the correlation. Sorted into four equal groups by index error, the typical
-                miss runs {bins.map((bin) => bin.meanAbs.toFixed(1)).join(", ")} points.
-                {" "}{steady
-                  ? "It rises at every step, so the relationship is at least steady through the middle."
-                  : "It does not rise at every step, so it is not the case that a looser index means a bigger miss all the way along."}
-                {" "}The rank correlation is {fit.rho === null ? "not defined here" : fit.rho.toFixed(2)}
-                {fit.rho !== null && fit.rho < fit.r ? ", lower than the straight correlation, which is what you see when one end of the range carries the line" : ""}.
-                {widest !== null && ` The group that misses by the most is the one with index errors from ${widest.from.toFixed(2)} to ${widest.to.toFixed(2)}.`}
+                In four equal groups by index error, the typical miss runs{" "}
+                {bins.map((bin) => bin.meanAbs.toFixed(1)).join(", ")} points
+                {steady ? ", rising at every step" : ", not rising at every step"}. The rank correlation is{" "}
+                {fit.rho === null ? "not defined here" : fit.rho.toFixed(2)}
+                {fit.rho !== null && fit.rho < fit.r ? ", lower than the straight one, so one end of the range carries the line" : ""}.
               </p>
               {size4 !== null && (
                 <p>
-                  There is one more reason not to read this as an explanation. The index error is largely a measure of
-                  how small a metro is: across the {size4.n} metros carrying a population estimate, the correlation
-                  between log population and the index error is {size4.r.toFixed(2)}. So section 3 is partly a
-                  restatement of the fact that small metros are harder to forecast, and the index error is not an
-                  independent thing to have found.
+                  The index error also tracks size, with a correlation of {size4.r.toFixed(2)} against log population
+                  across {size4.n} metros, so this partly restates that small metros are harder to forecast.
                 </p>
               )}
 
@@ -448,10 +427,7 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
                 </svg>
                 <p className="acc-readout" aria-live="polite">
                   {dot === null ? (
-                    <span className="hint">
-                      point at the cloud, or give it focus and use the arrow keys, to name a metro.
-                      {" "}The squares are the average of each quarter of metros
-                    </span>
+                    <span className="hint">point at the cloud or use the arrow keys to name a metro</span>
                   ) : (
                     <span>
                       <button type="button" className="acc-link" onClick={() => go(openMetro(dot.cbsa))}>{dot.name}</button>
@@ -460,8 +436,8 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
                   )}
                 </p>
                 <figcaption>
-                  One dot per metro: how loosely its index is measured, against how far the call missed in either
-                  direction. The dashed line is the fit, the squares are the average miss in each quarter of metros.
+                  One dot per metro: how loosely its index is measured against how far the call missed. The dashed
+                  line is the fit, the squares the average miss in each quarter of metros.
                 </figcaption>
               </figure>
 
@@ -488,10 +464,7 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
                   </tbody>
                 </table>
               </div>
-              <p className="acc-foot">
-                Typical miss ignores direction, average miss keeps it. The two answer different questions: the first
-                is how far off, the second is which way.
-              </p>
+              <p className="acc-foot">Typical miss ignores direction, average miss keeps it.</p>
             </>
           )}
         </section>
@@ -500,19 +473,14 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
           <section className="acc-block">
             <h3>4. Why {stats.n} metros are worth less than {stats.n} tests</h3>
             <p>
-              Taken as independent draws, the bias above has a standard error of {stats.se.toFixed(2)} points, which
-              would make it overwhelming. They are not independent. Metros share one national housing cycle, and a
-              year in which the country slowed is a year almost every metro undershoots at once.
-            </p>
-            <p>
-              The data says so. {spread.agreeing} of the {spread.groups.length} states with at least {MIN_STATE} scored
-              metros missed the same way the country did, and {share(spread.between)} of the variation in the miss sits
-              between states rather than inside them. Allowing metros in a state to move together {clusterMoves} the
-              standard error, from {stats.se.toFixed(2)} to {spread.clusterSe.toFixed(2)} points.
-              {" "}{leaning ? "The lean survives that" : "The lean does not survive that"}, but states are not
-              independent of each other either, and the deeper limit is not statistical: this is one origin quarter.
-              One year is one draw of the cycle, and a single draw cannot separate a model that always runs {ran} from
-              a model that ran {ran} in a year the market turned. More origins would settle it. This page cannot.
+              As independent draws, the lean above has a standard error of {stats.se.toFixed(2)} points. They are not
+              independent: metros share one national housing cycle, and when the country slows almost every metro
+              undershoots at once. {spread.agreeing} of the {spread.groups.length} states with at least {MIN_STATE}{" "}
+              scored metros missed the same way, and letting metros in a state move together{" "}
+              {clusterMoves === "leaves" ? "leaves the standard error at" : `${clusterMoves} the standard error to`}{" "}
+              {spread.clusterSe.toFixed(2)}. {leaning ? "The lean survives that" : "The lean does not survive that"},
+              but this is one origin quarter, and one draw of the cycle cannot separate a model that always runs{" "}
+              {ran} from one that ran {ran} in a year the market turned.
             </p>
             {spread.groups.length > 0 && (
               <div className="acc-scroll">
@@ -542,40 +510,33 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
 
         {now !== null && (
           <section className="acc-block">
-            <h3>5. What it is saying now, and what that is worth</h3>
+            <h3>5. What it says now</h3>
             <p>
               The live call is {pct(now.median)} for the median metro over the next four quarters, with the middle half
-              of metros between {pct(now.q1)} and {pct(now.q3)}
-              {now.median8 === null ? "" : `, and ${pct(now.median8)} over eight quarters`}. Read that against the
-              scorecard above, not on its own, and read it knowing the two are different fits: the scorecard is the
-              backtest's model, the live call is the refit's. If the refit missed the way the backtest did, that
-              {" "}{pct(now.median)} would land nearer {pct(repeat)}. That is not a correction anyone should apply: it
-              is one model's year of bias projected onto another model's next year, which is exactly the reasoning
-              this page is arguing against.
+              between {pct(now.q1)} and {pct(now.q3)}
+              {now.median8 === null ? "" : `, and ${pct(now.median8)} over eight quarters`}. The two are different
+              fits: the backtest's model and the refit. If the refit missed like the backtest, {pct(now.median)} would
+              land nearer {pct(repeat)}, but that is not a correction anyone should apply.
             </p>
             {now.bandWidth !== null && now.bandMin !== null && now.bandMax !== null && (
               <p>
-                The band is the clearer warning{tail < now.bandWidth ? ", though not for the reason a single year makes it look" : ""}.
-                The model publishes a 90 percent interval a median
-                {" "}{now.bandWidth.toFixed(1)} points wide, running from {now.bandMin.toFixed(1)} to
-                {" "}{now.bandMax.toFixed(1)} points across all {now.bandN} metros that carry one.
+                The model publishes a 90 percent interval a median {now.bandWidth.toFixed(1)} points wide,{" "}
+                {now.bandMin.toFixed(1)} to {now.bandMax.toFixed(1)} across all {now.bandN} metros.
                 {/* whether one year's misses make the band look too wide is read off the two widths */}
                 {tail < now.bandWidth
-                  ? ` The middle 90 percent of last year's actual misses spanned only ${tail.toFixed(1)} points, which makes the interval look far too wide. It is not: the band has to cover where a metro's prices actually land, not how far one year's calls missed. One year's misses bunching together is one draw of the cycle, not a measurement of the band.`
-                  : ` The middle 90 percent of last year's actual misses spanned ${tail.toFixed(1)} points, as wide as the interval or wider. That is one draw of the cycle, not a measurement of the band either way.`}
+                  ? ` Last year's misses spanned only ${tail.toFixed(1)} points in their middle 90 percent, but the band has to cover where prices land, and one year is one draw of the cycle.`
+                  : ` Last year's misses spanned ${tail.toFixed(1)} points in their middle 90 percent, as wide as the band or wider.`}
                 {cover4 !== null
-                  ? ` Across the whole test block from 2022 on, the backtest's own band, calibrated on 2018 to 2021, held ${Math.round(cover4 * 100)} percent of outcomes at four quarters ${cover4 < NOMINAL_COVERAGE ? "against" : "and reached"} the ${Math.round(NOMINAL_COVERAGE * 100)} it aims at. The band printed here is the shipped one, its margin set separately on outcomes from 2022 on, so that is the backtest band's number, not a score of this one.`
+                  ? ` On the whole test block from 2022 on, the backtest's own band, calibrated on 2018 to 2021, held ${Math.round(cover4 * 100)} percent of outcomes at four quarters ${cover4 < NOMINAL_COVERAGE ? "against" : "and reached"} the ${Math.round(NOMINAL_COVERAGE * 100)} it aims for.`
                   : ""}
                 {" "}{flatBand
-                  ? "The real problem is that the band is close to a single national width rather than a judgement about each metro. A scalar conformal margin is added to every metro alike, so almost none of the width is telling two metros apart, even though the model is handed a published measurement error per metro that says which ones are hardest to pin down."
-                  : "Its width varies enough between metros to carry some signal about which ones the model is least sure of."}
+                  ? "The bigger problem is that the band is nearly one national width, so it says little about which metros are hardest to pin down."
+                  : "Its width varies enough between metros to say which ones the model is least sure of."}
               </p>
             )}
             <p className="acc-foot">
-              What the page does not do: it scores one horizon, four quarters, at one origin, against realized growth
-              only. It does not compare the model to a naive baseline such as last year's growth carried forward,
-              which is the comparison that would say whether the model earns its complexity. That belongs on the
-              model page, not here.
+              This page scores one horizon, four quarters, at one origin. The comparison against simple baselines is
+              on the Model page.
             </p>
           </section>
         )}
@@ -590,7 +551,7 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
               ? ` ${seen.overlap} of the scored areas are metropolitan divisions whose parent metro is scored too, so a few big places are counted twice, once whole and once in parts.`
               : ` ${seen.divisions} of the scored areas are metropolitan divisions, the pieces of ${seen.parents} larger ${seen.parents === 1 ? "metro" : "metros"} scored in parts rather than whole, so no place is counted twice.`
             : ""}
-          {" "}The index standard error is FHFA's own figure, not the model's.
+          {" "}The index standard error is FHFA's own figure.
         </p>
       </div>
     </div>

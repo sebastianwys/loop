@@ -1,8 +1,10 @@
+import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { SAMPLE } from "./data";
 import { DEFS, SOURCE_LABEL, visibleDefs, type Source } from "./metrics";
-import { buildSources, metricsOf, safeUrl, shortHash, sourceOf, stamp } from "./sources";
+import { NOT_COMMITTED, buildSources, metricsOf, safeUrl, shortHash, sourceOf, stamp } from "./sources";
 import type { MapData, Provenance } from "../types";
 
 const entry = (over: Partial<Provenance>): Provenance => ({
@@ -312,6 +314,29 @@ describe.skipIf(!present)("the provenance block of the built metros.json", () =>
     for (const row of buildSources(built!).rows) {
       if (row.source === null) continue;
       expect(row.label).toBe(SOURCE_LABEL[row.source as Source]);
+    }
+  });
+});
+
+// the page says which named files the repo leaves out. git is the judge, so a
+// file that gets committed, or one that stops being, fails here first
+describe("the files the sources page says are not committed", () => {
+  const root = new URL("../../../", import.meta.url);
+  const shipped = new URL("web/public/data/metros.json", root);
+  const inGit = (() => {
+    try {
+      return new Set(execFileSync("git", ["ls-files"], { cwd: fileURLToPath(root), encoding: "utf8" }).split("\n"));
+    } catch {
+      return null;
+    }
+  })();
+
+  it.skipIf(inGit === null || !existsSync(shipped))("are exactly the ones git does not track", () => {
+    const rows = (JSON.parse(readFileSync(shipped, "utf8")) as MapData).provenance ?? [];
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      const where = row.source === "forecast" ? `ml/results/forecast/${row.filename}` : `data/raw/${row.source}/${row.filename}`;
+      expect(inGit!.has(where), where).toBe(!(row.source in NOT_COMMITTED));
     }
   });
 });

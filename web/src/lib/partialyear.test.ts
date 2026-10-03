@@ -47,7 +47,7 @@ describe.skipIf(!present)("the compare page on a partial newest year", () => {
   it("does not call the partial year's point an annual mean in the footnote", () => {
     premise();
     const feet = [...markup().matchAll(/<p class="compare-foot">([\s\S]*?)<\/p>/g)].map((m) => plain(m[1]));
-    const foot = feet.find((f) => f.startsWith("House prices"));
+    const foot = feet.find((f) => f.startsWith("FHFA House Price Index"));
     expect(foot, "no house price footnote").toBeDefined();
     expect(foot).not.toMatch(/annual mean, the last year through/);
     expect(foot).toContain("through 2025");

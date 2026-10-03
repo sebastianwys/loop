@@ -39,7 +39,7 @@ describe.skipIf(!present)("a zillow series a metropolitan division took from its
     expect(model.fit!.n).toBe(366);
     expect(model.fit!.r).toBeCloseTo(0.2458, 4);
     const sentence = fitSentence(model, y.label);
-    expect(sentence).toContain("Least squares over the 366 metros that measure both themselves");
+    expect(sentence).toContain("A least squares line through the 366 metros that measure both:");
     expect(sentence).toContain("r is 0.25");
     expect(sentence).toContain("6 percent of the spread");
   });

@@ -100,7 +100,7 @@ describe("alt text quotes the shipped forecast and leaderboard", () => {
     expect(outside, `alt: ${alt}`).toEqual([]);
     // and the three it names are those three
     const named = /the strongest three, (.+?), sit between/.exec(alt)?.[1]?.toLowerCase() ?? "";
-    expect(strongest.filter((r) => !named.includes(modelLabel(r.model))).map((r) => r.model), `alt: ${alt}`).toEqual([]);
+    expect(strongest.filter((r) => !named.includes(modelLabel(r.model).toLowerCase())).map((r) => r.model), `alt: ${alt}`).toEqual([]);
   });
 });
 
@@ -126,7 +126,7 @@ describe("the coverage caption counts the series left of the rule", () => {
       encoding: "utf8",
     })) as string[];
     const { caption } = FIGURE["01_coverage.png"];
-    const count = /(\w+) series have nothing at all on the left of it/i.exec(caption)?.[1]?.toLowerCase();
+    const count = /(\w+) series have nothing left of it/i.exec(caption)?.[1]?.toLowerCase();
     expect(count, `empty left of the rule: ${empty.join(", ")}`).toBe(inWords(empty.length));
   }, 60000);
 });

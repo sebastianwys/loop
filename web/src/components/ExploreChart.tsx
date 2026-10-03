@@ -132,7 +132,7 @@ export function ExploreChart({ model, x, y, selected, onPick }: Props) {
       </svg>
       <p className="explore-readout" aria-live="polite">
         {read === null ? (
-          <span className="hint">point at a dot, or give the plot focus and use the arrow keys, to name a metro. enter opens it.</span>
+          <span className="hint">point at a dot or use the arrow keys to name a metro. enter opens it.</span>
         ) : (
           <>
             <span className="who">{read.name}</span>

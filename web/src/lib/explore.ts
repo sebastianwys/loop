@@ -489,7 +489,7 @@ export function plottedSentence(counts: ExploreCounts, xLabel: string, yLabel: s
 
 export function inheritedSentence(counts: ExploreCounts): string {
   if (counts.inherited === 0) return "";
-  return `${counts.inherited} of the dots ${be(counts.inherited)} hollow: ${counts.inherited === 1 ? "it is a metropolitan division whose" : "they are metropolitan divisions whose"} number for one of these metrics belongs to the whole parent metro. They are drawn, because the number is real, and left out of the line, because one parent metro standing in for its divisions would be counted more than once.`;
+  return `${counts.inherited} of the dots ${be(counts.inherited)} hollow: ${counts.inherited === 1 ? "a metropolitan division whose" : "metropolitan divisions whose"} number for one of these metrics is the parent metro's. They are drawn but left out of the line, so one parent is not counted more than once.`;
 }
 
 export function fitSentence(model: ExploreModel, yLabel: string): string {
@@ -501,13 +501,13 @@ export function fitSentence(model: ExploreModel, yLabel: string): string {
       default: return "One of the two metrics is the same for every metro drawn, so there is no line to fit.";
     }
   }
-  const rho = fit.rho === null ? "" : ` Rank correlation ${fit.rho.toFixed(2)}.`;
+  const rho = fit.rho === null ? "" : ` The rank correlation is ${fit.rho.toFixed(2)}.`;
   // a line solved in one space and drawn in another is not the line on screen,
   // so it is solved on the axes as they are drawn and the reader is told when
   // one of them is in logs
   const logged = model.x.scale === "log" || model.y.scale === "log";
-  const where = logged ? " The line is fitted on the axes as they are drawn, so an axis in powers of ten is fitted in logs." : "";
-  return `Least squares over the ${fit.n} metros that measure both themselves. r is ${fit.r.toFixed(2)}, so the line accounts for ${Math.round(fit.r2 * 100)} percent of the spread in ${yLabel}.${rho} That is ${fitStrength(fit.r)}.${where}`;
+  const where = logged ? " An axis in powers of ten is fitted in logs." : "";
+  return `A least squares line through the ${fit.n} metros that measure both: r is ${fit.r.toFixed(2)}, so it accounts for ${Math.round(fit.r2 * 100)} percent of the spread in ${yLabel}, ${fitStrength(fit.r)}.${rho}${where}`;
 }
 
 // what a reader who cannot see the cloud is handed in its place

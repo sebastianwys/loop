@@ -78,16 +78,15 @@ export function ExplorePage({ data, route, go, viewport }: ViewProps) {
   // clicking a dot opens the metro the way every other view opens one, so the
   // map, the sidebar and the back button all follow it
   const pick = (cbsa: string) => go({ metro: cbsa === route.metro ? null : cbsa });
+  // "FHFA" or "Census building permits, latest 2025", the caption less its label
+  const from = (metric: typeof x.metric) => metricCaption(metric, metros).replace(/^Source: /, "");
 
   return (
     <div className="explore-page">
       <div className="explore-inner">
         <div className="explore-head">
           <h2>Explore two metrics</h2>
-          <p className="explore-note">
-            Every metro in the build as one dot, the metric you choose across the bottom and the metric you choose
-            up the side. The pair is in the address bar, so the link you copy opens what you are looking at.
-          </p>
+          <p className="explore-note">One dot per metro, any metric on either axis. The link keeps the view.</p>
         </div>
 
         <div className="explore-controls">
@@ -136,11 +135,9 @@ export function ExplorePage({ data, route, go, viewport }: ViewProps) {
             <p>The line misses {outliers.map((p) => p.name).join(" and ")} by more than anywhere else on the plot.</p>
           )}
           <p className="explore-caution">
-            Read this as two columns of one table sitting together, and nothing more. The {model.counts.total} metros here
-            are not {model.counts.total} independent samples: they share one mortgage rate, one national cycle and one
-            set of federal rules, so when they move together a line through them can look far surer than the evidence
-            is. Nothing on this page shows that either metric caused the other, and the pairs are yours to choose, so
-            it is easy to land on a line that means nothing at all.
+            The {model.counts.total} metros here are not {model.counts.total} independent samples: they share one
+            mortgage rate, one national cycle and one set of federal rules. Nothing here shows either metric caused
+            the other.
           </p>
         </div>
 
@@ -148,8 +145,7 @@ export function ExplorePage({ data, route, go, viewport }: ViewProps) {
           <div className="explore-scroll">
             <table className="explore-table">
               <caption>
-                The ends of each axis. x is {x.metric.label}, y is {y.metric.label}. A metro that takes either number
-                from a parent metro is left out, so one measurement cannot fill three rows under three names.
+                The ends of each axis. Metros that take a number from their parent metro are left out.
               </caption>
               <thead>
                 <tr>
@@ -176,9 +172,8 @@ export function ExplorePage({ data, route, go, viewport }: ViewProps) {
         )}
 
         <p className="explore-foot">
-          Across the bottom: {metricCaption(x.metric, metros)}.
-          {" "}Up the side: {metricCaption(y.metric, metros)}.
-          {model.x.scale === "log" || model.y.scale === "log" ? " An axis marked in powers of ten is logarithmic: a metric that spans orders of magnitude leaves every metro but the largest few in one corner of a plain axis." : ""}
+          x from {from(x.metric)}. y from {from(y.metric)}.
+          {model.x.scale === "log" || model.y.scale === "log" ? " An axis in powers of ten is logarithmic." : ""}
         </p>
       </div>
     </div>

@@ -66,9 +66,9 @@ describe.skipIf(!present)("one field, one number on every page", () => {
       viewport: { width: 1440, height: 900, mode: "wide", coarse: false, reducedMotion: false },
       shell,
     })).replace(/<[^>]+>/g, " ").replace(/&#x27;/g, "'").replace(/&amp;/g, "&").replace(/\s+/g, " ");
-    const named = /between (.+?) measured to within ([0-9.]+) percent and (.+?) measured to within ([0-9.]+) percent/.exec(text);
+    const named = /credited to FHFA: ([0-9.]+) percent in (.+?) against ([0-9.]+) percent in (.+?)\. A wide/.exec(text);
     expect(named, "the model page names no tightest and loosest metro").not.toBeNull();
-    const [, lowName, lowText, highName, highText] = named!;
+    const [, lowText, lowName, highText, highName] = named!;
     const value = (name: string) => fieldAt(data!.metros.find((m) => m.name === name)!, "latest", "hpi_index_error")!;
     expect(digits(printed(value(lowName))), `${lowName} on the map`).toBe(lowText);
     expect(digits(printed(value(highName))), `${highName} on the map`).toBe(highText);

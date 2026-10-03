@@ -120,11 +120,11 @@ function backtestCoverage(): string {
   const shortFar = far.coverage < NOMINAL_COVERAGE;
   if (shortNear && shortFar) {
     const weaker = far.coverage <= near.coverage ? "eight" : "four";
-    return `${held}, short of the nine in ten it is built for at both, so the ${weaker} quarter band is the one to read loosely.`;
+    return `${held}, short of nine in ten at both, so read the ${weaker} quarter band loosely.`;
   }
-  if (shortFar) return `${held}, so it reached the nine in ten it is built for at four quarters and fell short at eight, which is the band to read loosely.`;
-  if (shortNear) return `${held}, so it fell short of the nine in ten it is built for at four quarters and reached it at eight.`;
-  return `${held}, at or above the nine in ten it is built for at both.`;
+  if (shortFar) return `${held}, so it reached nine in ten at four quarters and fell short at eight, the band to read loosely.`;
+  if (shortNear) return `${held}, so it fell short of nine in ten at four quarters and reached it at eight.`;
+  return `${held}, at or above nine in ten at both.`;
 }
 
 // how ridge did against the gru in the backtest, whether the paired test
@@ -151,8 +151,8 @@ export function againstRidge(backtest: BacktestRow[] = BACKTEST, paired: PairedR
 export function forecastExplainer(metro: Metro): { sentences: string[]; source: string } {
   return {
     sentences: [
-      "A sequence GRU reads twenty-four quarters of this metro's history and its covariates, then predicts how the FHFA index moves over the next four and eight quarters.",
-      "The band drawn here is conformal: the shipped model's range, widened by a margin a separate band model set on outcomes from 2022 on, so it is a calibrated range rather than a best and worst case.",
+      "A sequence GRU reads 24 quarters of this metro's history and its covariates and forecasts how the FHFA index moves over the next four and eight quarters.",
+      "The band drawn here is conformal: the model's range widened by a margin a separate band model set on outcomes from 2022 on, so it is a calibrated range, not a best and worst case.",
       backtestCoverage(),
       againstRidge(),
     ],

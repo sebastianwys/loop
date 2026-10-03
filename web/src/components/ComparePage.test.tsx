@@ -138,7 +138,7 @@ describe("a partial newest year in the comparison", () => {
 
   it("calls its point the index at as_of in the footnote, not an annual mean", () => {
     expect(text).not.toContain("annual mean, the last year through");
-    expect(text).toContain("annual mean through 2025; the 2026 point is the index at 2026Q2.");
+    expect(text).toContain("annual mean through 2025, and 2026 is the index at 2026Q2.");
   });
 
   it("dates the table's last index by the quarter", () => {

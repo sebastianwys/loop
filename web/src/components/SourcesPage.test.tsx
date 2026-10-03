@@ -160,7 +160,7 @@ describe("the sources view", () => {
   });
 
   it("counts the folders that build nothing rather than printing a number that can go stale", () => {
-    expect(page).toContain("One folder builds no metric at all");
+    expect(page).toContain("One folder builds no metric, and the last column says what it is for");
     expect(page).toContain("More than one folder feeds zillow here");
   });
 

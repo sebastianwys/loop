@@ -21,7 +21,7 @@ describe.skipIf(!present)("the question mark over the year timeline", () => {
     expect(shown.accessor(data!.metros[0])).not.toBe(data!.metros[0].series!.hpi!.values.at(-1));
 
     const text = metricExplainer(shown);
-    expect(text, text).not.toContain("coloured by its House price index at the period the timeline is set to");
+    expect(text, text).not.toContain("colored by its House price index at the period the timeline is set to");
     expect(text, text).toContain(shown.label);
   });
 });

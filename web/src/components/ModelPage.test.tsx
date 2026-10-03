@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { SAMPLE } from "../lib/data";
 import {
-  EXPANDED_BEFORE, EXPANDED_FOR_ALL_FROM, FIT_END, LONG_RUN, NOMINAL_COVERAGE, NO_CHANGE, REFIT_FROM, SHIPPED, TRAIN_END, closestTo,
-  featureName, horizonPhrase, horizonWord, horizonsIn, inWords, joinList, lossSentence, lossesOf, modelLabel, modelsIn, points,
-  proseName, rowAt, sentenceCase,
+  EXPANDED_BEFORE, FIT_END, LONG_RUN, NOMINAL_COVERAGE, NO_CHANGE, REFIT_FROM, SHIPPED, TRAIN_END, closestTo,
+  featureName, horizonPhrase, horizonWord, horizonsIn, inWords, joinList, lossSentence, lossesOf, matchedBy, matchedEverywhere, modelLabel,
+  modelsIn, points, proseName, rowAt, sentenceCase, winsAt,
 } from "../lib/model";
 import {
   BACKTEST, INPUTS, PAIRED, PANEL, PANEL_COVERAGE, WALKFORWARD, WALKFORWARD_LATEST, WALKFORWARD_PAIRED,
@@ -93,12 +93,12 @@ describe("the model view", () => {
     expect(page).toContain("How the forecast is built and judged");
     expect(page).toContain("band coverage at eight quarters");
     // whether the eight quarter band misses is read off the number beside it
-    expect(page).toContain(misses8 ? "and that is a miss" : "and that holds");
+    expect(page).toContain(misses8 ? ", a miss" : ", it holds");
   });
 
   it("follows the walkthrough: the panel, the design, the models, the results, the record, the forecast, the limits", () => {
     for (const heading of [
-      "The panel", "The evaluation design", "The models", "The results", "The walk-forward record", "The shipped forecast", "The limits",
+      "The panel", "The evaluation design", "The models", "The results", "The yearly refit record", "The shipped forecast", "The limits",
     ]) {
       expect(page, heading).toContain(heading);
     }
@@ -108,7 +108,7 @@ describe("the model view", () => {
     expect(page).toContain('<caption>');
     expect(page).toContain('<th scope="col">model</th>');
     expect(page).toContain('<th scope="col" class="v">8 quarters</th>');
-    expect(page).toContain('<th scope="row">sequence gru');
+    expect(page).toContain('<th scope="row">sequence GRU');
     expect(page).toContain("on the map");
   });
 
@@ -128,18 +128,19 @@ describe("the model view", () => {
     expect(page).toContain(sentenceCase(losses));
   });
 
-  it("names the nearest rival at eight quarters and how thin the win is", () => {
+  it("names the nearest rival at eight quarters, and how thin a win there is", () => {
     expect(rival8).not.toBeNull();
     expect(page).toContain(`${points(rival8!.gap)} points`);
-    // the size is given against the error rather than called thin or fat
-    expect(page).toContain("percent of the error it sits inside");
+    // a win is sized against the error rather than called thin or fat. a loss
+    // there is already in the readings, so it is not said twice
+    expect(page.includes("percent of the error it sits inside")).toBe(winsAt(BACKTEST, SHIPPED).includes(8));
   });
 
   it("puts the coverage miss in the limits rather than in a footnote", () => {
     expect(page).toContain(misses8 ? "The bands fail at eight quarters" : "The bands hold at eight quarters");
     expect(page).toContain(`${points(shipped8.coverage)} of outcomes there against a nominal ${points(NOMINAL_COVERAGE)}`);
     // the repair it rules out is named only while there is a miss to repair
-    expect(page).toContain(misses8 ? "which is leakage, so it is reported rather than repaired" : "which is leakage, so the window stays where it is");
+    expect(page).toContain(misses8 ? "which is leakage, so it is reported rather than repaired" : "leakage, so the window stays where it is");
     expect(page.includes("would fix the number")).toBe(misses8);
   });
 
@@ -236,14 +237,14 @@ describe("what the page says the model reads, and when", () => {
   });
 
   it("says the backtest reads the expanded index only where fhfa had published it", () => {
-    expect(text).toContain(`FHFA published the expanded-data index for ${EXPANDED_BEFORE} metros until its 2026Q1 report, and for all ${PANEL.metros} since`);
-    expect(text).toContain(`for the other ${PANEL.metros - EXPANDED_BEFORE} both are masked at every quarter before 2026Q1`);
+    expect(text).toContain(`FHFA published them for ${EXPANDED_BEFORE} metros until its 2026Q1 report and for all ${PANEL.metros} since`);
+    expect(text).toContain(`so the backtest masks them for the other ${PANEL.metros - EXPANDED_BEFORE} before 2026Q1`);
     expect(text).toContain("so that band is conservative");
-    expect(text).toContain("measured as outcomes land");
+    expect(text).toContain("so there is no held out score yet for what it adds there");
   });
 
   it("keeps saying the backtest model and the shipped model differ", () => {
-    expect(text).toContain("What the map draws is not the model the table above scored");
+    expect(text).toContain("The map does not draw the model the tables scored");
   });
 
   // three rules read no inputs, so a new feature cannot have improved them
@@ -308,7 +309,7 @@ describe("the claims the page makes about the build", () => {
     expect(text).toContain(`So the classical rules learn from ${years} more years than the networks`);
     expect(text).toContain("plus lags of the metro's quarterly price growth, its running mean and a national growth mean");
     expect(text).not.toContain("part of that edge");
-    if (unseen.length > 0) expect(text).toContain("so the two networks in the backtest below read");
+    if (unseen.length > 0) expect(text).toContain("so the backtested networks read");
   });
 
   // the calibration block also picks the network that ships, and the run that
@@ -362,7 +363,7 @@ describe("the input rule the page states", () => {
   it("no longer says a margin inside the seed spread keeps the simpler set", () => {
     expect(text).not.toContain("is a coin");
     expect(text).not.toContain("the simpler set stays");
-    expect(text).toContain("is not read as a result either way");
+    expect(text).toContain("does not count either way");
     expect(text).toContain("compares sets seed for seed");
   });
 
@@ -385,9 +386,8 @@ describe("the input rule the page states", () => {
     expect(mean(shipped!) - mean(all!)).toBeLessThan(Math.max(spread(all!), spread(shipped!)));
     expect(beatsNine(pairs.get("eleven, without permits and income"))).toBe(true);
     expect(manifest.context).toEqual(expect.arrayContaining(["zori_yoy", "listing_price_yoy"]));
-    expect(text).toContain("Rents and listing prices beat the set without them on every seed as well, but added to the shipped set "
-      + `they lower the validation loss by less than the spread across one set's seeds, winning on ${inWords(wins)} of `
-      + `${inWords(seeds.length)} seeds, so they stay out.`);
+    expect(text).toContain("Rents and listing prices beat it on every seed as well, but added to the shipped set they gain less "
+      + `than one set's spread across seeds, winning on ${inWords(wins)} of ${inWords(seeds.length)} seeds, so they stay out.`);
     expect(text).not.toContain("the next thing to decide");
   });
 });
@@ -420,10 +420,10 @@ describe("what the paired test lets the page say", () => {
 
   it("says what the test is and why it averages over metros at each origin", () => {
     const origins = [...new Set(PAIRED.map((r) => r.origins))];
-    expect(text).toContain("A lower mean error can be luck, so the GRU is also tested against every other model on the table");
-    expect(text).toContain("Metros at one origin share its shocks, so they are not independent draws: the gap between two errors "
-      + "is averaged across metros at each origin first");
-    if (origins.length === 1) expect(text).toContain(`asks whether its mean over the ${origins[0]} origins is far enough from zero`);
+    expect(text).toContain("A lower mean error can be luck, so the GRU is tested against every other model on the table");
+    expect(text).toContain("Metros at one origin share its shocks, so the gap between two errors is averaged across metros at each "
+      + "origin first");
+    if (origins.length === 1) expect(text).toContain(`asks whether its mean over the ${origins[0]} origins is far from zero`);
   });
 
   it("names every comparison the test separates from chance, and says it separates nothing else", () => {
@@ -489,9 +489,8 @@ describe("what the paired test lets the page say", () => {
   // the coverage figure is drawn from the whole panel, and the backtest reads
   // the expanded index and its error only where fhfa had published them
   it("says the coverage figure draws the expanded index fuller than the backtest reads it", () => {
-    expect(text).toContain(`The expanded index and the index error are drawn for all ${PANEL.metros} metros on either side of the `
-      + `rule, as FHFA publishes them now, while the backtest reads them only for the ${EXPANDED_BEFORE} FHFA published them for `
-      + `before its ${EXPANDED_FOR_ALL_FROM} report.`);
+    expect(text).toContain("The expanded index and the index error are drawn as FHFA publishes them now, fuller than the backtest "
+      + "reads them.");
   });
 });
 
@@ -539,16 +538,16 @@ describe("what the walk-forward record lets the page say", () => {
   });
 
   it("puts the record after the fixed split and before the shipped forecast", () => {
-    const order = ["The results, 2022Q1 onward", `The walk-forward record, ${first} onward`, "The shipped forecast"].map((h) => text.indexOf(h));
+    const order = ["The results, 2022Q1 onward", `The yearly refit record, ${first} onward`, "The shipped forecast"].map((h) => text.indexOf(h));
     expect(order.every((i) => i >= 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
   });
 
   it("leads with the record: its cut against no change, over the origins it scored, and the test that backs it", () => {
     const origins = at(first, SHIPPED, 4).origins;
-    expect(text).toContain(`Refitted once a year from ${REFIT_FROM} and fed FHFA's index as each release first printed it, the sequence GRU `
-      + `cuts the no-change error ${cut(first, 4)} percent at four quarters and ${cut(first, 8)} percent at eight, across the ${origins} `
-      + `quarterly origins whose outcomes land from ${year(first)} on`);
+    expect(text).toContain(`Refit once a year from ${REFIT_FROM} on FHFA prices as each release first printed them, the sequence GRU `
+      + `cuts the no change error ${cut(first, 4)} percent at four quarters and ${cut(first, 8)} percent at eight, over the ${origins} `
+      + `quarterly origins from ${year(first)} on`);
     const past = tests(first, NO_CHANGE).every((r) => r.pValue < LEVEL && r.difference < 0);
     const bound = /beyond chance at every horizon \(p below ([0-9.]+)\)/.exec(text);
     expect(bound !== null).toBe(past);
@@ -558,7 +557,7 @@ describe("what the walk-forward record lets the page say", () => {
       expect(Number(bound[1])).toBeLessThanOrEqual(worst * 10);
     }
     expect(page).toContain(`<span class="value">${cut(first, 4)}%</span>`);
-    expect(text).toContain(`refitted every year, over the ${origins} origins from ${year(first)} on, against the rule that says nothing changes`);
+    expect(text).toContain(`refit every year, ${origins} origins from ${year(first)} on, against no change`);
   });
 
   it("sets 2022 onward against the fixed split's cut and says which gaps pass there", () => {
@@ -567,14 +566,14 @@ describe("what the walk-forward record lets the page say", () => {
       ? `the cut is ${cut(last, 4)} percent at both`
       : `the cut is ${cut(last, 4)} percent at four quarters and ${cut(last, 8)} at eight`;
     const below = cut(last, 4) < fixedCut(4) && cut(last, 8) < fixedCut(8);
-    if (below) expect(text).toContain(`${cuts}, below that split's ${fixedCut(4)} and ${fixedCut(8)}`);
+    if (below) expect(text).toContain(`${cuts}, below the fixed split's ${fixedCut(4)} and ${fixedCut(8)}`);
     if (passes.length === 1) expect(text).toContain(`only the ${horizonWord(passes[0])} quarter gap passes the test`);
-    expect(text).toContain(`One split: every model fitted once, with nothing realized after ${TRAIN_END.slice(0, 4)} in its fit`);
-    expect(text).toContain(`cuts the no-change error ${fixedCut(4)} percent at four quarters and ${fixedCut(8)} percent at eight`);
+    expect(text).toContain(`The fixed split fits every model once, on nothing realized after ${TRAIN_END.slice(0, 4)}`);
+    expect(text).toContain(`cuts the no change error ${fixedCut(4)} percent at four quarters and ${fixedCut(8)} percent at eight`);
   });
 
   it("tables every model's error on the record with the p of the paired test against the gru", () => {
-    const table = plain(page.slice(page.indexOf("The walk-forward record,"), page.indexOf("</table>", page.indexOf("The walk-forward record,"))))
+    const table = plain(page.slice(page.indexOf("The yearly refit record,"), page.indexOf("</table>", page.indexOf("The yearly refit record,"))))
       .replace(/&lt;/g, "<");
     for (const model of rivals) {
       for (const h of HORIZONS) {
@@ -591,7 +590,7 @@ describe("what the walk-forward record lets the page say", () => {
   it("never calls the gru the best model, and counts the models the record cannot tell apart", () => {
     const tied = tiedNow().length + 1;
     expect(text).not.toMatch(/GRU (?:is|was) the best|best model|the GRU wins/i);
-    expect(text).toContain(`what the table says is that ${inWords(tied)} models are tied, not that the GRU won`);
+    expect(text).toContain(`so the GRU stays, one of ${inWords(tied)} tied models rather than a winner`);
     expect(text).toContain(`so it ships as one of ${inWords(tied)} tied models, by a rule written before the run`);
     expect(text).toContain(`the rule keeps the GRU, one of ${inWords(tied)} tied models`);
     const lowest = HORIZONS.filter((h) => rivals.every((m) => at(first, m, h).maePct > at(first, SHIPPED, h).maePct));
@@ -649,7 +648,7 @@ describe("what the walk-forward record lets the page say", () => {
       .sort((a, b) => a.horizon - b.horizon);
     const [fixed, moving] = [bands("static"), bands("online")];
     const lower = moving.filter((r, i) => r.intervalScore < fixed[i].intervalScore).length;
-    expect(text.includes("So the static band stays, and the under-coverage stays in the limits below.")).toBe(lower < 3);
+    expect(text.includes("So the static band stays, and its shortfall stays in the limits below.")).toBe(lower < 3);
     const far = moving.length - 1;
     const ratio = moving[far].width / fixed[far].width;
     const whole = Math.round(ratio);
@@ -673,22 +672,24 @@ describe("what the walk-forward record lets the page say", () => {
   it("says in the limits that a band built for shift was tried in the record, and how it did", () => {
     const limits = plain(page.slice(page.indexOf("model-limits"), page.indexOf("</section>", page.indexOf("model-limits"))));
     expect(limits).not.toContain("is the real answer");
-    expect(limits).toContain("A conformal method built for distribution shift, one that reads only outcomes realized by each origin, "
-      + "is tried in the walk-forward record above: it covers more and loses on interval score at every horizon");
+    expect(limits).toContain("The online band in the yearly refit record covers more and loses on interval score at every horizon");
   });
 
   it("says the record is where ridge and the average were weighed against the gru", () => {
-    expect(text).toContain("The walk-forward record above does weigh ridge and the average against it, by a rule written before the run");
-    expect(text).toContain("on the fixed split's table, on error and on band width");
+    expect(text).toContain("The yearly refit record weighs ridge and the average against it, by a rule written before the run");
+    // the pipeline never weighs ridge, so the page says where ridge stands
+    if (matchedEverywhere(matchedBy(BACKTEST, "ridge", SHIPPED))) {
+      expect(text).toContain("Ridge matches or beats the GRU at every horizon, on error and on band width");
+    }
   });
 
   it("still stands up without the walk-forward record, on the fixed split's words", () => {
     const saved = WALKFORWARD.splice(0, WALKFORWARD.length);
     try {
       const bare = read();
-      expect(bare).not.toContain("The walk-forward record,");
-      expect(bare).not.toContain("Refitted once a year");
-      expect(bare).not.toContain("does weigh ridge");
+      expect(bare).not.toContain("The yearly refit record,");
+      expect(bare).not.toContain("Refit once a year");
+      expect(bare).not.toContain("record weighs ridge");
       expect(bare.includes("is the real answer")).toBe(misses8);
       expect(bare).not.toContain("undefined");
       expect(bare).not.toContain("NaN");

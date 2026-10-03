@@ -180,9 +180,9 @@ const LABELS: Record<string, string> = {
   metro_mean: "metro mean",
   ridge: "ridge",
   gbm: "gradient boosting",
-  windowmlp: "window mlp",
-  seqgru: "sequence gru",
-  ensemble: "gru and ridge averaged",
+  windowmlp: "window MLP",
+  seqgru: "sequence GRU",
+  ensemble: "GRU and ridge averaged",
 };
 
 export function modelLabel(model: string): string {
@@ -585,7 +585,7 @@ export function ruleCall(rows: PairedRow[], against: string, level = PAIRED_LEVE
 // among the models the table cannot tell apart
 export function ruleSentence(calls: RuleCall[], horizons: number, tied: number): string {
   if (calls.length === 0) return "";
-  const rule = `The rule for replacing the GRU was written before the run: ${joinList(calls.map((call) => proseName(call.against)), "or")} `
+  const rule = `The rule, written before the run: ${joinList(calls.map((call) => proseName(call.against)), "or")} `
     + `replaces it only if better at ${inWords(RULE_HORIZONS)} of ${inWords(horizons)} horizons at ${Math.round(PAIRED_LEVEL * 100)} `
     + "percent and worse at none.";
   const up = calls.filter((call) => call.replaces).map((call) => proseName(call.against));
@@ -593,7 +593,7 @@ export function ruleSentence(calls: RuleCall[], horizons: number, tied: number):
     return `${rule} ${sentenceCase(joinList(up))} ${up.length === 1 ? "is, so by that rule it replaces" : "are, so by that rule one of them replaces"} the GRU.`;
   }
   const none = calls.length === 1 ? "It is not" : calls.length === 2 ? "Neither is" : "None is";
-  const table = tied > 1 ? `, and what the table says is that ${inWords(tied)} models are tied, not that the GRU won` : "";
+  const table = tied > 1 ? `, one of ${inWords(tied)} tied models rather than a winner` : "";
   return `${rule} ${none}, so the GRU stays${table}.`;
 }
 
@@ -776,31 +776,6 @@ export function widthAgainst(online: number, fixed: number): string | null {
   return `${hedge}${inWords(whole)} times the static width`;
 }
 
-// the gru's online band settings as the page states them: "a step of 0.05
-// and the per-metro scale at every horizon, with a 40 quarter window at one
-// quarter and a 16 quarter window at two, four and eight quarters". a setting
-// that differs by horizon is given a horizon at a time
-export function settingsPhrase(bands: WalkBand[]): string {
-  const mine = bands.filter((band) => band.model === SHIPPED).sort((a, b) => a.horizon - b.horizon);
-  const stepOf = (band: WalkBand) => (!scored(band.gamma) ? null : band.gamma > 0 ? `a step of ${band.gamma}` : "no step");
-  const scaleOf = (band: WalkBand) => (band.scaled === null ? null : band.scaled ? "the per-metro scale" : "no per-metro scale");
-  const windowOf = (band: WalkBand) =>
-    (!scored(band.window) ? null : band.window > 0 ? `a ${band.window} quarter window` : "every outcome realized so far");
-  const same: string[] = [];
-  const apart: string[] = [];
-  for (const describe of [stepOf, scaleOf, windowOf]) {
-    const groups = new Map<string, number[]>();
-    for (const band of mine) {
-      const text = describe(band);
-      if (text !== null) groups.set(text, [...(groups.get(text) ?? []), band.horizon]);
-    }
-    const [text] = [...groups.keys()];
-    if (groups.size === 1 && groups.get(text)!.length === mine.length) same.push(text);
-    else if (groups.size > 0) apart.push(joinList([...groups].map(([said, horizons]) => `${said} at ${horizonPhrase(horizons)}`)));
-  }
-  return [...(same.length > 0 ? [`${joinList(same)} at every horizon`] : []), ...apart].join(", with ");
-}
-
 // the admission run's arms, as ml/admit.py names them. the set that ships is
 // the nine the old gate could see plus permits and income
 export const ARMS = {
@@ -852,9 +827,9 @@ export function admissionSentences(rows: AdmissionRow[]): string {
     const then = added.gain <= 0
       ? "but added to the shipped set they do not lower the validation loss at all, so they stay out"
       : added.gain < added.spread
-        ? `but added to the shipped set they lower the validation loss by less than the spread across one set's seeds, winning ${on(added)}, so they stay out`
-        : `and added to the shipped set they lower the validation loss by more than the spread across one set's seeds, winning ${on(added)}, though they are not in the shipped set yet`;
-    out.push(`Rents and listing prices beat the set without them ${on(rents)} as well, ${then}.`);
+        ? `but added to the shipped set they gain less than one set's spread across seeds, winning ${on(added)}, so they stay out`
+        : `and added to the shipped set they gain more than one set's spread across seeds, winning ${on(added)}, though they are not in the shipped set yet`;
+    out.push(`Rents and listing prices beat it ${on(rents)} as well, ${then}.`);
   }
   return out.join(" ");
 }

@@ -40,7 +40,7 @@ describe.skipIf(!present)("the window the accuracy page's growth figures cover",
     })));
     expect(page).toContain(`origin ${dateLabel("2025-06")}`);
 
-    const foot = /Growth figures are percent change in the FHFA index over the four quarters [^.]*\./.exec(page)?.[0];
+    const foot = /Growth is the percent change in the FHFA index over the four quarters [^.]*\./.exec(page)?.[0];
     expect(foot, "no growth window sentence").toBeDefined();
     expect(foot, "the window is placed before the origin the page prints").not.toMatch(/to the origin/);
     expect(foot, "the window does not reach the quarter the growth is dated at").toContain(dateLabel("2026-06")!);

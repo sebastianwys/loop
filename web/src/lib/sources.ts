@@ -22,6 +22,14 @@ const ROLE: Record<string, string> = {
   fhfa_vintages: "the FHFA index as each past release first printed it, which the forecast model's yearly refit record reads",
 };
 
+// the raw files the repo does not commit, and why. each one downloads again
+// from the address on its row. sources.test.ts checks this against git
+export const NOT_COMMITTED: Record<string, string> = {
+  zillow: "the Zillow csv (Zillow's terms)",
+  fhfa_vintages: "the 135 MB FHFA vintage file",
+  boundaries: "the boundary zip (its map shapes are committed)",
+};
+
 // the header shows the fred rate on its own only while no national tile
 // carries the mortgage rate, so the header is named only on a build where
 // that is so

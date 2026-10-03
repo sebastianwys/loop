@@ -101,7 +101,7 @@ export function CompareChart({ model, size }: Props) {
       </svg>
       <p className="compare-readout" aria-live="polite">
         {year === null ? (
-          <span className="hint">point at the chart, or give it focus and use the arrow keys, to read a year</span>
+          <span className="hint">point at the chart or use the arrow keys to read a year</span>
         ) : (
           <>
             <span className="when">{year}</span>

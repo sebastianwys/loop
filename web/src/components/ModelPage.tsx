@@ -8,11 +8,11 @@ import {
   extraFit, featureName, horizonPhrase, horizonWord, horizonsIn, inWords, joinList, leaderboard, lossSentence, lossesOf, matchedBy,
   matchedEverywhere, matchedPhrase, meanVerdict, modelLabel, modelsIn, pAt, pBound, pList, pText, pairedOrigins, pairedWith,
   points, proseName, revisionOf, ridgeVerdict, rowAt, ruleCall, ruleSentence, scored, sentenceCase, separatedAt,
-  separatedSentence, settingsPhrase, shiftQuarter, spanPaired, spanRows, spanStart, spansIn, spreadOf, tiedWith, widthAgainst,
+  separatedSentence, shiftQuarter, spanPaired, spanRows, spanStart, spansIn, spreadOf, tiedWith, widthAgainst,
   winsAt,
 } from "../lib/model";
 import {
-  ADMISSION, BACKTEST, CALIBRATION_N, INPUTS, PAIRED, PANEL, PANEL_COVERAGE, WALKFORWARD, WALKFORWARD_BANDS, WALKFORWARD_LATEST,
+  ADMISSION, BACKTEST, INPUTS, PAIRED, PANEL, PANEL_COVERAGE, WALKFORWARD, WALKFORWARD_LATEST,
   WALKFORWARD_PAIRED,
 } from "../lib/modelNumbers";
 import type { ViewProps } from "../lib/views";
@@ -45,14 +45,14 @@ const firstYear = (label: string): number | null =>
 // coverage figure's row and the name the limits give them
 const CONTEXT_ROWS: [string, string][] = [["zori", "rents"], ["listings", "listing prices"], ["inventory", "inventory"]];
 
-// "cuts the no-change error 45 percent at four quarters and 44 percent at
+// "cuts the no change error 45 percent at four quarters and 44 percent at
 // eight", or says it adds to it where the model is the worse of the two
 function cutPhrase(near: number | null, far: number | null): string {
   if (near === null || far === null) return "has no scored comparison with no change at four and eight quarters";
-  if (near >= 0 && far >= 0) return `cuts the no-change error ${asPercent(near)} percent at four quarters and ${asPercent(far)} percent at eight`;
-  if (near < 0 && far < 0) return `adds ${asPercent(-near)} percent to the no-change error at four quarters and ${asPercent(-far)} percent at eight`;
+  if (near >= 0 && far >= 0) return `cuts the no change error ${asPercent(near)} percent at four quarters and ${asPercent(far)} percent at eight`;
+  if (near < 0 && far < 0) return `adds ${asPercent(-near)} percent to the no change error at four quarters and ${asPercent(-far)} percent at eight`;
   const one = (cut: number, where: string) =>
-    cut >= 0 ? `cuts the no-change error ${asPercent(cut)} percent at ${where}` : `adds ${asPercent(-cut)} percent to it at ${where}`;
+    cut >= 0 ? `cuts the no change error ${asPercent(cut)} percent at ${where}` : `adds ${asPercent(-cut)} percent to it at ${where}`;
   return `${one(near, "four quarters")} and ${one(far, "eight")}`;
 }
 
@@ -82,15 +82,15 @@ function passWords(apart: number[], tested: number[]): string {
 }
 
 // the walkthrough in ml/README.md as a page: the panel, the evaluation
-// design, the models, the results, the walk-forward record, the shipped
+// design, the models, the results, the yearly refit record, the shipped
 // forecast, the limits.
 //
-// every number here is read rather than written down. the leaderboard and the
+// every number here is read rather than written down. the tables and the
 // panel's facts come from ml/results through scripts/model-assets.mjs, and the
 // shipped forecast is measured off the same json the map draws, so a retrain
-// or a fresh export moves this page with it instead of leaving it lying. a
-// sentence that says who wins, which side is larger or whether a band holds
-// is chosen by the numbers it reads, not written for the ones it had once
+// or a fresh export moves this page with it. a sentence that says who wins,
+// which side is larger or whether a band holds is chosen by the numbers it
+// reads, not written for the ones it had once
 export function ModelPage({ data }: ViewProps) {
   const rows = BACKTEST;
   const horizons = useMemo(() => horizonsIn(rows), [rows]);
@@ -144,7 +144,6 @@ export function ModelPage({ data }: ViewProps) {
     return first !== null && first <= trainYear;
   });
   const newlyExpanded = PANEL.metros - EXPANDED_BEFORE;
-  const expandedFrom = firstYear("expanded hpi");
   const zhviFrom = firstYear("zhvi");
   // the context columns the coverage figure shows empty left of the rule
   const emptyContext = CONTEXT_ROWS
@@ -179,12 +178,14 @@ export function ModelPage({ data }: ViewProps) {
   const ridgeAll = matchedEverywhere(ridge);
   const ridgeAt = matchedPhrase(ridge);
   const ridgeSentence = ridgeAt ? `Ridge matches or beats the GRU ${ridgeAt}.` : "";
+  // every gap between ridge and the gru tested, and none past chance
+  const ridgeTied = pairedWith(PAIRED, "ridge").length > 0 && separatedAt(PAIRED, "ridge").length === 0;
 
   const meanReading = againstMean.length > 0 && beatsMean.length === againstMean.length
-    ? "it beats the metro's own long run average at every horizon, which is the rule that matters: a long mean is a good guess at a trend and a bad one across a boom"
+    ? "beats the metro's own long run average at every horizon"
     : beatsMean.length > 0
-      ? `it beats the metro's own long run average at ${horizonPhrase(beatsMean)} and not at ${horizonPhrase(againstMean.filter((h) => !beatsMean.includes(h)))}`
-      : "it does not beat the metro's own long run average at any horizon";
+      ? `beats the metro's own long run average at ${horizonPhrase(beatsMean)} and not at ${horizonPhrase(againstMean.filter((h) => !beatsMean.includes(h)))}`
+      : "does not beat the metro's own long run average at any horizon";
 
   // the paired test of the gru against every other model: which gaps on the
   // table it finds more than chance. every sentence about it is chosen by the
@@ -197,7 +198,7 @@ export function ModelPage({ data }: ViewProps) {
   // what the admission run found for the inputs the old gate could not see
   const admitted = admissionSentences(ADMISSION);
 
-  // the walk-forward record, which the page leads with: every model refitted
+  // the yearly refit record, which the page leads with: every model refitted
   // once a year and fed fhfa's index as each release first printed it, scored
   // over the whole record and over 2022 onward apart. the same record read on
   // today's index is only there to say what the revisions were worth
@@ -268,17 +269,15 @@ export function ModelPage({ data }: ViewProps) {
   const longGain = longPair && scored(longPair.online.coverage) && scored(longPair.static.coverage)
     ? Math.round((longPair.online.coverage - longPair.static.coverage) * 100)
     : null;
-  const settings = settingsPhrase(WALKFORWARD_BANDS);
-  const stepping = WALKFORWARD_BANDS.some((band) => band.model === SHIPPED && scored(band.gamma) && band.gamma > 0);
   const missRate = 1 - NOMINAL_COVERAGE;
 
   // the headline, the way ml/README.md opens: the record, then 2022 onward
   // against the fixed split, then where the gru stands among the models the
   // record cannot tell apart
   const recordTest = recordEvery
-    ? `, and a paired test puts the gap beyond chance at every horizon${recordBound ? ` (p below ${recordBound})` : ""}`
+    ? `, beyond chance at every horizon${recordBound ? ` (p below ${recordBound})` : ""}`
     : recordApart.length > 0
-      ? `, and a paired test puts the gap beyond chance at ${horizonPhrase(recordApart)}`
+      ? `, beyond chance at ${horizonPhrase(recordApart)}`
       : recordTested.length > 0 ? ", though a paired test puts every one of those gaps down to chance" : "";
   const recentCuts = recentCut4 !== null && recentCut8 !== null && recentCut4 >= 0 && recentCut8 >= 0
     ? asPercent(recentCut4) === asPercent(recentCut8)
@@ -286,10 +285,10 @@ export function ModelPage({ data }: ViewProps) {
       : `the cut is ${asPercent(recentCut4)} percent at four quarters and ${asPercent(recentCut8)} at eight`
     : `the GRU ${cutPhrase(recentCut4, recentCut8)}`;
   const lowestOnRecord = walkWins.length === 0
-    ? "The GRU does not have the lowest error at any horizon of that record"
+    ? "It does not have the lowest error at any horizon"
     : walkWins.length === walkHorizons.length
-      ? "The GRU has the lowest error at every horizon of that record"
-      : `The GRU has the lowest error at ${horizonPhrase(walkWins)} of that record`;
+      ? "It has the lowest error at every horizon"
+      : `It has the lowest error at ${horizonPhrase(walkWins)}`;
   const withinChance = tiedApart === 0
     ? "within chance of it"
     : `within chance of it at all but ${inWords(tiedApart)} of ${tied.length === 1 ? "its" : "their"} ${inWords(tiedGaps.length)} gaps`;
@@ -303,13 +302,13 @@ export function ModelPage({ data }: ViewProps) {
   const headline = record.length === 0 || recordCut4 === null
     ? ""
     : [
-        `Refitted once a year from ${REFIT_FROM} and fed FHFA's index as each release first printed it, the sequence GRU `
+        `Refit once a year from ${REFIT_FROM} on FHFA prices as each release first printed them, the sequence GRU `
           + `${cutPhrase(recordCut4, recordCut8)}`
-          + `${recordOrigins !== null && recordStart ? `, across the ${recordOrigins} quarterly origins whose outcomes land from ${recordStart} on` : ""}`
+          + `${recordOrigins !== null && recordStart ? `, over the ${recordOrigins} quarterly origins from ${recordStart} on` : ""}`
           + `${recordTest}.`,
         recent.length > 0 && recentStart
-          ? `On ${recentStart} onward alone${sameOutcomes ? ", the years the fixed split below scores" : ""}, ${recentCuts}`
-            + `${recentVsSplit && cut4 !== null && cut8 !== null ? `, ${recentVsSplit} that split's ${asPercent(cut4)} and ${asPercent(cut8)}` : ""}`
+          ? `On ${recentStart} onward alone ${recentCuts}`
+            + `${recentVsSplit && cut4 !== null && cut8 !== null ? `, ${recentVsSplit} the fixed split's ${asPercent(cut4)} and ${asPercent(cut8)}` : ""}`
             + `${recentTested.length > 0 ? `, and ${passWords(recentApart, recentTested.map((row) => row.horizon))}` : ""}.`
           : "",
         `${standing}${overruled}`,
@@ -334,8 +333,7 @@ export function ModelPage({ data }: ViewProps) {
       : recordTested.length > 0 ? ", and the paired test puts every one of those gaps down to chance" : "";
   // more origins are only worth a sentence while they separate more
   const moreOrigins = recordOrigins !== null && origins !== null && recordApart.length > splitApart.length
-    ? ` The record's ${recordOrigins} origins, through a boom and a correction, give the test something to work with that the `
-      + `fixed split's ${origins} from one cycle did not.`
+    ? ` Its ${recordOrigins} origins run through a boom and a correction, against the fixed split's ${origins} from one cycle.`
     : "";
   const recentPass = recentTested.length === 0
     ? ""
@@ -343,10 +341,10 @@ export function ModelPage({ data }: ViewProps) {
       + `${recentApart.length > 0 && recentApart.length < recentTested.length ? ` (${pList(recentP)})` : ""}`;
   const againstFixed = recentVsSplit && recent4 && recent8 && shipped4 && shipped8 && cut4 !== null && cut8 !== null
     ? ` At four and eight quarters that ${recentVsSplit === "set against" ? "compares with" : `is ${recentVsSplit}`} the fixed `
-      + `split's ${asPercent(cut4)} and ${asPercent(cut8)}${sameOutcomes ? " on the same outcomes" : ""}: the GRU refitted every `
-      + `year misses by ${points(recent4.maePct)} and ${points(recent8.maePct)} points there, where the one fitted once, on nothing `
-      + `realized after ${trainYear}, missed by ${points(shipped4.maePct)} and ${points(shipped8.maePct)}.`
-      + `${recent4.maePct > shipped4.maePct && recent8.maePct > shipped8.maePct ? " More recent data did not buy a better forecast of the correction." : ""}`
+      + `split's ${asPercent(cut4)} and ${asPercent(cut8)}${sameOutcomes ? " on the same outcomes" : ""}: refit every year, the GRU `
+      + `misses by ${points(recent4.maePct)} and ${points(recent8.maePct)} points, against ${points(shipped4.maePct)} and `
+      + `${points(shipped8.maePct)} for the one fit once on nothing after ${trainYear}.`
+      + `${recent4.maePct > shipped4.maePct && recent8.maePct > shipped8.maePct ? " Newer data did not buy a better forecast of the correction." : ""}`
     : "";
   const walkReadings = [
     recordCuts.length === 0 ? "" : `Against no change the GRU ${cutWords(recordCuts)}${recordBeyond}.${moreOrigins}`,
@@ -364,10 +362,9 @@ export function ModelPage({ data }: ViewProps) {
     ].filter((sentence) => sentence.length > 0).join(" "),
     revision === null
       ? ""
-      : `${revision.share < 0.05 ? "Revisions barely matter." : "Revisions matter here."} Read on today's index instead, the GRU's error `
+      : `${revision.share < 0.05 ? "Revisions barely matter." : "Revisions matter here."} On today's index instead, the GRU's error `
         + `moves by ${points(revision.error)} points or less at every horizon`
-        + `${revision.cut !== null ? ` and its cut against no change by ${revision.cut <= 1 ? "a point or less" : `up to ${points(revision.cut, 1)} points`}` : ""}.`
-        + `${revision.share < 0.05 ? " The honest reading costs almost nothing, which is itself worth knowing." : ""}`,
+        + `${revision.cut !== null ? ` and its cut against no change by ${revision.cut <= 1 ? "a point or less" : `up to ${points(revision.cut, 1)} points`}` : ""}.`,
   ].filter((reading) => reading.length > 0);
 
   // the band replay's verdict, and the line the limits carry about it
@@ -376,29 +373,20 @@ export function ModelPage({ data }: ViewProps) {
     : [
         `The online band ${bandWords(bandRule)}.`,
         longPair && longWidth
-          ? `At ${horizonPhrase([longPair.horizon])} it is ${longWidth}${longGain !== null ? ` for ${longGain > 0 ? `${inWords(longGain)} more points of coverage` : "no more coverage"}` : ""}.`
+          ? `It is ${longWidth} at ${horizonPhrase([longPair.horizon])}${longGain !== null ? `, for ${longGain > 0 ? `${inWords(longGain)} more points of coverage` : "no more coverage"}` : ""}.`
           : "",
-        stepping
-          ? `Each step moves the aimed miss rate by gamma times the gap between the nominal ${Math.round(missRate * 100)} percent and the share `
-            + `that missed, so a quarter in which every band missed moves it ${inWords(Math.round((1 - missRate) / missRate))} times further `
-            + `than a quarter in which none did, and misses across ${PANEL.metros} metros arrive together: the band widens fast in a turn `
-            + "and narrows slowly after it."
-          : "",
-        `The static band keeps its small look-ahead in this comparison, which leans the comparison its way`
-          + `${bandRule.higher.length > 0 && bandRule.higher.length === bandRule.horizons.length ? ", and it still wins at every horizon" : ""}.`,
         bandRule.replaces
           ? "By the rule written first, the online band replaces the static one."
-          : "So the static band stays, and the under-coverage stays in the limits below.",
+          : "So the static band stays, and its shortfall stays in the limits below.",
       ].filter((sentence) => sentence.length > 0).join(" ");
   const shiftTried = bandPairsRecent.length > 0
-    ? ` A conformal method built for distribution shift, one that reads only outcomes realized by each origin, is tried in the walk-forward `
-      + `record above: it ${bandWords(bandRule)}${longPair && longWidth ? `, with ${longWidth} at ${horizonPhrase([longPair.horizon])}` : ""}.`
+    ? ` The online band in the yearly refit record ${bandWords(bandRule)}.`
     : " A wider held out period, or a conformal method built for distribution shift, is the real answer.";
   // the pipeline picks the gru between the two networks, and the record is
   // where ridge and the average were weighed against it
   const weighed = calls.length === 0
     ? ""
-    : ` The walk-forward record above does weigh ${joinList(calls.map((call) => proseName(call.against)))} against it, by a rule written `
+    : ` The yearly refit record weighs ${joinList(calls.map((call) => proseName(call.against)))} against it, by a rule written `
       + `before the run, and ${promoted.length > 0
         ? `the rule says ${joinList(promoted.map(proseName))} should replace it`
         : `the rule keeps the GRU${tied.length > 0 ? `, one of ${inWords(tied.length + 1)} tied models` : ""}`}.`;
@@ -409,11 +397,10 @@ export function ModelPage({ data }: ViewProps) {
         <header className="model-head">
           <h2>How the forecast is built and judged</h2>
           <p className="model-lead">
-            The expected growth lines on the map come from a model fitted in this repository. It reads a
-            metro's quarterly history and answers one question: given what is known at this quarter,
-            how much does the house price index move over the next one, two, four and eight quarters,
-            and how sure can it be. This page is the case for believing those numbers, including the
-            places where the model loses.
+            The expected growth lines on the map come from a model in this repo. It forecasts how far each metro's
+            house price index moves over the next one, two, four and eight quarters, with a{" "}
+            {Math.round(NOMINAL_COVERAGE * 100)} percent band. This page shows how well that worked, including where
+            it loses.
           </p>
           {headline && <p className="model-lead">{headline}</p>}
           <ul className="model-stats">
@@ -421,22 +408,21 @@ export function ModelPage({ data }: ViewProps) {
               <span className="value">{recordCut4 !== null ? `${asPercent(Math.abs(recordCut4))}%` : "-"}</span>
               <span className="label">{recordCut4 !== null && recordCut4 < 0 ? "more" : "less"} error at four quarters</span>
               <span className="note">
-                refitted every year
-                {recordOrigins !== null && recordStart ? `, over the ${recordOrigins} origins from ${recordStart} on` : ""}, against
-                the rule that says nothing changes
+                refit every year
+                {recordOrigins !== null && recordStart ? `, ${recordOrigins} origins from ${recordStart} on` : ""}, against no change
               </span>
             </li>
             <li>
               <span className="value">{band4 !== null ? `${asPercent(Math.abs(band4))}%` : "-"}</span>
               <span className="label">{band4 !== null && band4 < 0 ? "wider" : "narrower"} band at four quarters</span>
-              <span className="note">in the fixed split, against the metro's own long run average</span>
+              <span className="note">fixed split, against the metro's own long run average</span>
             </li>
             <li>
               <span className="value">{points(cover8)}</span>
               <span className="label">band coverage at eight quarters</span>
               <span className="note">
-                in the fixed split, against a nominal {points(NOMINAL_COVERAGE)}
-                {cover8 === null ? "" : misses8 ? ", and that is a miss" : ", and that holds"}
+                fixed split, target {points(NOMINAL_COVERAGE)}
+                {cover8 === null ? "" : misses8 ? ", a miss" : ", it holds"}
               </span>
             </li>
           </ul>
@@ -446,64 +432,50 @@ export function ModelPage({ data }: ViewProps) {
           <h3>The panel</h3>
           <p>
             One row per metro per quarter: {PANEL.metros} metros, {PANEL.first} to {PANEL.last},{" "}
-            {PANEL.rows.toLocaleString("en-US")} rows. The FHFA all-transactions index is the thing being
-            forecast. {sentenceCase(inWords(features))} features feed the models and{" "}
-            {inWords(INPUTS.context)} more columns ride along for the figures without reaching one.
+            {PANEL.rows.toLocaleString("en-US")} rows. The FHFA all transactions index is the target.{" "}
+            {sentenceCase(inWords(features))} features feed the models and {inWords(INPUTS.context)} more columns
+            ride along for the figures.
           </p>
           <p>
-            A value enters the panel when it was published. A monthly value is known in the month it
-            covers. An annual value enters when its source publishes it: population and migration from
-            the first quarter of the next year, permits from the second, income from the fourth, and a
-            release that came out late from the quarter it landed in. Population growth across the 2019
-            to 2020 change of census base and county lines is left out rather than read as a year of
-            growth. A metropolitan division inherits what it lacks from its parent metro. The build
-            writes a manifest with row counts, the non-null share of every column and the hash of the
-            panel it produced.
+            A value enters the panel when it was published. An annual value waits for its release: population and migration from the first quarter of the next year,
+            permits from the second, income from the fourth. Population growth across the 2019 to 2020 change of
+            census base and county lines is left out. A metropolitan division takes what it lacks from its parent
+            metro.
           </p>
           <p>
-            Three things the panel cannot undo. FHFA revises past quarters as later sales come in, so
-            every origin reads the vintage of the index that runs through {PANEL.last}, not the one
-            published at the time. Population and income are later vintages too: the population
-            estimates come from Census releases made after the years they cover, and income is BEA's
-            current revision. And the expanded-data index reaches back for all {PANEL.metros} metros,
-            though FHFA published it for {EXPANDED_BEFORE} before its {EXPANDED_FOR_ALL_FROM} report,
-            which the section on the models deals with.
+            Three things the panel cannot undo. FHFA revises past quarters as later sales come in, so every
+            origin reads the vintage of the index that runs through {PANEL.last}, not the one published at the
+            time. Population and income are later vintages too. And the expanded index covered only{" "}
+            {EXPANDED_BEFORE} metros before {EXPANDED_FOR_ALL_FROM}.
           </p>
           <ModelFigure id="coverage" />
           <p>
-            How late a series starts matters more than it looks. A feature can only be learned where
-            the model is fitted, and that is not the whole train block: its last three years are held
-            out for validation, so a model fits on outcomes through {fitEnd}. The rule down the middle
-            of the figure above is that date.
+            A feature can only be learned left of the rule, where the networks fit, on outcomes through {fitEnd}.
             {unseen.length > 0
-              ? ` ${sentenceCase(unseenNames)} ${unseen.length === 1 ? "has" : "have"} nothing left of it, so the two networks in the backtest below read ${inWords(seen)} of the ${inWords(features)} features, while the forecast the map draws, refitted through ${PANEL.last}, reads all ${inWords(features)}.`
+              ? ` ${sentenceCase(unseenNames)} ${unseen.length === 1 ? "has" : "have"} nothing left of it, so the backtested networks read ${inWords(seen)} of the ${inWords(features)} features. The map's forecast, refit through ${PANEL.last}, reads all ${inWords(features)}.`
               : PANEL_COVERAGE
-                ? ` Every feature has something left of it, so the backtest below and the forecast the map draws read the same ${inWords(features)}.`
+                ? ` Every feature has something left of it, so the backtest and the map's forecast read the same ${inWords(features)}.`
                 : ""}
-          </p>
-          <p>
-            Two sources that started late could be pulled back further and were
             {firstYear("unemp") !== null && firstYear("mortgage") !== null
-              ? `: unemployment now starts in ${firstYear("unemp")} and the mortgage rate in ${firstYear("mortgage")}`
-              : ", unemployment and the mortgage rate"}
-            .{unseen.length > 0 ? ` ${sentenceCase(unseenNames)} ${unseen.length === 1 ? "has" : "have"} not been.` : ""}
+              ? ` Unemployment and the mortgage rate were pulled back to ${firstYear("unemp")} and ${firstYear("mortgage")}.`
+              : ""}
+            {unseen.length > 0 ? ` ${sentenceCase(unseenNames)} ${unseen.length === 1 ? "has" : "have"} not been.` : ""}
           </p>
         </section>
 
         <section className="model-section">
           <h3>The evaluation design</h3>
           <p>
-            This is the part that makes the numbers mean anything. The target is log growth of the
-            index over h quarters. A sample is one metro, one origin quarter, one horizon, and it
-            lands in a block by where its outcome falls, never by where it starts.
+            The target is log growth of the index over h quarters. A sample is one metro, one origin quarter and
+            one horizon, and it goes in a block by the quarter its outcome lands in, never by where it starts.
           </p>
           <div className="model-scroll">
             <table className="model-table blocks">
-              <caption>The three blocks, and what each one is allowed to touch.</caption>
+              <caption>The three blocks and what each one is used for.</caption>
               <thead>
                 <tr>
                   <th scope="col">block</th>
-                  <th scope="col">outcome realized</th>
+                  <th scope="col">outcome lands</th>
                   <th scope="col">used for</th>
                 </tr>
               </thead>
@@ -527,110 +499,63 @@ export function ModelPage({ data }: ViewProps) {
             </table>
           </div>
           <p>
-            Because the outcome quarter decides the block, one origin sits in different blocks at
-            different horizons. No outcome realized after 2021 reaches a model judged on 2022 onward,
-            though every block reads the later vintages described under the panel.
+            No outcome after 2021 reaches a model judged on 2022 onward, though every block reads the later
+            vintages described under the panel.
           </p>
           <ModelFigure id="design" />
           <p>
-            An earlier version of this rule read the block off the origin instead. That cut the
-            calibration samples at eight quarters in half and put every one of them in the 2020 to 2021
-            boom, so every published band width came off two years of the least representative data in
-            the panel. The blocks are horizon independent now
-            {CALIBRATION_N !== null && scoredN !== null
-              ? `: ${CALIBRATION_N.toLocaleString("en-US")} calibration samples and ${scoredN.toLocaleString("en-US")} test samples at every horizon`
-              : ""}
-            .
-          </p>
-          <p>
-            The bands are conformalized quantile regression. The model predicts the 10th, 50th and
-            90th percentiles, and the calibration block sets the smallest widening of that band that
-            covers at least {Math.round(NOMINAL_COVERAGE * 100)} percent of held-out outcomes, with the
-            finite sample correction of Romano, Patterson and Candes (2019). That guarantee assumes
-            exchangeable samples, and quarters are not exchangeable. So the coverage measured on the test
-            block is the honest number, and it is printed beside every model below.
+            The band is conformalized quantile regression: the calibration block widens the model's 10th to 90th
+            percentile range until it covers {Math.round(NOMINAL_COVERAGE * 100)} percent of outcomes there, with
+            the finite sample correction of Romano, Patterson and Candes (2019). That guarantee assumes
+            exchangeable samples, and quarters are not, so the test coverage printed beside every model is the
+            number to trust.
           </p>
         </section>
 
         <section className="model-section">
           <h3>The models</h3>
           <p>
-            Five classical rules set the bar: no change, momentum, the metro's own average growth,
-            ridge on price lags and covariates, and gradient boosting with quantile losses. Two
-            networks share one input: 24 quarters of {inWords(INPUTS.sequence)} series each with a
-            presence mask, {inWords(INPUTS.annual)} annual features at the origin, and a learned embedding per metro. The window MLP flattens
-            that into a three layer perceptron. The sequence GRU reads it as a sequence and
-            concatenates the final state with the annual features and the embedding. Both emit three
-            monotone quantiles per horizon and train on pinball loss with Adam, weight decay and
-            early stopping.
-          </p>
-          <p>
-            Learning rate, weight decay and the input set are chosen on validation loss, never on
-            test. The validation set is the tail of the train block, outcomes realized {heldBack},
-            and what is left of that block is what the model fits on. Permits and income, which the
-            fitting part never sees, were admitted by a second run, described below, that fits into
-            the calibration block and scores the rest of it.
+            Five simple rules set the bar: no change, momentum, the metro's own long run average, ridge and
+            gradient boosting. Two networks share one input: 24 quarters of {inWords(INPUTS.sequence)} series
+            with a mask for missing values, {inWords(INPUTS.annual)} annual features at the origin and a learned
+            code for each metro. The window MLP flattens it and the sequence GRU reads it in order. Both predict
+            three quantiles per horizon on pinball loss. Their settings and the input set are picked on validation
+            loss, outcomes from {heldBack}, never on test.
           </p>
           <ModelFigure id="training" />
           <p>
-            Two of the {inWords(INPUTS.sequence)} series come from a file FHFA publishes beside the
-            index that this project had downloaded and never read: the expanded-data index, a second
-            estimate of the same metro quarter built from more records, and the relative standard error
-            FHFA reports for it, a percent of the index. That error is the only published measure of how
-            thin a metro's repeat-sale record is
-            {error
-              ? `, and it is the difference between ${error.lowest.name} measured to within ${points(error.lowest.value)} percent and ${error.highest.name} measured to within ${points(error.highest.value)} percent`
-              : ""}
-            . The model has no other way to know that.
+            Two of the {inWords(INPUTS.sequence)} series are FHFA's expanded index, built from more sales, and its
+            standard error, the only published measure of how thin a metro's sales record is. FHFA published them
+            for {EXPANDED_BEFORE} metros until its {EXPANDED_FOR_ALL_FROM} report and for all {PANEL.metros} since,
+            so the backtest masks them for the other {newlyExpanded} before {EXPANDED_FOR_ALL_FROM}. The map's
+            forecast reads them for all {PANEL.metros}, while its band model reads them only where they were
+            published, so that band is conservative.
           </p>
           <p>
-            That file is also where the input rules changed. FHFA published the expanded-data index for{" "}
-            {EXPANDED_BEFORE} metros until its {EXPANDED_FOR_ALL_FROM} report, and for all {PANEL.metros}{" "}
-            since{expandedFrom !== null ? `, with its history back to ${expandedFrom}` : ""}. So the backtest
-            below reads the index and its error only for those {EXPANDED_BEFORE}: for the other{" "}
-            {newlyExpanded} both are masked at every quarter before {EXPANDED_FOR_ALL_FROM}, because no model
-            could have read them then. The forecast the map draws reads them for all {PANEL.metros}, because
-            FHFA publishes them now. Its band margin comes from a band model that, like the backtest, reads
-            them only where they were published, so that band is conservative for the metros that gained
-            them. What the index really adds for those metros is measured as outcomes land, not assumed here.
+            Input sets were compared on validation loss only, with the tables in ml/README.md, and a gap smaller
+            than one set's spread across seeds does not count either way. National series like CPI stay out, since
+            one number shared by every metro says which era a window is in, not anything about the place.
           </p>
           <p>
-            Input sets were compared on validation loss and nothing else, and ml/README.md carries the
-            tables. One run of a set moves with its seed, so a margin between two sets that is smaller
-            than the spread across seeds of one set is not read as a result either way. The expanded
-            index and its error stay in on other grounds: a forecast made now reads both for every
-            metro, and what they add in real time is measured as outcomes land. The national series,
-            CPI, the ten year, the term spread and national unemployment, stay out: one number shared by
-            every metro tells a window which era it sits in and nothing about the place. The rejected
-            columns stay in the panel, out of reach of every model, because a negative result that is
-            one command from being re-run is worth more than one written down.
-          </p>
-          <p>
-            That comparison has a blind spot. A feature the fitting part of the train block never sees
-            is blanked in validation as well, in both sets, so permits and income, and rents and listing
-            prices, were never measured there at all. A second run moves the boundary instead: it fits
-            into the calibration block, scores the rest of it, never reads the test block, and compares
-            sets seed for seed.{admitted ? ` ${admitted}` : ""} Inventory starts too late to be measured
-            without spending the block that would score it. The years the run scores are the boom, the
-            only window left between the old fitting block and the test block.
+            That misses any feature the fitting years never see, so a second run fits into the calibration block,
+            scores the rest of it and compares sets seed for seed.{admitted ? ` ${admitted}` : ""} It scores the
+            2020 to 2021 boom, and inventory starts too late to test at all.
           </p>
         </section>
 
         <section className="model-section">
           <h3>The results, 2022Q1 onward</h3>
           <p>
-            One split: every model fitted once, with nothing realized after {trainYear} in its fit, and scored once
-            on the test block. Here the GRU {cutPhrase(cut4, cut8)}{fixedP}, and {bandPhrase(band4, band8)}.
-            {record.length > 0 ? " The walk-forward record below replays the same models refitted every year." : ""}
+            The fixed split fits every model once, on nothing realized after {trainYear}, and scores it once on the
+            test block. Here the GRU {cutPhrase(cut4, cut8)}{fixedP}, and {bandPhrase(band4, band8)}.
           </p>
           <div className="model-scroll">
             <table className="model-table board">
               <caption>
-                The test block, scored once.
-                {scoredN !== null ? ` Every model sees the same ${scoredN.toLocaleString("en-US")} samples at each horizon.` : ""}
-                {" "}The first number is the mean absolute error of the median forecast, in percentage
-                points of growth, so lower is better. Under it: the share of outcomes that fell inside
-                the 90 percent band, and that band's mean width in log growth units.
+                The test block{scoredN !== null ? `, ${scoredN.toLocaleString("en-US")} samples per horizon` : ""}.
+                The top number is the mean absolute error of the median forecast in percentage points, lower is
+                better. Under it, coverage of the {Math.round(NOMINAL_COVERAGE * 100)} percent band and its mean
+                width in log growth.
               </caption>
               <thead>
                 <tr>
@@ -668,80 +593,72 @@ export function ModelPage({ data }: ViewProps) {
           </div>
           <ModelFigure id="comparison" />
           <p>
-            No change, momentum and the metro mean read no inputs at all, so a new feature cannot move
-            them: they are the fixed bar. Ridge and gradient boosting read the {inWords(features)} features
-            at the origin, plus lags of the metro's quarterly price growth, its running mean and a
-            national growth mean, and fit on the whole train block, through {TRAIN_END}. The two networks
-            read a 24 quarter window and fit through {fitEnd}, holding {heldBack} back to choose their
-            epochs.
+            No change, momentum and the metro mean read no inputs at all. Ridge and gradient boosting read the{" "}
+            {inWords(features)} features at the origin, plus lags of the metro's quarterly price growth, its
+            running mean and a national growth mean, and fit the whole train block through {TRAIN_END}.
             {moreFit
-              ? ` So the classical rules learn from ${moreFit} than the networks${unseenInTrain ? `, ${unseenNames} among them` : ""}, and neither side fits on an outcome past ${trainYear}.`
+              ? ` So the classical rules learn from ${moreFit} than the networks${unseenInTrain ? `, ${unseenNames} among them` : ""}.`
               : ""}
           </p>
           {pairedFound && (
             <p>
-              A lower mean error can be luck, so the GRU is also tested against
-              {tested.length === pairedRivals.length ? " every other model on the table" : ` ${joinList(tested.map(proseName))}`}, a
-              horizon at a time, on the samples both scored. Metros at one origin share its shocks, so they
-              are not independent draws: the gap between two errors is averaged across metros at each origin
-              first, and the test, Diebold and Mariano's with the small sample correction of Harvey, Leybourne
-              and Newbold, asks whether its mean over {origins !== null ? `the ${origins} origins` : "the origins"} is far
-              enough from zero, allowing for the quarters that overlapping outcomes share. {pairedFound}
+              A lower mean error can be luck, so the GRU is tested against
+              {tested.length === pairedRivals.length ? " every other model on the table" : ` ${joinList(tested.map(proseName))}`}.
+              Metros at one origin share its shocks, so the gap between two errors is averaged across metros at each
+              origin first, then a Diebold and Mariano test asks whether its mean over{" "}
+              {origins !== null ? `the ${origins} origins` : "the origins"} is far from zero.
+              {" "}{pairedFound}
             </p>
           )}
-          <h4>Three honest readings</h4>
+          <h4>Readings</h4>
           <ul className="model-readings">
             <li>
               {wins.length > 0
                 ? `The sequence GRU has the lowest error at ${horizonPhrase(wins)}.`
-                : "The sequence GRU has the lowest error at no horizon in this build."}
-              {" "}It {cutPhrase(cut4, cut8)}, and {meanReading}. That
-              average goes from {points(longRun4?.maePct)} to {points(longRun8?.maePct)} points as the horizon
-              doubles while the GRU goes {points(shipped4?.maePct)} to {points(shipped8?.maePct)}.
+                : "The sequence GRU has the lowest error at no horizon here."}
+              {" "}It {meanReading}: the average goes from {points(longRun4?.maePct)} to {points(longRun8?.maePct)} points
+              {" "}as the horizon doubles, the GRU from {points(shipped4?.maePct)} to {points(shipped8?.maePct)}.
               {meanTest ? ` ${meanTest}` : ""}
             </li>
             <li>
               {lossText
                 ? `It loses at ${horizonPhrase(lossHorizons)}, where ${lossText}.`
-                : "In this build it is ahead at every horizon, which is not the usual result and is worth re-reading rather than celebrating."}
+                : "In this build it is ahead at every horizon, which is worth checking rather than celebrating."}
               {ridgeSentence ? ` ${ridgeSentence}` : ""}
               {ridgeAll
                 ? ` ${ridgeVerdict(PAIRED, horizons)}`
-                : ridgeFirst ? " A penalised linear model is hard to beat one quarter out, and that is worth saying out loud." : ""}
+                : ridgeFirst ? " A penalised linear model is hard to beat one quarter out." : ""}
             </li>
-            <li>
-              {closest8
-                ? `At eight quarters the nearest rival is ${modelLabel(closest8.model)}, ${points(closest8.gap)} points away, which is ${asPercent(gapShare8) ?? "-"} percent of the error it sits inside.${won8 && band8 !== null && band8 > 0 ? ` The GRU's case at that horizon rests as much on its band being ${asPercent(band8)} percent narrower than the long run average's as on those points.` : ""}`
-                : "At eight quarters the field is too thin in this build to name a rival."}
-            </li>
+            {closest8 && won8 && (
+              <li>
+                {`At eight quarters the nearest rival is ${modelLabel(closest8.model)}, ${points(closest8.gap)} points away, which is ${asPercent(gapShare8) ?? "-"} percent of the error it sits inside.`}
+                {band8 !== null && band8 > 0 ? ` The GRU's case there rests as much on its band being ${asPercent(band8)} percent narrower than the long run average's.` : ""}
+              </li>
+            )}
           </ul>
           <ModelFigure id="calibration" />
         </section>
 
         {record.length > 0 && recordFrom && (
           <section className="model-section">
-            <h3>The walk-forward record, {recordFrom} onward</h3>
+            <h3>The yearly refit record, {recordFrom} onward</h3>
             <p>
-              The split above is not how a forecaster lives. Its models never learn from anything realized after{" "}
-              {trainYear}, its paired test has {origins !== null ? `${origins} origins` : "the origins"} from one cycle,
-              and it reads FHFA's index as FHFA prints it today, when every release revises past quarters. The
-              walk-forward record replays the forecasts instead. Every model is refitted once a year from {REFIT_FROM}:
-              the model for a year fits on outcomes realized by the end of the year before and forecasts every origin
-              in its year, so each forecast is out of sample for the model that made it. Every forecast and every refit
-              reads FHFA's index as the release of its day printed it, out of ALFRED's archive of those releases, and
-              scoring keeps today's index as the truth.
+              The fixed split never learns from anything after {trainYear}, tests{" "}
+              {origins !== null ? `${origins} origins` : "its origins"} from one cycle and reads FHFA's index as
+              printed today. The yearly refit record replays the forecasts instead: from {REFIT_FROM} on, each
+              year's model fits on outcomes known by the end of the year before, reads FHFA's index as the release
+              of its day printed it, from ALFRED's archive, and forecasts every origin in its year. Scoring uses
+              today's index.
               {joined.includes(AVERAGE)
-                ? ` One model joins the ${inWords(modelsIn(rows).length)} above: the GRU and ridge averaged quantile by quantile, called the average below.`
+                ? " One model joins: the GRU and ridge averaged quantile by quantile, called the average below."
                 : ""}
             </p>
             <div className="model-scroll">
               <table className="model-table board">
                 <caption>
-                  Mean absolute error of the median forecast
-                  {recordOrigins !== null ? ` over the ${recordOrigins} origins` : ""} whose outcomes land from {recordFrom} on
-                  {recordN !== null ? `, ${recordN.toLocaleString("en-US")} samples at each horizon` : ""}, read from the
-                  vintages, in percentage points of growth, so lower is better. Under it: the p value of the paired test of
-                  that model against the sequence GRU.
+                  Mean absolute error{recordOrigins !== null ? ` over the ${recordOrigins} origins` : ""} from{" "}
+                  {recordFrom} on{recordN !== null ? `, ${recordN.toLocaleString("en-US")} samples per horizon` : ""},
+                  in percentage points, lower is better. Under it, the p value against the sequence GRU.
                 </caption>
                 <thead>
                   <tr>
@@ -792,27 +709,21 @@ export function ModelPage({ data }: ViewProps) {
             {bandPairsRecent.length > 0 && recentFrom && (
               <>
                 <p>
-                  The band gets the same replay. The fixed calibration window
-                  {misses8 ? " under-covers at eight quarters, and it also" : ""} looks ahead a little: its 2020 and 2021
-                  outcomes calibrate test forecasts made at 2020 and 2021 origins. The online band is the one a
-                  forecaster living through the record could have run. At each origin its margin is the conformal
-                  quantile of every score realized by then, over a trailing window or all of them, and the miss rate it
-                  aims for moves with the misses as they land, adaptive conformal inference after Gibbs and Candes
-                  (2021). An optional per-metro scale, the metro's trailing volatility of quarterly growth, widens a
-                  volatile metro's band against a quiet one's. The settings are chosen by mean interval score on outcomes
-                  from {BAND_TUNE[0]} to {BAND_TUNE[1]} and nothing later{settings ? `, and for the GRU they are ${settings}` : ""}.
-                  The rule, again written first: the online band replaces the static one only if its interval score is
-                  lower at {inWords(RULE_HORIZONS)} of the {inWords(bandPairsRecent.length)} horizons on {recentStart} onward.
+                  The band gets the same replay. The static band{misses8 ? " falls short at eight quarters and" : ""}{" "}
+                  looks ahead a little, since its 2020 and 2021 outcomes calibrate forecasts made in those years,
+                  which leans this comparison its way. The online band could have run live: its margin comes from the misses realized by each origin and adapts
+                  as they land (adaptive conformal inference, Gibbs and Candes 2021). Its settings were picked on{" "}
+                  {BAND_TUNE[0]} to {BAND_TUNE[1]}. The rule, written first: it replaces the static band only if its
+                  interval score is lower at {inWords(RULE_HORIZONS)} of the {inWords(bandPairsRecent.length)} horizons
+                  on {recentStart} onward.
                 </p>
                 <div className="model-scroll">
                   <table className="model-table">
                     <caption>
-                      The sequence GRU's two bands
-                      {recentOrigins !== null ? ` over the ${recentOrigins} origins` : ""} whose outcomes land from {recentFrom} on,
-                      read from the vintages. The first number is the band's mean interval score: its width plus{" "}
-                      {Math.round(2 / missRate)} times the distance by which an outcome lands outside it, so lower is
-                      better. Under it: the share of outcomes inside the {Math.round(NOMINAL_COVERAGE * 100)} percent
-                      band, and its mean width. The score and the width are in log growth units.
+                      The sequence GRU's two bands{recentOrigins !== null ? ` over the ${recentOrigins} origins` : ""} from{" "}
+                      {recentFrom} on. The top number is the mean interval score, the width plus{" "}
+                      {Math.round(2 / missRate)} times any miss outside the band, lower is better. Under it, coverage and
+                      mean width, in log growth.
                     </caption>
                     <thead>
                       <tr>
@@ -855,21 +766,14 @@ export function ModelPage({ data }: ViewProps) {
         <section className="model-section">
           <h3>The shipped forecast</h3>
           <p>
-            What the map draws is not the model the table above scored. It is the GRU refitted on every
-            outcome realized by {origin ?? "the last quarter of the panel"}, at the epoch count found on
-            validation, and it reads all {inWords(features)} features, the expanded index for every metro
-            among them{unseen.length > 0 ? `, where the backtested GRU read ${inWords(seen)} and that index for ${EXPANDED_BEFORE} metros` : ""}.
-            Its band margin is out of sample: a second GRU fitted through 2021 and calibrated on 2022 onward,
-            whose margin is applied to the refit's quantiles.
+            The map does not draw the model the tables scored. It draws the GRU refit on every outcome through{" "}
+            {origin ?? "the last quarter of the panel"}, reading all {inWords(features)} features and the expanded
+            index for every metro. Its band margin comes from a second GRU fit through 2021 and calibrated on 2022
+            onward, so it is out of sample.
           </p>
           <p>
-            The GRU ships because {WHY_SHIPPED}. Of the window MLP and the GRU, the one with the lower error
-            on the calibration block at four quarters goes on the map, and ridge and the other classical rules
-            are never in that choice.
-            {ridgeAll
-              ? " So the map carries a model that ridge matches or beats at every horizon on the fixed split's table, on error and on band width."
-              : ""}
-            {weighed}
+            The GRU ships because {WHY_SHIPPED}: of the window MLP and the GRU, the one with the lower calibration
+            error at four quarters goes on the map.{weighed}
           </p>
           {near && (
             <p>
@@ -895,109 +799,82 @@ export function ModelPage({ data }: ViewProps) {
           )}
           <ModelFigure id="distribution" />
           <p>
-            Only the expected growth lines in the map's Forecasts group are forecasts. The growth over the
-            last four quarters and the five year annualized trend are what the FHFA index did up to the
-            origin, worked out in the model's export and credited to FHFA rather than to the model, and the
-            surprise scores the backtest's call from four quarters before the origin against what then
-            happened. The index standard error is FHFA's own
-            measurement, a percent of the index, credited to FHFA, and it rides in the model's export because
-            nothing else on the map carries it. It belongs beside a forecast, and each metro's detail panel
-            puts it there, because it says how firmly the thing being forecast is even measured
+            Only the expected growth lines in the map's Forecasts group are forecasts. The last four quarters and
+            the five year annualized trend are what the FHFA index did up to the origin, and the surprise scores
+            the backtest's call from four quarters before. The index standard error is a percent of the index,
+            credited to FHFA
             {error
               ? `: ${points(error.lowest.value)} percent in ${error.lowest.name} against ${points(error.highest.value)} percent in ${error.highest.name}`
               : ""}
-            . A wide error there is a reason to read the forecast above it loosely.
+            . A wide error is a reason to read the forecast loosely.
           </p>
         </section>
 
         <section className="model-section model-limits">
           <h3>The limits</h3>
-          <p>
-            This is not the footnote. It is the part a reader deciding whether to trust the map should
-            read first.
-          </p>
+          <p>Read these first.</p>
           <ul>
             <li>
-              <strong>
-                {misses8
-                  ? "The bands fail at eight quarters."
-                  : cover8 !== null ? "The bands hold at eight quarters in this build." : "The bands at eight quarters are not scored in this build."}
-              </strong>{" "}
-              The sequence GRU's backtest band covers {points(cover8)} of outcomes there against a nominal{" "}
+              {misses8
+                ? "The bands fail at eight quarters."
+                : cover8 !== null ? "The bands hold at eight quarters in this build." : "The bands at eight quarters are not scored in this build."}
+              {" "}The sequence GRU's backtest band covers {points(cover8)} of outcomes there against a nominal{" "}
               {points(NOMINAL_COVERAGE)}
               {eighth
                 ? allUnderCover(rows, 8)
-                  ? `, and no model on the table escapes it: the field runs ${points(eighth.low.coverage)} for ${modelLabel(eighth.low.model)} to ${points(eighth.high.coverage)} for ${modelLabel(eighth.high.model)}`
+                  ? `, and every model on the table falls short, from ${points(eighth.low.coverage)} for ${modelLabel(eighth.low.model)} to ${points(eighth.high.coverage)} for ${modelLabel(eighth.high.model)}`
                   : `, and the field runs ${points(eighth.low.coverage)} for ${modelLabel(eighth.low.model)} to ${points(eighth.high.coverage)} for ${modelLabel(eighth.high.model)}`
                 : ""}
-              . The calibration block is fixed at 2018 to 2021 by choice. Conformal coverage is guaranteed
-              only for exchangeable samples: calibration outcomes land in the run up and the boom, test
-              outcomes land in the correction, and no margin fitted on the first is promised to cover the
-              second.
+              . Calibration ran on 2018 to 2021 and the test landed in the correction.
               {/* a repair is only worth ruling out while there is a miss to repair */}
               {misses8
-                ? ` Rolling the calibration window forward would fix the number by calibrating on the period being scored, which is leakage, so it is reported rather than repaired.${shiftTried}`
-                : " Rolling the calibration window forward would calibrate on the period being scored, which is leakage, so the window stays where it is."}
+                ? ` Calibrating on the years being scored would fix the number, which is leakage, so it is reported rather than repaired.${shiftTried}`
+                : " Calibrating on the years being scored would be leakage, so the window stays where it is."}
             </li>
             <li>
               {lossText ? (
                 <>
-                  <strong>
-                    {lostAll ? "It loses every horizon." : lossesShort ? "It loses the short horizons." : `It loses at ${horizonPhrase(lossHorizons)}.`}
-                  </strong>{" "}
-                  {`${sentenceCase(lossText)}.`}
+                  {lostAll ? "It loses every horizon." : lossesShort ? "It loses the short horizons." : `It loses at ${horizonPhrase(lossHorizons)}.`}
+                  {" "}{`${sentenceCase(lossText)}.`}
                   {ridgeAll
-                    ? ` ${ridgeSentence} ${ridgeVerdict(PAIRED, horizons)}${pairedWith(PAIRED, "ridge").length > 0 && separatedAt(PAIRED, "ridge").length === 0 ? "" : ` The GRU is on the map only because ${WHY_SHIPPED}.`}`
+                    ? ridgeTied
+                      ? " The paired test puts every gap between ridge and the GRU down to chance."
+                      : ` The GRU is on the map only because ${WHY_SHIPPED}.`
                     : ridgeFirst && lossHorizons.includes(shortest)
-                      ? ` If the question is one quarter out, the penalised linear model is the better answer${winsLong ? ", and the network earns its place only as the horizon lengthens" : ""}.`
+                      ? ` One quarter out, the penalised linear model is the better answer${winsLong ? ", and the network earns its place only as the horizon lengthens" : ""}.`
                       : ""}
                 </>
               ) : (
-                <>
-                  <strong>It loses no horizon.</strong> Not in this build, which is worth checking rather than celebrating.
-                </>
+                <>It loses no horizon. Not in this build, which is worth checking rather than celebrating.</>
               )}
             </li>
-            {closest8 && winner8 && (won8 || lost8) && (
+            {closest8 && winner8 && (won8 || (lost8 && !lostAll)) && (
               <li>
-                {won8 ? (
-                  <>
-                    <strong>{gapShare8 !== null && gapShare8 < 0.05 ? "The long horizon win is thin." : "The long horizon win."}</strong>{" "}
-                    {`The nearest rival, ${modelLabel(closest8.model)}, is ${points(closest8.gap)} points behind at eight quarters, ${points(rowAt(rows, closest8.model, 8)?.maePct)} against ${points(shipped8?.maePct)}, ${asPercent(gapShare8) ?? "-"} percent of the error. It separates two runs and not two ideas, and this table ranks runs.`}
-                  </>
-                ) : (
-                  <>
-                    <strong>It does not win the long horizon.</strong>{" "}
-                    {`${sentenceCase(modelLabel(winner8.model))} is ahead at eight quarters, ${points(winner8.maePct)} against ${points(shipped8?.maePct)}.`}
-                  </>
-                )}
+                {won8
+                  ? `${gapShare8 !== null && gapShare8 < 0.05 ? "The long horizon win is thin." : "It wins the long horizon."} `
+                    + `The nearest rival, ${modelLabel(closest8.model)}, is ${points(closest8.gap)} points behind at eight quarters, `
+                    + `${points(rowAt(rows, closest8.model, 8)?.maePct)} against ${points(shipped8?.maePct)}.`
+                  : `It does not win the long horizon. ${sentenceCase(modelLabel(winner8.model))} is ahead at eight quarters, `
+                    + `${points(winner8.maePct)} against ${points(shipped8?.maePct)}.`}
               </li>
             )}
             <li>
-              <strong>Some series are thin exactly where the model is taught.</strong>
+              Some series start too late.
               {zhviFrom !== null ? ` Zillow values start in ${zhviFrom}, late in the fitting block.` : ""}
               {emptyContext.length > 0
-                ? ` ${sentenceCase(joinList(emptyContext))} have nothing left of the rule, and ride in the panel and on the map out of reach of every model.`
+                ? ` ${sentenceCase(joinList(emptyContext))} have nothing left of the rule, so no model reads them.`
                 : " Rents, listing prices and inventory ride in the panel and on the map out of reach of every model."}
-              {" "}Keeping their monthly history would not change that: the fix is a later fitting era, not a
-              better collector, and a later fitting era buys fewer years to learn from.
             </li>
             <li>
-              <strong>The expanded index is new for most metros.</strong> The forecast reads FHFA's
-              expanded-data index for all {PANEL.metros} metros, but for the {newlyExpanded} FHFA added in its{" "}
-              {EXPANDED_FOR_ALL_FROM} report nothing could have read it before then, so the backtest does not, and
-              there is no held-out score for what it adds there. Their band is set by a band model that did not
-              read it, which is the conservative side, and what the index is worth for them is measured as
-              outcomes land.
+              The expanded index is new for {newlyExpanded} of the {PANEL.metros} metros, so there is no held out
+              score yet for what it adds there.
             </li>
           </ul>
         </section>
 
         <p className="model-foot">
-          The leaderboard, the walk-forward record, the panel's facts and every number the figures'
-          descriptions give are generated from ml/results at build time, and the forecast prose is measured off
-          the same data file the map draws, so a retrain or a fresh export moves this page with it. The full walkthrough, with the
-          input hashes and the commands that reproduce every figure, is ml/README.md in the repository.
+          Every number here is generated at build time from ml/results and the map's data. ml/README.md has the
+          walkthrough, the input hashes and the commands for every figure.
         </p>
       </div>
     </main>
