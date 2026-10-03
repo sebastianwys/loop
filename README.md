@@ -51,4 +51,4 @@ The bot also needs `FRED_API_KEY`. `BLS_API_KEY`, `BEA_API_KEY` and `HUD_API_TOK
 
 ## License
 
-MIT for the code. The data is public domain U.S. government work, except Zillow Research and Realtor.com Economic Research, which are used under their terms with attribution and not redistributed here.
+MIT for the code. The data is public domain U.S. government work, except Zillow Research and Realtor.com Economic Research, which are used under their terms with attribution. Their downloaded files are not committed. The repo keeps metro figures built from them (yearly averages, the latest month, and Zillow's one year forecast), and the site shows values derived from their data.

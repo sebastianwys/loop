@@ -494,18 +494,23 @@ class TestAnEmptyBlockIsNotALossOfZero(unittest.TestCase):
 # whole, not the 0.1 and 0.9 marginals, so plotting its edges on a quantile
 # diagonal doubled the miscalibration the figure appeared to show
 class TestTheCalibrationFigureOnlyPlotsQuantiles(unittest.TestCase):
-    def test_one_series_per_panel_and_the_band_coverage_in_the_title(self):
+    def test_one_series_per_panel_and_the_band_coverage_under_each_heading(self):
         panel = tiny_panel()
         predictions, _ = train.fit_and_score(panel, "windowmlp", device="cpu", max_epochs=1, verbose=False)
         with tempfile.TemporaryDirectory() as tmp:
             with mock.patch.object(charts, "FIGURES_DIR", Path(tmp)):
                 fig = train.plot_calibration(predictions, "windowmlp", "data through 2026Q2", return_figure=True)
+        # the chart style puts headings on the left, where a bare get_title()
+        # never looks, so every panel is read there and none may be skipped
+        self.assertEqual(len(fig.axes), len(spec.HORIZONS))
         for ax in fig.axes:
-            if not ax.get_title():
-                continue
+            heading = ax.get_title(loc="left")
+            self.assertIn("ahead", heading)
             # the diagonal plus one calibration curve, and nothing else
-            self.assertEqual(len(ax.lines), 2, ax.get_title())
-            self.assertIn("band coverage", ax.get_title())
+            self.assertEqual(len(ax.lines), 2, heading)
+            # the band's coverage sits on the smaller line under the heading
+            notes = [t.get_text() for t in ax.texts]
+            self.assertTrue(any("band coverage" in n for n in notes), heading)
 
 
 if __name__ == "__main__":
