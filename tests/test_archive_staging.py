@@ -25,7 +25,7 @@ OBSERVATIONS = {"observations": [
 
 
 # a to_csv that gets part of the frame down and then dies, which is a disk
-# filling up, a container stopped, or a machine losing power mid-write
+# filling up, a container stopped, or a machine losing power partway through a write
 def dying_to_csv(self, path_or_buf=None, *args, **kwargs):
     Path(path_or_buf).write_text("date,value\n2026-09-03,6.")
     raise OSError("no space left on device")

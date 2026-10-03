@@ -8,10 +8,10 @@
 #
 # every series is public and keyless except through fred, which the bot
 # already has a key for. the conference board consumer confidence index is a
-# paid product and is not here; michigan sentiment is the free survey
+# paid product and is not here. michigan sentiment is the free survey
 
 # how many months of each tile's own history the build writes into the map. the
-# chart offers five, ten and twenty five year ranges and a max, so the whole
+# chart offers 5, 10 and 25 year ranges and a max, so the whole
 # collected history has to reach it: cpi and unemployment start in 1954, 872
 # months. the cap stays a guard at a century of months, so a series with a
 # deeper start than those cannot grow the payload on its own

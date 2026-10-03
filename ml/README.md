@@ -2,7 +2,7 @@
 
 This folder forecasts how much each metro's house price index will move over the next 1, 2, 4 and 8 quarters, puts a range around each forecast, and sends the result to the map.
 
-The model is a sequence GRU. I refit it every year since 2008 and fed it FHFA prices as each release first printed them. Over the 34 quarterly origins whose outcomes land from 2018 on, it cut the error of a no change forecast by 43 percent at one year and 47 percent at two, significant in a paired Diebold-Mariano test. On 2022 onward alone the cut is 36 percent. Ridge regression and gradient boosting did about as well.
+The model is a sequence GRU. I refit it every year from 2008 on and fed it FHFA prices as each release first printed them. Over the 34 quarterly origins whose outcomes land from 2018 on, it cut the error of a no change forecast by 43 percent at one year and 47 percent at two. Both cuts are significant in a paired Diebold-Mariano test. On 2022 onward alone the cut is 36 percent. Ridge regression and gradient boosting did about as well.
 
 ## How I built it
 
@@ -62,7 +62,7 @@ ml/.venv/bin/python -m loop.walkforward
 
 Five simple rules set the bar: no change, momentum, the metro's own long run average, ridge regression and gradient boosting. Two neural networks read the same input. It holds 24 quarters of seven price and economic series with a mask for missing values, four annual features and a learned code for each metro. The window MLP flattens it and the sequence GRU reads it in order. Both predict the 10th, 50th and 90th percentile at every horizon and train on pinball loss with early stopping.
 
-I compared input sets on validation loss, outcomes from 2015 to 2017. `ablate.py` reproduces the table. Each row is one seed, and five seeds of one set spread by up to 0.00027, so none of these gaps is a result.
+I compared input sets on validation loss, outcomes from 2015 to 2017. `ablate.py` reproduces the table. Each row is one seed. Five seeds of one set spread by up to 0.00027, so none of these gaps is a result.
 
 | input set | validation loss |
 |---|---|
@@ -103,7 +103,7 @@ From 2008 on, each year's model fits on outcomes known by the end of the year be
 
 - The GRU cuts the no change error by 24, 34, 43 and 47 percent, significant at every horizon.
 - On 2022 onward alone the cut is 14, 26, 36 and 36 percent, and only the one year gap is significant.
-- Gradient boosting, ridge and the average are statistically tied with the GRU. Gradient boosting has the lower error at all four horizons, but the paired test cannot separate it from the GRU. My rule, written before the run, replaces the GRU with ridge or the average only if it is better at three of four horizons at the 5 percent level and worse at none. Neither is, so the GRU stays.
+- Gradient boosting, ridge and the average are statistically tied with the GRU, and gradient boosting has the lower error at all four horizons. My rule, written before the run, weighs only ridge and the average. Either replaces the GRU only if it is better at three of four horizons at the 5 percent level and worse at none. Neither is, so the GRU stays.
 - Run on today's revised prices instead, the GRU's error moves by 0.06 points or less.
 
 The full tables are in `results/walkforward/vintage/` and `results/walkforward/latest/`.
@@ -125,9 +125,9 @@ Here the GRU cuts the no change error by 41 percent at four quarters and 40 perc
 
 ## The bands
 
-The 90 percent band uses conformalized quantile regression. It takes the model's 10th to 90th percentile range and widens it until 90 percent of the calibration outcomes fall inside. In the fixed split it covers 0.83 to 0.90 out to one year and 0.64 at two years. It was calibrated on 2018 to 2021, the run up, and scored on the correction that came after.
+The 90 percent band uses conformalized quantile regression. It takes the model's 10th to 90th percentile range and widens it until 90 percent of the calibration outcomes fall inside. In the fixed split it covers 0.83 to 0.90 out to one year and 0.64 at two years. It was calibrated on 2018 to 2021, while prices ran up, and scored on the correction that came after.
 
-In the yearly refit record I also tried an online band that recalibrates as each outcome lands, with a scale for each metro's volatility. On 2022 onward it covered 0.65 at two years against the static band's 0.54 in the same record, but it ran almost four times wider and scored worse on interval score at every horizon. My rule kept the static band and the shortfall is reported below.
+In the yearly refit record I also tried an online band that recalibrates as each outcome lands, with a scale for each metro's volatility. On 2022 onward it covered 0.65 at two years against the static band's 0.54 in the same record. But it ran almost four times wider and scored worse on interval score at every horizon. My rule kept the static band.
 
 ## The shipped forecast
 
@@ -143,9 +143,9 @@ At the 2026Q2 origin the median four quarter forecast across 410 metros is 3.7 p
 
 - The two year band covers 0.64 against a target of 0.90, and every model falls short the same way. Calibrating on the years being scored would fix the number by leaking, so I report it instead.
 - The band is close to one national width. One margin per horizon covers all 410 metros, 19.4 to 22.3 points wide at four quarters.
-- The model separates metros less than it misses them. Its four quarter forecasts spread 1.6 points across metros, less than a typical miss.
+- The model's four quarter forecasts spread 1.6 points across metros, less than a typical miss.
 - Rents, listing prices and inventory start too late for the fitting years, so no model reads them.
-- Only the FHFA index is replayed as first printed. Population and income come from later vintages, 31 of the 410 metros keep today's index, and refits before May 2013 read the archive's oldest release.
+- Only the FHFA index is replayed as first printed. Population and income come from later vintages. Refits before May 2013 read the archive's oldest release.
 
 ## The layout
 
@@ -154,5 +154,5 @@ src/loop/      package code. spec.py is the contract every module imports
 tests/         unittest suite, run with run_tests.py
 results/       backtest tables, the yearly refit record, forecasts, figures
 data/ models/  built panel and trained artifacts, gitignored
-MILESTONES.md  the build plan
+MILESTONES.md  the original plan
 ```

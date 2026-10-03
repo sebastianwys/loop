@@ -28,7 +28,7 @@ interface Props {
   onModeChange: (mode: MapMode) => void;
   drawer?: boolean;
   // dragged narrow enough that the headings say the short thing. the css
-  // handles the spacing, this is only for the text that would otherwise wrap
+  // handles the spacing. this is only for the text that would otherwise wrap
   condensed?: boolean;
   onClose?: () => void;
 }
@@ -84,7 +84,7 @@ export function Sidebar({
     const host = browserHost();
     if (host === null) return;
     // metric.period, not the route's: it is the period the values were read
-    // at, so the name cannot promise a panel the numbers did not come from
+    // at, so the name cannot promise a panel the numbers did not come from.
     // the resolved label already carries the period, so it is not passed twice
     downloadCsv(rankingCsv(all, metric), csvFilename(metric.label, null), host);
   };

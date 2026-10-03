@@ -384,8 +384,9 @@ export function fitLine(xs: number[], ys: number[]): Fit | null {
 }
 
 // how tied the index error is to metro size. a loose index and a hard to
-// forecast market may both be small market, and this is the number that says
-// how much of the error is standing in for population rather than for noise
+// forecast market may both just be a small market, and this is the number
+// that says how much of the error is standing in for population rather than
+// for noise
 export function sizeFit(misses: Miss[]): Fit | null {
   const rows = misses.filter((m) => m.error !== null && m.pop !== null && (m.pop as number) > 0);
   return fitLine(rows.map((m) => Math.log(m.pop as number)), rows.map((m) => m.error as number));

@@ -1,5 +1,5 @@
 // the model page's readers over a metric the backtest could not score.
-// modelnulls.test.ts covers errorCut and bandCut; these are the rest
+// modelnulls.test.ts covers errorCut and bandCut. these are the rest
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
@@ -79,7 +79,7 @@ describe("a blank mae or coverage is missing for every reader, not zero", () => 
 
   // allUnderCover is not on the page. the case that matters for it is a
   // horizon where nothing was scored, which is the case pinned here
-  it("does not say every model under-covers when no model was scored (allUnderCover, coverageRange)", async () => {
+  it("does not say every model covers too little when no model was scored (allUnderCover, coverageRange)", async () => {
     const rows = await rowsWith([null, 8, "coverage"]);
     expect(scored(rows, 8, "coverage")).toEqual([]);
     expect(allUnderCover(rows, 8)).toBe(false);

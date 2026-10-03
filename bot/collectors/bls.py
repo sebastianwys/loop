@@ -25,15 +25,17 @@ STATE_FIPS = {
 }
 
 
-# bls files a few cross-state metros under a state other than the first listed
+# a few metros cross a state line, and bls files them under a state other than
+# the first listed
 STATE_OVERRIDES = {
     "19340": "IL",  # davenport-moline-rock island, ia-il
     "48260": "OH",  # weirton-steubenville, wv-oh
 }
 
 
-# "Chicago-Naperville-Elgin, IL-IN-WI Metro Area" -> "IL". bls files a
-# multi-state metro under its principal city's state, which is listed first
+# "Chicago-Naperville-Elgin, IL-IN-WI Metro Area" -> "IL". when a metro
+# spans more than one state, bls files it under its principal city's state,
+# which is listed first
 def primary_state(name):
     return name.split(",")[1].strip().split()[0].split("-")[0]
 

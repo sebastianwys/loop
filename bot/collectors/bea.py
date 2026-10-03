@@ -281,8 +281,8 @@ def trim_payload(payload, years):
     trimmed = copy.deepcopy(payload)
     block = results(trimmed)
     block["Data"] = [row for row in data_rows(block) if period_year(row.get("TimePeriod")) in keep]
-    # the production stamp changes on every response and would re-commit the
-    # file monthly with no data change
+    # the production stamp changes on every response and would commit the file
+    # again every month with no data change
     block.pop("UTCProductionTime", None)
     return trimmed
 
@@ -306,7 +306,7 @@ def _get(key, params):
     try:
         payload = response.json()
     except ValueError:
-        raise RuntimeError(f"bea returned a non json body with HTTP {response.status_code}") from None
+        raise RuntimeError(f"bea returned HTTP {response.status_code} and the body was not json") from None
     try:
         results(payload)
     except ApiError as e:

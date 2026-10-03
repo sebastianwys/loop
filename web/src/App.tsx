@@ -32,7 +32,7 @@ export function App() {
   const drawer = sidebarIsDrawer(viewport.mode);
   const [sidebarOpen, setSidebarOpen] = useState(() => sidebarStartsOpen(viewport.mode));
   // null until the grip is dragged, and then the stylesheet's fluid width
-  // gives way to the one the reader chose. a stored width is re-clamped every
+  // gives way to the one the reader chose. a stored width is clamped on every
   // render, so shrinking the window cannot leave the sidebar owning the map
   const [storedWidth, setStoredWidth] = useState<number | null>(readSidebarWidth);
   const sidebarWidth = storedWidth === null ? null : clampSidebarWidth(storedWidth, viewport.width);

@@ -1,5 +1,5 @@
 /* tokens follow the project chart palette. the light values are the
-   documented ones; the dark block below re-points the same names */
+   documented ones. the dark block below gives the same names dark values */
 :root {
   color-scheme: light dark;
 
@@ -394,7 +394,7 @@ svg { max-width: 100%; }
 .ind-tile .foot { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 6px; font-size: 0.72rem; }
 .ind-tile .when { color: var(--muted); white-space: nowrap; }
 
-/* the sign and the word carry the direction; the color only repeats them */
+/* the sign and the word carry the direction. the color only repeats them */
 .ind-tile .chip { display: inline-flex; align-items: baseline; gap: 3px; color: var(--ink-2); white-space: nowrap; }
 .ind-tile .chip.up { color: var(--rise); }
 .ind-tile .chip.down { color: var(--fall); }

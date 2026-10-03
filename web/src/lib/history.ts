@@ -87,7 +87,7 @@ export function forecastOf(metro: Metro): ForecastInput | null {
 
 // the expected levels: the last level grown by each percent, one year out
 // for the four quarter figure and two for the eight. a year without a
-// median is left out; band edges come only in pairs
+// median is left out. band edges come only in pairs
 export function forecastLevels(last: { year: number; value: number }, f: ForecastInput | null): Level[] {
   if (!f) return [];
   const levels: Level[] = [];

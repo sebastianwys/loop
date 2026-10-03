@@ -77,11 +77,11 @@ def shipped_metros():
     return {metro["cbsa"]: metro for metro in payload["metros"]}
 
 
-# an index fhfa published for a metro-year belongs in that year's panel,
+# an index fhfa published for a metro year belongs in that year's panel,
 # whatever the census join did with the row. the map reads the panel and the
 # detail chart reads the price history, and they are the same number
 class TestAPublishedIndexReachesTheYearPanel(unittest.TestCase):
-    # every metro-year at fault is named rather than counted
+    # every metro year at fault is named rather than counted
     maxDiff = None
 
     @classmethod
@@ -154,7 +154,7 @@ class TestTheYearPanelIsBuiltFromWhatFhfaPublished(unittest.TestCase):
         history = self.series[CLEVELAND]
         self.assertEqual(index_at(history, V0), CLEVELAND_2014)
         panel = self.metro["years"][V0]["hpi"]
-        self.assertIsNotNone(panel, f"2014 hpi is null while the build holds {CLEVELAND_2014} for that metro-year")
+        self.assertIsNotNone(panel, f"2014 hpi is null while the build holds {CLEVELAND_2014} for that metro year")
         self.assertAlmostEqual(panel, CLEVELAND_2014, delta=ROUNDING)
 
     def test_the_decade_rate_follows_from_the_two_published_indexes(self):

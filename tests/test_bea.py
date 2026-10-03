@@ -44,7 +44,7 @@ VALUES = {
     ("48301", "2024"): ("6,000", "60"),
 }
 
-# hand computed from the fixture
+# computed by hand from the fixture
 ABILENE_INCOME_2014 = 6_000_000 + 500_000
 ABILENE_POPULATION_2014 = 140_000 + 13_500
 ABILENE_PER_CAPITA_2014 = 42_345

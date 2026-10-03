@@ -66,7 +66,7 @@ def _version_tag(filepath, filename):
         return f"{now.year}-Q{(now.month - 1) // 3 + 1}"
 
 
-# hpi_master.csv has no vintage parameter, so the archived copy IS the vintage.
+# hpi_master.csv has no vintage parameter, so the archived copy is the vintage.
 # fhfa answers 200 with an html maintenance page when the site is down, so prove
 # the body is the dataset before anything of it reaches the archive
 def _validate(filepath, filename):

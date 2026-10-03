@@ -48,7 +48,7 @@ def _response(payload, content_type="text/csv"):
     return response
 
 
-# hpi_master.csv has no vintage parameter, so the archived file IS the vintage.
+# hpi_master.csv has no vintage parameter, so the archived file is the vintage.
 # a body written over it before anyone checks what it is cannot be recovered
 class TestFhfaArchiveSurvivesABadBody(unittest.TestCase):
     def run_download(self, payload, content_type="text/csv"):

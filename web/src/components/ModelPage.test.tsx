@@ -150,7 +150,7 @@ describe("the model view", () => {
     expect(plain(page)).toContain(`backtest band covers ${points(shipped8.coverage)} of outcomes there`);
   });
 
-  it("reads the shipped forecast off the map data rather than repeating a write-up", () => {
+  it("reads the shipped forecast off the map data rather than repeating the README", () => {
     // the five metros above have a median of +5.0 and a weakest of +1.0
     expect(page).toContain("median four quarter forecast across 5 metros is +5.0%");
     expect(page).toContain("the weakest metro is Abilene, TX at +1.0%");
@@ -386,8 +386,8 @@ describe("the input rule the page states", () => {
     expect(mean(shipped!) - mean(all!)).toBeLessThan(Math.max(spread(all!), spread(shipped!)));
     expect(beatsNine(pairs.get("eleven, without permits and income"))).toBe(true);
     expect(manifest.context).toEqual(expect.arrayContaining(["zori_yoy", "listing_price_yoy"]));
-    expect(text).toContain("Rents and listing prices beat it on every seed as well, but added to the shipped set they gain less "
-      + `than one set's spread across seeds, winning on ${inWords(wins)} of ${inWords(seeds.length)} seeds, so they stay out.`);
+    expect(text).toContain("Rents and listing prices beat it on every seed as well. Added to the shipped set they win on "
+      + `${inWords(wins)} of ${inWords(seeds.length)} seeds but gain less than one set's spread across seeds, so they stay out.`);
     expect(text).not.toContain("the next thing to decide");
   });
 });
@@ -450,7 +450,7 @@ describe("what the paired test lets the page say", () => {
   it("calls ridge and the gru tied only while the test puts every gap between them down to chance", () => {
     const tie = tested("ridge").length === horizonsIn(BACKTEST).length && apart("ridge").length === 0;
     const sentence = `The paired test above puts every gap between ridge and the GRU down to chance, ${span("ridge")}, so the two are `
-      + "tied, and the GRU ships because the pipeline picks between the two networks, not against ridge.";
+      + "tied. The GRU ships because the pipeline picks between the two networks, not against ridge.";
     expect(text.includes(sentence)).toBe(tie);
     if (!tie) return;
     // a retrain that put ridge's two quarter gap past chance
@@ -494,11 +494,11 @@ describe("what the paired test lets the page say", () => {
   });
 });
 
-// the walk-forward record is what the page leads with. every check here reads
+// the yearly refit record is what the page leads with. every check here reads
 // the rows itself rather than through the page's readers, and the ones that
 // matter move a p value, an error or a band in place, the way a rerun would,
 // and read the page again
-describe("what the walk-forward record lets the page say", () => {
+describe("what the yearly refit record lets the page say", () => {
   const read = () => plain(render(METROS)).replace(/&lt;/g, "<");
   const text = read();
   const LEVEL = 0.05;
@@ -591,7 +591,7 @@ describe("what the walk-forward record lets the page say", () => {
     const tied = tiedNow().length + 1;
     expect(text).not.toMatch(/GRU (?:is|was) the best|best model|the GRU wins/i);
     expect(text).toContain(`so the GRU stays, one of ${inWords(tied)} tied models rather than a winner`);
-    expect(text).toContain(`so it ships as one of ${inWords(tied)} tied models, by a rule written before the run`);
+    expect(text).toContain(`So it ships as one of ${inWords(tied)} tied models.`);
     expect(text).toContain(`the rule keeps the GRU, one of ${inWords(tied)} tied models`);
     const lowest = HORIZONS.filter((h) => rivals.every((m) => at(first, m, h).maePct > at(first, SHIPPED, h).maePct));
     expect(text.includes("The GRU does not have the lowest error at any horizon.")).toBe(lowest.length === 0);
@@ -624,7 +624,7 @@ describe("what the walk-forward record lets the page say", () => {
     holding(apart, () => ({ pValue: 0.5 }), () => {
       const after = read();
       expect(after).toContain("The paired test separates none of them from the GRU.");
-      expect(after).toContain("are within chance of it, so it ships as one of");
+      expect(after).toContain("are within chance of it. So it ships as one of");
     });
   });
 
@@ -668,7 +668,7 @@ describe("what the walk-forward record lets the page say", () => {
     });
   });
 
-  // the limits used to call a shift-aware band the real answer, untried
+  // the limits used to call a band built for distribution shift the real answer, untried
   it("says in the limits that a band built for shift was tried in the record, and how it did", () => {
     const limits = plain(page.slice(page.indexOf("model-limits"), page.indexOf("</section>", page.indexOf("model-limits"))));
     expect(limits).not.toContain("is the real answer");
@@ -683,7 +683,7 @@ describe("what the walk-forward record lets the page say", () => {
     }
   });
 
-  it("still stands up without the walk-forward record, on the fixed split's words", () => {
+  it("still stands up without the yearly refit record, on the fixed split's words", () => {
     const saved = WALKFORWARD.splice(0, WALKFORWARD.length);
     try {
       const bare = read();

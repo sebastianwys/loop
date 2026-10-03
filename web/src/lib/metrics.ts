@@ -27,7 +27,7 @@ export const SOURCE_LABEL: Record<Source, string> = {
   forecast: "Loop model",
 };
 
-// a metric definition. periods lists the panels it can be read at; an empty
+// a metric definition. periods lists the panels it can be read at. an empty
 // list means a change figure with no period, which disables the period control
 export interface MetricDef {
   id: string;
@@ -109,7 +109,7 @@ function divide(numerator: number | null, denominator: number | null): number | 
 const ZILLOW_OWN = new Set<string>(["zhvi", "zori"]);
 
 // a division with no rows of its own for a metric takes the parent metro's and
-// lists the metric in parent_metrics. the number is real, it just belongs to a
+// lists the metric in parent_metrics. the number is real. it just belongs to a
 // bigger place, so it is shown with its provenance and kept out of rankings
 export function isInherited(metro: Metro, metric: Metric | MetricDef): boolean {
   // a resolved Metric's id carries its period, permits_units_latest, so the

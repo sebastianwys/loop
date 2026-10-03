@@ -1,6 +1,6 @@
-# one chart style for every figure in results/figures, so the walkthrough
-# reads as one system. light surface, thin marks, recessive grid, a fixed
-# categorical order, one blue ramp for magnitude and blue against red for sign
+# one chart style for every figure in results/figures, so they all look alike.
+# light background, thin marks, a faint grid, a fixed color order, one blue
+# ramp for size and blue against red for sign
 
 import matplotlib
 

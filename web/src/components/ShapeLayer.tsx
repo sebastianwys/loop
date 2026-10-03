@@ -53,7 +53,7 @@ function isWithheld(metro: Metro | undefined, metric: Metric): boolean {
 
 // one leaflet geojson layer. created when the shapes change, restyled in
 // place when the metric, scale or selection changes, so no polygon is rebuilt
-// on a click. hover lifts a shape; the selected one is outlined and on top
+// on a click. hover lifts a shape. the selected one is outlined and on top
 export function ShapeLayer({ shapes, metric, scale, selectedCbsa, onSelect }: Props) {
   const map = useMap();
   const paths = useRef(new Map<string, L.Path>());

@@ -53,7 +53,7 @@ def last_day(month):
 
 # the chip is the change over the twelve months to change_month, the newest
 # month the series has finished: that month's last reading less the same
-# month's a year before. a same day base would break the rule that the chip
+# month's a year before. a base on the same day would break the rule that the chip
 # is the difference of two levels on the chart beside it
 def finished_month_change(rows, month):
     before = pd.Period(month, freq="M") - 12
@@ -115,8 +115,8 @@ class TestAChangeOverTwelveMonthsSpansTwelveMonths(TwelveMonthCase):
         tile, written = self.build_tile(daily_target(), cut_to_month_end=False)
         self.assertMeasuredOverTwelveMonths(tile, written)
 
-    # the control: a month the series has finished pairs two month-end
-    # readings, which are twelve months apart, and nothing here objects
+    # the control: a month the series has finished pairs two readings at
+    # month end, which are twelve months apart, and nothing here objects
     def test_a_finished_month_is_already_measured_over_twelve_months(self):
         through_august = [o for o in daily_target() if o["date"] < "2026-09-01"]
         tile, _ = self.build_tile(through_august)

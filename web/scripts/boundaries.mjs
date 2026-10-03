@@ -2,7 +2,7 @@
 // statistical areas and metropolitan divisions, simplifies them with mapshaper
 // and writes one topojson the map fetches the first time shapes are asked for.
 // from web/:  npm install --no-save mapshaper@0.7 && npm run boundaries
-// mapshaper is a one-off tool with a 150 mb dependency tree, so it is not a
+// mapshaper runs only here and pulls a 150 mb dependency tree, so it is not a
 // dependency of the app and is loaded only when this script runs
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -56,7 +56,7 @@ async function main() {
   }
 
   // micropolitan areas (LSAD M2) are never in the study, so only M1 is kept.
-  // a division's GEOID is the parent cbsa code followed by the division code;
+  // a division's GEOID is the parent cbsa code followed by the division code.
   // the last five digits are what the study keys on
   const commands = [
     `-i ${path.join(RAW, FILES.cbsa.file)} ${path.join(RAW, FILES.metdiv.file)} combine-files`,
@@ -64,6 +64,7 @@ async function main() {
     `-filter 'LSAD=="M1"' target=cbsa`,
     "-each 'GEOID=GEOID.slice(-5)' target=metdiv",
     "-filter-fields GEOID,NAME target=*",
+    "-each 'NAME=NAME.normalize(\"NFD\").replace(/[\\u0300-\\u036f]/g, \"\")' target=*",
     `-simplify ${SIMPLIFY} keep-shapes target=*`,
     `-o ${OUT} format=topojson target=*`,
   ].join(" ");

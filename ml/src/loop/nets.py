@@ -216,7 +216,7 @@ class SeqGRU(QuantileNet):
 
 
 # pinball loss over every horizon and quantile. pred is (batch, horizons,
-# quantiles), y is (batch, horizons) with nan where the outcome is missing;
+# quantiles), y is (batch, horizons) with nan where the outcome is missing.
 # those cells drop out of both the sum and the count
 def pinball_loss(pred, y):
     valid = ~torch.isnan(y)

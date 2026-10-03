@@ -121,7 +121,7 @@ def ratio(numerator, denominator):
     return numerator / denominator
 
 
-# --- loaders ---
+# loaders
 
 def load_merged(path):
     df = pd.read_csv(path, dtype={"cbsa_code": str, "place_id": str, "geo_level": str, "parent_cbsa": str})
@@ -286,9 +286,10 @@ def load_fhfa_series(path):
             else:
                 values.append(None)
 
-        # fhfa phases a metro in mid year, so the first year is often short and
-        # has no mean to draw. that is empty margin at the left of the panel
-        # rather than a gap in a line, so the series starts at its first value
+        # fhfa phases a metro in partway through a year, so the first year is
+        # often short and has no mean to draw. that is empty margin at the left
+        # of the panel rather than a gap in a line, so the series starts at its
+        # first value
         drawn = next((i for i, value in enumerate(values) if value is not None), 0)
 
         partial = last_year if quarters.get(last_year, 0) < 4 else None
@@ -321,7 +322,7 @@ def load_national(path):
     return df
 
 
-# --- zillow ---
+# zillow
 
 # a metro zillow files under a name no rule can reach from the census one. it
 # publishes st mary's county maryland as "California, MD", the principal city
@@ -382,12 +383,12 @@ def match_zillow(place_name, frame):
 #
 # three quarters is where the measurement put it rather than where a round
 # number did. on the 410 metros the map carries, requiring every published
-# month would null ten cells that hold ten or eleven of twelve, which are
-# perfectly good annual means, and requiring three quarters nulls exactly the
-# seven that are not: paducah's single december rent, glens falls on two
-# months, gadsden on five, grand island on six, elmira and lima on seven, and
-# san angelo's 2014 price index on four. each of those was drawn and ranked
-# beside real twelve month means
+# month would null ten cells that hold ten or eleven of twelve. those are good
+# annual means. requiring three quarters nulls exactly the seven that are not:
+# paducah's single december rent, glens falls on two months, gadsden on five,
+# grand island on six, elmira and lima on seven, and san angelo's 2014 price
+# index on four. each of those was drawn and ranked beside real twelve month
+# means
 MIN_YEAR_SHARE = 0.75
 
 
@@ -401,7 +402,7 @@ def zillow_annual(row, year):
     return float(values.mean())
 
 
-# last non-null month and its date
+# last month with a value and its date
 def zillow_latest(row):
     if row is None:
         return None, None
@@ -411,7 +412,7 @@ def zillow_latest(row):
     return float(values.iloc[-1]), str(values.index[-1])
 
 
-# --- bls ---
+# bls
 
 # annual average is period m13
 def bls_year(frame, cbsa, year):
@@ -433,14 +434,14 @@ def bls_latest(frame, cbsa):
     return float(newest["value"]), f"{int(newest['year'])}-{str(newest['period'])[1:]}"
 
 
-# --- fred ---
+# fred
 
 # a fred csv names no frequency, so the calendar has to come out of the file.
 # the months a year carries say it where a row count cannot: a whole year of a
 # daily, weekly or monthly series fills twelve months, a quarterly one fills
-# four and an annual one fills one, so the fullest year in the file is this
-# series' own calendar whatever its cadence, and a sparse file measures against
-# a sparse calendar instead of withholding everything. a year has to carry
+# four and an annual one fills one. so the fullest year in the file is this
+# series' own calendar whatever its cadence. a sparse file measures against a
+# sparse calendar instead of withholding everything. a year has to carry
 # MIN_YEAR_SHARE of that calendar, the share an annual mean needs everywhere
 # else, and no new number is decided here. a truncated download looks exactly
 # like a short year, which is the case this withholds
@@ -469,7 +470,7 @@ def fred_latest(frame):
     return float(last["value"]), str(last["date"])
 
 
-# --- national indicators ---
+# national indicators
 
 # the dashboard strip. bot/indicators.py names the tiles, this turns the
 # collector's csv into one record per tile in that order
@@ -605,7 +606,7 @@ def indicators_updated(frame):
     return str(dates.max()) if len(dates) else None
 
 
-# --- generic enrichment ---
+# generic enrichment
 
 ENRICHMENT_COLUMNS = ["cbsa_code", "metric", "period", "value"]
 # the file name the metrics contract is written under, in every source folder
@@ -845,7 +846,7 @@ def mark_permit_footprints(metro, membership, county_population):
     return metro
 
 
-# --- provenance ---
+# provenance
 
 # one line per source folder rather than one per file: the first manifest entry
 # is the file the folder is named for, the one the build reads, and the rest are
@@ -895,7 +896,7 @@ def provenance_block(raw_dir, *folders):
     return block
 
 
-# --- assembly ---
+# assembly
 
 def year_record(row, zhvi_row, zori_row, bls_frame, cbsa, year, history=None):
     get = (lambda col: None) if row is None else (lambda col: row.get(col))
@@ -908,7 +909,7 @@ def year_record(row, zhvi_row, zori_row, bls_frame, cbsa, year, history=None):
     own_rate = get("homeownership_rate")
     if missing(own_rate):
         own_rate = ratio(get("owner_occupied_units"), get("total_occupied_units"))
-    # the acs side of the join has no row for 33 of the metro-years, and fhfa
+    # the acs side of the join has no row for 26 of the metro years, and fhfa
     # published an index for every one of them, so the panel falls back on the
     # price history this build drew rather than reading the year as blank
     hpi = get("avg_index_nsa")
@@ -1110,9 +1111,9 @@ def fred_version(frame):
 # the gazetteer folder holds three files this build reads: the centroids every
 # metro's dot is placed at, and the two frozen vintage tables the decade growth
 # rates are decided by. the line was a constant in the module, so it named the
-# whole folder whatever the build had opened, and a run that found neither
-# vintage table still read "2024 Gazetteer" while the redraw test fell back to
-# the state list in the acs name and 72 metros published a decade rate the
+# whole folder whatever the build had opened. a run that found neither vintage
+# table still read "2024 Gazetteer". in that run the redraw test fell back to the
+# state list in the acs name, and 72 metros published a decade rate the
 # delineation refuses
 def gazetteer_version(centroids, membership, county_population):
     read = [name for name, frame in (("centroids", centroids),
@@ -1278,9 +1279,9 @@ def loss_names(names):
 # zori in the file. fail instead, and name what went missing.
 #
 # it used to count each field of latest, the metros and the tiles as one total
-# apiece and refuse only a total that reached zero, so a keyless bls pull
+# apiece and refuse only a total that reached zero. so a keyless bls pull
 # blanked every 2014 unemployment rate on a year panel nothing counted, and a
-# rebuild that kept 2 metros of 410, or 12 tiles of 13, was written. it is
+# rebuild that kept 2 metros of 410, or 12 tiles of 13, was still written. it is
 # measured cell by cell against the file on disk now
 def refuse_to_lose_a_source(out_path, payload, enrichments=(), allow=()):
     out_path = Path(out_path)

@@ -121,10 +121,10 @@ export const ADMISSION: AdmissionRow[] = [
   { arm: "eleven, without permits and income", seed: 20260919, loss: 0.013418 },
 ];
 
-// the walk-forward record, every model refitted once a year and fed fhfa's
-// index as each release first printed it. span is the first outcome quarter
-// scored: every model over the whole record, and over 2022 onward only the
-// shipped model, both its bands, and no change
+// the yearly refit record, every model fed fhfa's index as each release
+// first printed it. span is the first outcome quarter scored: every model
+// over the whole record, and over 2022 onward only the shipped model, both
+// its bands, and no change
 export const WALKFORWARD: WalkRow[] = [
   { model: "ensemble", horizon: 1, span: "2018Q1", band: "online", n: 13938, origins: 34, maePct: 1.6185099082509786, coverage: 0.8699956952216961, width: 0.06992706834006379, intervalScore: 0.1073982470044205 },
   { model: "ensemble", horizon: 2, span: "2018Q1", band: "online", n: 13938, origins: 34, maePct: 2.4037439799693487, coverage: 0.8421581288563639, width: 0.12273224817852375, intervalScore: 0.20199443642636636 },

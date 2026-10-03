@@ -306,7 +306,7 @@ MERGED = (
 # division out of two illinois counties that share one fmr area, and a fake
 # connecticut metro out of two towns in different fmr areas, which is the case
 # that needs a weight. connecticut is the state where hud still keys towns by
-# the pre 2022 county, 09009, while the delineation keys them by the planning
+# the county from before 2022, 09009, while the delineation keys them by the planning
 # region, 09140
 MEMBERSHIP = (
     "cbsa_code,county_fips\n"
@@ -783,7 +783,7 @@ class TestWeights(unittest.TestCase):
     def test_a_place_with_no_population_has_no_weight(self):
         self.assertIsNone(hud.weight_of("0604199999", self.COUNTY, self.TOWN))
 
-    # hud sends methuen's town era code, the census reassigned it. unfixed, a
+    # hud sends the code methuen had as a town. the census reassigned it. unfixed, a
     # town of 53,000 left both sums and tilted the division toward the areas
     # that could be weighed
     def test_a_retired_town_code_still_finds_its_weight_and_its_county(self):

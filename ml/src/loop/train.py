@@ -63,7 +63,7 @@ def pick_device(name=None):
 
 # the seed is read at call time, not captured in the default. bound there it
 # went stale the moment anything reassigned spec.SEED, and since the batch
-# order below DOES read it at call time, a reseeded run got new batches over
+# order below does read it at call time, a reseeded run got new batches over
 # the old weight init: half reproducible, which is worse than neither. same
 # trap as the input widths in nets._widths
 def seed_everything(seed=None):
@@ -78,7 +78,7 @@ def build_model(model_name, n_metros):
 
 
 # how much a batch counts toward an epoch's loss: its valid cells. the loss
-# itself is a per-cell mean, so weighting by rows would let a ragged batch
+# itself is a mean per cell, so weighting by rows would let a ragged batch
 # carry the weight of a full one and put the two curves on different scales
 def loss_weight(y):
     return int((~torch.isnan(y)).sum())
@@ -229,7 +229,7 @@ def margins(predictions, block="cal"):
     return {int(h): spec.conformal_margin(g["y"], g["q10"], g["q90"]) for h, g in rows.groupby("horizon")}
 
 
-# minimal stand in for backtest.calibrate: widen the 0.1 to 0.9 band by the
+# a minimal stand in for backtest.calibrate: widen the 0.1 to 0.9 band by the
 # cal block's margin at every row of the same horizon
 def calibrate(predictions):
     margin = margins(predictions, "cal")
@@ -282,8 +282,8 @@ def latest_origins(windows):
 # of sample for the recent era and widens the final model's band. the final
 # model reads the full panel, since fhfa publishes the expanded index for all
 # 410 metros now. the second reads the panel as it could have been read at the
-# time, so its margin comes from real time inputs and the band it sets is the
-# conservative one
+# time, so its margin comes from inputs as they were known then and the band
+# it sets is the conservative one
 def forecast_models(panel, model_name, epochs=None, device=None, verbose=True):
     if epochs is None:
         _, history = fit_and_score(panel, model_name, device=device, verbose=verbose)
@@ -320,10 +320,10 @@ def forecast_models(panel, model_name, epochs=None, device=None, verbose=True):
         for k, q in enumerate(spec.QUANTILES):
             part[qname(q)] = pred[:, j, k].astype(float)
         lo, hi, crossed = spec.apply_margin(part["q10"], part["q90"], margin[h])
-        # the backtest collapses a crossed band and counts it, because an
-        # over-wide baseline still has to be scored. the shipped forecast is
-        # the published artifact, and a band the calibration inverted is not
-        # one a reader can act on, so it stops here instead
+        # the backtest collapses a crossed band and counts it, because a
+        # baseline whose band is too wide still has to be scored. the shipped
+        # forecast is the published artifact, and a band the calibration
+        # inverted is not one a reader can act on, so it stops here instead
         if crossed.any():
             raise ValueError(
                 f"the margin at horizon {h} inverts the band on {int(crossed.sum())} "
@@ -455,7 +455,7 @@ def synthetic_panel(n_metros=12, start="1995Q1", end="2026Q2", seed=spec.SEED):
 
 
 # ml/data/panel.parquet is not tracked, so a clone that has not built one has
-# no panel at all. a made up panel must be asked for out loud: it used to be
+# no panel at all. a synthetic panel must be asked for out loud: it used to be
 # the silent fallback and its results went into the tracked csvs unmarked
 def load_panel(panel=None, allow_synthetic=False):
     if panel is not None:

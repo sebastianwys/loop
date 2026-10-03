@@ -11,7 +11,7 @@ export const MIN_FIT = 5;
 // how lopsided a metric has to be before a linear axis stops being readable.
 // the 95th over the 5th percentile rather than max over median, so one outlier
 // cannot flip an axis on its own. population, permits, listings and personal
-// income all clear it; prices, rents, rates and shares do not
+// income all clear it. prices, rents, rates and shares do not
 export const SKEW = 12;
 
 // how far off a dot the pointer can be and still land on it. 410 dots at three

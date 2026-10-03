@@ -33,7 +33,7 @@ SEED = 20260915
 # after 2021 reaches a model that is judged on 2022 onward
 TRAIN_END = "2017Q4"
 # the tail of the train block is held out to choose epochs and inputs, so the
-# block a model actually FITS on ends the quarter before this. that is the
+# block a model actually fits on ends the quarter before this. that is the
 # boundary that decides whether a feature can be learned at all, and it lives
 # here rather than in train.py because the panel figures draw it too
 VAL_START = "2015Q1"
@@ -89,22 +89,22 @@ STATIC_FEATURES = ["permits_per_1000", "pop_growth", "domestic_migration_rate", 
 
 # columns the panel carries that no model reads. each was built for the same
 # reason as the two above, tried on the validation block and not kept: the four
-# national series cost 0.006617 against 0.006204 with the shipped set, which is
+# national series cost 0.006617 against 0.006204 with the shipped set. that is
 # a real loss, because one number shared by all 410 metros teaches a window
 # which era it sits in and nothing about the place. the calendar quarter at
 # 0.006566 and the metro against the cross section at 0.006561 both land inside
-# the spread five seeds of one set produce, and a margin that thin is a coin,
-# so the simpler set stays. they are all in the panel because the figures and
-# the map read them, and because a negative result that is easy to re-run is
+# the spread five seeds of one set produce. a margin that thin is a coin, so
+# the simpler set stays. they are all in the panel because the figures and
+# the map read them, and because a negative result that is easy to rerun is
 # worth more than one written down
 #
 # rents, listing prices and inventory joined them on 2026-09-18. they had
 # never been through this gate at all: feature_stats takes its seen mask from
-# the FITTING block, which ends 2014Q4, and to_tensors then blanks an unseen
+# the fitting block, which ends 2014Q4, and to_tensors then blanks an unseen
 # feature in every window including the one that would score it, so both arms
 # of an ablation saw the same zeros. ml/admit.py measures them at a boundary
 # where they are visible, fitting through 2019Q4 and scoring on 2020 and 2021.
-# adding permits and income to the nine recovers the whole gain; adding rents
+# adding permits and income to the nine recovers the whole gain. adding rents
 # and listings recovers a thirtieth of it, inside the seed spread. inventory
 # starts 2020Q1, so no fitting window can see it without eating the block that
 # would score it, and it is dropped as unmeasurable rather than kept unmeasured
@@ -137,7 +137,7 @@ PUBLISHED_IN_QUARTER = {
 # income came out on 2026-02-05, after the shutdown, so no quarter of 2025 had it
 PUBLISHED_LATE = {"income_growth": {2024: "2026Q1"}}
 
-# fhfa's expanded-data index covered 25 metros from 2012 and 50 from 2018, and
+# fhfa's expanded data index covered 25 metros from 2012 and 50 from 2018, and
 # reached 410 with the 2026Q1 report (fhfa technical note 2026m01). these are
 # the 50, as this repo pulled them before 2026. a backtest fits on outcomes
 # through 2017 and was chosen in 2018, when these 50 were published with their

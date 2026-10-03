@@ -95,7 +95,7 @@ def network_year(windows, name, year, device=None, vint=None):
     val = realized & (outcome >= val_from) & (outcome <= end)
     learn = windows.y
     if vint is not None:
-        # outcomes as the refit's release printed them; scoring below keeps
+        # outcomes as the refit's release printed them. scoring below keeps
         # today's, through windows.y
         release = vintages.release_for_refit(vint, year)
         learn = np.array(windows.y, dtype=float, copy=True)

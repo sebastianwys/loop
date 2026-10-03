@@ -1,5 +1,5 @@
 # the shipped bea table, data/raw/bea/metrics.csv, has to be what the
-# collector writes. test_bea_connecticut proves the code on a fixture; this
+# collector writes. test_bea_connecticut proves the code on a fixture. this
 # one holds the archive to the code.
 #
 # the raw payloads the table was rolled up from are committed beside it, so
@@ -31,7 +31,7 @@ MANIFEST = RAW / "bea" / "download_manifest.json"
 MEMBERSHIP = RAW / "gazetteer" / "cbsa_counties.csv"
 FAKE_KEY = "0000AAAA-1111-2222-3333-444455556666"
 
-# the connecticut study metros a pre-2022 county reaches through the planning
+# the connecticut study metros a county from before 2022 reaches through the planning
 # region that succeeded it. 47930 waterbury-shelton is naugatuck valley, which
 # no county maps to, so it has no year before the regions and is left out
 CONNECTICUT = {"14860": "bridgeport", "25540": "hartford", "35300": "new haven", "35980": "norwich"}

@@ -22,7 +22,7 @@ const OUT_FIGURES = new URL("public/figures/", WEB);
 const OUT_MODULE = new URL("src/lib/modelNumbers.ts", WEB);
 
 // the backtest files that carry a test block. one row per model, horizon and
-// block; everything else in ml/results/backtest is margins or epoch history
+// block. everything else in ml/results/backtest is margins or epoch history
 export const BACKTEST_FILES = ["baselines.csv", "seqgru.csv", "windowmlp.csv"];
 
 // the two networks' epoch histories, which the training figure draws
@@ -42,11 +42,11 @@ export const PAIRED = "backtest/paired.csv";
 // decided the inputs the fitting block could not see
 export const ADMISSION = ["admission.csv", "admission_pairs.csv"];
 
-// the walk-forward record, ml/walkforward.py: every model refitted once a year
-// and scored on the outcomes from 2018 on and from 2022 on. the vintage run
-// reads fhfa's index as each release first printed it, and it is the one the
-// page leads with. the latest run reads the index as fhfa prints it today, and
-// the page reads it only to say how much the revisions were worth
+// the yearly refit record, ml/src/loop/walkforward.py, scored on the outcomes
+// from 2018 on and from 2022 on. the vintage run reads fhfa's index as each
+// release first printed it, and it is the one the page leads with. the latest
+// run reads the index as fhfa prints it today, and the page reads it only to
+// say how much the revisions were worth
 export const WALKFORWARD = "walkforward/vintage/summary.csv";
 export const WALKFORWARD_LATEST = "walkforward/latest/summary.csv";
 export const WALKFORWARD_BANDS = "walkforward/vintage/bands.csv";
@@ -63,8 +63,8 @@ const NO_CHANGE = "no_change";
 export const FAN_METROS = ["16984", "12420"];
 
 // the seven figures the page shows. the other six in ml/results/figures are
-// panel description or a baseline-only view of a chart that is already here,
-// and copying them would ship megabytes nothing on the page asks for
+// panel description or a chart that is already here, drawn with the baselines
+// alone, and copying them would ship megabytes nothing on the page asks for
 export const FIGURES = [
   "01_coverage.png",
   "05_backtest_design.png",
@@ -92,7 +92,7 @@ export const REQUIRED = [
 ];
 
 // the columns the page reads. the csvs carry pinball losses and raw coverage
-// too, which belong to the ml folder's own write-up rather than to this page
+// too, which stay in ml/results rather than in these rows
 const KEEP = { mae_pct: "maePct", coverage: "coverage", width: "width" };
 
 // these files are written by one pandas to_csv with plain numeric columns, so
@@ -280,9 +280,9 @@ export function walkBands(text) {
     .sort((a, b) => a.model.localeCompare(b.model) || a.horizon - b.horizon);
 }
 
-// the walk-forward paired test, the shipped model against every other one at
-// every horizon, once over each span. a p value the test could not compute
-// stays missing, as it does in the backtest's
+// the paired test on the yearly refit record, the shipped model against every
+// other one at every horizon, once over each span. a p value the test could
+// not compute stays missing, as it does in the backtest's
 export function walkPairedRows(text, model = SHIPPED) {
   return parseBacktest(text)
     .filter((row) => row.model === model && row.against && row.span)
@@ -305,7 +305,7 @@ export function firstSpan(rows) {
 }
 
 // every row the module carries ships in the page's bundle, so the four
-// walk-forward constants keep only the rows the page reads. the parsers above
+// WALKFORWARD constants keep only the rows the page reads. the parsers above
 // still read and check the whole files, and the filter runs as they are
 // written out.
 //
@@ -564,10 +564,10 @@ export function renderModule(rows, inputs, extras = {}) {
     ...(walk
       ? [
           "",
-          "// the walk-forward record, every model refitted once a year and fed fhfa's",
-          "// index as each release first printed it. span is the first outcome quarter",
-          "// scored: every model over the whole record, and over 2022 onward only the",
-          "// shipped model, both its bands, and no change",
+          "// the yearly refit record, every model fed fhfa's index as each release",
+          "// first printed it. span is the first outcome quarter scored: every model",
+          "// over the whole record, and over 2022 onward only the shipped model, both",
+          "// its bands, and no change",
           "export const WALKFORWARD: WalkRow[] = [",
           ...walk.map(walkLine),
           "];",

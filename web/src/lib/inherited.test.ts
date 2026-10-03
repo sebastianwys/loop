@@ -109,7 +109,7 @@ function fields(line: string): string[] {
 // the metric, scale or selection changes. anaheim inherits active_listings
 // through parent_metrics
 describe.skipIf(!present)("a division's shape in the shapes view", () => {
-  it("keeps the parent-inherited mark when the layer is restyled", () => {
+  it("keeps the inherited mark when the layer is restyled", () => {
     const metros = data!.metros;
     const metric = metricAt("active_listings", "latest");
     const anaheim = metros.find((m) => m.cbsa === "11244")!;

@@ -248,10 +248,6 @@ describe("forecasts", () => {
   });
 });
 
-// added to web/src/lib/metrics.test.ts (plus two import-line edits:
-//   `import { existsSync, readFileSync } from "node:fs";` at the top and
-//   `import type { MapData, Metro, Period } from "../types";`)
-
 // a ratio has to read its numerator and its denominator off the same geography.
 // a division that takes permits_units from its parent metro but keeps its own
 // pop_estimate has no honest rate to report

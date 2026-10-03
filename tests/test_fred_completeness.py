@@ -1,7 +1,7 @@
 # fred_annual measures a year against the fullest year in the file, counted in
 # months, not rows: a daily, weekly or monthly series fills twelve months of a
-# whole year, a quarterly one four, an annual one one, so one denominator reads
-# every cadence and a sparse file gets a sparse calendar instead of losing
+# whole year, a quarterly one four, an annual one one. so one denominator reads
+# every cadence, and a sparse file gets a sparse calendar instead of losing
 # every year to a two row one. the share is the 0.75 the builder already uses
 
 import unittest

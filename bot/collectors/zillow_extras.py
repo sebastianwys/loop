@@ -44,7 +44,7 @@ ATTRIBUTION = "Data provided by Zillow Research (zillow.com/research/data). Zill
 
 # one row per zillow metro keyed by its name. the national row goes and a
 # repeated name keeps its first row. index_col=False stops pandas from reading
-# a long first line as extra index columns, which would shift every column;
+# a long first line as extra index columns, which would shift every column.
 # a long line loses its trailing fields and a short one is padded instead
 def load_frame(content):
     df = pd.read_csv(io.BytesIO(content), dtype={"RegionName": str, "RegionType": str}, index_col=False)

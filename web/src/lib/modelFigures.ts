@@ -188,7 +188,7 @@ export function comparisonFigure(rows: BacktestRow[]): Pick<ModelFigure, "alt" |
   const three = strongest.length === 3
     ? `the strongest three, ${list(strongest.map((r) => prose(r.model)))}, sit between ${Math.min(...band).toFixed(1)} and ${Math.max(...band).toFixed(1)}`
     : "";
-  const ranking = [order, three].filter(Boolean).join("; ");
+  const ranking = order && three ? `${order}. ${sentenceCase(three)}` : order || three;
   const spreads = horizons.map((h) => ({ h, spread: strongestSpread(rows, h) })).filter((s): s is { h: number; spread: number } => s.spread !== null);
   const farSpread = spreads.find((s) => s.h === far);
   const shorter = spreads.filter((s) => s.h !== far);

@@ -99,7 +99,7 @@ describe("alt text quotes the shipped forecast and leaderboard", () => {
       .map(({ model, mae }) => `${model} ${mae}`);
     expect(outside, `alt: ${alt}`).toEqual([]);
     // and the three it names are those three
-    const named = /the strongest three, (.+?), sit between/.exec(alt)?.[1]?.toLowerCase() ?? "";
+    const named = /[Tt]he strongest three, (.+?), sit between/.exec(alt)?.[1]?.toLowerCase() ?? "";
     expect(strongest.filter((r) => !named.includes(modelLabel(r.model).toLowerCase())).map((r) => r.model), `alt: ${alt}`).toEqual([]);
   });
 });
@@ -143,7 +143,7 @@ describe("captions and alt text say what the calibration and comparison figures 
       .toBe("consistent");
   });
 
-  // the figure plots the share of test outcomes under each raw quantile; the
+  // the figure plots the share of test outcomes under each raw quantile. the
   // csv's coverage_raw is the share between q10 and q90, which is what a line
   // tilting or bowing off the diagonal loses against its nominal 0.80
   it("says the one and two quarter lines sit close to the diagonal only if they sit closer than eight's", async () => {

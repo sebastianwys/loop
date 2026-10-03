@@ -18,7 +18,7 @@ SCRIPT = Path(__file__).parent.parent / "scripts" / "eda_integrate.py"
 SENTINEL = "-666666666"
 
 FHFA_HEADER = "hpi_type,hpi_flavor,frequency,level,place_name,place_id,yr,period,index_nsa,index_sa,rstderr,note"
-# the master file carries census-division rows with alphabetic place ids, which
+# the master file carries census division rows with alphabetic place ids, which
 # is why place_id reads as a string. the msa filter drops this row
 NON_MSA_ROW = (
     "traditional,purchase-only,monthly,USA or Census Division,"
@@ -148,7 +148,7 @@ class TestTheIntegratedFileIsTheOneEverythingWasComputedOn(unittest.TestCase):
         cls.frame = pd.read_csv(cls.PATH, dtype={"cbsa_code": str, "geo_level": str, "parent_cbsa": str})
 
     # the number quoted in ml/README.md. when the pipeline is
-    # re-run on purpose, update it here in the same commit as the prose
+    # rerun on purpose, update it here in the same commit as the prose
     def test_the_bytes_are_the_ones_the_documents_name(self):
         self.assertEqual(hashlib.sha256(self.PATH.read_bytes()).hexdigest(), self.SHA256)
 

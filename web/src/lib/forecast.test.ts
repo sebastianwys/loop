@@ -115,7 +115,7 @@ describe("the forecast explainer's coverage", () => {
     const leads = matchedPhrase(matchedBy(BACKTEST, "ridge", SHIPPED)) !== null;
     expect(sentences.join(" ")).not.toContain("same inputs");
     expect(sentences[3]).not.toContain("more years of data");
-    expect(sentences[3].includes("but a paired test puts every gap between them down to chance, so the two are tied")).toBe(leads && tie);
+    expect(sentences[3].includes("A paired test puts every gap between them down to chance, so the two are tied")).toBe(leads && tie);
     const apart = PAIRED.map((r) => (r.against === "ridge" && r.horizon === 2 ? { ...r, pValue: 0.01 } : r));
     expect(againstRidge(BACKTEST, apart)).not.toContain("tied");
     if (leads) expect(againstRidge(BACKTEST, apart)).toContain("a lead a paired test separates from chance at two quarters");

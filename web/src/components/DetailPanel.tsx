@@ -41,7 +41,7 @@ export function historyNote(series: AnnualSeries, forecast: boolean): string {
   const lastYear = series.start + series.values.length - 1;
   const asOf = dateLabel(series.as_of) ?? series.as_of;
   const base = series.partial_year
-    ? `Annual mean of the index, through ${series.partial_year - 1}; the last point is the index at ${asOf}, not a full year.`
+    ? `Annual mean of the index, through ${series.partial_year - 1}. The last point is the index at ${asOf}, not a full year.`
     : `Annual mean of the index, through ${lastYear}.`;
   return forecast ? `${base} Dashed line and band: the model's expected path with its 90 percent band.` : base;
 }
@@ -55,7 +55,7 @@ interface CellProps {
 }
 
 // a period the measure is not published at reads as a muted dash with the
-// reason on hover; a published period this metro lacks keeps the plain dash
+// reason on hover. a published period this metro lacks keeps the plain dash
 function Cell({ def, metro, period, published, date }: CellProps) {
   if (!published.includes(period)) {
     return (

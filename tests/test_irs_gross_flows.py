@@ -1,8 +1,8 @@
 # a county's Total Migration-US row counts every return that moved in from any
 # other county, including a county of the same metro. summed into every code
 # the county belongs to, a move from one county of a metro to another would
-# land in the metro's gross inflow and in its gross outflow: the two cancel in
-# the net and inflate both gross figures, which the map shows per metro as
+# land in the metro's gross inflow and in its gross outflow. the two cancel in
+# the net and inflate both gross figures. the map shows those per metro as
 # "IRS inflow, tax returns" and "IRS outflow, tax returns". so a metro's gross
 # flows count only returns that crossed its edge. for a metropolitan division
 # the line is the division: a move from another division of the same metro is
@@ -88,7 +88,7 @@ OUTFLOW_TEXT = (
     "17,97,59,0,DS,Other flows - Different State,800,1600,40000\n"
 )
 
-# hand computed from the fixture. montgomery: 700 returns moved between its
+# computed by hand from the fixture. montgomery: 700 returns moved between its
 # own two counties, 400 from elmore to autauga and 300 the other way
 MONTGOMERY_INFLOW = 1000 + 2000       # from outside, not 1400 + 2300 = 3700
 MONTGOMERY_OUTFLOW = 900 + 1500       # to outside, not 1200 + 1900 = 3100
@@ -254,7 +254,7 @@ class TestTheShippedTable(unittest.TestCase):
                     whole = int(rows[(rows.cbsa_code == parent) & (rows.period == period)].value.iloc[0])
                     if whole >= int(parts.value.sum()):
                         at_the_sum.append(f"{parent} {metric} {period} {whole}")
-        self.assertEqual(len(at_the_sum), 0, f"parent metro-years whose gross flow is the plain sum of "
+        self.assertEqual(len(at_the_sum), 0, f"parent metro years whose gross flow is the plain sum of "
                                              f"their divisions', for example {at_the_sum[:3]}")
 
 

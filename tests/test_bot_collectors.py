@@ -14,8 +14,8 @@ GAZ_TEXT = (
     "\t10100\tAberdeen, SD Micro Area\t2\t1\t1\t1.0\t0.0\t45.5\t-98.5        \n"
 )
 
-# blank lines, a hyphenated multi-state name, puerto rico with no csa, all
-# with the trailing spaces the real file carries
+# blank lines, the hyphenated name of a metro in several states, puerto rico
+# with no csa, all with the trailing spaces the real file carries
 GAZ_EDGE_TEXT = (
     "CSAFP\tGEOID\tNAME\tCBSA_TYPE\tALAND\tAWATER\tALAND_SQMI\tAWATER_SQMI\tINTPTLAT\tINTPTLONG        \n"
     "\n"
@@ -202,8 +202,6 @@ class TestFred(unittest.TestCase):
         df = fred.parse_observations([{"date": "2014-01-02", "value": "4.53"}])
         self.assertEqual(df.value.dtype.kind, "f")
 
-    # an empty observation list currently raises KeyError inside the column
-    # selection. documented here rather than fixed, see the report
     # an empty response still yields the two column frame, never a KeyError
     def test_empty_observations(self):
         df = fred.parse_observations([])

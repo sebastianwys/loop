@@ -5,7 +5,7 @@
 #
 # every path a run stages is recorded as it is renamed toward the archive, then
 # put to the repo's own .gitignore through git check-ignore. the collectors run
-# on temporary folders with the network stubbed; git only reads .gitignore
+# on temporary folders with the network stubbed. git only reads .gitignore
 
 import contextlib
 import io

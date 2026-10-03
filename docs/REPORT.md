@@ -1,4 +1,4 @@
-# Project Loop: the data report
+# Project Loop data report
 
 This started as my final project for IS477 at the University of Illinois. The pipeline in the repo root is that project, tagged `final-project`. I worked alone. The short version is in the [README](../README.md) and the forecasting model is in [ml/README.md](../ml/README.md).
 
@@ -6,7 +6,7 @@ Live map: https://loop.macroviz.workers.dev
 
 ## The question
 
-Home prices respond to local income, demographics, education and supply. Which of those actually predict appreciation across U.S. metros, and which metros broke away from what their fundamentals suggest?
+Home prices respond to local income, demographics, education and supply. Which of those predict appreciation across U.S. metros, and which metros broke away from what their fundamentals suggest?
 
 ## The sources
 
@@ -21,9 +21,9 @@ A weighted repeat sales index built from Fannie Mae, Freddie Mac, FHA and VA mor
 | file | `data/raw/fhfa/hpi_master.csv`, about 16.8 MB |
 | source | https://www.fhfa.gov/hpi/download/monthly/hpi_master.csv |
 | manifest | `data/raw/fhfa/download_manifest.json` |
-| pulled | 2026-09-14. FHFA publishes no vintage parameter, see problem 4 |
+| pulled | 2026-09-14. FHFA publishes no vintage parameter (problem 4) |
 
-I filter to the metro level, quarterly frequency, the traditional all transactions index. That leaves 71,072 rows across 410 metros. The measure is `index_nsa`, keyed by `place_id` (the CBSA or division code) and `yr`.
+I filter to the metro level, quarterly frequency and the traditional index over all transactions. That leaves 71,072 rows across 410 metros. The measure is `index_nsa`, keyed by `place_id` (the CBSA or division code) and `yr`.
 
 ### Census ACS five year estimates
 
@@ -78,7 +78,7 @@ The output is `data/integrated/hpi_census_merged.csv`. The 410 metros are 373 me
 
 ## The five problems
 
-Every one of these failed silently. None of them threw an error.
+Four of the five gave no error.
 
 | # | problem | symptom | fix | lesson |
 | --- | --- | --- | --- | --- |
@@ -101,23 +101,23 @@ Problem 5 raised the join from 373 metros to all 410 FHFA codes. Division rows c
 | 1 | lock the FHFA series to metro, quarterly, traditional, all transactions | several index variants per metro and year would duplicate Census rows in the merge |
 | 2 | average quarters to a yearly mean per metro, with a count of quarters | FHFA is quarterly and Census is yearly |
 | 3 | convert eight Census columns to numbers | the API returns strings and marks suppressed values with `-666666666` |
-| 4 | cast the Census `cbsa_code` to string | to match FHFA, see problem 1 |
+| 4 | cast the Census `cbsa_code` to string | to match FHFA (problem 1) |
 | 5 | derive `homeownership_rate` | a rate compares across metro sizes and a count does not |
 
 After conversion each column is less than 1 percent null. The merge is an inner join that raises an error when it returns zero rows, which catches a boundary change before it writes an empty file.
 
 ## The findings
 
-The top of the market changed between 2019 and 2024. In 2019 the top 15 was led by the Bay Area and Seattle: San Francisco-San Mateo-Redwood City at 441.8, San Jose at 418.5 and Seattle-Bellevue-Kent at 378.9. In 2024 it was led by the Miami-Miami Beach-Kendall division at 629.0, Bozeman MT at 610.2, St. Petersburg-Clearwater-Largo at 598.4, Charleston SC at 581.9 and Naples FL at 571.2. Salt Lake City, Boise and Portland OR are outside the top 15, at ranks 32, 27 and 57 of 410. Mountain towns and coastal Sun Belt markets replaced the Bay Area.
+Mountain towns and coastal Sun Belt markets replaced the Bay Area at the top of the market between 2019 and 2024. In 2019 the top 15 was led by the Bay Area and Seattle: San Francisco-San Mateo-Redwood City at 441.8, San Jose at 418.5 and Seattle-Bellevue-Kent at 378.9. In 2024 it was led by the Miami-Miami Beach-Kendall division at 629.0, Bozeman MT at 610.2, St. Petersburg-Clearwater-Largo at 598.4, Charleston SC at 581.9 and Naples FL at 571.2. Salt Lake City, Boise and Portland OR are outside the top 15, at ranks 32, 27 and 57 of 410.
 
-Population did not lose its link to price. On the 396 metros with all three vintages, its correlation with HPI was 0.27, 0.31 and 0.27. A paired test (Steiger, p 0.048) puts the move from 2019 to 2024 at the edge of significance, a wobble of about 0.04 that ended where it started.
+Population did not lose its link to price. On the 396 metros with all three vintages, its correlation with HPI was 0.27, 0.31 and 0.27. A paired test (Steiger, p 0.048) puts the move of about 0.04 from 2019 to 2024 at the edge of significance.
 
 Correlations at the 2024 vintage, Pearson r over all 410 metros and divisions:
 
 | pair | r | reading |
 | --- | --- | --- |
 | median income and HPI | 0.50 | the strongest predictor that is not trivial |
-| median home value and HPI | 0.67 | expected, HPI measures value growth |
+| median home value and HPI | 0.67 | expected, since HPI measures value growth |
 | income and median home value | 0.82 | wealthy metros have expensive housing |
 | homeownership rate and HPI | minus 0.10 | weak, and mostly the divisions, which own less and price higher |
 | median age and homeownership | 0.63 | a life cycle effect that does not reach HPI |
@@ -144,11 +144,11 @@ Get a key at https://api.census.gov/data/key_signup.html. Without one the API re
 | wrapper | `python run_all.py` |
 | by hand | `python scripts/download_fhfa.py`, then `download_census.py`, then `eda_integrate.py` |
 
-Every manifest records the file, source, SHA-256, size, row count, vintage and a UTC timestamp. Census files reproduce exactly. FHFA files do not, because `hpi_master.csv` is live, so the committed copy is the snapshot this report describes. `snakemake --cores 1 --forcerun integrate` rebuilds from it without downloading.
+Every manifest records the file, source, SHA-256, size, row count, vintage and a UTC timestamp. FHFA files do not reproduce (problem 4), so the committed copy is the snapshot this report describes. `snakemake --cores 1 --forcerun integrate` rebuilds from it without downloading.
 
 ## The bot and the map
 
-`bot/` collects more sources on a GitHub Actions schedule and rebuilds the map data in `web/public/data/metros.json`. Each source is one collector in `bot/collectors/` that writes `data/raw/<source>/` with a manifest.
+`bot/` collects more sources on a GitHub Actions schedule and rebuilds the map data in `web/public/data/metros.json`. Each source is one collector in `bot/collectors/` that writes `data/raw/<source>/` with a manifest. Files in `data/raw/` stay exactly as downloaded, so Census place names there keep their accents. Every file the repo writes is ASCII.
 
 | source | adds |
 | --- | --- |
@@ -183,7 +183,7 @@ loop/
 
 ## The lifecycle
 
-The DCC Curation Lifecycle Model, mapped to this project.
+The table maps each phase of the DCC Curation Lifecycle Model to this project.
 
 | phase | here |
 | --- | --- |
@@ -202,7 +202,7 @@ The DCC Curation Lifecycle Model, mapped to this project.
 - Synthetic scenarios from a small generative model, kept only if it beats simple conditional sampling.
 - A DataCite record for a Zenodo deposit so the dataset can be found and cited.
 
-`ml/MILESTONES.md` is the plan.
+`ml/MILESTONES.md` is the original plan. Milestone 1 and the division crosswalk were built from it.
 
 ## References
 

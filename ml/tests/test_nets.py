@@ -125,7 +125,7 @@ class TestWindows(unittest.TestCase):
             contract = panel[["cbsa_code", "quarter"]].assign(y=spec.target(panel, h))
             merged = keys.merge(contract, on=["cbsa_code", "quarter"], how="left")
             np.testing.assert_allclose(w.y[:, j], merged["y"].to_numpy(dtype=np.float32), rtol=1e-6, equal_nan=True)
-        # the quarter before the hole has no one step target, the window at the hole is gone
+        # the quarter before the hole has no target one step ahead. the window at the hole is gone
         row = np.nonzero((w.codes == "10001") & (w.origins == "2004Q2"))[0][0]
         self.assertTrue(np.isnan(w.y[row, spec.HORIZONS.index(1)]))
         self.assertFalse(np.any((w.codes == "10001") & (w.origins == "2004Q3")))

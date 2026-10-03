@@ -16,7 +16,7 @@ import { YearScrubContext, type YearScrub } from "./Timeline";
 export type ShapesStatus = "idle" | "loading" | "ready" | "failed";
 
 // the default view: the metros drawn on a map, with the controls beside it.
-// the shell owns the sidebar because the layout classes are the shell's; the
+// the shell owns the sidebar because the layout classes are the shell's. the
 // boundary file and the legend belong to nobody else and live here
 export function MapPage({ data, route, go, viewport, shell }: ViewProps) {
   const metros = data.metros;

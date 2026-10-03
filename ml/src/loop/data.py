@@ -4,7 +4,7 @@
 # every join downstream expects, and the two columns carrying one value for the
 # whole file are dropped rather than travelling as noise.
 #
-# when the pipeline is re-run on purpose, SHA256 moves here in the same commit
+# when the pipeline is rerun on purpose, SHA256 moves here in the same commit
 # as the prose in ml/README.md that quotes it
 
 import hashlib
@@ -71,7 +71,7 @@ def load(path=None, sha256=SHA256):
         if found != sha256:
             raise ValueError(
                 f"{path.name} is not the published file: sha256 {found[:12]} where {sha256[:12]} was expected. "
-                "re-run the pipeline on purpose and move SHA256 in loop.data in the same commit"
+                "rerun the pipeline on purpose and move SHA256 in loop.data in the same commit"
             )
 
     frame = pd.read_csv(path, dtype={column: str for column in CODES})

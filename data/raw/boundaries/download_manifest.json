@@ -45,7 +45,7 @@
       "dataset": "topojson with objects cbsa and metdiv, GEOID and NAME only, 35% simplification with keep-shapes"
     },
     "integrity": {
-      "sha256": "b32f94fba575f8dcc8d3836eaace07d866aff0a169290382b89ec72ba995ba6e",
+      "sha256": "39291284280cf582e89a2d2148171d1326fa5881522dae100756b582be6feee5",
       "size_kb": 676.6,
       "row_count": 430
     },

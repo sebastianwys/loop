@@ -116,7 +116,7 @@ export function changeSpan(def: MetricDef): { from: number; to: number } | null 
 
 export interface TimelineTick {
   period: Period;
-  // the year, or the latest date in words; "latest" when no date is known
+  // the year, or the latest date in words. "latest" when no date is known
   label: string;
   date: string | null;
   year: number;
@@ -209,11 +209,11 @@ export function prevPeriod(current: Period | null, available: Period[]): Period 
   return i > 0 ? available[i - 1] : null;
 }
 
-// ---- deep annual histories ----
+// deep annual histories
 
 // the definitions an annual history backs, and the series each one reads. the
 // house price index is the only measure whose source publishes a full annual
-// run; every other definition keeps the four vintage panels, which is all the
+// run. every other definition keeps the four vintage panels, which is all the
 // acs, the permits survey and the rest report
 export const DEEP_DEFS: Record<string, keyof MetroSeries> = { hpi: "hpi" };
 
@@ -415,7 +415,7 @@ export function periodLabel(metric: Metric, metro: Metro): string {
 }
 
 // why a source has nothing at the first vintage year, when the reason is the
-// source's own and not this metro's. hud has published rents for decades; it
+// source's own and not this metro's. hud has published rents for decades. it
 // is the api this build reads that starts late, so the blank is uncollected
 // rather than unpublished
 const LATE_START: Partial<Record<Source, string>> = {

@@ -22,7 +22,7 @@ describe("the explainer's coverage belongs to the band it describes", () => {
   // a margin fitted on 2022 onward. the coverage BACKTEST carries was measured
   // over 2022 onward on the backtest's own band, calibrated on 2018 to 2021.
   // so the two are different bands, and a number from one is not the other's
-  it("names the backtest as the band whose 2022-onward coverage it quotes", async () => {
+  it("names the backtest as the band whose coverage from 2022 on it quotes", async () => {
     const shipped = await csv("ml/results/forecast/forecasts.csv");
     const scored = (await csv("ml/results/backtest/seqgru.csv")).filter((r) => r.block === "test");
     const widthDrawn = (h: number) => {

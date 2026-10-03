@@ -13,9 +13,9 @@ from bot.collectors import bea, irs
 # every payload here is synthetic, invented numbers in the documented shape of
 # a BEAAPI response. what is copied from the source is the geography, not the
 # values: connecticut replaced counties with planning regions, so bea
-# publishes CT COUNTY estimates through 2023 and PLANNING REGION estimates
-# from 2024, and writes 0 for whichever side it did not estimate that year.
-# no test here opens the network
+# publishes connecticut county estimates through 2023 and planning region
+# estimates from 2024, and writes 0 for whichever side it did not estimate
+# that year. no test here opens the network
 FAKE_KEY = "0000AAAA-1111-2222-3333-444455556666"
 THIS_YEAR = 2026
 BULK = bea.year_param(bea.bulk_years(THIS_YEAR))
@@ -45,7 +45,7 @@ VALUES = {
     ("48059", "2024"): ("800,000", "14,500"),
 }
 
-# hand computed from the fixture
+# computed by hand from the fixture
 HARTFORD_INCOME_2014 = 60_500_000
 HARTFORD_POPULATION_2014 = 1_210_000
 HARTFORD_PER_CAPITA_2014 = 50_000
@@ -146,10 +146,10 @@ def delineation(connecticut):
 
 
 # a bea request carries query parameters and is answered by line and year
-# list; a line and year with no canned response answers bea's error 101,
+# list. a line and year with no canned response answers bea's error 101,
 # which is what an unpublished year gets. a delineation download carries none,
 # so any delineation url is answered with a workbook: the july 2023 one for
-# the url the collector holds today, the pre change one for anything else
+# the url the collector holds today, the one from before the change for anything else
 def fake_fetch(responses, urls):
     def fetch(url, params=None, **kwargs):
         if params is None:

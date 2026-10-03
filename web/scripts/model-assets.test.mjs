@@ -133,8 +133,8 @@ describe("the figures the build copies", () => {
   });
 
   // the page declares a width and height so the prose under a figure does not
-  // jump when the png lands. a re-render at another size would make those
-  // attributes a lie, and this is where that shows up
+  // jump when the png lands. a png rendered again at another size would make
+  // those attributes a lie, and this is where that shows up
   it("are the size the page says they are", () => {
     for (const id of FIGURE_IDS) {
       const figure = PAGE_FIGURES[id];
@@ -176,9 +176,9 @@ describe("a build missing a file the module is generated from", () => {
     expect(() => writeNumbers(gone, new URL("modelNumbers.ts", gone), gone)).toThrow(/ml\/results\/admission\.csv, ml\/results\/admission_pairs\.csv/);
   });
 
-  // the headline is read off the walk-forward record, so a build without it
+  // the headline is read off the yearly refit record, so a build without it
   // fails rather than leading with the fixed split as if nothing had changed
-  it("names the walk-forward record's files when they are missing", () => {
+  it("names the yearly refit record's files when they are missing", () => {
     const named = [WALK_FILE, LATEST_FILE, BANDS_FILE, WALK_PAIRED_FILE].map((name) => `ml/results/${name}`).join(", ");
     expect(() => writeNumbers(gone, new URL("modelNumbers.ts", gone), gone)).toThrow(named);
   });
@@ -289,7 +289,7 @@ describe("the rest of what the module carries", () => {
 
   // one row per model, horizon, span and band, sorted so a rebuild does not
   // churn the file, and a blank cell stays missing
-  it("reads the walk-forward record a model, horizon, span and band at a time", () => {
+  it("reads the yearly refit record a model, horizon, span and band at a time", () => {
     const text = [
       "model,horizon,span,band,n,origins,mae_pct,coverage,width,interval_score",
       "seqgru,8,2022Q1,static,7378,18,11.465637659246884,0.5447275684467335,0.1915009006404455,0.8313823131982292",
@@ -338,7 +338,7 @@ describe("the rest of what the module carries", () => {
     expect(module).not.toContain("tune");
   });
 
-  it("reads the walk-forward paired test a span, a rival and a horizon at a time", () => {
+  it("reads the yearly refit paired test a span, a rival and a horizon at a time", () => {
     const text = [
       "horizon,origins,samples,difference,statistic,p_value,model,against,span",
       "4,18,7378,-2.742600944259156,-2.132650175406005,0.0478306122208408,seqgru,no_change,2022Q1",
@@ -374,7 +374,7 @@ describe("the rest of what the module carries", () => {
   // the page reads every model over the record and, after it, only the
   // shipped model and no change, so the module carries those rows and no
   // others. every one it drops would have shipped in the bundle unread
-  it("keeps only the walk-forward rows the page reads", () => {
+  it("keeps only the yearly refit rows the page reads", () => {
     const row = (model, span, band) => ({ model, horizon: 4, span, band });
     const summary = [
       row("gbm", "2018Q1", "online"), row("seqgru", "2018Q1", "online"), row("no_change", "2018Q1", "online"),
@@ -395,10 +395,10 @@ describe("the rest of what the module carries", () => {
     expect(shownPaired(tests).map((r) => `${r.span} ${r.against}`)).toEqual(["2018Q1 gbm", "2018Q1 no_change", "2022Q1 no_change"]);
   });
 
-  // the same for the walk-forward record: the tracked module is the files as
+  // the same for the yearly refit record: the tracked module is the files as
   // ml/results has them, cut down to the rows the page reads. an unrecorded
   // scale stays null in the module
-  it("carries the walk-forward record as ml/results has it", () => {
+  it("carries the yearly refit record as ml/results has it", () => {
     const results = new URL("../../ml/results/", import.meta.url);
     const files = [WALK_FILE, LATEST_FILE, BANDS_FILE, WALK_PAIRED_FILE];
     if (!files.every((name) => existsSync(new URL(name, results)))) return;

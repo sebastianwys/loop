@@ -126,7 +126,7 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
       <div className="accuracy-page">
         <div className="accuracy-inner">
           <div className="acc-head">
-            <h2>How wrong was the model</h2>
+            <h2>How far the model missed</h2>
           </div>
           <p className="acc-empty">
             No scored forecasts in this build. The page fills in once the model exports a surprise for each metro,
@@ -195,7 +195,7 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
     <div className="accuracy-page">
       <div className="accuracy-inner">
         <div className="acc-head">
-          <h2>How wrong was the model</h2>
+          <h2>How far the model missed</h2>
           <p className="acc-note">
             These are the backtest's calls: the sequence GRU, fit on outcomes through {FIT_END}, forecasting four
             quarter growth for every metro from the {made ?? "scored"} origin. Those quarters have now happened,
@@ -221,10 +221,9 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
           <p>
             {leaning ? (
               <>
-                That is a lean across the map, not bad luck in a few places. The average miss of {pp(stats.mean)} is
-                more than twice its {errorBar.toFixed(2)} point standard error
-                {spread !== null ? ", even with metros in a state allowed to move together (section 4)" : ""}. The model
-                ran {ran}, nearly everywhere at once.
+                The model ran {ran} across the map, a lean rather than bad luck in a few places. The average miss
+                of {pp(stats.mean)} is more than twice its {errorBar.toFixed(2)} point standard error
+                {spread !== null ? ", even with metros in a state allowed to move together (section 4)" : ""}.
               </>
             ) : (
               <>
@@ -356,10 +355,10 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
         </section>
 
         <section className="acc-block">
-          <h3>3. Does anything explain a bigger miss</h3>
+          <h3>3. What goes with a bigger miss</h3>
           <p>
-            FHFA publishes a standard error for each metro's index, as a percent of the index. Is a loosely
-            measured metro also harder to forecast?
+            FHFA publishes a standard error for each metro's index, as a percent of the index. The guess is that
+            a loosely measured metro is also harder to forecast.
           </p>
           {fit === null || bins.length === 0 ? (
             <p className="acc-empty">This build carries no index standard errors, so there is nothing to test the miss against.</p>
@@ -367,8 +366,8 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
             <>
               <p>
                 {holds} Across the {fit.n} metros carrying both, the correlation between the index error and the size
-                of the miss is {fit.r.toFixed(2)}, so the line accounts for about {share(fit.r2)} of the spread. It is
-                a summary of the cloud and not a mechanism, and it does not say a loose index causes a bad forecast.
+                of the miss is {fit.r.toFixed(2)}, so the line accounts for about {share(fit.r2)} of the spread. The line
+                is a summary of the cloud. It does not say a loose index causes a bad forecast.
               </p>
               <p>
                 In four equal groups by index error, the typical miss runs{" "}
@@ -478,8 +477,8 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
               undershoots at once. {spread.agreeing} of the {spread.groups.length} states with at least {MIN_STATE}{" "}
               scored metros missed the same way, and letting metros in a state move together{" "}
               {clusterMoves === "leaves" ? "leaves the standard error at" : `${clusterMoves} the standard error to`}{" "}
-              {spread.clusterSe.toFixed(2)}. {leaning ? "The lean survives that" : "The lean does not survive that"},
-              but this is one origin quarter, and one draw of the cycle cannot separate a model that always runs{" "}
+              {spread.clusterSe.toFixed(2)}. {leaning ? "The lean survives that." : "The lean does not survive that."}
+              {" "}This is one origin quarter. One draw of the cycle cannot separate a model that always runs{" "}
               {ran} from one that ran {ran} in a year the market turned.
             </p>
             {spread.groups.length > 0 && (
@@ -524,7 +523,7 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
                 {now.bandMin.toFixed(1)} to {now.bandMax.toFixed(1)} across all {now.bandN} metros.
                 {/* whether one year's misses make the band look too wide is read off the two widths */}
                 {tail < now.bandWidth
-                  ? ` Last year's misses spanned only ${tail.toFixed(1)} points in their middle 90 percent, but the band has to cover where prices land, and one year is one draw of the cycle.`
+                  ? ` Last year's misses spanned only ${tail.toFixed(1)} points in their middle 90 percent. The band has to cover where prices land, and one year is one draw of the cycle.`
                   : ` Last year's misses spanned ${tail.toFixed(1)} points in their middle 90 percent, as wide as the band or wider.`}
                 {cover4 !== null
                   ? ` On the whole test block from 2022 on, the backtest's own band, calibrated on 2018 to 2021, held ${Math.round(cover4 * 100)} percent of outcomes at four quarters ${cover4 < NOMINAL_COVERAGE ? "against" : "and reached"} the ${Math.round(NOMINAL_COVERAGE * 100)} it aims for.`
@@ -544,8 +543,8 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
         <p className="acc-foot">
           Source: Loop model{asOf ? `, origin ${asOf}` : ""}, scored against the FHFA House Price Index.
           {" "}{stats.n} of {seen.metros} metros carry a scored call
-          {seen.unscored > 0 ? `; the other ${seen.unscored} are not counted anywhere on this page` : ""}.
-          {seen.withError < stats.n ? ` ${stats.n - seen.withError} of them carry no index standard error and sit out of section 3.` : ""}
+          {seen.unscored > 0 ? `${seen.unscored === 1 ? ". The other one is" : `. The other ${seen.unscored} are`} not counted anywhere on this page` : ""}.
+          {seen.withError < stats.n ? ` ${stats.n - seen.withError} of the scored metros carry no index standard error and sit out of section 3.` : ""}
           {seen.divisions > 0
             ? seen.overlap > 0
               ? ` ${seen.overlap} of the scored areas are metropolitan divisions whose parent metro is scored too, so a few big places are counted twice, once whole and once in parts.`

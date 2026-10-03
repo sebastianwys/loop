@@ -92,8 +92,8 @@ describe("the accuracy view", () => {
   });
 
   it("says plainly which way the model leaned rather than leaving the reader to work it out", () => {
-    expect(page).toContain("That is a lean across the map, not bad luck in a few places");
-    expect(page).toContain("The model ran high, nearly everywhere at once");
+    expect(page).toContain("The model ran high across the map");
+    expect(page).toContain("a lean rather than bad luck in a few places");
     expect(page).toContain("came in under");
   });
 
@@ -120,7 +120,7 @@ describe("the accuracy view", () => {
     // twelve metros in the build, eleven of them scored
     expect(withBlank).toContain(`of ${SCORED.length + 1} metros`);
     expect(withBlank).toContain(`${SCORED.length} of ${SCORED.length + 1} metros carry a scored call`);
-    expect(withBlank).toContain("the other 1 are not counted anywhere on this page");
+    expect(withBlank).toContain("The other one is not counted anywhere on this page");
   });
 
   it("draws an empty state rather than a page of broken numbers when nothing was scored", () => {
@@ -172,7 +172,7 @@ describe("the accuracy view", () => {
   it("reports the relationship with the index error as measured, and refuses to call it a cause", () => {
     expect(page).toContain("index standard error");
     expect(page).toContain("correlation");
-    expect(page).toContain("not a mechanism");
+    expect(page).toContain("is a summary of the cloud");
     expect(page).toContain("does not say a loose index causes a bad forecast");
     expect(page).toContain("rank correlation");
   });
@@ -195,7 +195,7 @@ describe("the accuracy view", () => {
     expect(bare).toContain("nothing to test the miss against");
     expect(bare).not.toContain("rank correlation");
     // the rest of the page still stands
-    expect(bare).toContain("That is a lean across the map, not bad luck in a few places");
+    expect(bare).toContain("a lean rather than bad luck in a few places");
   });
 
   it("names the origin the calls were made at, and the source they are scored against", () => {

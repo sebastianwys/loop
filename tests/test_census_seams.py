@@ -29,7 +29,7 @@ PEP_DIR = RAW_DIR / "pep"
 BPS_DIR = RAW_DIR / "bps"
 
 # the two pep files the collector stacks. vintage 2019 closed the 2010 base
-# series and totals every area on the september 2018 delineation; vintage 2025
+# series and totals every area on the september 2018 delineation. vintage 2025
 # starts from the 2020 count and totals every area on the july 2023 one. the
 # newer file begins in 2020, so the 2019 to 2020 step is the one that spans both
 OLD_VINTAGE, NEW_VINTAGE = pep.LEGACY_VINTAGE, 2025

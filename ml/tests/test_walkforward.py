@@ -90,7 +90,7 @@ class TestTheRecord(unittest.TestCase):
                          wf.years(panel["quarter"].max())[: len(set(pd.PeriodIndex(first["quarter"], freq="Q").year))])
 
 
-# one model's one quarter forecasts for a few metros, origins 2010 to 2023
+# one model's forecasts one quarter ahead for a few metros, origins 2010 to 2023
 def band_frame(seed=0, name="seqgru", metros=4):
     rng = np.random.default_rng(seed)
     quarters = [str(q) for q in pd.period_range("2010Q1", "2023Q4", freq="Q")]

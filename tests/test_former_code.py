@@ -25,8 +25,8 @@ def enrichment_sources():
     return bm.discover_enrichments(bm.DEFAULT_PATHS["enrichment_dir"], bm.DEFAULT_PATHS["forecast_dir"])
 
 
-# the value a source published for a metro-year, under the metro's code or the
-# code it carried before omb renumbered it, whichever filed it
+# the value a source published for a metro and year, under the metro's code or
+# the code it carried before omb renumbered it, whichever filed it
 def published(source, code, metric, year):
     for filed in (code, bm.FORMER_CODE.get(code)):
         annual, _ = bm.enrich_values(source["groups"].get(filed))
@@ -69,8 +69,8 @@ class TestAValueFiledUnderTheFormerCodeReachesTheYearPanel(unittest.TestCase):
         self.assertEqual(published(self.source("pep"), GARY, "pop_estimate", 2014), GARY_2014_POP_ESTIMATE)
         self.assertEqual(self.metros[GARY]["years"]["2014"]["pop_estimate"], GARY_2014_POP_ESTIMATE)
 
-    # the golden: every study-year value any source filed for a renumbered
-    # metro, under either of its codes, is on that metro's year panel
+    # the golden: every value any source filed for a renumbered metro in a study
+    # year, under either of its codes, is on that metro's year panel
     def test_no_year_panel_cell_is_null_while_a_source_published_it(self):
         blank = []
         for code, metro in sorted(self.metros.items()):

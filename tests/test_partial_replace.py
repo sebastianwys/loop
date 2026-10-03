@@ -108,7 +108,7 @@ class CensusApiStub:
         return StubResponse(200, json.dumps(acs_payload(params)).encode())
 
 
-# the same stand-in for download_fhfa, keyed by the file at the end of the url
+# the same fake for download_fhfa, keyed by the file at the end of the url
 class FhfaSiteStub:
     def __init__(self, bodies):
         self.bodies = bodies

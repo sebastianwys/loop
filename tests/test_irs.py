@@ -12,7 +12,7 @@ from bot import build_map_data
 from bot.collectors import irs
 
 # autauga county is the real 2021 to 2022 header block. elmore is invented.
-# the same state and different state rows, the foreign row, the non-migrant
+# the same state and different state rows, the foreign row, the nonmigrant
 # row and the flow rows must all be ignored
 INFLOW_TEXT = (
     "y2_statefips,y2_countyfips,y1_statefips,y1_countyfips,y1_state,y1_countyname,n1,n2,agi\n"
@@ -49,7 +49,7 @@ PADDED_INFLOW_TEXT = (
     "01,051,97,000,AL,Elmore County Total Migration-US,3120,6400,201000\n"
 )
 
-# hand computed from the fixtures
+# computed by hand from the fixtures
 AUTAUGA_NET_RETURNS = 2076 - 1923
 AUTAUGA_NET_EXEMPTIONS = 4489 - 4040
 ELMORE_NET_RETURNS = 3120 - 2900
@@ -186,7 +186,7 @@ class TestCountyNet(unittest.TestCase):
 
 class TestParseMoves(unittest.TestCase):
     # the inflow file keys a move by the county it entered, so the partner is
-    # where it came from. the totals, foreign, other flows and non-migrant
+    # where it came from. the totals, foreign, other flows and nonmigrant
     # rows are not moves between two counties
     def test_keeps_the_county_to_county_rows_only(self):
         df = moves(INFLOW_TEXT, "inflow")

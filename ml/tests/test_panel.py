@@ -444,7 +444,7 @@ class TestSilentlyEmptySource(unittest.TestCase):
             panel.check_features(frame, self.have())
         self.assertIn("inventory_yoy", str(raised.exception))
 
-    # the same all null column is expected when the source it needs is absent
+    # the same column of nulls is expected when the source it needs is absent
     def test_a_null_feature_is_allowed_when_its_source_is_missing(self):
         frame = pd.DataFrame({name: [1.0, 2.0] for name in panel.ENRICHMENT_FEATURES})
         frame["inventory_yoy"] = [np.nan, np.nan]
@@ -571,7 +571,7 @@ class TestTheTwoEndsOfTheSnapshotAreDisjoint(unittest.TestCase):
 # the parquet is gitignored, so the panel a published number came off exists
 # nowhere but on disk and a rebuild replaces it in place. write() cannot stop
 # that, but it has to say what moved. a collector fix landed on 2026-09-17 and
-# the panel sat stale against it until a hand diff found one metro's zillow
+# the panel sat stale against it until a manual diff found one metro's zillow
 # history had been missing all along
 class TestARebuildSaysWhatItReplaced(unittest.TestCase):
     def setUp(self):
@@ -734,7 +734,7 @@ class TestBuildOnAHandMadeRawFolder(unittest.TestCase):
             raw = Path(tmp)
             for folder in ("fhfa", "gazetteer", "zillow", "pep"):
                 (raw / folder).mkdir()
-            # the all-transactions index grows 1 percent a quarter and the
+            # the all transactions index grows 1 percent a quarter and the
             # expanded one 2, so the two yearly changes cannot be mistaken
             fhfa, expanded = [], []
             for i, q in enumerate(cls.QUARTERS):

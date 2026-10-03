@@ -198,10 +198,10 @@ export function ModelPage({ data }: ViewProps) {
   // what the admission run found for the inputs the old gate could not see
   const admitted = admissionSentences(ADMISSION);
 
-  // the yearly refit record, which the page leads with: every model refitted
-  // once a year and fed fhfa's index as each release first printed it, scored
-  // over the whole record and over 2022 onward apart. the same record read on
-  // today's index is only there to say what the revisions were worth
+  // the yearly refit record, which the page leads with: every model fed fhfa's
+  // index as each release first printed it, scored over the whole record and
+  // over 2022 onward apart. the same record read on today's index is only
+  // there to say what the revisions were worth
   const walkSpans = spansIn(WALKFORWARD);
   const recordFrom = walkSpans[0] ?? null;
   const recentFrom = walkSpans.length > 1 ? walkSpans[walkSpans.length - 1] : null;
@@ -295,7 +295,7 @@ export function ModelPage({ data }: ViewProps) {
   const standing = tied.length === 0
     ? `${lowestOnRecord}.`
     : `${lowestOnRecord}: ${joinList(tied.map(introName))} ${tied.length === 1 ? "is" : "are"} ${withinChance}`
-      + `${promoted.length === 0 ? `, so it ships as one of ${inWords(tied.length + 1)} tied models, by a rule written before the run` : ""}.`;
+      + `.${promoted.length === 0 ? ` So it ships as one of ${inWords(tied.length + 1)} tied models.` : ""}`;
   const overruled = promoted.length > 0
     ? ` A rule written before the run says ${joinList(promoted.map(introName))} should replace it.`
     : "";
@@ -399,8 +399,7 @@ export function ModelPage({ data }: ViewProps) {
           <p className="model-lead">
             The expected growth lines on the map come from a model in this repo. It forecasts how far each metro's
             house price index moves over the next one, two, four and eight quarters, with a{" "}
-            {Math.round(NOMINAL_COVERAGE * 100)} percent band. This page shows how well that worked, including where
-            it loses.
+            {Math.round(NOMINAL_COVERAGE * 100)} percent band.
           </p>
           {headline && <p className="model-lead">{headline}</p>}
           <ul className="model-stats">
@@ -538,8 +537,8 @@ export function ModelPage({ data }: ViewProps) {
           </p>
           <p>
             That misses any feature the fitting years never see, so a second run fits into the calibration block,
-            scores the rest of it and compares sets seed for seed.{admitted ? ` ${admitted}` : ""} It scores the
-            2020 to 2021 boom, and inventory starts too late to test at all.
+            scores the rest of it and compares sets seed for seed.{admitted ? ` ${admitted}` : ""} The second run
+            scores the 2020 to 2021 boom. Inventory starts too late to test at all.
           </p>
         </section>
 
@@ -623,7 +622,7 @@ export function ModelPage({ data }: ViewProps) {
             <li>
               {lossText
                 ? `It loses at ${horizonPhrase(lossHorizons)}, where ${lossText}.`
-                : "In this build it is ahead at every horizon, which is worth checking rather than celebrating."}
+                : "In this build it is ahead at every horizon."}
               {ridgeSentence ? ` ${ridgeSentence}` : ""}
               {ridgeAll
                 ? ` ${ridgeVerdict(PAIRED, horizons)}`
@@ -709,8 +708,8 @@ export function ModelPage({ data }: ViewProps) {
             {bandPairsRecent.length > 0 && recentFrom && (
               <>
                 <p>
-                  The band gets the same replay. The static band{misses8 ? " falls short at eight quarters and" : ""}{" "}
-                  looks ahead a little, since its 2020 and 2021 outcomes calibrate forecasts made in those years,
+                  The band gets the same replay. The static band{misses8 ? " falls short at eight quarters. It also" : ""}{" "}
+                  looks ahead a little: its 2020 and 2021 outcomes calibrate forecasts made in those years,
                   which leans this comparison its way. The online band could have run live: its margin comes from the misses realized by each origin and adapts
                   as they land (adaptive conformal inference, Gibbs and Candes 2021). Its settings were picked on{" "}
                   {BAND_TUNE[0]} to {BAND_TUNE[1]}. The rule, written first: it replaces the static band only if its
@@ -845,7 +844,7 @@ export function ModelPage({ data }: ViewProps) {
                       : ""}
                 </>
               ) : (
-                <>It loses no horizon. Not in this build, which is worth checking rather than celebrating.</>
+                <>It loses no horizon. That is worth checking rather than celebrating.</>
               )}
             </li>
             {closest8 && winner8 && (won8 || (lost8 && !lostAll)) && (

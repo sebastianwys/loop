@@ -383,7 +383,7 @@ describe("the claims the model page makes about the shipped backtest", () => {
     // the page prints this gap as a share of the error it sits inside rather
     // than judging it, so this is a drift alarm and not a claim guard: a rival
     // that closes to within a rerun, or opens past a twentieth, is a different
-    // story and the prose around it should be re-read. gbm held this spot at
+    // story and the prose around it should be reread. gbm held this spot at
     // 0.011 until the input set was cut to eleven series on 2026-09-18
     const shipped = rowAt(BACKTEST, SHIPPED, 8);
     expect(near!.gap / shipped!.maePct).toBeLessThan(0.05);
@@ -410,7 +410,7 @@ describe("the claims the model page makes about the shipped backtest", () => {
     expect(LIMITS.includes("would fix the number")).toBe(misses);
   });
 
-  it("has the shipped model cutting the no-change error by more than a third at both long horizons", () => {
+  it("has the shipped model cutting the no change error by more than a third at both long horizons", () => {
     expect(errorCut(BACKTEST, SHIPPED, NO_CHANGE, 4)!).toBeGreaterThan(0.33);
     expect(errorCut(BACKTEST, SHIPPED, NO_CHANGE, 8)!).toBeGreaterThan(0.33);
   });
@@ -496,7 +496,7 @@ describe("reading the paired test", () => {
 
   it("calls ridge and the gru tied only while it puts every gap between them down to chance", () => {
     expect(ridgeVerdict(shipped, HORIZONS)).toBe("The paired test above puts every gap between ridge and the GRU down to chance, "
-      + `p 0.13 to 0.94, so the two are tied, and the GRU ships because ${WHY_SHIPPED}.`);
+      + `p 0.13 to 0.94, so the two are tied. The GRU ships because ${WHY_SHIPPED}.`);
     const apart = shipped.map((r) => (r.against === "ridge" && r.horizon === 2 ? { ...r, pValue: 0.01 } : r));
     expect(ridgeVerdict(apart, HORIZONS)).toBe("A penalised linear model is the one to beat on this table: the paired test above "
       + "separates ridge from the GRU at two quarters and puts one, four and eight quarters down to chance.");
@@ -544,19 +544,19 @@ describe("reading the admission run", () => {
 
   it("keeps rents and listing prices out, and says why, only while their gain is inside the spread", () => {
     expect(admissionSentences(run)).toBe("Permits and income beat the set without them on every seed, and ship. Rents and listing "
-      + "prices beat it on every seed as well, but added to the shipped set they gain less than one set's spread across seeds, "
-      + "winning on four of five seeds, so they stay out.");
+      + "prices beat it on every seed as well. Added to the shipped set they win on four of five seeds but gain less than one "
+      + "set's spread across seeds, so they stay out.");
     const clear = run.map((r) => (r.arm === ARMS.all ? { ...r, loss: r.loss - 0.001 } : r));
-    expect(admissionSentences(clear)).toContain("gain more than one set's spread across seeds, winning on every seed, though they are not in the shipped set yet.");
+    expect(admissionSentences(clear)).toContain("win on every seed and gain more than one set's spread across seeds, but they are not in the shipped set yet.");
     const worse = run.map((r) => (r.arm === ARMS.all ? { ...r, loss: r.loss + 0.001 } : r));
     expect(admissionSentences(worse)).toContain("they do not lower the validation loss at all, so they stay out.");
   });
 });
 
-// the walk-forward record, read a span at a time. the page leads with it, so
+// the yearly refit record, read a span at a time. the page leads with it, so
 // every reader here is checked on the shape of the shipped record and then
 // on a record moved the way a rerun could move it
-describe("reading the walk-forward record", () => {
+describe("reading the yearly refit record", () => {
   const HORIZONS = [1, 2, 4, 8];
   const walk = (model: string, horizon: number, maePct: number, span = "2018Q1", band = "online", more: Partial<WalkRow> = {}): WalkRow =>
     ({ model, horizon, span, band, n: 13938, origins: 34, maePct, coverage: 0.8, width: 0.1, intervalScore: 0.2, ...more });
@@ -770,7 +770,7 @@ describe("reading the walk-forward record", () => {
 // the record the page leads with, read here without the page's own readers so
 // a reader that went wrong could not vouch for itself. the claims render the
 // page and check what it says, and the rest are drift alarms on the prose
-describe("the claims the model page makes about the walk-forward record", () => {
+describe("the claims the model page makes about the yearly refit record", () => {
   const spans = [...new Set(WALKFORWARD.map((r) => r.span))].sort();
   const [first, last] = [spans[0], spans[spans.length - 1]];
   const online = (span: string) => WALKFORWARD.filter((r) => r.span === span && r.band === "online");
@@ -798,7 +798,7 @@ describe("the claims the model page makes about the walk-forward record", () => 
     expect(PAGE).not.toMatch(/GRU (?:is|was) the best|best model|the GRU wins/i);
   });
 
-  it("has the gru cutting the no-change error by more than a third at four and eight quarters on the record", () => {
+  it("has the gru cutting the no change error by more than a third at four and eight quarters on the record", () => {
     for (const h of [4, 8]) expect(1 - mae(record, SHIPPED, h) / mae(record, NO_CHANGE, h), `${h}q`).toBeGreaterThan(0.33);
   });
 

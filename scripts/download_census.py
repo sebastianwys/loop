@@ -25,7 +25,7 @@ VINTAGES_FILE = RAW_DIR / "vintages.json"
 # which is split by sex, so the variable list below 404s there
 MIN_VINTAGE = 2012
 
-# three non-overlapping 5-year windows, 15 years of coverage
+# three windows of five years each that do not overlap, 15 years in all
 SPAN = 5
 N_BATCHES = 3
 
@@ -45,8 +45,9 @@ DIVISION_PARENTS = [
 # division table below did this for divisions and there was none for metros, so
 # four metros carried no 2014 or 2019 acs row at all while fhfa, which restates
 # its series on one delineation, held all three years for them. that is five of
-# the 33 metro-years the merged csv is missing; the other 28 are real redraws
-# and no crosswalk can honestly fill them.
+# the 33 metro years the merged csv was missing before the crosswalk. cleveland's
+# two are joined below as well, and the other 26 are real redraws that no
+# crosswalk can honestly fill.
 #
 # every pair is checked against cbsa_counties_by_vintage rather than matched by
 # name: the old code holds the county set the new one holds today, in every
@@ -60,9 +61,9 @@ DIVISION_PARENTS = [
 # rate may be reported over a footprint that moved is the guard's question,
 # not the crosswalk's: at 4.70 against a FOOTPRINT_TOLERANCE of 0.02 the
 # decade rates stay refused and the panel says so, while the 2014 and 2019
-# levels are published as what they are. of the ten metros short an acs vintage it is the only renumber;
-# the rest were created, promoted or carved out of a larger area and have no
-# predecessor to join
+# levels are published as what they are. of the ten metros short an acs
+# vintage it is the only renumber. the rest were created, promoted or carved
+# out of a larger area and have no predecessor to join
 MSA_CROSSWALK = {
     "17460": "17410",  # cleveland-elyria -> cleveland, oh (plus ashtabula)
     "19380": "19430",  # dayton -> dayton-kettering-beavercreek, oh
@@ -378,7 +379,7 @@ def main():
         with open(staging / "download_manifest.json", "w") as f:
             json.dump(manifest, f, indent=2)
 
-        # every vintage passed and every file is whole, so the per-year files,
+        # every vintage passed and every file is whole, so the files for each year,
         # the combined csv, a new pin and the manifest that describes them are
         # published by renames alone, the manifest last
         for entry in manifest:
@@ -396,7 +397,7 @@ def main():
         os.replace(staging / "download_manifest.json", manifest_path)
         print(f"Manifest saved to {manifest_path}")
 
-    # the pinned years changed, so per-year csvs off the study go now that their
+    # the pinned years changed, so the csvs for years off the study go now that their
     # replacements are on disk. a failed run above never reaches this
     for stale in RAW_DIR.glob("acs_5yr_*.csv"):
         year_str = stale.stem.replace("acs_5yr_", "")

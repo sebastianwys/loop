@@ -123,7 +123,7 @@ class TestOnlyOneCollector(RunBotCase):
 
 
 # a fresh interpreter where a meta path finder breaks the real gazetteer
-# import. the two collectors are stand-ins, so nothing reaches the network, and
+# import. the two collectors are fakes, so nothing reaches the network, and
 # the map build is replaced wherever it still imports, so nothing is written
 BROKEN_GAZETTEER_RUN = r'''
 import importlib.abc

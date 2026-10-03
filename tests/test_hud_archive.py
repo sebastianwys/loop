@@ -4,7 +4,7 @@
 # entity for it covers only part of the cbsa: an exception area is not read as
 # the metro, and an entity whose delineation counties sit in more than one fmr
 # area that year is rebuilt from those counties. test_hud_subarea and
-# test_hud_delineation prove the code on fixtures; this one holds the shipped
+# test_hud_delineation prove the code on fixtures. this one holds the shipped
 # table to the code.
 #
 # what is not in the hud folder:
@@ -12,7 +12,8 @@
 #   newest payload carries. for the codes compared here the name decides
 #   nothing: counties that sit in one fmr area give that area's rent either
 #   way, and counties in more than one are rebuilt from either way
-# - the acs 2024 5 year county population hud asks the census for. the
+# - the county population from the 2024 acs 5-year estimates that hud asks
+#   the census for. the
 #   gazetteer collector archived the same table, county_population_by_vintage.csv
 # - new england town populations, so no code with a county in those six
 #   states is compared
@@ -171,10 +172,10 @@ class TestTheShippedRentsAreWhatTheCollectorWrites(unittest.TestCase):
                 for code, period in keys if self.shipped.get((code, period)) != self.head.get((code, period))]
 
     def test_the_shipped_rents_equal_the_collector_run_on_its_own_raw_captures(self):
-        self.assertGreater(len(self.compared), 500, "too few code-years can be decided from the archive")
+        self.assertGreater(len(self.compared), 500, "too few code years can be decided from the archive")
         wrong = self.differences(self.compared)
         worst = sorted(wrong, key=lambda w: -abs((w[2] or 0) / (w[3] or 1) - 1))[:4]
-        self.assertEqual(len(wrong), 0, f"code-years over {len({w[0] for w in wrong})} metros where the shipped "
+        self.assertEqual(len(wrong), 0, f"code years over {len({w[0] for w in wrong})} metros where the shipped "
                                         f"rent is not the one the collector computes, worst as (code, year, "
                                         f"shipped, at head): {worst}")
 

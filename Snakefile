@@ -1,5 +1,5 @@
 # is477-sp26 workflow
-# does the same as run_all.py but tracks file deps so it only re-runs what changed
+# does the same as run_all.py but tracks file deps so it only reruns what changed
 
 import json
 import sys

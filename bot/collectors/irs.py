@@ -103,7 +103,7 @@ def parse_totals(content, kind):
 
 # the county to county rows: returns that moved from one county to another,
 # keyed by the county they left and the one they entered. the rows irs adds
-# of its own, the non-migrants (a county paired with itself) and suppressed
+# of its own, the nonmigrants (a county paired with itself) and suppressed
 # counts go. irs prints a pair only at 20 returns or more and folds the rest
 # into other flows. the 2013 to 2014 files print about a thousand pairs
 # twice, and a repeat counts once

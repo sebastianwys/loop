@@ -12,7 +12,7 @@ REPO_ROOT = Path(__file__).parent.parent
 SNAKEFILE = REPO_ROOT / "Snakefile"
 
 # what a collector leaves behind when it refuses the body: nothing at all.
-# this is download_file exiting non zero after _validate rejects a maintenance
+# this is download_file exiting nonzero after _validate rejects a maintenance
 # page, the archive safety the scripts already implement
 FAILING_COLLECTOR = (
     "import sys\n"
@@ -114,7 +114,7 @@ class WorkflowTreeCase(unittest.TestCase):
         )
 
 
-# hpi_master.csv has no vintage parameter, so the archived copy IS the vintage
+# hpi_master.csv has no vintage parameter, so the archived copy is the vintage
 # and cannot be fetched again once it is gone. the collector refuses a bad body
 # without writing anything, and the workflow that calls it must not carry out
 # the deletion the collector declined to make

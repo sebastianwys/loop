@@ -156,10 +156,6 @@ class TestTransportErrorsAreNotEmptyResults(unittest.TestCase):
             with self.assertRaises(requests.HTTPError):
                 dc.fetch_acs_data(2024, "KEY")
 
-# file header additions required by the block above:
-#   import json
-#   from unittest import mock
-#   import requests
 
 if __name__ == "__main__":
     unittest.main()

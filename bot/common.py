@@ -39,7 +39,7 @@ def fetch(url, params=None, json_body=None, timeout=120, retries=3):
             last_error = e
         time.sleep(2 ** attempt)
     # with retries below one the loop never runs and there is no error to
-    # re-raise, so this used to raise None and fail about its own bookkeeping
+    # raise again, so this used to raise None and fail about its own bookkeeping
     if last_error is None:
         raise RuntimeError(f"{url}: no attempt was made, retries={retries}")
     raise last_error
@@ -127,8 +127,9 @@ def unchanged_but_for_stamps(path, payload, keys=STAMP_KEYS):
 # its publisher does not keep, so a write that dies partway has to cost the new
 # file rather than the old one. the body lands beside its destination and is
 # renamed over it, which os.replace does atomically inside one filesystem, and a
-# name beside the destination always is one. a run killed mid-write then leaves
-# the previous archive whole, and nothing half written for the next run to read
+# name beside the destination always is one. a run killed partway through a
+# write then leaves the previous archive whole, and nothing half written for
+# the next run to read
 def replace_atomically(path, write):
     path = Path(path)
     staged = path.with_name(path.name + ".part")
@@ -156,9 +157,9 @@ def write_manifest(folder, entries):
 
 # one file at a time is not enough for a collector that writes several. a run
 # that dies between two of them leaves a folder holding some of this run's files
-# and some of the last one's, under a manifest describing neither, which is the
-# half-replaced folder the scripts/ download guard was given a staging directory
-# to prevent.
+# and some of the last one's, under a manifest describing neither. that folder
+# is half replaced, and the scripts/ download guard was given a staging
+# directory to prevent it.
 #
 # every file is written under a staging directory inside the folder and keeps
 # the name it will land under, so manifest_entry hashes and names the file this

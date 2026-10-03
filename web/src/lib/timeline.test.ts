@@ -269,7 +269,7 @@ describe("latestColumn", () => {
   });
 });
 
-// ---- the deep annual run ----
+// the deep annual run
 
 const hpi = def("hpi");
 const asOf = "2026Q2";

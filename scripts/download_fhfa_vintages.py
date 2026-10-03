@@ -1,4 +1,4 @@
-# every published vintage of fhfa's all-transactions index for the study's
+# every published vintage of fhfa's all transactions index for the study's
 # metros, from alfred, the st. louis fed's archive of what each release said
 # at the time. hpi_master.csv is only the latest vintage, and fhfa revises past
 # quarters as later sales come in, so a backtest that reads it reads history
@@ -64,7 +64,7 @@ def fetch(sid, key):
 
 # a metro's rows from its own series, and from its former code's for any
 # vintage its own series was not yet published in. a discontinued series
-# leaves its last vintage open ended, so the former code's rows are closed the
+# leaves its last vintage with no end date, so the former code's rows are closed the
 # day before the own series' first release, or every later vintage would
 # carry the metro twice
 def stitch(code, own, former):
@@ -117,7 +117,7 @@ def main():
             "filename": OUT_FILE,
             "file_format": "CSV",
             "source": {"url": URL, "provider": "Federal Reserve Bank of St. Louis, ALFRED",
-                       "series": "ATNHPIUS<cbsa>Q, FHFA all-transactions house price index",
+                       "series": "ATNHPIUS<cbsa>Q, FHFA All-Transactions House Price Index",
                        "access_method": "FRED API, every vintage from " + FIRST_VINTAGE},
             "integrity": {"sha256": sha, "size_kb": round(staged.stat().st_size / 1024, 1), "row_count": int(len(out))},
             "version": str(out["realtime_start"].max()),

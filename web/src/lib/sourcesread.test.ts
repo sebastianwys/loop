@@ -3,7 +3,7 @@ import { buildSources } from "./sources";
 import type { MapData, Provenance } from "../types";
 
 // the two blocks carry different evidence on purpose. sources is what this
-// build read, and goes null where it read nothing; provenance is what landed on
+// build read, and goes null where it read nothing. provenance is what landed on
 // disk, and keeps the manifest row verbatim. the page shows both, so a folder
 // this build never opened would print a vintage in one table and a blank in
 // the other, and each provenance row has to say whether this build read it

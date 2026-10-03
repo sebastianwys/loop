@@ -4,7 +4,8 @@ name: data bot
 
 on:
   schedule:
-    # the 25th, after zillow's mid-month release and bls's monthly metro data
+    # the 25th, after zillow's release in the middle of the month and bls's
+    # monthly metro data
     - cron: "17 9 25 * *"
   workflow_dispatch:
     inputs:
@@ -79,7 +80,8 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "bot: monthly data refresh"
-          # .gitignore keeps the fetched-not-redistributed files out of this
+          # .gitignore keeps the files we fetch but do not redistribute out of
+          # this commit
           file_pattern: "data/raw web/public/data"
 
       # same publish as the national strip workflow: the worker serves built

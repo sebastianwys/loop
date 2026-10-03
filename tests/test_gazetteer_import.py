@@ -1,5 +1,5 @@
 # run_bot promises that a collector module that will not import is one failed
-# collector: the others still run and the run exits non-zero. test_run_bot
+# collector: the others still run and the run exits nonzero. test_run_bot
 # checks that with importlib.import_module stood in for, so it never reaches an
 # import made at the top of a module. run_bot reaches the map build, which
 # reads the gazetteer's YEAR, so a gazetteer that will not import, as a syntax
@@ -7,7 +7,7 @@
 # run before discover() gives every other collector its turn.
 #
 # the run happens in a fresh interpreter, where a meta path finder breaks
-# bot.collectors.gazetteer and nothing else. the two collectors are stand-ins,
+# bot.collectors.gazetteer and nothing else. the two collectors are fakes,
 # so nothing reaches the network, and the map build is replaced wherever it
 # still imports, so nothing is written
 

@@ -16,7 +16,7 @@ def main():
     (DATA_DIR / "integrated").mkdir(parents=True, exist_ok=True)
     (RESULTS_DIR / "visualizations").mkdir(parents=True, exist_ok=True)
 
-    # --- load fhfa ---
+    # load fhfa
     print("Loading FHFA data...")
     hpi = pd.read_csv(DATA_DIR / "raw" / "fhfa" / "hpi_master.csv")
     print(f"  Total rows: {len(hpi)}")
@@ -53,7 +53,7 @@ def main():
     print(f"Annual aggregated: {len(hpi_annual)} rows")
     print()
 
-    # --- load census ---
+    # load census
     print("Loading Census ACS data...")
     # codes stay strings. parent_cbsa is blank for metros, so without this
     # pandas infers float and writes 16980.0, which never matches anything
@@ -106,7 +106,7 @@ def main():
     census["homeownership_rate"] = census["owner_occupied_units"] / census["total_occupied_units"]
     census["cbsa_code"] = census["cbsa_code"].astype(str)  # census returns int, fhfa is string. without this cast, zero overlap
 
-    # --- find matching CBSAs ---
+    # find matching cbsas
     fhfa_ids = set(hpi_msa["place_id"].unique())
     census_ids = set(census["cbsa_code"].unique())
     overlap = fhfa_ids & census_ids  # below 300 = cbsa boundaries probably changed
@@ -119,7 +119,7 @@ def main():
     print(f"Overlapping codes: {len(overlap)}")
     print()
 
-    # --- integrate ---
+    # integrate
     print("Integrating datasets...")
 
     hpi_match = hpi_annual[hpi_annual["place_id"].isin(overlap)].copy()
@@ -150,7 +150,7 @@ def main():
     print("Saved: data/integrated/hpi_census_merged.csv")
     print()
 
-    # --- visualizations ---
+    # visualizations
     print("Generating visualizations...")
 
     # all charts use the most recent year
@@ -219,7 +219,7 @@ def main():
     plt.close()
     print("  Saved: correlation_matrix.png")
 
-    # --- summary stats ---
+    # summary stats
     print()
     print("=== Summary for status report ===")
     print(f"FHFA master file: {len(hpi)} total rows")

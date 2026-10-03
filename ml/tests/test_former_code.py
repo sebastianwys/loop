@@ -19,7 +19,7 @@ QUARTER = "2015Q1"
 PERMITS_QUARTER = "2015Q2"
 
 
-# a metric's value for a metro-year, filed under its current code or its
+# a metric's value for a metro and year, filed under its current code or its
 # former one, whichever the collector used
 def filed(source, metric, year):
     frame = pd.read_csv(spec.RAW_DIR / source / "metrics.csv", dtype={"cbsa_code": str, "period": str})

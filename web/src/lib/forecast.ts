@@ -139,12 +139,12 @@ export function againstRidge(backtest: BacktestRow[] = BACKTEST, paired: PairedR
   const apart = separatedAt(paired, "ridge");
   const covered = horizons.length > 0 && horizons.every((h) => tested.some((row) => row.horizon === h));
   const test = !covered ? "" : apart.length === 0
-    ? ", but a paired test puts every gap between them down to chance, so the two are tied"
+    ? ". A paired test puts every gap between them down to chance, so the two are tied"
     : `, a lead a paired test separates from chance at ${horizonPhrase(apart)}`;
-  return `In the backtest ridge regression matches or beats the GRU ${at}${test}, and the GRU ships because ${WHY_SHIPPED}.`;
+  return `In the backtest ridge regression matches or beats the GRU ${at}${test}. The GRU ships because ${WHY_SHIPPED}.`;
 }
 
-// what the Forecasts table is, in four sentences, for the panel's question
+// what the Forecasts table is, in a few sentences, for the panel's question
 // mark. the coverage numbers and the comparison with ridge are read from the
 // shipped backtest rather than written down, so a retrain moves this with the
 // rest of the page

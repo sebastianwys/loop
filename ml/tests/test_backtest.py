@@ -563,7 +563,7 @@ class TestOnlineBands(unittest.TestCase):
 
     def test_no_band_before_a_realized_score_and_none_from_the_future(self):
         # the outcome of origin i lands at i + 1. origin 0 has nothing realized
-        # to calibrate on; origin 1 sees only origin 0's miss of 0.1; the huge
+        # to calibrate on. origin 1 sees only origin 0's miss of 0.1. the huge
         # miss at origin 3 lands at 4 and reaches origin 4's band, not earlier.
         # at alpha 0.2 the top score of four is the quantile, so it shows
         out = backtest.online_bands(self.rows([0.1, 0.1, 0.1, 5.0, 0.1]), alpha=0.2)

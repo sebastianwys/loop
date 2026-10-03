@@ -50,7 +50,7 @@ export function Header({
         {nav}
         {rate && showMortgageStat(rate, indicators) && (
           <div className="stat" aria-label="national 30 year mortgage rate">
-            <span className="label">30-year mortgage rate, national</span>
+            <span className="label">30 year mortgage rate, national</span>
             <span className="value">{rate.latest.toFixed(2)}%</span>
             <span className="note">as of {rate.latest_date}</span>
           </div>

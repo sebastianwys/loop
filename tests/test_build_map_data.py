@@ -23,8 +23,8 @@ def merged_row(cbsa, name, year, hpi, income, pop, age, adults, bach, mast, occ,
 
 
 # abilene is the clean base case. chicago is missing 2014, has zero income in
-# 2019, a census sentinel in 2024 and needs the first-city zillow fallback.
-# springfield has no zillow row. nowhere has no centroid
+# 2019, a census sentinel in 2024 and needs the zillow fallback to its first
+# city. springfield has no zillow row. nowhere has no centroid
 MERGED = [
     merged_row("10180", "Abilene, TX", 2014, 100.0, 40000, 100000, 30.0, 65000, 10000, 2000, 50000, 30000, 80000, 0.6),
     merged_row("10180", "Abilene, TX", 2019, 125.0, 50000, 110000, 31.5, 70000, 12000, 3000, 52000, 31200, 110000, 0.6),
@@ -363,7 +363,7 @@ class TestHelpers(unittest.TestCase):
         self.assertEqual(bm.zillow_candidates("Winston-Salem, NC"),
                          ["Winston-Salem, NC", "Winston, NC", "Salem, NC"])
 
-    # a slash separates city and county; zillow keeps only the city
+    # a slash separates city and county. zillow keeps only the city
     def test_zillow_candidates_slash_county(self):
         self.assertIn("Louisville, KY", bm.zillow_candidates("Louisville/Jefferson County, KY-IN"))
 
@@ -807,7 +807,7 @@ class TestProvenance(BuildCase):
             self.assertIn(name, payload["sources"])
         # census and boundaries are read off their manifest. fhfa and national
         # are read off the frames this build loaded, and it opened neither, so
-        # advertising a vintage for them would be the borrowed-version defect
+        # any vintage advertised for them would be borrowed
         for name in ("census", "boundaries"):
             self.assertEqual(payload["sources"][name], f"{name} vintage")
         for name in ("fhfa", "national"):
@@ -924,8 +924,7 @@ class TestAnAnnualMeanNeedsTheWholeYear(BuildCase):
         nine = self.row(self.months(2024, [10.0] * 9 + [None] * 3))
         self.assertEqual(bm.zillow_annual(nine, 2024), 10.0)
 
-    # a month nobody published is not a missing month, which is the half of
-    # this that finding 44 got right: zori publishes no 2014 at all
+    # a month nobody published is not a missing month: zori publishes no 2014 at all
     def test_a_year_the_file_does_not_publish_at_all_is_still_null(self):
         row = self.row(self.months(2024, [10.0] * 12))
         self.assertIsNone(bm.zillow_annual(row, 2014))
@@ -1035,9 +1034,10 @@ class TestPriceHistory(BuildCase):
         self.assertEqual(series["12580"]["values"][0], 22.5)
         self.assertNotIn(11.0, series["12580"]["values"])
 
-    # fhfa phases a metro in mid year, so its first year often has no mean.
-    # a null in front of the line is empty margin on the panel, not a gap, so
-    # the series starts at the first year it can draw. 10180 holds 1999Q4 alone
+    # fhfa phases a metro in partway through a year, so its first year often
+    # has no mean. a null in front of the line is empty margin on the panel, not
+    # a gap, so the series starts at the first year it can draw. 10180 holds
+    # 1999Q4 alone
     def test_a_short_first_year_moves_the_start_instead_of_leading_with_a_null(self):
         series = bm.load_fhfa_series(self.fhfa_path())
         self.assertEqual(series["10180"]["start"], 2000)
@@ -1312,7 +1312,7 @@ class TestNationalIndicators(BuildCase):
 # honest answer is null. salisbury 41540 is the real case in the shipped merged
 # file: 2014 and 2019 are the md-de footprint, 2024 is md only
 # the headline hpi reads the newest fhfa quarter, not the 2024 vintage average.
-# the vintages stay in the year panels; latest is the quarter the series ends on
+# the vintages stay in the year panels. latest is the quarter the series ends on
 class TestLatestHpi(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -1412,8 +1412,8 @@ class TestTheFootprintIsACountySet(unittest.TestCase):
             self.assertEqual(self.membership["2014"][cbsa], self.membership["2024"][cbsa], cbsa)
             self.assertIsNotNone(self.metro(cbsa, self.membership)["growth"]["pop_14_24"], cbsa)
 
-    # salisbury is the case the original finding named, and the county test sees
-    # it too: the name test is not load bearing for it any more
+    # salisbury is the case the name test was built for. the county test sees
+    # it too, so it no longer depends on the name test
     def test_salisbury_is_still_blanked(self):
         self.assertNotEqual(self.membership["2014"]["41540"], self.membership["2024"]["41540"])
         self.assertIsNone(self.metro("41540", self.membership)["growth"]["pop_14_24"])
@@ -1668,7 +1668,7 @@ class TestFootprintChange(unittest.TestCase):
         self.assertEqual(len(metros), 1)
         self.assertIsNone(metros[0]["growth"]["pop_14_24"])
 
-    # the same-footprint pair keeps its number, so the guard cannot simply blank
+    # the pair on one footprint keeps its number, so the guard cannot simply blank
     # every rate on a metro that changed once
     def test_growth_survives_when_the_footprint_held(self):
         merged = self.salisbury()

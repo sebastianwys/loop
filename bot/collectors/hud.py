@@ -5,9 +5,10 @@
 # hud publishes for its own fmr areas, not for every cbsa. a study code has no
 # whole metro entity when hud splits the metro into smaller fmr areas, keys the
 # largest of them as an exception area covering part of the cbsa, still keys it
-# by the pre 2023 cbsa code, or carries it as ordinary counties. those codes are
-# rebuilt from the counties the omb delineation gives them, each county carrying
-# the value of the fmr area it sits in, weighted by population
+# by the cbsa code it had before 2023, or carries it as ordinary counties.
+# those codes are rebuilt from the counties the omb delineation gives them,
+# each county carrying the value of the fmr area it sits in, weighted by
+# population
 import json
 import math
 import re
@@ -45,17 +46,17 @@ CENSUS_VINTAGE = STUDY_YEARS[-1]
 POPULATION = "B01003_001E"
 
 # hud keys these six states town by town and everywhere else county by county.
-# connecticut is the one state where hud's town rows still carry the pre 2022
-# counties while the delineation carries planning regions, so its towns are the
-# only ones matched and weighted by the town code alone
+# connecticut is the one state where hud's town rows still carry the counties
+# from before 2022 while the delineation carries planning regions, so its towns
+# are the only ones matched and weighted by the town code alone
 NEW_ENGLAND = {"09", "23", "25", "33", "44", "50"}
 CONNECTICUT = "09"
 
-# hud still sends the town era subdivision code for the massachusetts places
-# that became cities; the census reassigned them. the pairs are few and fixed,
-# so they are written down rather than matched by name, where a wrong join
-# would cost more than the gap it closed. a town that falls out of this table
-# is counted and named at the end of the run, so the next one is visible
+# hud still sends the subdivision code a massachusetts place had as a town,
+# after it became a city and the census reassigned it. the pairs are few and
+# fixed, so they are written down rather than matched by name, where a wrong
+# join would cost more than the gap it closed. a town that falls out of this
+# table is counted and named at the end of the run, so the next one is visible
 RETIRED_TOWN_CODES = {
     "2500940710": "2500940675",  # methuen
     "2501773440": "2501773405",  # watertown
@@ -195,7 +196,7 @@ def study_codes(path):
     return dict(sorted(zip(df["cbsa_code"].str.strip(), df["geo_level"].fillna("msa"))))
 
 
-# --- rollups: a cbsa hud has no entity for, rebuilt from its counties ---
+# rollups rebuild a cbsa hud has no entity for from its counties
 
 
 # cbsa code -> county fips, from the gazetteer collector. an absent file means
@@ -254,7 +255,7 @@ def parse_state_rows(payload):
 # the county a hud row sits in, as the delineation names it. a county row says
 # so in its own fips. a town is placed by the census: on its whole fips where
 # hud and the census agree about the county, and on state and town code alone
-# in connecticut, where hud still names the pre 2022 county.
+# in connecticut, where hud still names the county from before 2022.
 #
 # the whole fips has to be tried first. town codes repeat across counties, and
 # maine has one that does: the penobscot indian island reservation is 57936 in
@@ -402,7 +403,7 @@ class Client:
             try:
                 response = requests.get(url, params=params, timeout=TIMEOUT, headers=self.headers)
                 if response.status_code == 429:
-                    # the per minute window has to roll over before anything succeeds
+                    # the minute window has to roll over before anything succeeds
                     time.sleep(retry_after(response))
                     last_error = RuntimeError("HTTP 429")
                     continue
@@ -543,8 +544,9 @@ def collect():
 
     # a division has its own cbsa code and hud keys on the metro's, so no
     # division matches an entity. neither do the metros hud splits into smaller
-    # fmr areas, still calls by a pre 2023 code, or carries as plain counties.
-    # every one of them is rebuilt from the counties the delineation gives it
+    # fmr areas, still calls by a code from before 2023, or carries as plain
+    # counties. every one of them is rebuilt from the counties the delineation
+    # gives it
     levels = study_codes(INTEGRATED)
     entities = {code: ids[code] for code in levels if code in ids}
     absent = [code for code in levels if code not in ids]
@@ -693,7 +695,7 @@ def collect():
                 "responses_skipped": skipped,
                 # a code hud has no entity for is rebuilt from its counties. one
                 # fmr area means the value is that area's as hud published it, more
-                # than one means an acs population weighted mean of them
+                # than one means a mean of them weighted by acs population
                 "rollup_method": "acs population weighted mean over the hud fmr areas the cbsa's counties sit in",
                 "rollup_weights": f"acs 5 year {CENSUS_VINTAGE} {POPULATION}, counties and new england towns",
                 "rollup_codes": len(built),

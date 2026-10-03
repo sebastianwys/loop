@@ -8,7 +8,7 @@
 # printed the last quarter of Y - 1. scoring keeps today's index as the truth.
 # the archive starts with the 2013-05 release, so earlier origins read that
 # one, the oldest there is. a metro is covered only when alfred carries its
-# own code's series through the latest release; the rest, new metros and
+# own code's series through the latest release. the rest, new metros and
 # renumbered ones whose archive is a former county set, keep today's index
 
 import numpy as np

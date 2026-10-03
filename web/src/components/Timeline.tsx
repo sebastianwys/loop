@@ -195,7 +195,7 @@ function Years({ deep, year, onYearChange, reducedMotion }: YearsProps) {
 }
 
 // the as of control: a calendar axis with one tick per period, filled where
-// the metric has values. the current tick is the one tab stop; arrows move
+// the metric has values. the current tick is the one tab stop. arrows move
 // between the available ones and play steps through them once
 function Panels({ def, metros, period, available, onPeriodChange }: Props) {
   const model = useMemo(() => buildTimeline(def, metros), [def, metros]);
@@ -208,7 +208,7 @@ function Panels({ def, metros, period, available, onPeriodChange }: Props) {
     setPlaying(false);
   }, [def.id]);
 
-  // each step schedules the one after it; the run ends past the last period
+  // each step schedules the one after it. the run ends past the last period
   useEffect(() => {
     if (!playing) return;
     const id = window.setTimeout(() => {

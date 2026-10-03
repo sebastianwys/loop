@@ -100,7 +100,7 @@ describe("studyShapes", () => {
 describe("shapeStyle, a value taken from the parent metro", () => {
   const scale = buildScale([0, 10], "sequential");
 
-  // the number is real, it just belongs to a bigger place. the fill keeps the
+  // the number is real. it just belongs to a bigger place. the fill keeps the
   // value so the map still reads, and the outline carries the provenance
   it("keeps the colour but marks the outline", () => {
     const own = shapeStyle(10, scale);

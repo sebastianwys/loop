@@ -5,7 +5,7 @@
     "source": {
       "url": "https://api.stlouisfed.org/fred/series/observations",
       "provider": "Federal Reserve Bank of St. Louis, ALFRED",
-      "series": "ATNHPIUS<cbsa>Q, FHFA all-transactions house price index",
+      "series": "ATNHPIUS<cbsa>Q, FHFA All-Transactions House Price Index",
       "access_method": "FRED API, every vintage from 2013-01-01"
     },
     "integrity": {

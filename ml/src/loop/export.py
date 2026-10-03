@@ -211,7 +211,7 @@ def manifest_entry(path, metrics, model, origin, inputs=()):
 
 # a rewrite that only moves the timestamp is not a change. the export runs on
 # every retrain and the map's own writers already refuse to rewrite themselves
-# for a stamp; this one did not, so an export that landed on the same numbers
+# for a stamp. this one did not, so an export that landed on the same numbers
 # still showed up as a commit and pulled a deploy behind it
 def write_manifest(entries, path=MANIFEST_PATH):
     path = Path(path)

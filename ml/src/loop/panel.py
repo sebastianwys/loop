@@ -1,7 +1,7 @@
 # one quarterly panel, one row per metro per quarter, from the raw files under
 # data/raw. every transformation is a pure function of frames so the tests can
-# run it on hand made fixtures. build() reads the files and wires them
-# together; running the module writes the parquet, its manifest and the four
+# run it on fixtures written by hand. build() reads the files and wires them
+# together. running the module writes the parquet, its manifest and the four
 # panel figures
 
 import hashlib
@@ -35,7 +35,7 @@ COUNTY_POPULATION = "gazetteer/county_population_by_vintage.csv"
 ZILLOW = {"zhvi": "zillow/zhvi_metro.csv", "zori": "zillow/zori_metro.csv"}
 MERGED = spec.REPO_ROOT / "data" / "integrated" / "hpi_census_merged.csv"
 
-# the one fhfa series per metro: the quarterly all-transactions index
+# the one fhfa series per metro: the quarterly all transactions index
 FHFA_FILTER = {"level": "MSA", "frequency": "quarterly", "hpi_type": "traditional", "hpi_flavor": "all-transactions"}
 
 # the national series the panel reads off the strip's file, and what each one
@@ -74,7 +74,7 @@ def safe_log(values):
     return np.log(values.where(values > 0))
 
 
-# --- fhfa ---
+# fhfa
 
 def fhfa_series(raw):
     keep = np.ones(len(raw), dtype=bool)
@@ -93,7 +93,7 @@ def fhfa_series(raw):
 
 
 # the expanded data index: fhfa's second estimate of the same metro quarter,
-# built from more records, published beside the all-transactions series since
+# built from more records, published beside the all transactions series since
 # 1991. rstderr is the relative standard error fhfa reports for it, in percent
 # of the index, the only published measure of how thin a metro's repeat sale
 # record is. the model has no other way to know abilene is measured worse
@@ -167,7 +167,7 @@ def log_diff(frame, column, steps):
     return pd.Series(values.to_numpy() - earlier, index=frame.index)
 
 
-# --- time alignment ---
+# time alignment
 
 # quarterly mean of the monthly rows of a bls style frame: period M01 to M12 is
 # a month, M13 is the annual average and is not a month
@@ -255,7 +255,7 @@ def attach(spine, part, on):
     return pd.Series(merged["value"].to_numpy(), index=spine.index)
 
 
-# --- enrichment features ---
+# enrichment features
 
 def _log_change(frame, key, later):
     prior = frame[["cbsa_code", key, "value"]].rename(columns={"value": "prior"})
@@ -357,7 +357,7 @@ def parents_of(gazetteer):
     return {str(code): str(parent) for code, parent in zip(rows["cbsa_code"], rows["parent_cbsa"])}
 
 
-# --- names, levels, zillow ---
+# names, levels, zillow
 
 def static_columns(codes, gazetteer):
     table = gazetteer.drop_duplicates("cbsa_code").set_index("cbsa_code")
@@ -397,7 +397,7 @@ def zillow_long(wide, lookup):
     return long[["cbsa_code", "month", "value"]].reset_index(drop=True)
 
 
-# --- unemployment ---
+# unemployment
 
 # the quarter's mean of its published months. the bls file keeps every month
 # since 1990, so a quarter with none is one bls withheld, new orleans and
@@ -407,7 +407,7 @@ def unemployment(bls, spine):
     return attach(spine, quarter_mean_of_months(bls), spec.KEY)
 
 
-# --- assembly ---
+# assembly
 
 def sources(raw_dir=spec.RAW_DIR):
     files = {"fhfa": FHFA, "fhfa_exp": FHFA_EXP, "bls": BLS, "fred": FRED, "national": NATIONAL,
@@ -665,7 +665,7 @@ def write(panel, path=spec.PANEL_PATH, manifest_path=spec.PANEL_MANIFEST, have=N
     return info
 
 
-# --- figures ---
+# figures
 
 COVERAGE = [
     ("hpi", "hpi"), ("expanded hpi", "hpi_exp"), ("index error", "hpi_rstderr"), ("national macro", "cpi_yoy"),
@@ -795,7 +795,7 @@ def hpi_history_figure(panel):
     named = showcase_present(panel)
     fig, ax = charts.figure(
         "House prices since 1990, named metros against the median",
-        f"fhfa all-transactions index rebased to 100 in 2000Q1, {len(named)} named metros and the median of "
+        f"fhfa all transactions index rebased to 100 in 2000Q1, {len(named)} named metros and the median of "
         f"{metros} metros, 1990Q1 to {latest}",
         size=(10, 6))
     median = frame.groupby("date")["index"].median()
@@ -873,7 +873,7 @@ def latest_snapshot_figure(panel):
     y = np.arange(len(names))
     fig, ax = charts.figure(
         "House prices over the last year, the strongest and weakest metros",
-        f"year over year change in the fhfa all-transactions index, {len(top)} highest and {len(bottom)} lowest of "
+        f"year over year change in the fhfa all transactions index, {len(top)} highest and {len(bottom)} lowest of "
         f"{total} metros, {latest}",
         size=(9, 9.5))
     colors = [charts.SERIES[0] if v >= 0 else charts.SERIES[7] for v in np.nan_to_num(values)]

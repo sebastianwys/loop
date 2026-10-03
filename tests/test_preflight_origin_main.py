@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 
 # web/scripts/preflight-deploy.mjs runs before `npm run deploy` and exists to
-# stop a hand deploy from publishing older data than the scheduled runs have
+# stop a manual deploy from publishing older data than the scheduled runs have
 # put live. those runs commit to main and nowhere else, so a checkout that
 # lacks a commit on origin/main rolls the site back whatever branch it is on.
 # a feature branch pushed to its own upstream is level with that upstream and

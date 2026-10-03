@@ -99,9 +99,9 @@ export interface AdmissionRow {
   loss: number;
 }
 
-// one row of the walk-forward record: a model at a horizon, refitted once a
-// year, scored over one span of outcomes with its band set one way. span is
-// the first outcome quarter scored. band is online, the band a forecaster
+// one row of the yearly refit record: a model at a horizon, scored over one
+// span of outcomes with its band set one way. span is the first outcome
+// quarter scored. band is online, the band a forecaster
 // could have run through the record, or static, set once on the fixed split's
 // calibration block. intervalScore is the band's mean interval score, its
 // width plus a penalty for every outcome that lands outside it
@@ -125,7 +125,7 @@ export interface WalkBand {
 }
 
 // the paired test of the shipped model against one other model at one
-// horizon, over one span of the walk-forward record
+// horizon, over one span of the yearly refit record
 export interface WalkPairedRow extends PairedRow {
   span: string;
 }
@@ -429,7 +429,7 @@ export function separatedSentence(rows: PairedRow[], level = PAIRED_LEVEL): stri
 
 // the gru against ridge where ridge matches or beats it on the table. when the
 // paired test puts every gap between them down to chance the two are tied and
-// the pipeline's pick stands; where it separates them it says where
+// the pipeline's pick stands. where it separates them it says where
 export function ridgeVerdict(rows: PairedRow[], horizons: number[], level = PAIRED_LEVEL): string {
   const tested = pairedWith(rows, "ridge");
   const range = pRange(rows, "ridge");
@@ -438,8 +438,8 @@ export function ridgeVerdict(rows: PairedRow[], horizons: number[], level = PAIR
   }
   const apart = tested.filter((row) => row.pValue < level);
   if (apart.length === 0) {
-    return `The paired test above puts every gap between ridge and the GRU down to chance, ${pPhrase(range)}, so the two are tied, `
-      + `and the GRU ships because ${WHY_SHIPPED}.`;
+    return `The paired test above puts every gap between ridge and the GRU down to chance, ${pPhrase(range)}, so the two are tied. `
+      + `The GRU ships because ${WHY_SHIPPED}.`;
   }
   const chance = tested.filter((row) => row.pValue >= level).map((row) => row.horizon);
   const lead = apart.every((row) => row.difference > 0) ? "A penalised linear model is the one to beat on this table" : "The two are not tied";
@@ -460,15 +460,15 @@ export function meanVerdict(rows: PairedRow[], level = PAIRED_LEVEL): string {
     + `${chance.length > 0 ? `, and puts ${horizonPhrase(chance)} down to chance` : ""}.`;
 }
 
-// the walk-forward design, ml/walkforward.py: the first year a model is
-// refitted for, the years whose outcomes chose the online band's settings,
-// and the one model the run adds, the gru and ridge averaged quantile by
-// quantile. settled, not results
+// the yearly refit design, ml/src/loop/walkforward.py: the first year a
+// model is refitted for, the years whose outcomes chose the online band's
+// settings, and the one model the run adds, the gru and ridge averaged
+// quantile by quantile. settled, not results
 export const REFIT_FROM = 2008;
 export const BAND_TUNE = [2012, 2017] as const;
 export const AVERAGE = "ensemble";
 
-// the two rules the walk-forward run was held to, both written before it ran.
+// the two rules the yearly refit run was held to, both written before it ran.
 // ridge or the average replaces the gru only if the paired test on the record
 // finds it better at three of the four horizons at 5 percent and worse at
 // none, and the online band replaces the static one only if its interval
@@ -527,7 +527,7 @@ export function pAt(rows: PairedRow[], against: string, horizon: number): number
   return row && scored(row.pValue) ? row.pValue : null;
 }
 
-// a p value the way the walk-forward table prints it: two places, three under
+// a p value the way the yearly refit table prints it: two places, three under
 // 0.01 or where two would land it on the other side of the level, and
 // "<0.001" below that
 export function pText(p: number | null | undefined, level = PAIRED_LEVEL): string {
@@ -825,16 +825,16 @@ export function admissionSentences(rows: AdmissionRow[]): string {
   if (permits) out.push(`Permits and income beat the set without them ${on(permits)}, and ship.`);
   if (rents && added) {
     const then = added.gain <= 0
-      ? "but added to the shipped set they do not lower the validation loss at all, so they stay out"
+      ? "Added to the shipped set they do not lower the validation loss at all, so they stay out"
       : added.gain < added.spread
-        ? `but added to the shipped set they gain less than one set's spread across seeds, winning ${on(added)}, so they stay out`
-        : `and added to the shipped set they gain more than one set's spread across seeds, winning ${on(added)}, though they are not in the shipped set yet`;
-    out.push(`Rents and listing prices beat it ${on(rents)} as well, ${then}.`);
+        ? `Added to the shipped set they win ${on(added)} but gain less than one set's spread across seeds, so they stay out`
+        : `Added to the shipped set they win ${on(added)} and gain more than one set's spread across seeds, but they are not in the shipped set yet`;
+    out.push(`Rents and listing prices beat it ${on(rents)} as well. ${then}.`);
   }
   return out.join(" ");
 }
 
-// fhfa published its expanded-data index for 50 metros until its 2026Q1
+// fhfa published its expanded data index for 50 metros until its 2026Q1
 // report and for every metro since (fhfa technical note 2026m01). the ml
 // folder masks it for the rest before that quarter, spec.EXPANDED_BEFORE_2026,
 // and the page says so. these are fhfa's facts, not a model's result
@@ -885,8 +885,6 @@ export function lossesOf(rows: BacktestRow[], model: string): Loss[] {
   return losses;
 }
 
-// how much of another model's error this one removes, as a share. null when
-// either row is missing or the comparison would divide by zero
 // the losses written out, with a rival named once however many horizons it
 // takes: "ridge is ahead at one quarter by 0.11 points and at two by 0.09"
 export function lossSentence(losses: Loss[]): string {
@@ -911,6 +909,8 @@ export function sentenceCase(text: string): string {
   return text.length === 0 ? text : `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
 }
 
+// how much of another model's error this one removes, as a share. null when
+// either row is missing or the comparison would divide by zero
 export function errorCut(rows: BacktestRow[], model: string, over: string, horizon: number): number | null {
   const mine = rowAt(rows, model, horizon);
   const theirs = rowAt(rows, over, horizon);
@@ -931,7 +931,7 @@ export function bandCut(rows: BacktestRow[], model: string, over: string, horizo
 }
 
 // the spread of coverage at a horizon, worst and best, for the limits: every
-// model under-covers at eight quarters and the page has to say by how much
+// model covers too little at eight quarters and the page has to say how much
 export function coverageRange(rows: BacktestRow[], horizon: number): { low: BacktestRow; high: BacktestRow } | null {
   const at = scoredAt(rows, horizon, "coverage");
   return at.length === 0 ? null : { low: at[0], high: at[at.length - 1] };
@@ -985,8 +985,8 @@ export interface Named {
 }
 
 // what the shipped model is saying right now, read off the same json the map
-// draws. quoting the write-up instead would drift the first time the bot
-// carried a newer export than the one the write-up was written against
+// draws. quoting ml/README.md instead would drift the first time the bot
+// carried a newer export than the one the README was written against
 export interface Spread {
   count: number;
   median: number;

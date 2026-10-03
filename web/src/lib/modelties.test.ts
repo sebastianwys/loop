@@ -59,7 +59,7 @@ describe("the model page on a tie", () => {
     const sorted = verdicts();
     BACKTEST.reverse();
     const reversed = verdicts();
-    // "0.00 points away" names a tie and is true; "ahead by 0.00 points" calls it a defeat
+    // "0.00 points away" names a tie and is true. "ahead by 0.00 points" calls it a defeat
     expect(sorted.readings).not.toMatch(/ahead at [a-z, ]+ by 0\.00 points/);
     expect(sorted.readings).toBe(reversed.readings);
     expect(sorted.limits).toBe(reversed.limits);

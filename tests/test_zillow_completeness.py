@@ -61,7 +61,7 @@ GAZETTEER = pd.DataFrame({
 
 HTML = b"<!DOCTYPE html>\n<html><head><title>404 Not Found</title></head><body>gone</body></html>\n"
 
-# stand-ins for the archive when the collectors have not been run on this
+# fakes for the archive when the collectors have not been run on this
 # checkout. data/raw/zillow/*.csv is gitignored, so it is often absent
 CANNED_WIDE = (HEADER + line("394299", "Abilene, TX", "msa", "TX", [60] * 12)).encode()
 CANNED_METRICS = (

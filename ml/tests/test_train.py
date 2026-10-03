@@ -309,7 +309,7 @@ class TestRun(unittest.TestCase):
 
 
 # ml/data/panel.parquet is not tracked, so a fresh clone has no panel. run()
-# used to fall back on a made up one and write it into the tracked backtest and
+# used to fall back on a synthetic one and write it into the tracked backtest and
 # forecast csvs, with only the figures carrying the note
 class TestRunWillNotInventAPanel(unittest.TestCase):
     def dirs(self, root):
@@ -406,7 +406,7 @@ class TestShippedSelectionIgnoresTheTestBlock(unittest.TestCase):
 
 
 # the history csv puts the two curves on one axis, so they have to be the same
-# functional. the training loss weighted each batch's per-cell mean by its row
+# functional. the training loss weighted each batch's mean per cell by its row
 # count while the validation loss weighted by valid cells, so a ragged batch
 # moved one curve and not the other
 class TestTheTwoLossCurvesWeighTheSameWay(unittest.TestCase):
@@ -519,7 +519,7 @@ if __name__ == "__main__":
 
 # the batch order reads spec.SEED at call time, so if the weight init does not,
 # reassigning the seed moves one and not the other and a "reseeded" run is only
-# half reseeded. this is the same default-argument trap nets._widths had
+# half reseeded. this is the same default argument trap nets._widths had
 class TestTheSeedIsReadWhenItIsUsed(unittest.TestCase):
     def draw(self):
         train.seed_everything()
@@ -637,7 +637,7 @@ class TestTheValidationLossIgnoresTheEvalBatchSize(unittest.TestCase):
 
 
 # a reseeded run draws new batches as well as new weights. the class above pins
-# the weights; nothing failed when the batch order was seeded from a constant,
+# the weights. nothing failed when the batch order was seeded from a constant,
 # which left every reseeded run walking the same batches
 class TestTheBatchOrderFollowsTheSeed(unittest.TestCase):
     class FirstBatch(Exception):

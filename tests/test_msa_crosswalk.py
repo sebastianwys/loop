@@ -85,13 +85,13 @@ class TestTheRenumberedPairsAreTheSamePlace(unittest.TestCase):
                 self.assertFalse(old in self.acs[vintage] and new in self.acs[vintage],
                                  f"{old} and {new} both in {vintage}")
 
-    # the whole point: the metro-years the merged csv does not have
+    # the whole point: the metro years the merged csv does not have
     def test_the_crosswalk_recovers_five_of_the_thirty_three_missing_metro_years(self):
         merged = pd.read_csv(MERGED, dtype={"cbsa_code": str})
         have = set(zip(merged.cbsa_code, merged.year))
         codes, years = sorted(merged.cbsa_code.unique()), sorted(merged.year.unique())
         gaps = [(c, y) for c in codes for y in years if (c, y) not in have]
-        # the crosswalk joins these five and cleveland's two; no gap left is a renumbering
+        # the crosswalk joins these five and cleveland's two. no gap left is a renumbering
         self.assertEqual(len(gaps), 26)
         joined = [("19430", 2014), ("28880", 2019), ("39150", 2014), ("48680", 2014), ("48680", 2019)]
         self.assertEqual([pair for pair in joined if pair not in have], [])

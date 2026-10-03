@@ -60,7 +60,7 @@ def _grid(frame):
 
 
 # the model inputs known at an origin: the last eight quarterly growth rates,
-# the metro's own average growth so far, the cross metro pulse and every panel
+# the metro's own average growth so far, the pulse across metros and every panel
 # feature at the origin. nulls stay nulls, each model decides how to fill them
 def features_at_origin(panel):
     columns = list(dict.fromkeys(["hpi_qoq", "hpi_yoy"] + spec.FEATURES))
@@ -118,10 +118,10 @@ def assert_no_leakage(panel, features, horizon, builder=features_at_origin, n=5,
 
 # a model's three quantiles may cross, so the band edges are pulled onto the
 # median rather than sorted past it. the median is the model's point forecast
-# and the only number mae reads, and a sort moved it: no_change forecasts zero
-# by definition, and in an era whose train block held no downside its tenth
+# and the only number mae reads, and a sort moved it. no_change forecasts zero
+# by definition. in an era whose train block held no downside, its tenth
 # percentile of train outcomes was positive and the sort promoted that into the
-# median slot, so the benchmark every relative_mae is measured against became a
+# median slot. so the benchmark every relative_mae is measured against became a
 # drift forecast without saying so. a row carrying a null is left alone, since
 # sorting sends nan to the end and relabels the surviving median as q10
 def order_quantiles(predictions):

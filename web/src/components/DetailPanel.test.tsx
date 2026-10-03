@@ -38,7 +38,7 @@ describe("a number the metro took from its parent", () => {
     expect(markup.split("from the parent").length - 1).toBeGreaterThan(1);
   });
 
-  // the row mark stays short; the header line and the footer note are where
+  // the row mark stays short. the header line and the footer note are where
   // the parent is named, so the measure column does not wrap to seven lines
   it("names the parent elsewhere in the panel", () => {
     const markup = panel("25980");
@@ -48,7 +48,7 @@ describe("a number the metro took from its parent", () => {
 });
 
 // the last point used to be a mean of however much of the year had been
-// published, drawn on a line of full-year means and labelled as that year
+// published, drawn on a line of means over full years and labelled as that year
 describe("the note under the price history", () => {
   const full: AnnualSeries = { start: 2000, values: [100, 110], as_of: "2001Q4", partial_year: null };
   const short: AnnualSeries = { start: 2000, values: [100, 112], as_of: "2001Q2", partial_year: 2001 };

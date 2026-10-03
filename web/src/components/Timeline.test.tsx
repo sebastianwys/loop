@@ -110,7 +110,7 @@ describe("the timeline over a deep annual history", () => {
     expect(markup).toContain("clipped at plus or minus 5 percent");
   });
 
-  // fhfa's all-transactions index is 100 at 1995q1 for every metro, so a level
+  // fhfa's all transactions index is 100 at 1995q1 for every metro, so a level
   // is growth from a shared base, not a figure rebased at each metro's start
   it("says why it maps growth without claiming a base per metro", () => {
     const markup = render(scrub());

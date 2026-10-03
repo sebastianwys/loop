@@ -25,7 +25,7 @@ export interface Shell {
 }
 
 // everything a view is handed. a view draws the element under the header and
-// owns whatever state only it cares about; anything shareable goes through go
+// owns whatever state only it cares about. anything shareable goes through go
 export interface ViewProps {
   data: MapData;
   route: RouteState;

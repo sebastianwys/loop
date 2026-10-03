@@ -63,7 +63,7 @@ function oneSided(data: number[]): boolean {
 }
 
 // five classes, the documented ramp length. sequential bins are quantiles so
-// every class carries metros; diverging bins are equal width and symmetric
+// every class carries metros. diverging bins are equal width and symmetric
 // around zero so the middle class is the neutral gray.
 //
 // a diverging ramp is a claim that the two directions are different kinds of

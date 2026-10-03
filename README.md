@@ -1,10 +1,10 @@
-# Project Loop: Consumer & Macro Conditions Data Platform
+# Project Loop
 
 Economic conditions across 410 U.S. metros on one live map. I join FHFA, Census, BLS, FRED, Zillow and IRS data into one panel, forecast house price growth with a PyTorch GRU, and publish both.
 
 Live map: https://loop.macroviz.workers.dev
 
-The map colors every metro by any of 55 metrics for 2014, 2019, 2024 or the latest reading. Each metro has a detail panel with its history and forecast, and a strip of 13 national indicators along the top updates from FRED every weekday after the market close.
+The map colors every metro by any of 55 metrics for 2014, 2019, 2024 or the latest reading. Each metro has a detail panel with its history and forecast. A strip of 13 national indicators along the top updates from FRED every weekday after the market close.
 
 ## How I built it
 
@@ -13,13 +13,13 @@ The map colors every metro by any of 55 metrics for 2014, 2019, 2024 or the late
 | pipeline | Built the FHFA and Census join for my IS477 final project at Illinois, with Snakemake and a SHA-256 manifest for every download |
 | collectors | Wrote 13 collectors that run on GitHub Actions, the national series every weekday and the rest monthly |
 | model | Trained a GRU to forecast 1 to 8 quarters ahead and tested it the way it would have been used: refitted every year, on FHFA prices as they were first published |
-| map | Built the map in React and Leaflet and deploy it to Cloudflare |
+| map | Built the map in React and Leaflet and deployed it to Cloudflare |
 
 ## What it found
 
 - Mountain towns and coastal Sun Belt markets replaced the Bay Area at the top of the price index between 2019 and 2024. Bozeman MT is the highest whole metro at 610, behind only the Miami division at 629.
 - Population barely predicts price, and that held steady: a correlation of 0.27 in 2014, 0.31 in 2019 and 0.27 in 2024.
-- Median income is the strongest real predictor of the price index, at 0.50.
+- Apart from home value itself, median income is the strongest predictor of the price index, at a correlation of 0.50.
 - Scored on the 34 quarters from 2018 on, the forecast cut the error of a no change forecast by 43 percent at one year, and by 36 percent on 2022 onward alone. Ridge regression and gradient boosting did about as well. The details are in [ml/README.md](ml/README.md).
 
 ## The layout
@@ -36,6 +36,7 @@ The map colors every metro by any of 55 metrics for 2014, 2019, 2024 or the late
 
 ```
 python3.12 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 export CENSUS_API_KEY=your_key_here
 snakemake --cores 1

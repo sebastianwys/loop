@@ -1,7 +1,7 @@
 /* ---- the compare view ----
    four line slots, each with a colour, a dash and an end mark. the colours
    are the first four categorical slots of the documented chart palette,
-   stepped once for each surface rather than flipped; the dash and the mark
+   stepped once for each surface rather than flipped. the dash and the mark
    are what carry a line when the colour cannot, in print, in grayscale, and
    for a reader who sees two of the four hues as one */
 .compare-page {
@@ -66,7 +66,7 @@
 .compare-chart .line { fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .compare-chart .mark { fill: currentColor; stroke: var(--surface); stroke-width: 1.5; }
 .compare-chart .leader { fill: none; stroke: currentColor; stroke-width: 1; }
-/* the label is text, so it wears ink; the mark it points at carries the hue */
+/* the label is text, so it wears ink. the mark it points at carries the hue */
 .compare-chart .end { fill: var(--ink-2); font-size: 11px; }
 .compare-chart .crosshair { stroke: var(--ink-2); stroke-width: 1; }
 .compare-chart .ring { fill: none; stroke: currentColor; stroke-width: 2; }

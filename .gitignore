@@ -1,5 +1,5 @@
 # zillow research csvs are fetched, not redistributed. the manifest records
-# their sha256 and vintage, and the derived per-metro values ship in the map json
+# their sha256 and vintage, and the values derived for each metro ship in the map json
 data/raw/zillow/*.csv
 
 # every alfred vintage of fhfa's metro index, 140 MB, fetched again by

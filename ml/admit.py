@@ -34,8 +34,8 @@ FIT_END = "2019Q4"
 SCORE_END = "2021Q4"
 
 # the nine the shipped fitting block can see, and so the only nine the
-# published ablation table ever really compared. measured, not assumed:
-# check_arms re-derives this from the panel and fails if it has drifted
+# published ablation table ever really compared. check_arms derives this again
+# from the panel and fails if it has drifted
 SEEN_SEQ = ["hpi_qoq", "hpi_yoy", "unemp", "mortgage", "zhvi_yoy", "hpi_exp_yoy", "hpi_rstderr"]
 SEEN_STATIC = ["pop_growth", "domestic_migration_rate"]
 
@@ -70,9 +70,10 @@ def leave_one_out():
     return arms
 
 
-# leave-one-out cannot separate two features that stand in for each other: pull
-# either and the other covers. these two arms carry the same eleven series and
-# differ only in which pair was kept, so the comparison is capacity matched
+# the leave_one_out arms cannot separate two features that stand in for each
+# other: pull either and the other covers. these two arms carry the same eleven
+# series and differ only in which pair was kept, so the comparison is
+# capacity matched
 def pairs():
     return {
         "eleven, without zori and listings": (SEEN_SEQ, SEEN_STATIC + ADDED_STATIC),

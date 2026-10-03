@@ -217,7 +217,7 @@ class TestRecord(NationalCase):
         rows = [("UNRATE", "2026-07-01", "4.2"), ("UNRATE", "2026-08-01", "4.3")]
         self.assertIsNone(self.record("unemployment", rows)["change_12m"])
 
-    # the chart offers five, ten and twenty five year ranges and a max, so the
+    # the chart offers 5, 10 and 25 year ranges and a max, so the
     # collected history has to arrive whole. a sixty month trim left the site
     # with five years and no way to draw the ranges it names
     def test_history_carries_every_month_the_series_has_oldest_first(self):

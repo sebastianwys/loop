@@ -14,7 +14,7 @@ def rows(code, series, values, start_quarter, release, until="9999-12-31"):
 
 # two releases. the first prints 2019Q1 to 2020Q1 with the last quarter at
 # 110, the second revises it to 120 and adds 2020Q2. metro 10000 is its own
-# series through the latest release; 20000 is only a former code's series,
+# series through the latest release. 20000 is only a former code's series,
 # and 30000's own series stopped a year early
 def archive():
     first = rows("10000", "ATNHPIUS10000Q", [100, 101, 102, 104, 110], "2019Q1", "2020-05-20", "2020-08-19")
@@ -42,7 +42,7 @@ class TestTheArchive(unittest.TestCase):
         self.assertAlmostEqual(np.exp(vint.log_index("2020-08-20").loc["10000", "2020Q1"]), 120)
 
     # growth as one release printed it: 10000 from 104 to 110 in the first
-    # release; the uncovered metro gets nothing, so today's value stands
+    # release. the uncovered metro gets nothing, so today's value stands
     def test_training_outcomes_come_from_the_refits_release(self):
         vint = archive()
         growth = vintages.printed_growth(vint, "2020-05-20", ["10000", "20000"], ["2019Q4", "2019Q4"], [1, 1])

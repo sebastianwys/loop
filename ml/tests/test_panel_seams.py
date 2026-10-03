@@ -47,7 +47,7 @@ def built():
 
 
 # the delineation each source year is published on. bps filed 2014 to 2018 on
-# february 2013, 2019 to 2023 on september 2018 and 2024 on july 2023; pep's
+# february 2013, 2019 to 2023 on september 2018 and 2024 on july 2023. pep's
 # vintage 2019 is september 2018 and its vintage 2025 july 2023
 def bps_delineation(year):
     return FEB_2013 if year <= 2018 else SEPT_2018 if year <= 2023 else JULY_2023
@@ -221,7 +221,7 @@ class TestPermitsPerThousandDividesOnePlace(unittest.TestCase):
                         f"salisbury permits_per_1000 at 2022Q2 is {'none' if shown is None else f'{shown:.3f}'}, its 2021 permits over the "
                         f"people of the same four counties are {SALISBURY_2021:.3f}")
 
-    # every study metro-year whose two footprints differ by more than the
+    # every metro and study year whose two footprints differ by more than the
     # footprint tolerance, weighed with pep's own county estimates for the year
     def test_no_study_metro_divides_permits_by_the_people_of_other_counties(self):
         wrong = []
@@ -242,7 +242,7 @@ class TestPermitsPerThousandDividesOnePlace(unittest.TestCase):
                     wrong.append((abs(shown / right - 1), f"{code} {year} {shown:.2f} vs {right:.2f}"))
         wrong.sort(reverse=True)
         self.assertEqual(len(wrong), 0,
-                         f"{len(wrong)} metro-years over {len({w[1][:5] for w in wrong})} metros, worst: "
+                         f"{len(wrong)} metro years over {len({w[1][:5] for w in wrong})} metros, worst: "
                          + "; ".join(w[1] for w in wrong[:8]))
 
 

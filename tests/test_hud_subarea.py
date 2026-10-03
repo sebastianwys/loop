@@ -121,8 +121,8 @@ def fake_census(url, params=None, **kwargs):
 
 # a value published for a cbsa has to cover that cbsa's whole county set. where
 # hud's entity does not, the collector takes the rule it uses for the codes hud
-# has no entity for: an acs population weighted mean over the fmr areas the
-# counties sit in
+# has no entity for: a mean over the fmr areas the counties sit in, weighted
+# by acs population
 class TestWholeMetroCoverage(unittest.TestCase):
     def fake_get(self, url, params=None, timeout=None, headers=None):
         if url == hud.LIST_URL:

@@ -66,7 +66,7 @@ class TestParseBaseCases(unittest.TestCase):
         self.assertEqual(row["name"], "Chicago-Naperville-Elgin, IL-IN-WI")
         self.assertEqual((row.units_1, row.units_2, row.units_3_4, row.units_5plus), (7723, 124, 439, 7393))
 
-    # the reported only block repeats the layout with smaller numbers. abilene
+    # the block without imputation repeats the layout with smaller numbers. abilene
     # reported 283 single family buildings against 284 with imputation
     def test_units_come_from_the_imputed_block_not_reported_only(self):
         row = bps.parse_annual(FILE_2014).set_index("cbsa_code").loc["10180"]
