@@ -119,7 +119,7 @@ describe("the model view", () => {
   it("gives the reader every published number for a model, not just its error", () => {
     // the sequence gru at eight quarters: error, coverage and band width
     expect(page).toContain(points(shipped8.maePct));
-    expect(page).toContain(`cover ${points(shipped8.coverage)}, width ${points(shipped8.width, 3)}`);
+    expect(page).toContain(`<span class="sub">cover ${points(shipped8.coverage)}</span><span class="sub">width ${points(shipped8.width, 3)}</span>`);
   });
 
   it("says out loud where the shipped model loses, in the readings and in the limits", () => {
@@ -658,7 +658,7 @@ describe("what the walk-forward record lets the page say", () => {
     // every cell of the band table: the score, marked where it is the lower, then coverage and width
     const table = plain(page.slice(page.indexOf("two bands"), page.indexOf("</table>", page.indexOf("two bands"))));
     const cell = (mine: (typeof fixed)[number], other: (typeof fixed)[number]) => `${mine.intervalScore.toFixed(3)}`
-      + `${mine.intervalScore < other.intervalScore ? " lower interval score at this horizon" : ""} cover ${points(mine.coverage)}, `
+      + `${mine.intervalScore < other.intervalScore ? " lower interval score at this horizon" : ""} cover ${points(mine.coverage)} `
       + `width ${mine.width.toFixed(3)}`;
     fixed.forEach((row, i) => {
       expect(table, `static ${row.horizon}q`).toContain(cell(row, moving[i]));

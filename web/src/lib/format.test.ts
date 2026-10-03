@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatValue } from "./format";
+import { formatTick, formatValue } from "./format";
 
 describe("formatValue", () => {
   it("renders null as a dash for every format", () => {
@@ -53,5 +53,22 @@ describe("formatValue", () => {
     // and anything that does not round to zero keeps its sign
     expect(formatValue(-0.06, "rate", true)).toBe("-0.1%");
     expect(formatValue(0.06, "points", true)).toBe("+0.1 pp");
+  });
+});
+
+describe("formatTick", () => {
+  it("drops a trailing .0, so a round tick reads 20% or 400", () => {
+    expect(formatTick(0.2, "pct", true)).toBe("+20%");
+    expect(formatTick(10, "per_1000")).toBe("10 per 1k");
+    expect(formatTick(400, "index")).toBe("400");
+    expect(formatTick(0, "points")).toBe("0 pp");
+  });
+
+  it("keeps a decimal that carries a value, and leaves money alone", () => {
+    expect(formatTick(0.3, "per_1000")).toBe("0.3 per 1k");
+    expect(formatTick(2.5, "rate")).toBe("2.5%");
+    expect(formatTick(1.05, "index")).toBe("1.1");
+    expect(formatTick(1_000_000, "usd")).toBe("$1.00M");
+    expect(formatValue(3_000_000, "usd_k")).toBe("$3.00B");
   });
 });

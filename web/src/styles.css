@@ -324,7 +324,7 @@ svg { max-width: 100%; }
 .history .dot { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
 .history .band { fill: var(--band); stroke: none; }
 .history .expected { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 4 3; stroke-linecap: round; }
-.history .expected-dot { fill: var(--surface); stroke: var(--accent); stroke-width: 2; }
+.history .expected-dot { fill: var(--surface); stroke: var(--accent); stroke-width: 1.5; }
 .history .crosshair { stroke: var(--ink-2); stroke-width: 1; }
 .history .ring { fill: none; stroke: var(--ink); stroke-width: 1.5; }
 .history .tip { fill: var(--surface); stroke: var(--hairline); }
@@ -399,7 +399,7 @@ svg { max-width: 100%; }
 .ind-tile .chip.up { color: var(--rise); }
 .ind-tile .chip.down { color: var(--fall); }
 /* the month a chip's change is for, when it is not the month of the value */
-.ind-tile .chip .month { color: var(--muted); }
+.ind-tile .foot .month { flex-basis: 100%; color: var(--muted); }
 
 .ind-spark { display: block; flex: none; width: var(--spark-w); height: auto; }
 .ind-spark .line { fill: none; stroke: var(--trend); stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }

@@ -655,9 +655,8 @@ export function ModelPage({ data }: ViewProps) {
                               {points(cell.maePct)}
                               {winners.get(horizons[i]) === row.model && <span className="sr"> lowest error at this horizon</span>}
                             </span>
-                            <span className="sub">
-                              cover {points(cell.coverage)}, width {points(cell.width, 3)}
-                            </span>
+                            <span className="sub">cover {points(cell.coverage)}</span>
+                            <span className="sub">width {points(cell.width, 3)}</span>
                           </>
                         )}
                       </td>
@@ -837,9 +836,8 @@ export function ModelPage({ data }: ViewProps) {
                                   {points(cell.intervalScore, 3)}
                                   {lower && <span className="sr"> lower interval score at this horizon</span>}
                                 </span>
-                                <span className="sub">
-                                  cover {points(cell.coverage)}, width {points(cell.width, 3)}
-                                </span>
+                                <span className="sub">cover {points(cell.coverage)}</span>
+                                <span className="sub">width {points(cell.width, 3)}</span>
                               </td>
                             );
                           })}

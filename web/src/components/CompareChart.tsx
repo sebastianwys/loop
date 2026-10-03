@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import {
   columnX, compareTitle, markerPath, nearestYear, readingAt, type ChartSize, type CompareModel, type Marker,
 } from "../lib/compare";
-import { formatValue } from "../lib/format";
+import { formatTick, formatValue } from "../lib/format";
 
 interface Props {
   model: CompareModel;
@@ -74,7 +74,7 @@ export function CompareChart({ model, size }: Props) {
         {model.yTicks.map((t) => (
           <g key={t.value}>
             <line className="grid" x1={model.left} x2={model.right} y1={t.y} y2={t.y} />
-            <text className="lbl" x={model.left - 6} y={t.y + 3} textAnchor="end">{idx(t.value)}</text>
+            <text className="lbl" x={model.left - 6} y={t.y + 3} textAnchor="end">{formatTick(t.value, "index")}</text>
           </g>
         ))}
         {model.xTicks.map((t) => (

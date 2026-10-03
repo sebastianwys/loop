@@ -59,9 +59,10 @@ function Tile({ indicator, expanded, onToggle }: TileProps) {
         <span className={`chip ${chip.direction}`}>
           {chip.text}
           {chip.word && <span className="word">{chip.word}</span>}
-          {chipMonth && <span className="month">to {chipMonth}</span>}
         </span>
         <span className="when">{monthLabel(indicator.date)}</span>
+        {/* its own line, so the chip and the date sit level with every other tile */}
+        {chipMonth && <span className="month">to {chipMonth}</span>}
       </span>
     </button>
   );

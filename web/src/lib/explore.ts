@@ -1,5 +1,6 @@
 import type { Metro } from "../types";
 import { shortLabel } from "./compare";
+import { formatTick, labelWidth } from "./format";
 import { niceTicks } from "./history";
 import type { LayoutMode } from "./layout";
 import { isInherited, withheldBecause, withheldWhy, type Metric, type Withheld } from "./metrics";
@@ -29,6 +30,8 @@ export interface PlotSize {
 export interface AxisTick {
   value: number;
   pos: number;
+  // the tick as printed. buildAxis leaves it empty, the plot fills it in
+  label?: string;
 }
 
 export interface Axis {
@@ -94,12 +97,15 @@ export interface ExploreModel {
   points: ExplorePoint[];
   x: Axis;
   y: Axis;
+  // every nth x label is printed, so a narrow plot does not run them together
+  xEvery: number;
   fit: ExploreFit | null;
   fitWhy: FitWhy;
   counts: ExploreCounts;
 }
 
-const PAD = { left: 56, right: 16, top: 16, bottom: 32 };
+// the least room each side keeps. left and right grow to fit the tick labels
+const PAD = { left: 36, right: 16, top: 16, bottom: 32 };
 
 // the margin a logarithmic axis keeps at each end, as a share of its span,
 // so a dot at the extreme is not half outside the box
@@ -270,13 +276,17 @@ function clipLine(x1: number, y1: number, x2: number, y2: number, top: number, b
   return a.x === b.x && a.y === b.y ? "" : `M ${r1(a.x)} ${r1(a.y)} L ${r1(b.x)} ${r1(b.y)}`;
 }
 
+// the axis with its ticks printed the way the metric prints a value
+function labelled(axis: Axis, metric: Metric): Axis {
+  const signed = metric.kind === "diverging";
+  return { ...axis, ticks: axis.ticks.map((t) => ({ ...t, label: formatTick(t.value, metric.format, signed) })) };
+}
+
 // every metro that carries both numbers, placed. a value a division took from
 // its parent metro is drawn, because it is a real number and hiding it would
 // be its own lie, but it is left out of the fit: one parent's listing count
 // standing in for three divisions would be that parent counted three times
 export function buildExplore(metros: Metro[], x: Metric, y: Metric, size: PlotSize): ExploreModel {
-  const left = PAD.left;
-  const right = size.width - PAD.right;
   const top = PAD.top;
   const bottom = size.height - PAD.bottom;
 
@@ -314,8 +324,17 @@ export function buildExplore(metros: Metro[], x: Metric, y: Metric, size: PlotSi
     rows.push({ metro, x: vx, y: vy, inherited: isInherited(metro, x) || isInherited(metro, y) });
   }
 
-  const xAxis = buildAxis(rows.map((r) => r.x), left, right);
-  const yAxis = buildAxis(rows.map((r) => r.y), bottom, top);
+  // the y labels set the left margin and the last x label the right one, so
+  // no label is cut off at the edge of the plot
+  const yAxis = labelled(buildAxis(rows.map((r) => r.y), bottom, top), y);
+  const left = Math.max(PAD.left, ...yAxis.ticks.map((t) => labelWidth(t.label ?? "") + 10));
+  const xValues = rows.map((r) => r.x);
+  const lastX = labelled(buildAxis(xValues, left, size.width - PAD.right), x).ticks.at(-1)?.label ?? "";
+  const right = size.width - Math.max(PAD.right, Math.ceil(labelWidth(lastX) / 2) + 4);
+  const xAxis = labelled(buildAxis(xValues, left, right), x);
+  const widest = Math.max(0, ...xAxis.ticks.map((t) => labelWidth(t.label ?? "")));
+  const gap = xAxis.ticks.length > 1 ? (right - left) / (xAxis.ticks.length - 1) : Infinity;
+  const xEvery = widest + 10 > gap ? Math.ceil((widest + 10) / gap) : 1;
 
   // left to right, which is the order the arrow keys walk the cloud in
   const points: ExplorePoint[] = rows
@@ -369,6 +388,7 @@ export function buildExplore(metros: Metro[], x: Metric, y: Metric, size: PlotSi
     points,
     x: xAxis,
     y: yAxis,
+    xEvery,
     fit,
     fitWhy,
     counts: {

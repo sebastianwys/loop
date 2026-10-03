@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { buildExplore, exploreEnds, plotSize, plottedSentence } from "./explore";
+import { labelWidth } from "./format";
 import { exploreMetric } from "./exploreRoute";
 import { availablePeriods, defById, isInherited, resolveMetric, visibleDefs } from "./metrics";
 import { DEFAULT_ROUTE, routeMetric } from "./route";
@@ -30,6 +31,24 @@ describe.skipIf(!present)("the explore view over the built metros.json", () => {
         }
         expect(model.counts.plotted + model.counts.missing, x.id).toBe(metros.length);
         if (model.fit) expect(Math.abs(model.fit.r), x.id).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+
+  // the y labels used to start left of the svg, so 10 per 1k read as 0.0 per
+  // 1k, and the last x label ran off the right edge
+  it("keeps every tick label inside the plot, for every metric on either axis", () => {
+    const metros = data!.metros;
+    const other = resolveMetric(defById("hpi_19_24")!.def, null);
+    for (const mode of ["wide", "phone"] as const) {
+      const box = plotSize(mode);
+      for (const def of visibleDefs(metros)) {
+        const metric = resolveMetric(def, def.periods.length ? availablePeriods(def, metros).at(-1) ?? null : null);
+        for (const model of [buildExplore(metros, metric, other, box), buildExplore(metros, other, metric, box)]) {
+          for (const t of model.y.ticks) expect(labelWidth(t.label ?? "") + 6, `${mode} ${metric.id} y ${t.label}`).toBeLessThanOrEqual(model.left);
+          const last = model.x.ticks.at(-1);
+          if (last) expect(last.pos + labelWidth(last.label ?? "") / 2, `${mode} ${metric.id} x ${last.label}`).toBeLessThanOrEqual(model.width);
+        }
       }
     }
   });

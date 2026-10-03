@@ -68,9 +68,6 @@ export function ExploreChart({ model, x, y, selected, onPick }: Props) {
     setCursor(points[Math.min(points.length - 1, Math.max(0, step[e.key]))]);
   };
 
-  // a narrow plot cannot carry every tick label without them touching
-  const thin = model.width < 420 && model.x.ticks.length > 5;
-
   return (
     <div className="explore-plot">
       <svg
@@ -93,14 +90,14 @@ export function ExploreChart({ model, x, y, selected, onPick }: Props) {
         {model.y.ticks.map((t) => (
           <g key={`y${t.value}`}>
             <line className="grid" x1={model.left} x2={model.right} y1={t.pos} y2={t.pos} />
-            <text className="lbl" x={model.left - 6} y={t.pos + 3} textAnchor="end">{yv(t.value)}</text>
+            <text className="lbl" x={model.left - 6} y={t.pos + 3} textAnchor="end">{t.label ?? yv(t.value)}</text>
           </g>
         ))}
         {model.x.ticks.map((t, i) => (
           <g key={`x${t.value}`}>
             <line className="grid" x1={t.pos} x2={t.pos} y1={model.top} y2={model.bottom} />
-            {(!thin || i % 2 === 0) && (
-              <text className="lbl" x={t.pos} y={model.height - 10} textAnchor="middle">{xv(t.value)}</text>
+            {i % model.xEvery === 0 && (
+              <text className="lbl" x={t.pos} y={model.height - 10} textAnchor="middle">{t.label ?? xv(t.value)}</text>
             )}
           </g>
         ))}

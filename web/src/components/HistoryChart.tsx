@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { formatValue } from "../lib/format";
+import { formatTick, formatValue } from "../lib/format";
 import { buildHistory, hoverables, nearestPoint, type ForecastInput, type Hovered } from "../lib/history";
 import { dateLabel } from "../lib/timeline";
 import type { AnnualSeries } from "../types";
@@ -95,7 +95,7 @@ export function HistoryChart({ series, forecast, name }: Props) {
       {model.yTicks.map((t) => (
         <g key={t.value}>
           <line className="grid" x1={model.left} x2={model.right} y1={t.y} y2={t.y} />
-          <text className="lbl" x={model.left - 6} y={t.y + 3} textAnchor="end">{idx(t.value)}</text>
+          <text className="lbl" x={model.left - 6} y={t.y + 3} textAnchor="end">{formatTick(t.value, "index")}</text>
         </g>
       ))}
       {model.xTicks.map((t) => (
@@ -108,7 +108,7 @@ export function HistoryChart({ series, forecast, name }: Props) {
       )}
       {model.forecastD && <path className="expected" d={model.forecastD} />}
       {model.forecast.map((p) => (
-        <circle key={p.year} className="expected-dot" cx={p.x} cy={p.y} r={3}>
+        <circle key={p.year} className="expected-dot" cx={p.x} cy={p.y} r={2}>
           <title>{readout({ kind: "forecast", point: p })}</title>
         </circle>
       ))}
@@ -116,7 +116,8 @@ export function HistoryChart({ series, forecast, name }: Props) {
       <circle className="dot" cx={last.x} cy={last.y} r={4}>
         <title>{`${last.year}: ${idx(last.value)}, ${partial ? "the index at" : "through"} ${asOf}`}</title>
       </circle>
-      <text className="lbl end" x={last.x} y={last.y - 8} textAnchor={anchor(last.x)}>{idx(last.value)}</text>
+      {/* above the plot, where the line and the band can never run into it */}
+      {!hover && <text className="lbl end" x={model.right} y={10} textAnchor="end">latest {idx(last.value)}</text>}
       {hover && (
         <g className="hover" aria-hidden="true">
           <line className="crosshair" x1={hover.point.x} x2={hover.point.x} y1={model.top} y2={model.bottom} />

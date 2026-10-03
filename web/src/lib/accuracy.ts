@@ -498,7 +498,8 @@ export function chartBox(mode: LayoutMode): ChartBox {
   }
 }
 
-const PAD = { left: 34, right: 12, top: 16, bottom: 34 };
+// the top keeps a row for the y axis title, clear of the top tick
+const PAD = { left: 34, right: 12, top: 28, bottom: 34 };
 
 function box(width: number, height: number): Box {
   return { width, height, left: PAD.left, right: width - PAD.right, top: PAD.top, bottom: height - PAD.bottom };

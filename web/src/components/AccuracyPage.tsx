@@ -293,6 +293,7 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
               {hist.xTicks.map((t) => (
                 <text key={t.value} className="lbl" x={t.x} y={hist.bottom + 14} textAnchor="middle">{t.value}</text>
               ))}
+              <text className="side" x={hist.left - 26} y={hist.top - 12} textAnchor="start">metros</text>
               <text className="side" x={hist.left} y={size.height - 6} textAnchor="start">model ran high</text>
               <text className="side" x={hist.right} y={size.height - 6} textAnchor="end">model ran low</text>
             </svg>
@@ -443,7 +444,7 @@ export function AccuracyPage({ data, go, viewport }: ViewProps) {
                     <text key={t.value} className="lbl" x={t.x} y={cloud.bottom + 14} textAnchor="middle">{t.value}</text>
                   ))}
                   <text className="side" x={cloud.right} y={size.height - 6} textAnchor="end">index standard error, percent of the index</text>
-                  <text className="side" x={cloud.left - 26} y={cloud.top - 6} textAnchor="start">miss, points</text>
+                  <text className="side" x={cloud.left - 26} y={cloud.top - 12} textAnchor="start">miss, points</text>
                 </svg>
                 <p className="acc-readout" aria-live="polite">
                   {dot === null ? (
